@@ -1,0 +1,32 @@
+# Binários
+/abditum
+/abditum.exe
+/dist/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# Módulos Go
+go.sum
+
+# Arquivos de cofre (nunca commitar dados reais)
+*.abt
+
+# IDEs
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
