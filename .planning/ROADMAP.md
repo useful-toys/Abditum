@@ -1,6 +1,6 @@
 # Abditum — Project Roadmap
 
-**Last updated:** 2026-03-24  
+**Last updated:** 2026-03-24 (revised after requirement update)
 **Status:** Research complete. Ready for Phase 1.
 
 ---
@@ -29,8 +29,9 @@ The roadmap is split into **5 phases**, each independently shippable:
 - `go.mod` / `go.sum` with all dependencies
 - `cmd/abditum/main.go` — minimal entry point (no TUI yet, just smoke test)
 - `internal/crypto/` — Argon2id KDF + AES-256-GCM encrypt/decrypt
-- `internal/storage/` — binary file format (header + ciphertext), atomic save, `.bak` backup
-- Unit tests for crypto (success + failure cases) and storage (success + failure cases)
+- `internal/storage/` — binary file format (`magic=ABDT` + `versão_formato` + `salt` + `nonce` header as GCM AAD, then ciphertext), atomic save, `.bak` backup
+- `internal/model/` — entity type definitions (Vault, Folder, Secret, Field, Template) with NanoID IDs
+- Unit tests for crypto (correct password, wrong password, tampered header, format version detection) and storage (round-trip, atomic save, backup)
 
 **Why first:** Everything else depends on being able to encrypt and persist a vault. This is the bedrock. Can be built and tested with zero UI.
 
@@ -43,18 +44,18 @@ The roadmap is split into **5 phases**, each independently shippable:
 **Goal:** Implement the full vault domain: entities, VaultManager API, virtual folders, search, import/export. No I/O, no TUI.
 
 **Deliverables:**
-- `domain/vault/` package — all entities (Vault, Folder, Secret, Field, SecretTemplate)
+- `domain/vault/` package — all entities (Vault, Folder, Secret, Field, SecretTemplate) with NanoID IDs
 - `VaultManager` — full CRUD API: secrets, folders, templates, settings
 - Virtual folder collectors: `CollectFavorites()`, `CollectTrashed()`
-- `Search()` — in-memory scan (name, non-sensitive fields, note, folder name)
+- `Search()` — in-memory sequential scan (secret name, field name, `texto`-type field values, observation/note); `texto sensível` fields excluded
 - `InitializeNewVault()` — seeds default templates + folders
-- `ExportVault()` / `ImportVault()` — plain-text JSON round-trip
+- `ExportVault()` / `ImportVault()` — plain-text JSON round-trip with conflict rules: folders merged, secrets suffixed, templates replaced
 - DDD pattern enforced: all mutations through VaultManager, entities read-only
-- Unit tests for every manager operation, search, virtual folder collection, import/export collision resolution
+- Unit tests for every manager operation, search, virtual folder collection, import/export conflict resolution, folder-delete child-promotion behavior
 
 **Why second:** The domain is the core business logic. It can be developed and fully tested without crypto, storage, or TUI. Keeping it pure makes it easy to verify correctness.
 
-**Done when:** All VaultManager operations are tested, including edge cases (collision import, restore-from-missing-folder, trash purge on save).
+**Done when:** All VaultManager operations are tested, including edge cases (collision import with all three conflict rules, folder-delete child-promotion, restore-from-trash, trash purge on save).
 
 ---
 
@@ -122,9 +123,10 @@ The roadmap is split into **5 phases**, each independently shippable:
 - No CGO confirmation (`CGO_ENABLED=0` enforced in all build paths)
 - `README.md` — usage, download, security model, macOS/Windows bypass instructions for unsigned binaries
 - Integration test: full end-to-end flow (create vault → create secret → edit → lock → reopen → verify)
-- Memory zeroing audit (all sensitive data zeroed on lock/close)
+- Memory clearing audit (confirm app-controlled sensitive buffers are cleared on lock/close; best-effort given Go GC)
+- Backward compatibility: app version N opens vaults from any previously supported format version; migrates payload in-memory; saves in current format
 - No-log audit (confirm zero sensitive data in any stdout/stderr output)
-- Version `v1.0.0` tag and release
+- Portability audit (confirm no data written outside vault file path except `.tmp` and `.bak`)
 
 **Why last:** Polish requires a complete product to polish. CI and release tooling are validated against the real build; doing this earlier would be premature.
 

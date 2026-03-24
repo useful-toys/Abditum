@@ -54,8 +54,8 @@ O formato do segredo é flexível e personalizável, permitindo que os usuários
     - Começando com um segredo vazio, sem nenhum campo inicial
     - Quando o segredo é criado a partir de um modelo, ele não mantém vínculo por referência com o modelo. O nome do modelo é guardado apenas como histórico ("snapshot" do momento da criação). Alterar a estrutura (campos), renomear ou excluir o modelo posteriormente não afeta os segredos já criados.
   - Onde:
-    - Na raiz do cofre ou dentro de uma pasta
-    - Numa pasta da hierarquia do cofre
+    - Na raiz do cofre
+    - Em uma pasta
 - Duplicar um segredo existente
 - Favoritar/desfavoritar um segredo
 - Editar um segredo existente:
@@ -82,8 +82,8 @@ O formato do segredo é flexível e personalizável, permitindo que os usuários
 ### Gerenciamento de Hierarquia
  - Criar pasta
    - Onde:
-    - Na raiz do cofre ou dentro de uma pasta
-    - Numa pasta da hierarquia do cofre
+    - Na raiz do cofre
+    - Em uma pasta
  - Renomear pasta
  - Mover pasta para 
     - outra pasta
@@ -157,6 +157,7 @@ O formato do segredo é flexível e personalizável, permitindo que os usuários
 - Tags — pastas/grupos suficientes para v1
 - Histórico de versões de segredos
 - Alteração do tipo de um campo de segredo existente — para mudar o tipo de um campo, será necessário excluir o campo existente e adicionar outro campo com o tipo desejado
+- Reautenticação para salvar — o cofre já está desbloqueado e autenticado na sessão; não há exigência de informar a senha mestra novamente para salvar
 
 ## Requisitos Postergados (v2)
 - Suporte a TOTP (Autenticação de Dois Fatores): Calcular e exibir tokens de 6 dígitos em tempo real para campos que armazenem uma chave secreta (seed) TOTP, com indicação visual do tempo restante.
@@ -279,7 +280,7 @@ Essa estrutura garante que os metadados necessários para a descriptografia este
 - **Criando novo cofre:** estado transitório em que a aplicação realiza os passos para criar um novo cofre (coleta o caminho do cofre e a senha mestra, verifica se já existe arquivo no destino, solicita confirmação explícita em caso de sobrescrita, popula a estrutura inicial do cofre e grava o novo arquivo). Este estado é necessário devido à necessidade de apresentar um subprocesso interativo para navegar pastas, selecionar arquivo, solicitar senha, validar o destino, tratar eventual sobrescrita e gravar os dados.
 - **Salvando cofre com outro caminho:** estado transitório em que a aplicação realiza os passos para salvar o cofre em um novo caminho (coleta o novo caminho, valida a possibilidade de gravação, trata eventual sobrescrita de arquivo existente, grava o arquivo do cofre no novo caminho e atualiza o caminho atual do cofre).
 - **Cofre ativo:** estado global em que existe um cofre carregado, autenticado e disponível para uso na sessão atual. O cofre ativo sempre assume um dos subestados canônicos `Cofre Salvo` ou `Cofre Modificado`.
-- **Cofre em pesquisa:** estado transitório sobreposto ao `Cofre ativo`, no qual a interface exibe uma busca ativa, mostrando apenas os segredos que correspondem aos critérios informados. Durante a busca, o cofre preserva o subestado canônico corrente (`Cofre Salvo` ou `Cofre Modificado`). Enquanto a pesquisa estiver ativa, todas as ações ficam indisponíveis exceto: sair da aplicação, navegar pelo cofre e visualizar segredo. Para retomar as demais ações, o usuário deve confirmar a pesquisa (selecionando o elemento desejado, o que encerra implicitamente a pesquisa) ou cancelar a pesquisa. Em ambos os casos, o cofre retorna ao estado anterior ao início da pesquisa.
+  - **Cofre em pesquisa:** estado transitório sobreposto ao `Cofre ativo`, no qual a interface exibe uma busca ativa, mostrando apenas os segredos que correspondem aos critérios informados. Durante a busca, o cofre preserva o subestado canônico corrente (`Cofre Salvo` ou `Cofre Modificado`). Enquanto a pesquisa estiver ativa, todas as ações ficam indisponíveis exceto: sair da aplicação, navegar pelo cofre e visualizar segredo. Para retomar as demais ações, o usuário deve confirmar a pesquisa (selecionando o elemento desejado, o que encerra implicitamente a pesquisa) ou cancelar a pesquisa. Em ambos os casos, o cofre retorna ao estado anterior ao início da pesquisa.
 
 OBS:
  - Não existe um estado observável de cofre "bloqueado" separado, pois o bloqueio é tratado como um retorno ao fluxo de abrir o cofre novamente, exigindo nova autenticação e recarregando o estado salvo do arquivo, minimizando a retenção de dados sensíveis em memória.
@@ -309,8 +310,8 @@ OBS:
 - **Segredo novo**: segredo criado na sessão atual, confirmado mas não persistido. Ele poderá ser novamente editado em modo padrão ou avançado e continuará sendo considerado novo até o próximo salvamento, inclusive se sofrer novas alterações nesse intervalo.
 - **Segredo em edição:** segredo disponível com alterações locais em andamento; pode ser cancelado (revertido) sem efeito persistente.
 - **Segredo modificado:** segredo previamente persistido que sofreu alteração confirmada e ainda não foi salvo novamente. Novas edições confirmadas preservam esse mesmo estado até o próximo salvamento.
-- **Segredo excluído reversivelmente:** segredo retirado da hierarquia principal e materializado apenas na Lixeira até o próximo salvamento. Enquanto permanecer nesse estado, não pode ser editado.
-- **Segredo restaurado:** segredo anteriormente excluído reversivelmente e reinserido na hierarquia principal antes do próximo salvamento, retornando ao estado `Segredo novo`.
+- **Segredo excluído reversivelmente:** segredo retirado da hierarquia principal e materializado apenas na Lixeira até o próximo salvamento. A aplicação memoriza a pasta de origem e o estado anterior do segredo para possibilitar restauração ao local e estado originais. Enquanto permanecer nesse estado, não pode ser editado.
+- **Segredo restaurado:** segredo anteriormente excluído reversivelmente e reinserido na hierarquia principal antes do próximo salvamento, retornando ao estado que possuía antes da exclusão reversível.
 - **Pasta existente:** pasta presente na hierarquia, passível de renomeação, movimentação e exclusão física com promoção dos filhos.
 - **Pasta ativa:** pasta atualmente selecionada para ações de edição, movimentação e exclusão. Se um segredo estiver ativo, então a pasta que o contém também é considerada implicitamente ativa.
 - **Modelo disponível:** modelo existente e disponível para criação de novos segredos.
@@ -333,12 +334,13 @@ OBS:
   - Usuário informa caminho e senha mestra com confirmação.
   - A aplicação popula a estrutura inicial do cofre com modelos e pastas padrão.
   - Se não existir arquivo no caminho informado, a aplicação grava diretamente o novo cofre no caminho final, usando o formato da versão atual.
-  - Se já existir arquivo no caminho informado, a aplicação exige confirmação explícita de sobrescrita.
-  - Se já existir um backup anterior com extensão `.abditum.bak`, a aplicação o renomeia temporariamente para `.abditum.bak2` antes de gerar o novo backup.
-  - A aplicação gera um novo backup do arquivo existente com extensão `.abditum.bak` e então grava diretamente o novo cofre no caminho final.
-  - Se a operação for concluída com sucesso, a aplicação remove o `.abditum.bak2`, preservando apenas o novo `.abditum.bak`.
-  - Se a operação falhar antes da consolidação final, a aplicação restaura o `.abditum.bak2` para `.abditum.bak` sempre que possível.
-  - Em caso de falha na gravação do novo arquivo após a geração do backup, a aplicação deve exibir uma mensagem de erro informando a falha e que existe um backup disponível para intervenção manual do usuário.
+  - Se já existir arquivo no caminho informado:
+    - A aplicação exige confirmação explícita de sobrescrita.
+    - Se já existir um backup anterior com extensão `.abditum.bak`, a aplicação o renomeia temporariamente para `.abditum.bak2` antes de gerar o novo backup.
+    - A aplicação gera um novo backup do arquivo existente com extensão `.abditum.bak` e então grava diretamente o novo cofre no caminho final.
+    - Se a operação for concluída com sucesso, a aplicação remove o `.abditum.bak2`, preservando apenas o novo `.abditum.bak`.
+    - Se a operação falhar antes da consolidação final, a aplicação restaura o `.abditum.bak2` para `.abditum.bak` sempre que possível.
+    - Em caso de falha na gravação do novo arquivo após a geração do backup, a aplicação deve exibir uma mensagem de erro informando a falha e que existe um backup disponível para intervenção manual do usuário.
   - Esse fluxo não utiliza arquivo `.abditum.tmp`, pois não se trata do salvamento incremental de um cofre já aberto, e sim da criação de um novo arquivo de cofre.
   - O cofre entra em estado `Cofre Salvo`.
 
@@ -378,14 +380,15 @@ OBS:
 **Bloquear acesso ao cofre**
   - O bloqueio pode ser manual ou por inatividade.
   - A aplicação fecha logicamente o cofre, limpa buffers controlados sempre que possível e limpa a área de transferência.
+  - Se o cofre estiver em estado `Cofre Modificado`, as alterações não salvas são descartadas silenciosamente, sem confirmação. Essa é uma decisão de projeto: o bloqueio por inatividade ocorre em sessão desassistida, e o bloqueio manual emergencial (proteção contra shoulder surfing) precisa ser imediato — em ambos os casos, confirmações comprometeriam o propósito do bloqueio.
   - A aplicação volta para o fluxo "Abrir cofre existente", assumindo o mesmo caminho do cofre previamente aberto, mas exigindo nova autenticação para desbloquear.
 
 #### Fluxos complementares do cofre
 
 **Descartar alterações não salvas e recarregar cofre**
-  - O usuário inicia a ação de recarregar o cofre ativo.
-  - Se o cofre estiver em estado `Cofre Salvo`, a aplicação apenas recarrega o arquivo atual em memória.
-  - Se o cofre estiver em estado `Cofre Modificado`, a aplicação exige confirmação para descartar as alterações locais ainda não persistidas.
+  - O usuário inicia a ação de descartar alterações e recarregar o cofre ativo.
+  - Essa ação só está disponível quando o cofre estiver em estado `Cofre Modificado`.
+  - A aplicação exige confirmação para descartar as alterações locais ainda não persistidas.
   - Após a confirmação, a aplicação reabre o arquivo atual, repete validação, descriptografia e eventual migração em memória.
   - Ao final, o cofre retorna ao estado `Cofre Salvo`.
 
@@ -404,10 +407,10 @@ OBS:
 
 **Alterar senha mestra do cofre**
   - O usuário inicia a ação de alteração da senha mestra sobre o cofre ativo.
-  - A aplicação solicita a senha mestra atual, a nova senha e a confirmação da nova senha.
-  - Se a autenticação da senha atual e a confirmação da nova senha forem válidas, a aplicação rederiva a chave e prepara o cofre para ser persistido com a nova credencial.
-  - A alteração da senha mestra não modifica o conteúdo lógico do domínio, mas exige regravação criptográfica completa do arquivo.
-  - Após a confirmação, o cofre entra em estado `Cofre Modificado` até o próximo salvamento bem-sucedido.
+  - A aplicação solicita a nova senha mestra e a confirmação da nova senha.
+  - Se a confirmação da nova senha for válida, a aplicação rederiva a chave com um novo `salt` e prepara o cofre para ser persistido com a nova credencial.
+  - A alteração da senha mestra não modifica o conteúdo lógico do domínio, mas exige regravação criptográfica completa do arquivo com novo `salt`, novo `nonce` e a chave derivada da nova senha mestra.
+  - A partir deste ponto, a aplicação segue o fluxo de **Salvar cofre em estado `Cofre Modificado`**, incluindo gravação atômica, rotação de backup e tratamento de falha.
 
 **Configurar o cofre**
   - O usuário inicia a edição das configurações do cofre ativo.
@@ -417,8 +420,10 @@ OBS:
 
 **Exportar cofre para JSON plain text**
   - O usuário inicia a exportação do cofre ativo para formato JSON plain text.
+  - A exportação serializa o estado atual do domínio em memória, incluindo eventuais alterações não salvas.
+  - Se o cofre estiver em estado `Cofre Modificado`, a aplicação exibe alerta informando que a exportação incluirá alterações ainda não salvas.
   - Antes de exportar, a aplicação mostra aviso explícito sobre o risco de segurança de gerar uma cópia não criptografada e exige confirmação.
-  - Após a confirmação, a aplicação serializa o domínio atual para JSON em texto claro no destino escolhido pelo usuário.
+  - Após a confirmação, a aplicação serializa o domínio para JSON em texto claro no destino escolhido pelo usuário.
   - Esse fluxo não altera o conteúdo lógico do cofre ativo nem seu estado persistido.
 
 **Importar cofre de JSON plain text**
@@ -457,7 +462,7 @@ OBS:
   - Esse fluxo não altera o conteúdo persistido do segredo nem o estado do cofre.
 
 **Criar segredo**
-  - O usuário inicia a criação de um novo segredo na raiz ou dentro de uma pasta.
+  - O usuário inicia a criação de um novo segredo na raiz do cofre ou na pasta ativa.
   - A aplicação oferece a escolha entre usar um modelo de segredo existente ou começar com um segredo vazio, sem nenhuma estrutura inicial.
   - Caso o usuário opte por um modelo de segredo, a estrutura inicial do segredo é gerada a partir do modelo escolhido, copiando os campos como snapshot, sem manter vínculo por referência com o modelo de origem.
   - Caso o usuário opte por começar com um segredo vazio, é gerado um segredo sem campos adicionais além do nome e da observação, e os demais campos poderão ser adicionados posteriormente pela edição avançada.
@@ -467,21 +472,21 @@ OBS:
 
 **Duplicar segredo**
   - O usuário seleciona um segredo existente e inicia a ação de duplicação.
-  - A aplicação cria uma nova instância com nova identidade, copiando nome, observação, favorito e campos do segredo original.
+  - A aplicação cria uma nova instância com nova identidade, copiando nome, nome do modelo de segredo, observação, favorito e campos do segredo original.
     - O nome do segredo duplicado recebe um sufixo numérico incremental para evitar confusão com o segredo original. Ex: "Segredo" → "Segredo (1)", "Segredo (2)", etc.
-  - Após a confirmação, o segredo duplicado assume estado `Novo` e é inserido na mesma coleção do segredo de origem, e o cofre entra em estado `Cofre Modificado`.
+  - Após a confirmação, o segredo duplicado assume estado `Novo` e é inserido logo abaixo do segredo de origem na mesma coleção, e o cofre entra em estado `Cofre Modificado`.
 
 **Favoritar segredo**
   - O usuário seleciona ou visualiza um segredo disponível e não favoritado, e alterna seu marcador de favorito.
   - A aplicação altera apenas o atributo `favorito`, sem modificar identidade, conteúdo ou localização do segredo.
   - A presença do segredo na pasta virtual de Favoritos passa a refletir imediatamente esse estado.
-  - Após a confirmação, o cofre entra em estado `Cofre Modificado`.
+  - O cofre entra em estado `Cofre Modificado`.
 
 **Desfavoritar segredo**
   - O usuário seleciona ou visualiza um segredo disponível e favoritado, e alterna seu marcador de favorito.
   - A aplicação altera apenas o atributo `favorito`, sem modificar identidade, conteúdo ou localização do segredo.
   - A presença do segredo na pasta virtual de Favoritos passa a refletir imediatamente esse estado.
-  - Após a confirmação, o cofre entra em estado `Cofre Modificado`.
+  - O cofre entra em estado `Cofre Modificado`.
 
 **Editar segredo (edição padrão)**
   - O usuário seleciona ou visualiza um segredo existente e inicia a edição.
@@ -508,14 +513,16 @@ OBS:
   - O usuário seleciona ou visualiza um segredo disponível e inicia a ação de remoção.
   - A aplicação exige confirmação, mas a remoção é reversível até o próximo salvamento do cofre.
   - A identidade e o conteúdo do segredo permanecem preservados.
+  - A aplicação memoriza a pasta de origem do segredo (ou a raiz do cofre, caso o segredo estivesse na raiz) e o estado do segredo antes da exclusão, para permitir restauração ao local e estado originais.
   - Enquanto o segredo permanecer na Lixeira, a aplicação não permite edição desse segredo.
   - O cofre entra em estado `Cofre Modificado`, a aplicação retira o segredo da hierarquia principal e o materializa na pasta virtual Lixeira.
 
 **Restaurar segredo excluído reversivelmente**
   - O usuário seleciona um segredo presente na Lixeira e inicia a ação de restauração.
-  - A aplicação reinsere o segredo na hierarquia principal antes do próximo salvamento.
   - A identidade e o conteúdo do segredo são preservados durante a restauração.
-  - Após a restauração, o segredo retorna ao estado `Segredo novo`.
+  - Se a pasta de origem ainda existir na hierarquia, o segredo é reinserido nessa pasta, ao final da lista de segredos.
+  - Se a pasta de origem tiver sido excluída após o soft delete, o segredo é reinserido na raiz do cofre, ao final da lista de segredos, e a aplicação exibe uma mensagem informando que a pasta original não existe mais.
+  - Após a restauração, o segredo retorna ao estado que possuía antes da exclusão reversível.
   - O cofre entra em estado `Cofre Modificado`.
 
 **Mover segredo**
@@ -538,16 +545,16 @@ OBS:
   - A aplicação executa uma varredura sequencial em memória sobre nome do segredo, nome de campo, valores de campos do tipo `texto` e observação.
   - A hierarquia é reapresentada mostrando apenas os segredos que satisfazem o critério de busca, mas mantendo a estrutura de pastas para preservar o contexto de localização dos segredos encontrados.
   - Enquanto a pesquisa estiver ativa, todas as ações ficam indisponíveis exceto: sair da aplicação, navegar pelo cofre e visualizar segredo.
-  - Quando o casamento ocorrer no nome do segredo, o segredo correspondente pode receber destaque visual na árvore.
+  - Quando o casamento ocorrer no nome do segredo, o segredo correspondente recebe destaque visual na árvore.
   - O usuário confirma a pesquisa selecionando o elemento desejado (o que encerra implicitamente a pesquisa) ou cancela a pesquisa. Em ambos os casos, o cofre retorna ao estado anterior ao início da pesquisa.
 
 #### Fluxos principais de pastas
 
 **Criar pasta**
-  - O usuário inicia a criação de uma nova pasta a partir da raiz ou de uma pasta existente.
+  - O usuário inicia a criação de uma nova pasta na raiz do cofre ou na pasta ativa.
   - A aplicação coleta o nome da pasta e determina o destino conforme o contexto atual.
   - Se o destino for a raiz, a nova pasta é adicionada ao final da lista de pastas da raiz.
-  - Se o destino for uma pasta existente, a nova pasta é adicionada ao final da lista de subpastas dessa pasta.
+  - Se o destino for a pasta ativa, a nova pasta é adicionada ao final da lista de subpastas dessa pasta.
   - Após a confirmação, o cofre entra em estado `Cofre Modificado`.
 
 **Renomear pasta**
@@ -728,12 +735,11 @@ A interface é composta por **painéis** (áreas funcionais da tela). A interaç
 
 ## 2. Layout e Responsividade
 - A interface principal é dividida em dois painéis:
-  - **Painel da Hierarquia (Esquerdo):** Dedicado à navegação na hierarquia do cofre.
-  - **Painel do Segredo (Direito):** Dedicado à visualização, criação e edição do segredo selecionado.
-- **Comportamento Responsivo:**
-  - `Menos de 5 linhas` ou `Menos de 20 colunas`: Oculta os painéis e exibe apenas uma mensagem pedindo para redimensionar o terminal.
-  - `Menos de 40 colunas`: Exibe apenas o Painel do Segredo (foco em dispositivos restritos).
-  - `Mais de 40 colunas`: Exibe layout completo com Painel da Hierarquia e Painel do Segredo.
+  - **Painel da Hierarquia:** Dedicado à navegação na hierarquia do cofre.
+  - **Painel do Segredo:** Dedicado à visualização, criação e edição do segredo selecionado.
+- **Tamanho Mínimo do Terminal:**
+  - O tamanho mínimo é determinado pelas dimensões necessárias para exibir a tela inicial com o ASCII art, molduras e demais elementos visuais. O valor exato será definido posteriormente.
+  - Se o terminal estiver abaixo do tamanho mínimo, a aplicação oculta os painéis e exibe apenas uma mensagem pedindo para redimensionar o terminal.
 
 ## 3. Navegação e Hierarquia (Painel da Hierarquia)
 - **Comportamento da Árvore:**
@@ -766,7 +772,7 @@ A interface é composta por **painéis** (áreas funcionais da tela). A interaç
   - **Edição avançada:** permite alterar a estrutura do segredo, incluindo adicionar campos, renomear campos, excluir campos e reordenar campos.
   - A edição avançada não permite alterar o tipo de um campo existente; para isso, o campo deve ser excluído e recriado com o tipo desejado.
   - O usuário pode alternar entre edição padrão e edição avançada durante a edição do mesmo segredo.
-  - Segredos criados a partir de um modelo tendem a iniciar na edição padrão; segredos criados vazios tendem a iniciar na edição avançada.
+  - Segredos criados a partir de um modelo iniciam na edição padrão; segredos criados vazios iniciam na edição avançada.
 - **Gerenciamento de Espaço:**
   - Se um modelo tiver muitos campos, o Painel do Segredo deve permitir scroll vertical.
   - O campo de "Observação" é redimensionável e deve ocupar automaticamente o espaço livre restante no painel.
@@ -795,7 +801,7 @@ A interface é composta por **painéis** (áreas funcionais da tela). A interaç
   - Após o alerta, qualquer atividade válida aborta o bloqueio iminente e reinicia o cronômetro. Se ignorado até o limite configurado, o cofre é bloqueado.
 
 ## 6. Fluxos de Usuário Específicos
-- **Criação/Alteração de Senha Mestra:** Ao definir a senha mestra pela primeira vez, o fluxo exige digitação dupla para prevenir erros. Ao alterar uma senha existente, exige digitar a senha atual antes da confirmação da nova.
+- **Criação/Alteração de Senha Mestra:** Ao definir ou alterar a senha mestra, o fluxo exige digitação dupla da nova senha para prevenir erros. Não é exigida a senha atual, pois o cofre já está desbloqueado e autenticado na sessão.
 
 ## 7. Mapa de Teclas de Comando por Contexto
 
