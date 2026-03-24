@@ -29,8 +29,9 @@ O formato do segredo é flexível e personalizável, permitindo que os usuários
 - Importar cofre de formato JSON plain text, tratando conflitos com elementos já existentes no cofre atual
   - Regras de tratamento de conflito na importação:
     - Pastas com a mesma identidade da pasta já existente no cofre atual têm sua hierarquia mesclada
-    - Segredos com a mesma identidade do segredo já existente no cofre atual não substituem o segredo existente; são importados com um sufixo numérico incremental no nome para evitar sobrescrita. Ex: "Segredo" → "Segredo (1)", "Segredo (2)", etc.
-    - Se houver conflito de segredos durante a importação, a aplicação deve informar que os segredos conflitantes foram importados com nomes sufixados incrementalmente
+    - Se um segredo importado colidir por identidade com um segredo já existente no cofre atual, a aplicação deve criar uma nova identidade para o segredo importado, preservando seus demais dados
+    - Se um segredo importado colidir por nome com outro segredo já existente na mesma pasta de destino (ou na raiz, quando o destino for a raiz), a aplicação deve ajustar seu nome com um sufixo numérico incremental para evitar ambiguidade visual. Ex: "Segredo" → "Segredo (1)", "Segredo (2)", etc.
+    - Se houver conflito de segredos durante a importação, a aplicação deve informar que os segredos conflitantes por nome foram importados com nomes sufixados incrementalmente
     - Se houver conflito de pastas durante a importação, o merge da hierarquia ocorre silenciosamente
     - Modelos de segredo com a mesma identidade de um modelo já existente no cofre atual são sobrepostos pelo modelo importado
     - Se houver conflito de modelos durante a importação, a substituição pelo modelo importado ocorre silenciosamente
@@ -207,7 +208,7 @@ Decisões de modelagem:
 
  - Cofre (Estrutura do Payload JSON Criptografado):
     - configurações:
-      - tempo_bloqueio_inatividade_minutos: inteiro
+      - tempo_bloqueio_inatividade_minutos: inteiro (persistido no cofre; padrão sugerido: 2)
       - tempo_ocultar_segredo_segundos: inteiro (persistido no cofre; padrão sugerido: 15)
       - tempo_limpar_area_transferencia_segundos: inteiro (persistido no cofre; padrão sugerido: 30)
     - segredos: list[Segredo]
@@ -278,7 +279,7 @@ Essa estrutura garante que os metadados necessários para a descriptografia este
 - **Criando novo cofre:** estado transitório em que a aplicação realiza os passos para criar um novo cofre (coleta o caminho do cofre e a senha mestra, verifica se já existe arquivo no destino, solicita confirmação explícita em caso de sobrescrita, popula a estrutura inicial do cofre e grava o novo arquivo). Este estado é necessário devido à necessidade de apresentar um subprocesso interativo para navegar pastas, selecionar arquivo, solicitar senha, validar o destino, tratar eventual sobrescrita e gravar os dados.
 - **Salvando cofre com outro caminho:** estado transitório em que a aplicação realiza os passos para salvar o cofre em um novo caminho (coleta o novo caminho, valida a possibilidade de gravação, trata eventual sobrescrita de arquivo existente, grava o arquivo do cofre no novo caminho e atualiza o caminho atual do cofre).
 - **Cofre ativo:** estado global em que existe um cofre carregado, autenticado e disponível para uso na sessão atual. O cofre ativo sempre assume um dos subestados canônicos `Cofre Salvo` ou `Cofre Modificado`.
-- **Cofre em pesquisa:** estado transitório sobreposto ao `Cofre ativo`, no qual a interface exibe uma busca ativa, mostrando apenas os segredos que correspondem aos critérios informados. Durante a busca, o cofre preserva o subestado canônico corrente (`Cofre Salvo` ou `Cofre Modificado`). O usuário pode retornar à visualização completa da hierarquia a qualquer momento, sem perder o contexto de navegação ou as alterações locais.
+- **Cofre em pesquisa:** estado transitório sobreposto ao `Cofre ativo`, no qual a interface exibe uma busca ativa, mostrando apenas os segredos que correspondem aos critérios informados. Durante a busca, o cofre preserva o subestado canônico corrente (`Cofre Salvo` ou `Cofre Modificado`). Enquanto a pesquisa estiver ativa, todas as ações ficam indisponíveis exceto: sair da aplicação, navegar pelo cofre e visualizar segredo. Para retomar as demais ações, o usuário deve confirmar a pesquisa (selecionando o elemento desejado, o que encerra implicitamente a pesquisa) ou cancelar a pesquisa. Em ambos os casos, o cofre retorna ao estado anterior ao início da pesquisa.
 
 OBS:
  - Não existe um estado observável de cofre "bloqueado" separado, pois o bloqueio é tratado como um retorno ao fluxo de abrir o cofre novamente, exigindo nova autenticação e recarregando o estado salvo do arquivo, minimizando a retenção de dados sensíveis em memória.
@@ -305,11 +306,11 @@ OBS:
 - **Segredo ativo:** segredo atualmente selecionado, passível de ações como edição, movimentação e exclusão, etc. Normalmente, é o segredo que está sendo mostrado no momento.
 - **Segredo favorito:** segredo disponível com marcação adicional de destaque visual e presença na pasta virtual de Favoritos.
 - **Segredo em criação:** segredo ainda não confirmado pelo fluxo de criação; pode ser cancelado (descartado) sem efeito persistente.
-- **Segredo novo**: segredo criado na sessão atual, confirmado mas não persistido. Ele poderá ser novamente editado, mas continuará sendo considerado novo até o próximo salvamento.
+- **Segredo novo**: segredo criado na sessão atual, confirmado mas não persistido. Ele poderá ser novamente editado em modo padrão ou avançado e continuará sendo considerado novo até o próximo salvamento, inclusive se sofrer novas alterações nesse intervalo.
 - **Segredo em edição:** segredo disponível com alterações locais em andamento; pode ser cancelado (revertido) sem efeito persistente.
-- **Segredo modificado:** segredo com alteração, mas ainda não persistidas.
-- **Segredo excluído reversivelmente:** segredo retirado da hierarquia principal e materializado apenas na Lixeira até o próximo salvamento.
-- **Segredo restaurado:** segredo anteriormente excluído reversivelmente e reinserido na hierarquia principal antes do próximo salvamento.
+- **Segredo modificado:** segredo previamente persistido que sofreu alteração confirmada e ainda não foi salvo novamente. Novas edições confirmadas preservam esse mesmo estado até o próximo salvamento.
+- **Segredo excluído reversivelmente:** segredo retirado da hierarquia principal e materializado apenas na Lixeira até o próximo salvamento. Enquanto permanecer nesse estado, não pode ser editado.
+- **Segredo restaurado:** segredo anteriormente excluído reversivelmente e reinserido na hierarquia principal antes do próximo salvamento, retornando ao estado `Segredo novo`.
 - **Pasta existente:** pasta presente na hierarquia, passível de renomeação, movimentação e exclusão física com promoção dos filhos.
 - **Pasta ativa:** pasta atualmente selecionada para ações de edição, movimentação e exclusão. Se um segredo estiver ativo, então a pasta que o contém também é considerada implicitamente ativa.
 - **Modelo disponível:** modelo existente e disponível para criação de novos segredos.
@@ -372,7 +373,7 @@ OBS:
     - No estado `Cofre Salvo`, a aplicação encerra após solicitar confirmação do encerramento.
     - No estado `Cofre Modificado`, a aplicação oferece as opções de salvar, descartar alterações ou cancelar o encerramento, para evitar perda acidental de dados.
       - Em caso de salvar, a aplicação segue o fluxo de salvamento descrito anteriormente e encerra somente após salvamento bem-sucedido.
-    - Em caso de um fluxo de em andamento (ex: criação ou edição de segredo), a aplicação segue a mesma lógica de tratamento.
+    - Em caso de um fluxo em andamento (ex: criação ou edição de segredo), a aplicação segue a mesma lógica de tratamento.
 
 **Bloquear acesso ao cofre**
   - O bloqueio pode ser manual ou por inatividade.
@@ -424,7 +425,8 @@ OBS:
   - O usuário inicia a importação de um arquivo JSON plain text para o cofre ativo.
   - A aplicação lê o conteúdo importado e resolve conflitos por identidade conforme as regras do cofre.
   - Pastas com a mesma identidade são mescladas silenciosamente.
-  - Segredos com a mesma identidade são importados com sufixo numérico incremental no nome, e a aplicação informa esse ajuste ao usuário.
+  - Se um segredo importado colidir por identidade com um segredo já existente, a aplicação cria um novo segredo logicamente equivalente, com identidade diferente e preservando os demais dados importados.
+  - Se um segredo importado colidir por nome com outro segredo já existente na mesma pasta de destino, a aplicação ajusta seu nome com sufixo numérico incremental e informa esse ajuste ao usuário.
   - Modelos com a mesma identidade são sobrepostos silenciosamente pelo modelo importado.
   - Após a confirmação e incorporação dos dados, o cofre entra em estado `Cofre Modificado`.
 
@@ -435,7 +437,7 @@ OBS:
 
 **Visualizar segredo**
   - O usuário navega pela hierarquia do cofre e seleciona um segredo disponível.
-  - A aplicação exibe os detalhes do segredo selecionado no painel principal.
+  - A aplicação exibe os detalhes do segredo selecionado no Painel do Segredo.
   - Campos do tipo `texto sensível` são apresentados ocultos por padrão, exigindo ação explícita para exibição temporária.
   - A visualização do segredo não altera seu conteúdo nem o estado persistido do cofre.
   - O segredo permanece disponível para outras ações, como edição, favoritar, movimentação ou cópia, sem restrições adicionais.
@@ -467,7 +469,7 @@ OBS:
   - O usuário seleciona um segredo existente e inicia a ação de duplicação.
   - A aplicação cria uma nova instância com nova identidade, copiando nome, observação, favorito e campos do segredo original.
     - O nome do segredo duplicado recebe um sufixo numérico incremental para evitar confusão com o segredo original. Ex: "Segredo" → "Segredo (1)", "Segredo (2)", etc.
-  - Após a confirmação,  O segredo duplicado assume estado `Novo` e é inserido na mesma coleção do segredo de origem, e o cofre entra em estado `Cofre Modificado`.
+  - Após a confirmação, o segredo duplicado assume estado `Novo` e é inserido na mesma coleção do segredo de origem, e o cofre entra em estado `Cofre Modificado`.
 
 **Favoritar segredo**
   - O usuário seleciona ou visualiza um segredo disponível e não favoritado, e alterna seu marcador de favorito.
@@ -487,7 +489,9 @@ OBS:
   - A aplicação permite alterar nome, observação e valores dos campos existentes.
   - A identidade do segredo é preservada durante toda a edição.
   - O usuário pode alternar para a edição avançada caso precise alterar a estrutura do segredo.
-  - Após a confirmação, o segredo assume estado `Modificado` e o cofre entra em estado `Cofre Modificado`.
+  - Após a confirmação, o segredo preserva seu estado anterior se já estiver em `Segredo novo` ou `Segredo modificado`.
+  - Após a confirmação, se o segredo estava em `Segredo disponível`, ele passa para `Segredo modificado`.
+  - Após a confirmação, o cofre entra em estado `Cofre Modificado`.
 
 **Editar segredo (edição avançada)**
   - O usuário seleciona ou visualiza um segredo existente e inicia a edição avançada.
@@ -496,18 +500,22 @@ OBS:
   - Não é permitido alterar o tipo de um campo existente. Para isso, é necessário excluir o campo e criar um novo com o tipo desejado.
   - A identidade do segredo é preservada durante toda a edição.
   - O usuário pode alternar para a edição padrão quando quiser voltar a alterar os valores dos campos.
-  - Após a confirmação, o segredo assume estado `Modificado` e o cofre entra em estado `Cofre Modificado`.
+  - Após a confirmação, o segredo preserva seu estado anterior se já estiver em `Segredo novo` ou `Segredo modificado`.
+  - Após a confirmação, se o segredo estava em `Segredo disponível`, ele passa para `Segredo modificado`.
+  - Após a confirmação, o cofre entra em estado `Cofre Modificado`.
 
 **Excluir segredo reversivelmente**
   - O usuário seleciona ou visualiza um segredo disponível e inicia a ação de remoção.
   - A aplicação exige confirmação, mas a remoção é reversível até o próximo salvamento do cofre.
   - A identidade e o conteúdo do segredo permanecem preservados.
+  - Enquanto o segredo permanecer na Lixeira, a aplicação não permite edição desse segredo.
   - O cofre entra em estado `Cofre Modificado`, a aplicação retira o segredo da hierarquia principal e o materializa na pasta virtual Lixeira.
 
 **Restaurar segredo excluído reversivelmente**
   - O usuário seleciona um segredo presente na Lixeira e inicia a ação de restauração.
   - A aplicação reinsere o segredo na hierarquia principal antes do próximo salvamento.
   - A identidade e o conteúdo do segredo são preservados durante a restauração.
+  - Após a restauração, o segredo retorna ao estado `Segredo novo`.
   - O cofre entra em estado `Cofre Modificado`.
 
 **Mover segredo**
@@ -529,10 +537,9 @@ OBS:
   - O usuário inicia o processo de busca.
   - A aplicação executa uma varredura sequencial em memória sobre nome do segredo, nome de campo, valores de campos do tipo `texto` e observação.
   - A hierarquia é reapresentada mostrando apenas os segredos que satisfazem o critério de busca, mas mantendo a estrutura de pastas para preservar o contexto de localização dos segredos encontrados.
-  - Como decisão de UX desta proposta, enquanto a busca estiver ativa a interface entra em um modo de navegação filtrada: o usuário poderá navegar a hierarquia, mas limitado aos resultados da busca.
-  - Como parte dessa mesma decisão de UX, durante a busca ativa a interface restringe ações de edição, movimentação e cópia, permitindo apenas navegação, seleção e encerramento da busca.
+  - Enquanto a pesquisa estiver ativa, todas as ações ficam indisponíveis exceto: sair da aplicação, navegar pelo cofre e visualizar segredo.
   - Quando o casamento ocorrer no nome do segredo, o segredo correspondente pode receber destaque visual na árvore.
-  - O usuário seleciona o segredo desejado ou encerra o processo de busca.
+  - O usuário confirma a pesquisa selecionando o elemento desejado (o que encerra implicitamente a pesquisa) ou cancela a pesquisa. Em ambos os casos, o cofre retorna ao estado anterior ao início da pesquisa.
 
 #### Fluxos principais de pastas
 
@@ -674,14 +681,14 @@ A interface é composta por **painéis** (áreas funcionais da tela). A interaç
 3. **Contexto e ações:** O contexto é determinado pela combinação do painel ativo, do elemento focado e do estado da operação em andamento. As **ações disponíveis** mudam dinamicamente conforme o contexto e são comunicadas pela barra de ajuda e atalhos de teclado — somente ações aplicáveis ao contexto atual ficam visíveis.
 
 **Regras:**
-- Um painel não ativo pode reagir ao contexto do painel ativo. Ex: ao navegar na árvore, o painel de segredos exibe o segredo com foco.
+- Um painel não ativo pode reagir ao contexto do painel ativo. Ex: ao navegar na árvore, o Painel do Segredo exibe o segredo com foco.
 - As ações podem ser:
   - globais (disponíveis em todos os contextos, dependem do estado geral da aplicação). 
   Exemplo: "Salvar cofre" só é aplicável se houver um cofre ativo e alterações não salvas. "Sair" é sempre aplicável.
   - locais (disponíveis apenas no painel ativo). 
   - foco (disponíveis apenas no elemento focado dentro do painel ativo). Exemplo: "Excluir" é aplicável apenas se o elemento focado for um segredo ou pasta.
-  - navegação (setas, tab, etc.) é sempre aplicável, mas o comportamento específico depende do foco e do painel ativo. Exemplo: seta direita expande pasta na árvore, mas não tem efeito no painel de segredos.
-- Uma mesma ação podem ocorrer em paineis ou campos diferentes, se o contexto for adequado. Exemplo: "Favoritar" é aplicável tanto para segredos focados na árvore quanto para o segredo exibido no painel de segredos.
+  - navegação (setas, tab, etc.) é sempre aplicável, mas o comportamento específico depende do foco e do painel ativo. Exemplo: seta direita expande pasta na árvore, mas não tem efeito no Painel do Segredo.
+- Uma mesma ação pode ocorrer em painéis ou campos diferentes, se o contexto for adequado. Exemplo: "Favoritar" é aplicável tanto para segredos focados na árvore quanto para o segredo exibido no Painel do Segredo.
 
 
 ### Diretrizes de Redação de Mensagens
@@ -721,14 +728,14 @@ A interface é composta por **painéis** (áreas funcionais da tela). A interaç
 
 ## 2. Layout e Responsividade
 - A interface principal é dividida em dois painéis:
-  - **Painel Lateral (Esquerdo):** Dedicado à navegação na hierarquia do cofre.
-  - **Painel Principal (Direito):** Dedicado à visualização, criação e edição do segredo selecionado.
+  - **Painel da Hierarquia (Esquerdo):** Dedicado à navegação na hierarquia do cofre.
+  - **Painel do Segredo (Direito):** Dedicado à visualização, criação e edição do segredo selecionado.
 - **Comportamento Responsivo:**
   - `Menos de 5 linhas` ou `Menos de 20 colunas`: Oculta os painéis e exibe apenas uma mensagem pedindo para redimensionar o terminal.
-  - `Menos de 40 colunas`: Exibe apenas o painel principal (foco em dispositivos restritos).
-  - `Mais de 40 colunas`: Exibe layout completo com painel lateral e principal.
+  - `Menos de 40 colunas`: Exibe apenas o Painel do Segredo (foco em dispositivos restritos).
+  - `Mais de 40 colunas`: Exibe layout completo com Painel da Hierarquia e Painel do Segredo.
 
-## 3. Navegação e Hierarquia (Painel Lateral)
+## 3. Navegação e Hierarquia (Painel da Hierarquia)
 - **Comportamento da Árvore:**
   - A ordem de exibição é idêntica à ordem de armazenamento no JSON (mostrando primeiro segredos, depois subpastas).
   - A navegação com setas permite subir/descer na lista. Digitar letras avança o foco para o próximo item correspondente alfabeticamente.
@@ -746,13 +753,12 @@ A interface é composta por **painéis** (áreas funcionais da tela). A interaç
   - **Lixeira (Materialização do Soft Delete):** Como decisão de interface para representar a exclusão reversível de segredos, a aplicação exibirá uma pasta virtual "Lixeira" no final da raiz (apenas se houver segredos excluídos). Ela lista apenas segredos excluídos reversivelmente, permite restauração e é esvaziada irreversivelmente ao salvar o cofre.
 - **Mecanismo de Busca:**
   - Ao buscar, a árvore é filtrada ocultando o que não corresponde.
-  - Como decisão de UX desta proposta, a busca ativa funciona como um modo temporário de navegação filtrada: a interface limita a interação aos resultados encontrados e às ações de navegação, seleção e encerramento da busca.
-  - Essa restrição operacional não é um requisito funcional da busca em si; é uma escolha de interação para simplificar o contexto visual e evitar ações destrutivas ou ambíguas sobre uma visão filtrada da hierarquia.
+  - Enquanto a pesquisa estiver ativa, todas as ações ficam indisponíveis exceto: sair da aplicação, navegar pelo cofre e visualizar segredo. O usuário confirma a pesquisa selecionando o elemento desejado (encerrando-a implicitamente) ou cancela a pesquisa; em ambos os casos, o cofre retorna ao estado anterior ao início da pesquisa.
   - Quando o casamento ocorrer no nome do segredo, o trecho exato pesquisado recebe *highlight* (destaque de cor) dentro do nome do segredo encontrado na árvore.
 
-## 4. Visualização e Edição (Painel Principal)
-- Exibe o detalhe do item focado no Painel Lateral. Se não houver foco, exibe *placeholder* informativo.
-- A navegação com `Tab` alterna o controle entre o Painel Lateral e o Principal.
+## 4. Visualização e Edição (Painel do Segredo)
+- Exibe o detalhe do item focado no Painel da Hierarquia. Se não houver foco, exibe *placeholder* informativo.
+- A navegação com `Tab` alterna o controle entre o Painel da Hierarquia e o Painel do Segredo.
 - **Privacidade Padrão:** Os campos do tipo "senha" (ou texto sensível) são carregados ocultos (ex: `****`), necessitando de ação explícita (toggle) para exibir o valor.
 - **Modos de Edição do Segredo:**
   - A interface separa a edição de segredos em dois modos: edição padrão e edição avançada.
@@ -762,7 +768,7 @@ A interface é composta por **painéis** (áreas funcionais da tela). A interaç
   - O usuário pode alternar entre edição padrão e edição avançada durante a edição do mesmo segredo.
   - Segredos criados a partir de um modelo tendem a iniciar na edição padrão; segredos criados vazios tendem a iniciar na edição avançada.
 - **Gerenciamento de Espaço:**
-  - Se um modelo tiver muitos campos, o painel principal deve permitir scroll vertical.
+  - Se um modelo tiver muitos campos, o Painel do Segredo deve permitir scroll vertical.
   - O campo de "Observação" é redimensionável e deve ocupar automaticamente o espaço livre restante no painel.
 - **Área de Transferência Integrada:**
   - Ao copiar um campo, disparar um *toast* de sucesso.
@@ -782,7 +788,7 @@ A interface é composta por **painéis** (áreas funcionais da tela). A interaç
 - **Sair da Aplicação:**
   - Pode ser disparado a qualquer momento, mas se houver alterações não salvas, a aplicação deve ser retida por um menu perguntando: "Salvar", "Sair sem Salvar (Descartar)" ou "Voltar".
 - **Bloqueio por Inatividade:**
-  - Tempo configurável pelo usuário (padrão 5 min).
+  - Tempo configurável pelo usuário (padrão sugerido: 2 min).
   - O alerta de "Bloqueio Iminente" deve aparecer quando transcorrerem 75% do tempo configurado de inatividade.
   - Contam como atividade: entradas de teclado e cliques de mouse. Movimento de mouse sem clique não conta como atividade.
   - O cronômetro de inatividade deve ser reiniciado ao término de cada ação iniciada pelo usuário, seja ela rápida ou demorada.
@@ -793,7 +799,7 @@ A interface é composta por **painéis** (áreas funcionais da tela). A interaç
 
 ## 7. Mapa de Teclas de Comando por Contexto
 
-Ctrl C não deve interromper abruptamente a aplicação, mas funcionar 
+Ctrl+C não deve interromper abruptamente a aplicação, mas funcionar 
 como um comando convencional.
 
 **Global / Qualquer contexto:**
@@ -803,7 +809,7 @@ como um comando convencional.
     - Confirmar sair sem salvar: Ctrl+D (Descartar)
     - Cancelar ação de sair: Esc (Voltar)
 
-**Foco no Painel Lateral (Hierarquia):**
+**Foco no Painel da Hierarquia:**
   - Setas para cima/baixo: mover foco visual entre linhas.
   - Seta para a Direita:
     - Em pasta colapsada: expandir a pasta.
@@ -815,13 +821,13 @@ como um comando convencional.
   - Digitar texto (a-z): pular foco na árvore em direção ao próximo item alfabético.
   - Enter: 
     - Em pasta: expande/colapsa.
-    - Em segredo: visualiza e move o foco da aplicação para o painel principal.
-  - Ctrl+N: Abrir tela de "Novo Segredo" no painel principal, visando a localização do nó atual.
+    - Em segredo: visualiza e move o foco da aplicação para o Painel do Segredo.
+  - Ctrl+N: Abrir tela de "Novo Segredo" no Painel do Segredo, visando a localização do nó atual.
   - Ctrl+F: Ativar barra de filtragem da árvore.
 
-**Foco no Painel Principal (Exibindo Detalhe do Segredo):**
+**Foco no Painel do Segredo (Exibindo Detalhe do Segredo):**
   - Setas para cima/baixo: mover foco entre os campos preenchidos.
-  - Esc: devolver o foco da interface para o painel lateral (retornar à árvore).
+  - Esc: devolver o foco da interface para o Painel da Hierarquia (retornar à árvore).
 
-**Foco no Painel Principal (Editando um Segredo):**
+**Foco no Painel do Segredo (Editando um Segredo):**
   - *(Área aberta para definição de atalhos de reordenação de campos e submissão de formulário)*
