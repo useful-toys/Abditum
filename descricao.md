@@ -65,7 +65,7 @@ O formato do segredo é flexível e personalizável, permitindo que os usuários
             - Informar o tipo do campo de segredo
         - Alterar um campo de segredo
             - Alterar o nome do campo de segredo
-            - Não suportado: Alterar o tipo do campo de segredo
+          - Não suportado: alterar o tipo do campo de segredo
         - Excluir um campo de segredo
         - Alterar a posição (reordenar) de um campo de segredo 
 - Remover um segredo de forma reversível até o próximo salvamento do cofre
@@ -132,8 +132,11 @@ O formato do segredo é flexível e personalizável, permitindo que os usuários
 - Armazenamento em formato JSON criptografado
 - Compatibilidade com sistemas operacionais Windows, macOS e Linux
 - Formato do arquivo de cofre: extensão .abditum
-- Confiabilidade (Salvamento Atômico): ao salvar, escrever os dados primeiro em um arquivo `.abditum.tmp` no mesmo diretório do cofre. Somente após a gravação bem-sucedida, renomear o arquivo, substituindo o `.abditum` original. Em caso de falha, o arquivo `.tmp` deve ser imediatamente apagado para evitar persistência indevida de dados fora do arquivo final do cofre.
-- Ao salvar, manter uma cópia de backup do cofre anterior com extensão .abditum.bak
+- Confiabilidade (Salvamento Atômico): ao salvar o cofre no caminho atual, escrever os dados primeiro em um arquivo `.abditum.tmp` no mesmo diretório do cofre. Somente após a gravação bem-sucedida, renomear o arquivo, substituindo o `.abditum` original. Em caso de falha, o arquivo `.tmp` deve ser imediatamente apagado para evitar persistência indevida de dados fora do arquivo final do cofre.
+- Ao substituir um arquivo de cofre já existente, manter uma cópia de backup do arquivo anterior com extensão .abditum.bak
+  - Se já existir um arquivo `.abditum.bak`, a aplicação deve renomeá-lo temporariamente para `.abditum.bak2` antes de gerar o novo backup
+  - Se a substituição do arquivo de cofre for concluída com sucesso, o arquivo `.abditum.bak2` deve ser apagado, preservando apenas o novo `.abditum.bak`
+  - Se a operação falhar antes de consolidar o novo backup e o novo arquivo principal, a aplicação deve restaurar o `.abditum.bak2` para `.abditum.bak` sempre que possível
 - Executável "portable"
     - Não requer instalação, pode ser executado diretamente do arquivo binário
     - Permitir copiar o arquivo binário para qualquer local do sistema de arquivos e executá-lo
@@ -256,7 +259,7 @@ Essa estrutura garante que os metadados necessários para a descriptografia este
 
 ### Invariantes de estado
 
-- Só pode existir um cofre aberto por vez.
+- Só pode existir um cofre ativo por vez.
 - Um segredo não pode estar simultaneamente na hierarquia principal e na Lixeira.
 - Um segredo só pode estar na raiz ou em uma pasta, nunca em ambos, nem em duas pastas ao mesmo tempo.
 - Uma pasta só pode estar na raiz ou dentro de outra pasta, nunca em ambos, nem em duas pastas ao mesmo tempo.
@@ -270,27 +273,26 @@ Essa estrutura garante que os metadados necessários para a descriptografia este
 
 #### Estados globais da aplicação
 
-- **Inicial / sem cofre aberto:** a aplicação está em execução, mas não há cofre carregado em memória. As ações disponíveis se limitam a criar cofre, abrir cofre, acessar ajuda e sair.
-- **Abrindo cofre:** estado transitório em que a aplicação realiza os passos para abri o cofre (coleta o caminho do cofre e a senha mestra, valida o arquivo, deriva a chave, descriptografa o payload e carrega o domínio em memória). Este estado é necessário devido a necessidade de apresentar uma subprocesso interativo para navegar pastas, selecionar arquivo, solicitar senha, validar o arquivo, validar criptografia e carregar os dados). 
-- **Criando novo cofre:** estado transitório em que a aplicação realiza os passos para criar um novo cofre (coleta o caminho do cofre e a senha mestra, valida a inexistência de um arquivo de cofre no caminho informado, popula a estrutura inicial do cofre e grava o arquivo do cofre). Este estado é necessário devido a necessidade de apresentar uma subprocesso interativo para navegar pastas, selecionar arquivo, solicitar senha, validar inexistência de arquivo, criar estrutura inicial e gravar os dados).
-- **Salvando cofre com outro caminho:" estado transitório em que a aplicação realiza os passos para salvar o cofre em um novo caminho (coleta o novo caminho, valida a possibilidade de gravação, grava o arquivo do cofre no novo caminho e atualiza o caminho atual do cofre). 
-- **Cofre Salvo:** o cofre está carregado, autenticado e navegável; não existem modificações locais desde o último salvamento ou recarregamento.
-- **Cofre Modificado:** o cofre está carregado e navegável, mas há mudanças locais ainda não persistidas; sair, recarregar, bloquear ou abrir outro cofre exige tratamento explícito dessas alterações.
-- **Cofre em pesquisa:** estado transitório sobreposto a `Cofre Salvo` ou `Cofre Modificado`, no qual a interface exibe uma busca ativa, mostrando apenas os segredos que correspondem aos critérios informados. O usuário pode retornar à visualização completa da hierarquia a qualquer momento, sem perder o contexto de navegação ou as alterações locais.
+- **Inicial / sem cofre ativo:** a aplicação está em execução, mas ainda não há um cofre ativo. As ações disponíveis se limitam a criar cofre, abrir cofre, acessar ajuda e sair.
+- **Abrindo cofre:** estado transitório em que a aplicação realiza os passos para abrir o cofre (coleta o caminho do cofre e a senha mestra, valida o arquivo, deriva a chave, descriptografa o payload e carrega o domínio em memória). Este estado é necessário devido à necessidade de apresentar um subprocesso interativo para navegar pastas, selecionar arquivo, solicitar senha, validar o arquivo, validar a criptografia e carregar os dados.
+- **Criando novo cofre:** estado transitório em que a aplicação realiza os passos para criar um novo cofre (coleta o caminho do cofre e a senha mestra, verifica se já existe arquivo no destino, solicita confirmação explícita em caso de sobrescrita, popula a estrutura inicial do cofre e grava o novo arquivo). Este estado é necessário devido à necessidade de apresentar um subprocesso interativo para navegar pastas, selecionar arquivo, solicitar senha, validar o destino, tratar eventual sobrescrita e gravar os dados.
+- **Salvando cofre com outro caminho:** estado transitório em que a aplicação realiza os passos para salvar o cofre em um novo caminho (coleta o novo caminho, valida a possibilidade de gravação, trata eventual sobrescrita de arquivo existente, grava o arquivo do cofre no novo caminho e atualiza o caminho atual do cofre).
+- **Cofre ativo:** estado global em que existe um cofre carregado, autenticado e disponível para uso na sessão atual. O cofre ativo sempre assume um dos subestados canônicos `Cofre Salvo` ou `Cofre Modificado`.
+- **Cofre em pesquisa:** estado transitório sobreposto ao `Cofre ativo`, no qual a interface exibe uma busca ativa, mostrando apenas os segredos que correspondem aos critérios informados. Durante a busca, o cofre preserva o subestado canônico corrente (`Cofre Salvo` ou `Cofre Modificado`). O usuário pode retornar à visualização completa da hierarquia a qualquer momento, sem perder o contexto de navegação ou as alterações locais.
 
 OBS:
  - Não existe um estado observável de cofre "bloqueado" separado, pois o bloqueio é tratado como um retorno ao fluxo de abrir o cofre novamente, exigindo nova autenticação e recarregando o estado salvo do arquivo, minimizando a retenção de dados sensíveis em memória.
- - Os estados "Abrindo cofre", "Criando novo cofre" e "Salvando cofre com outro caminho" são transitórios pois exigem um tratamento especial para garantir usabilidade adequada para selecionar caminho, nome de arquivo e senha meste, com uma UX devidamente projetada para cada um desses fluxos.
+ - Os estados "Abrindo cofre", "Criando novo cofre" e "Salvando cofre com outro caminho" são transitórios, pois exigem um tratamento especial para garantir usabilidade adequada na seleção de caminho, nome de arquivo e senha mestra, com uma UX devidamente projetada para cada um desses fluxos.
 
 Temporariamente, durante os estados anteriores, a aplicação pode assumir um estado transitório, retornando ao último estado válido:
     - **Operação modal / confirmação bloqueante:** estado transitório sobreposto ao estado principal, usado para confirmações críticas, seleção de arquivos, formulários e ações destrutivas.
     - Apresentar tela de ajuda e comandos
     
-#### Estados principais do cofre em memória
+#### Subestados do cofre ativo em memória
 
-Os estados canônicos do cofre em memória são:
+O cofre ativo possui dois subestados canônicos em memória:
 
-- **Cofre Salvo:** cofre sincronizado com o arquivo atualmente aberto.
+- **Cofre Salvo:** cofre sincronizado com o arquivo corrente.
 - **Cofre Modificado:** cofre com divergência entre o estado em memória e o último estado salvo.
 
 OBS: 
@@ -324,13 +326,19 @@ OBS:
 **Abrir aplicação**
   - Ao iniciar, a aplicação mostra uma tela de welcome com ASCII art de apresentação do Abditum.
   - A tela inicial oferece as ações de criar cofre, abrir cofre, acessar ajuda e sair.
-  - A partir dessa tela, a aplicação permanece no estado `Inicial / sem cofre aberto` até o usuário escolher a próxima ação.
+  - A partir dessa tela, a aplicação permanece no estado `Inicial / sem cofre ativo` até o usuário escolher a próxima ação.
 
 **Criar novo cofre**
   - Usuário informa caminho e senha mestra com confirmação.
-  - A aplicação confirma que não existe um arquivo de cofre no caminho informado para evitar sobrescrita acidental.
   - A aplicação popula a estrutura inicial do cofre com modelos e pastas padrão.
-  - A aplicação grava imediatamente o arquivo do cofre no caminho informado, usando o formato da versão atual, para garantir que o cofre criado seja persistido desde o início e possa ser recuperado mesmo em caso de falha subsequente.
+  - Se não existir arquivo no caminho informado, a aplicação grava diretamente o novo cofre no caminho final, usando o formato da versão atual.
+  - Se já existir arquivo no caminho informado, a aplicação exige confirmação explícita de sobrescrita.
+  - Se já existir um backup anterior com extensão `.abditum.bak`, a aplicação o renomeia temporariamente para `.abditum.bak2` antes de gerar o novo backup.
+  - A aplicação gera um novo backup do arquivo existente com extensão `.abditum.bak` e então grava diretamente o novo cofre no caminho final.
+  - Se a operação for concluída com sucesso, a aplicação remove o `.abditum.bak2`, preservando apenas o novo `.abditum.bak`.
+  - Se a operação falhar antes da consolidação final, a aplicação restaura o `.abditum.bak2` para `.abditum.bak` sempre que possível.
+  - Em caso de falha na gravação do novo arquivo após a geração do backup, a aplicação deve exibir uma mensagem de erro informando a falha e que existe um backup disponível para intervenção manual do usuário.
+  - Esse fluxo não utiliza arquivo `.abditum.tmp`, pois não se trata do salvamento incremental de um cofre já aberto, e sim da criação de um novo arquivo de cofre.
   - O cofre entra em estado `Cofre Salvo`.
 
 **Abrir cofre existente**
@@ -343,25 +351,30 @@ OBS:
   - O cofre entra em estado `Cofre Salvo`.
 
 **Visualizar hierarquia do cofre**
-  - O usuário navega pela árvore de pastas e segredos do cofre desbloqueado.
+  - O usuário navega pela árvore de pastas e segredos do cofre ativo.
   - A aplicação apresenta a hierarquia conforme a ordem persistida no JSON, mostrando primeiro segredos e depois subpastas em cada coleção.
   - O usuário pode expandir, colapsar e mover o foco entre os nós, preservando o contexto estrutural do cofre.
   - Esse fluxo não altera o conteúdo persistido do cofre nem o estado do domínio.
   
 **Salvar cofre em estado `Cofre Modificado`**
-  - A aplicação grava o cofre num caminho com sufixo ".abditum.tmp", usando o formato da versão atual, e atualiza a `versão_formato` do cabeçalho quando necessário, com nouce diferente.
-  - Copia o arquivo atual do cofre para um backup com extensão ".abditum.bak". Depois renomeia o arquivo ".abditum.tmp" para o nome final do cofre, substituindo o arquivo original.
+  - A aplicação grava o cofre num caminho com sufixo ".abditum.tmp", usando o formato da versão atual, e atualiza a `versão_formato` do cabeçalho quando necessário, com `nonce` diferente.
+  - Se já existir um backup anterior com extensão `.abditum.bak`, a aplicação o renomeia temporariamente para `.abditum.bak2` antes de gerar o novo backup.
+  - Copia o arquivo atual do cofre para um novo backup com extensão `.abditum.bak`.
+  - Depois renomeia o arquivo `.abditum.tmp` para o nome final do cofre, substituindo o arquivo original.
+  - Se a operação for concluída com sucesso, a aplicação remove o `.abditum.bak2`, preservando apenas o novo `.abditum.bak`.
+  - Se a operação falhar antes da consolidação final, a aplicação restaura o `.abditum.bak2` para `.abditum.bak` sempre que possível.
+  - Em caso de falha na escrita ou substituição do arquivo final após a geração do backup, a aplicação deve exibir uma mensagem de erro informando a falha e que existe um backup disponível para intervenção manual do usuário.
   - O cofre entra em estado `Cofre Salvo`.
 
 **Sair da aplicação**
   - O usuário pode encerrar a aplicação a qualquer momento.
-    - No estado `Inicial / sem cofre aberto`, a aplicação encerra após solicitar confirmação do encerramento.
+    - No estado `Inicial / sem cofre ativo`, a aplicação encerra após solicitar confirmação do encerramento.
     - No estado `Cofre Salvo`, a aplicação encerra após solicitar confirmação do encerramento.
     - No estado `Cofre Modificado`, a aplicação oferece as opções de salvar, descartar alterações ou cancelar o encerramento, para evitar perda acidental de dados.
       - Em caso de salvar, a aplicação segue o fluxo de salvamento descrito anteriormente e encerra somente após salvamento bem-sucedido.
     - Em caso de um fluxo de em andamento (ex: criação ou edição de segredo), a aplicação segue a mesma lógica de tratamento.
 
-**Bloquear cofre desbloqueado**
+**Bloquear acesso ao cofre**
   - O bloqueio pode ser manual ou por inatividade.
   - A aplicação fecha logicamente o cofre, limpa buffers controlados sempre que possível e limpa a área de transferência.
   - A aplicação volta para o fluxo "Abrir cofre existente", assumindo o mesmo caminho do cofre previamente aberto, mas exigindo nova autenticação para desbloquear.
@@ -369,7 +382,7 @@ OBS:
 #### Fluxos complementares do cofre
 
 **Descartar alterações não salvas e recarregar cofre**
-  - O usuário inicia a ação de recarregar o cofre atualmente aberto.
+  - O usuário inicia a ação de recarregar o cofre ativo.
   - Se o cofre estiver em estado `Cofre Salvo`, a aplicação apenas recarrega o arquivo atual em memória.
   - Se o cofre estiver em estado `Cofre Modificado`, a aplicação exige confirmação para descartar as alterações locais ainda não persistidas.
   - Após a confirmação, a aplicação reabre o arquivo atual, repete validação, descriptografia e eventual migração em memória.
@@ -378,31 +391,37 @@ OBS:
 **Salvar cofre em novo caminho**
   - O usuário inicia a ação de salvar o cofre em um novo caminho.
   - A aplicação coleta o novo caminho de destino e valida a possibilidade de gravação nesse local.
-  - A aplicação grava o cofre no novo caminho usando o formato da versão atual e o mesmo processo seguro de escrita temporária e substituição atômica.
-  - Se já houver arquivo no destino, a aplicação exige confirmação de sobrescrita antes de prosseguir.
+  - Se não houver arquivo no destino, a aplicação grava o cofre diretamente no novo caminho, usando o formato da versão atual.
+  - Se já houver arquivo no destino, a aplicação exige confirmação de sobrescrita.
+  - Se já existir um backup anterior com extensão `.abditum.bak` no destino, a aplicação o renomeia temporariamente para `.abditum.bak2` antes de gerar o novo backup.
+  - A aplicação gera um novo backup do arquivo existente com extensão `.abditum.bak` e então grava o cofre diretamente no caminho final.
+  - Se a operação for concluída com sucesso, a aplicação remove o `.abditum.bak2`, preservando apenas o novo `.abditum.bak`.
+  - Se a operação falhar antes da consolidação final, a aplicação restaura o `.abditum.bak2` para `.abditum.bak` sempre que possível.
+  - Em caso de falha na gravação do novo arquivo após a geração do backup, a aplicação deve exibir uma mensagem de erro informando a falha e que existe um backup disponível para intervenção manual do usuário.
+  - Esse fluxo não utiliza arquivo `.abditum.tmp`, pois não se trata do salvamento incremental sobre o caminho atual do cofre já aberto.
   - Após o salvamento bem-sucedido, o novo caminho passa a ser o caminho atual do cofre e o estado retorna para `Cofre Salvo`.
 
 **Alterar senha mestra do cofre**
-  - O usuário inicia a ação de alteração da senha mestra com o cofre desbloqueado.
+  - O usuário inicia a ação de alteração da senha mestra sobre o cofre ativo.
   - A aplicação solicita a senha mestra atual, a nova senha e a confirmação da nova senha.
   - Se a autenticação da senha atual e a confirmação da nova senha forem válidas, a aplicação rederiva a chave e prepara o cofre para ser persistido com a nova credencial.
   - A alteração da senha mestra não modifica o conteúdo lógico do domínio, mas exige regravação criptográfica completa do arquivo.
   - Após a confirmação, o cofre entra em estado `Cofre Modificado` até o próximo salvamento bem-sucedido.
 
 **Configurar o cofre**
-  - O usuário inicia a edição das configurações do cofre atualmente aberto.
+  - O usuário inicia a edição das configurações do cofre ativo.
   - A aplicação permite alterar o tempo de bloqueio automático por inatividade, o tempo de reocultação de campos sensíveis e o tempo de limpeza automática da área de transferência.
   - As alterações passam a valer para o comportamento da sessão corrente conforme aplicável e permanecem associadas ao próprio cofre.
   - Após a confirmação, o cofre entra em estado `Cofre Modificado`.
 
 **Exportar cofre para JSON plain text**
-  - O usuário inicia a exportação do cofre atualmente aberto para formato JSON plain text.
+  - O usuário inicia a exportação do cofre ativo para formato JSON plain text.
   - Antes de exportar, a aplicação mostra aviso explícito sobre o risco de segurança de gerar uma cópia não criptografada e exige confirmação.
   - Após a confirmação, a aplicação serializa o domínio atual para JSON em texto claro no destino escolhido pelo usuário.
-  - Esse fluxo não altera o conteúdo lógico do cofre aberto nem seu estado persistido.
+  - Esse fluxo não altera o conteúdo lógico do cofre ativo nem seu estado persistido.
 
 **Importar cofre de JSON plain text**
-  - O usuário inicia a importação de um arquivo JSON plain text para o cofre atualmente aberto.
+  - O usuário inicia a importação de um arquivo JSON plain text para o cofre ativo.
   - A aplicação lê o conteúdo importado e resolve conflitos por identidade conforme as regras do cofre.
   - Pastas com a mesma identidade são mescladas silenciosamente.
   - Segredos com a mesma identidade são importados com sufixo numérico incremental no nome, e a aplicação informa esse ajuste ao usuário.
@@ -439,7 +458,7 @@ OBS:
   - O usuário inicia a criação de um novo segredo na raiz ou dentro de uma pasta.
   - A aplicação oferece a escolha entre usar um modelo de segredo existente ou começar com um segredo vazio, sem nenhuma estrutura inicial.
   - Caso o usuário opte por um modelo de segredo, a estrutura inicial do segredo é gerada a partir do modelo escolhido, copiando os campos como snapshot, sem manter vínculo por referência com o modelo de origem.
-  - Caso o usuário opte por começar com um segredo vazio, é gerado um segredo com nenhum campo (além do nome e observação, que já são campos inerentes do segredo)e os campos poderão ser adicionados posteriormente pela edição avançada.
+  - Caso o usuário opte por começar com um segredo vazio, é gerado um segredo sem campos adicionais além do nome e da observação, e os demais campos poderão ser adicionados posteriormente pela edição avançada.
   - Após a confirmação, o novo segredo assume estado `Novo` e é inserido no destino selecionado, e o cofre entra em estado `Cofre Modificado`.
   - Caso o usuário tenha optado por um modelo de segredo, então a aplicação passa para o fluxo de edição padrão.
   - Caso o usuário tenha optado por um segredo vazio, então a aplicação passa para o fluxo de edição avançada, para que o usuário possa adicionar os campos desejados.
@@ -510,8 +529,8 @@ OBS:
   - O usuário inicia o processo de busca.
   - A aplicação executa uma varredura sequencial em memória sobre nome do segredo, nome de campo, valores de campos do tipo `texto` e observação.
   - A hierarquia é reapresentada mostrando apenas os segredos que satisfazem o critério de busca, mas mantendo a estrutura de pastas para preservar o contexto de localização dos segredos encontrados.
-  - Enquanto a busca estiver em andamento, o usuário poderá navegar a hierarquia, mas limitado aos resultados da busca.
-  - MAs não poderá realziar ações de edição, movimentação ou cópia. Apenas navegação.
+  - Como decisão de UX desta proposta, enquanto a busca estiver ativa a interface entra em um modo de navegação filtrada: o usuário poderá navegar a hierarquia, mas limitado aos resultados da busca.
+  - Como parte dessa mesma decisão de UX, durante a busca ativa a interface restringe ações de edição, movimentação e cópia, permitindo apenas navegação, seleção e encerramento da busca.
   - Quando o casamento ocorrer no nome do segredo, o segredo correspondente pode receber destaque visual na árvore.
   - O usuário seleciona o segredo desejado ou encerra o processo de busca.
 
@@ -615,7 +634,7 @@ OBS:
  - O salvamento sempre escreve o arquivo no formato mais recente da aplicação, atualizando a `versão_formato` do cabeçalho quando necessário
  - Mudanças de formato devem ser raras, pontuais e acompanhadas por rotinas explícitas de migração e testes de regressão para versões anteriores suportadas
  - Arquivos com `versão_formato` superior à versão suportada pela aplicação devem falhar com erro claro de incompatibilidade de versão
-- Encoding do arquivo criptografado — UTF-8 explícito para suporte a caracteres especiais em nomes e valores
+- Codificação do arquivo criptografado — UTF-8 explícito para suporte a caracteres especiais em nomes e valores
 - Portabilidade Extrema: Modelos de segredo e configurações da aplicação (ex: tempo de bloqueio) são armazenados internamente no próprio arquivo do cofre. Essa decisão arquitetural garante que cada arquivo seja 100% autossuficiente e portátil, dispensando o uso de arquivos de configuração externos no sistema operacional.
 
 ## Estratégia de Implementação
@@ -658,7 +677,7 @@ A interface é composta por **painéis** (áreas funcionais da tela). A interaç
 - Um painel não ativo pode reagir ao contexto do painel ativo. Ex: ao navegar na árvore, o painel de segredos exibe o segredo com foco.
 - As ações podem ser:
   - globais (disponíveis em todos os contextos, dependem do estado geral da aplicação). 
-  Exemplo: "Salvar cofre" só é aplicável se houver um cofre aberto e alterações não salvas. "Sair" é sempre aplicável.
+  Exemplo: "Salvar cofre" só é aplicável se houver um cofre ativo e alterações não salvas. "Sair" é sempre aplicável.
   - locais (disponíveis apenas no painel ativo). 
   - foco (disponíveis apenas no elemento focado dentro do painel ativo). Exemplo: "Excluir" é aplicável apenas se o elemento focado for um segredo ou pasta.
   - navegação (setas, tab, etc.) é sempre aplicável, mas o comportamento específico depende do foco e do painel ativo. Exemplo: seta direita expande pasta na árvore, mas não tem efeito no painel de segredos.
@@ -690,6 +709,7 @@ A interface é composta por **painéis** (áreas funcionais da tela). A interaç
 - **Erro** (não bloqueante, auto-oculta com tempo estendido):
   - Descrever o que falhou e, se possível, sugerir correção. Evitar jargões técnicos.
   - Ex: "Não foi possível salvar: caminho de arquivo inválido."
+  - Em falhas de escrita após a geração de backup, informar explicitamente que existe um arquivo de backup disponível para intervenção manual do usuário.
 - **Alerta/Aviso** (não bloqueante, auto-oculta com tempo estendido):
   - Descrever a situação e recomendar ação, sem alarmismo.
   - Ex: "O cofre será bloqueado em 30 segundos por inatividade."
@@ -726,6 +746,8 @@ A interface é composta por **painéis** (áreas funcionais da tela). A interaç
   - **Lixeira (Materialização do Soft Delete):** Como decisão de interface para representar a exclusão reversível de segredos, a aplicação exibirá uma pasta virtual "Lixeira" no final da raiz (apenas se houver segredos excluídos). Ela lista apenas segredos excluídos reversivelmente, permite restauração e é esvaziada irreversivelmente ao salvar o cofre.
 - **Mecanismo de Busca:**
   - Ao buscar, a árvore é filtrada ocultando o que não corresponde.
+  - Como decisão de UX desta proposta, a busca ativa funciona como um modo temporário de navegação filtrada: a interface limita a interação aos resultados encontrados e às ações de navegação, seleção e encerramento da busca.
+  - Essa restrição operacional não é um requisito funcional da busca em si; é uma escolha de interação para simplificar o contexto visual e evitar ações destrutivas ou ambíguas sobre uma visão filtrada da hierarquia.
   - Quando o casamento ocorrer no nome do segredo, o trecho exato pesquisado recebe *highlight* (destaque de cor) dentro do nome do segredo encontrado na árvore.
 
 ## 4. Visualização e Edição (Painel Principal)
@@ -754,7 +776,9 @@ A interface é composta por **painéis** (áreas funcionais da tela). A interaç
 - **Soft Delete vs Hard Delete:** Ao excluir um segredo, exibir um aviso discreto de que ele foi movido para a Lixeira.
 - **Proteção de Arquivos:** 
   - Alertar imediatamente se o arquivo do cofre for bloqueado por outro processo (Lock File).
-  - Ao salvar sobre um cofre existente (Salvar Como / Criar Novo), confirmar sobrescrita e garantir a geração de um arquivo `.bak`.
+  - Ao criar novo cofre, salvar no caminho atual ou usar Salvar Como sobre um arquivo existente, gerar um novo `.bak` antes da substituição.
+  - Se já existir um `.bak` anterior, renomeá-lo temporariamente para `.bak2` durante a operação e removê-lo ao final em caso de sucesso, preservando apenas o backup mais recente.
+  - Se a escrita do novo arquivo falhar depois da geração do backup, exibir erro explícito informando a falha e a existência do backup para intervenção manual do usuário.
 - **Sair da Aplicação:**
   - Pode ser disparado a qualquer momento, mas se houver alterações não salvas, a aplicação deve ser retida por um menu perguntando: "Salvar", "Sair sem Salvar (Descartar)" ou "Voltar".
 - **Bloqueio por Inatividade:**
