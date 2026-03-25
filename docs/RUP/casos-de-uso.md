@@ -21,40 +21,40 @@
 
 | ID     | Caso de Uso                                | Categoria               |
 |--------|--------------------------------------------|--------------------------|
-| UC-01  | Criar novo cofre                           | Ciclo de vida do cofre   |
-| UC-02  | Abrir cofre existente                      | Ciclo de vida do cofre   |
-| UC-03  | Salvar cofre                               | Ciclo de vida do cofre   |
-| UC-04  | Salvar cofre em novo caminho               | Ciclo de vida do cofre   |
-| UC-05  | Descartar alterações e recarregar cofre    | Ciclo de vida do cofre   |
-| UC-06  | Alterar senha mestra                       | Ciclo de vida do cofre   |
-| UC-07  | Bloquear cofre                             | Ciclo de vida do cofre   |
-| UC-08  | Configurar o cofre                         | Ciclo de vida do cofre   |
-| UC-09  | Exportar cofre                             | Ciclo de vida do cofre   |
-| UC-10  | Importar cofre                             | Ciclo de vida do cofre   |
-| UC-11  | Sair da aplicação                          | Ciclo de vida do cofre   |
-| UC-12  | Navegar hierarquia do cofre                | Navegação                |
-| UC-13  | Visualizar segredo                         | Navegação                |
-| UC-14  | Visualizar/ocultar campo sensível          | Navegação                |
-| UC-15  | Buscar segredos                            | Navegação                |
-| UC-16  | Criar segredo                              | Gerenciamento de segredos|
-| UC-17  | Duplicar segredo                           | Gerenciamento de segredos|
-| UC-18  | Editar segredo (edição padrão)             | Gerenciamento de segredos|
-| UC-19  | Editar segredo (edição avançada)           | Gerenciamento de segredos|
-| UC-20  | Favoritar/desfavoritar segredo             | Gerenciamento de segredos|
-| UC-21  | Excluir segredo reversivelmente            | Gerenciamento de segredos|
-| UC-22  | Restaurar segredo da Lixeira               | Gerenciamento de segredos|
-| UC-23  | Mover segredo                              | Gerenciamento de segredos|
-| UC-24  | Reordenar segredo                          | Gerenciamento de segredos|
-| UC-25  | Copiar campo de segredo                    | Área de transferência    |
-| UC-26  | Criar pasta                                | Hierarquia               |
-| UC-27  | Renomear pasta                             | Hierarquia               |
-| UC-28  | Mover pasta                                | Hierarquia               |
-| UC-29  | Reordenar pasta                            | Hierarquia               |
-| UC-30  | Excluir pasta                              | Hierarquia               |
-| UC-31  | Criar modelo de segredo                    | Modelos de segredo       |
-| UC-32  | Editar modelo de segredo                   | Modelos de segredo       |
-| UC-33  | Remover modelo de segredo                  | Modelos de segredo       |
-| UC-34  | Criar modelo a partir de segredo existente | Modelos de segredo       |
+| [UC-01](#uc-01)  | Criar novo cofre                           | Ciclo de vida do cofre   |
+| [UC-02](#uc-02)  | Abrir cofre existente                      | Ciclo de vida do cofre   |
+| [UC-03](#uc-03)  | Salvar cofre                               | Ciclo de vida do cofre   |
+| [UC-04](#uc-04)  | Salvar cofre em novo caminho               | Ciclo de vida do cofre   |
+| [UC-05](#uc-05)  | Descartar alterações e recarregar cofre    | Ciclo de vida do cofre   |
+| [UC-06](#uc-06)  | Alterar senha mestra                       | Ciclo de vida do cofre   |
+| [UC-07](#uc-07)  | Bloquear cofre                             | Ciclo de vida do cofre   |
+| [UC-08](#uc-08)  | Configurar o cofre                         | Ciclo de vida do cofre   |
+| [UC-09](#uc-09)  | Exportar cofre                             | Ciclo de vida do cofre   |
+| [UC-10](#uc-10)  | Importar cofre                             | Ciclo de vida do cofre   |
+| [UC-11](#uc-11)  | Sair da aplicação                          | Ciclo de vida do cofre   |
+| [UC-12](#uc-12)  | Navegar hierarquia do cofre                | Navegação                |
+| [UC-13](#uc-13)  | Visualizar segredo                         | Navegação                |
+| [UC-14](#uc-14)  | Visualizar/ocultar campo sensível          | Navegação                |
+| [UC-15](#uc-15)  | Buscar segredos                            | Navegação                |
+| [UC-16](#uc-16)  | Criar segredo                              | Gerenciamento de segredos|
+| [UC-17](#uc-17)  | Duplicar segredo                           | Gerenciamento de segredos|
+| [UC-18](#uc-18)  | Editar segredo (edição padrão)             | Gerenciamento de segredos|
+| [UC-19](#uc-19)  | Editar segredo (edição avançada)           | Gerenciamento de segredos|
+| [UC-20](#uc-20)  | Favoritar/desfavoritar segredo             | Gerenciamento de segredos|
+| [UC-21](#uc-21)  | Excluir segredo reversivelmente            | Gerenciamento de segredos|
+| [UC-22](#uc-22)  | Restaurar segredo da Lixeira               | Gerenciamento de segredos|
+| [UC-23](#uc-23)  | Mover segredo                              | Gerenciamento de segredos|
+| [UC-24](#uc-24)  | Reordenar segredo                          | Gerenciamento de segredos|
+| [UC-25](#uc-25)  | Copiar campo de segredo                    | Área de transferência    |
+| [UC-26](#uc-26)  | Criar pasta                                | Hierarquia               |
+| [UC-27](#uc-27)  | Renomear pasta                             | Hierarquia               |
+| [UC-28](#uc-28)  | Mover pasta                                | Hierarquia               |
+| [UC-29](#uc-29)  | Reordenar pasta                            | Hierarquia               |
+| [UC-30](#uc-30)  | Excluir pasta                              | Hierarquia               |
+| [UC-31](#uc-31)  | Criar modelo de segredo                    | Modelos de segredo       |
+| [UC-32](#uc-32)  | Editar modelo de segredo                   | Modelos de segredo       |
+| [UC-33](#uc-33)  | Remover modelo de segredo                  | Modelos de segredo       |
+| [UC-34](#uc-34)  | Criar modelo a partir de segredo existente | Modelos de segredo       |
 
 ---
 
@@ -62,7 +62,7 @@
 
 ---
 
-### UC-01: Criar novo cofre
+### <a id="uc-01"></a>UC-01: Criar novo cofre
 
 **Ator:** Usuário
 
@@ -100,11 +100,11 @@
 **Pós-condições:**
 - O cofre está ativo no estado Cofre Salvo, com estrutura inicial (pastas e modelos pré-definidos).
 
-**Regras de Negócio:** RN-01, RN-22, RN-27
+**Regras de Negócio:** [RN-01](regras-negocio.md#rn-01), [RN-02](regras-negocio.md#rn-02), [RN-03](regras-negocio.md#rn-03), [RN-04](regras-negocio.md#rn-04)
 
 ---
 
-### UC-02: Abrir cofre existente
+### <a id="uc-02"></a>UC-02: Abrir cofre existente
 
 **Ator:** Usuário
 
@@ -138,11 +138,11 @@
 **Pós-condições:**
 - O cofre está ativo no estado Cofre Salvo.
 
-**Regras de Negócio:** RN-01
+**Regras de Negócio:** [RN-01](regras-negocio.md#rn-01)
 
 ---
 
-### UC-03: Salvar cofre
+### <a id="uc-03"></a>UC-03: Salvar cofre
 
 **Ator:** Usuário
 
@@ -166,11 +166,11 @@
 **Pós-condições:**
 - O cofre está sincronizado com o arquivo no disco. A Lixeira está vazia.
 
-**Regras de Negócio:** RN-05, RN-13
+**Regras de Negócio:** [RN-13](regras-negocio.md#rn-13)
 
 ---
 
-### UC-04: Salvar cofre em novo caminho
+### <a id="uc-04"></a>UC-04: Salvar cofre em novo caminho
 
 **Ator:** Usuário
 
@@ -201,11 +201,11 @@
 **Pós-condições:**
 - O cofre está salvo no novo caminho, que se torna o caminho atual.
 
-**Regras de Negócio:** RN-05, RN-13
+**Regras de Negócio:** [RN-13](regras-negocio.md#rn-13)
 
 ---
 
-### UC-05: Descartar alterações e recarregar cofre
+### <a id="uc-05"></a>UC-05: Descartar alterações e recarregar cofre
 
 **Ator:** Usuário
 
@@ -226,11 +226,9 @@
 **Pós-condições:**
 - O cofre reflete o conteúdo do último salvamento no disco.
 
-**Regras de Negócio:** RN-13
-
 ---
 
-### UC-06: Alterar senha mestra
+### <a id="uc-06"></a>UC-06: Alterar senha mestra
 
 **Ator:** Usuário
 
@@ -242,7 +240,7 @@
 2. A aplicação solicita a nova senha mestra.
 3. O Usuário confirma a nova senha (digitação dupla).
 4. A aplicação prepara a regravação criptográfica com a nova credencial.
-5. A aplicação segue o fluxo de salvar o cofre (UC-03).
+5. A aplicação segue o fluxo de salvar o cofre ([UC-03](#uc-03)).
 
 **Fluxos de Exceção:**
 
@@ -252,11 +250,11 @@
 **Pós-condições:**
 - O cofre está salvo com a nova senha mestra.
 
-**Regras de Negócio:** RN-28
+**Regras de Negócio:** [RN-02](regras-negocio.md#rn-02), [RN-03](regras-negocio.md#rn-03)
 
 ---
 
-### UC-07: Bloquear cofre
+### <a id="uc-07"></a>UC-07: Bloquear cofre
 
 **Ator:** Usuário / Sistema (inatividade)
 
@@ -268,7 +266,7 @@
 2. A aplicação fecha logicamente o cofre.
 3. A aplicação minimiza dados sensíveis em memória e limpa a área de transferência.
 4. Alterações não salvas são descartadas silenciosamente.
-5. A aplicação retorna ao fluxo de abrir cofre existente (UC-02), assumindo o mesmo caminho.
+5. A aplicação retorna ao fluxo de abrir cofre existente ([UC-02](#uc-02)), assumindo o mesmo caminho.
 
 **Fluxos Alternativos:**
 
@@ -280,11 +278,9 @@
 **Pós-condições:**
 - O cofre não está mais ativo. A aplicação aguarda nova autenticação.
 
-**Regras de Negócio:** RN-14, RN-15, RN-20, RN-21
-
 ---
 
-### UC-08: Configurar o cofre
+### <a id="uc-08"></a>UC-08: Configurar o cofre
 
 **Ator:** Usuário
 
@@ -306,11 +302,11 @@
 **Pós-condições:**
 - As novas configurações estão em vigor e serão persistidas no próximo salvamento.
 
-**Regras de Negócio:** RN-27
+**Regras de Negócio:** [RN-04](regras-negocio.md#rn-04)
 
 ---
 
-### UC-09: Exportar cofre
+### <a id="uc-09"></a>UC-09: Exportar cofre
 
 **Ator:** Usuário
 
@@ -332,9 +328,11 @@
 **Pós-condições:**
 - Um arquivo legível foi gerado no destino. O cofre ativo não é alterado.
 
+**Regras de Negócio:** [RN-23](regras-negocio.md#rn-23)
+
 ---
 
-### UC-10: Importar cofre
+### <a id="uc-10"></a>UC-10: Importar cofre
 
 **Ator:** Usuário
 
@@ -360,11 +358,11 @@
 **Pós-condições:**
 - Os dados importados foram incorporados ao cofre ativo.
 
-**Regras de Negócio:** RN-16, RN-17, RN-18, RN-19
+**Regras de Negócio:** [RN-19](regras-negocio.md#rn-19), [RN-20](regras-negocio.md#rn-20), [RN-21](regras-negocio.md#rn-21), [RN-22](regras-negocio.md#rn-22)
 
 ---
 
-### UC-11: Sair da aplicação
+### <a id="uc-11"></a>UC-11: Sair da aplicação
 
 **Ator:** Usuário
 
@@ -380,7 +378,7 @@
 
 *FA-01: Cofre ativo em estado Cofre Modificado*
 1. A aplicação oferece ao Usuário: Salvar, Sair sem Salvar (Descartar) ou Voltar.
-2. Se Salvar: a aplicação segue o fluxo UC-03 e encerra após salvamento bem-sucedido.
+2. Se Salvar: a aplicação segue o fluxo [UC-03](#uc-03) e encerra após salvamento bem-sucedido.
 3. Se Descartar: a aplicação encerra sem salvar.
 4. Se Voltar: a aplicação cancela o encerramento.
 
@@ -389,7 +387,7 @@
 
 ---
 
-### UC-12: Navegar hierarquia do cofre
+### <a id="uc-12"></a>UC-12: Navegar hierarquia do cofre
 
 **Ator:** Usuário
 
@@ -406,7 +404,7 @@
 
 ---
 
-### UC-13: Visualizar segredo
+### <a id="uc-13"></a>UC-13: Visualizar segredo
 
 **Ator:** Usuário
 
@@ -423,7 +421,7 @@
 
 ---
 
-### UC-14: Visualizar/ocultar campo sensível
+### <a id="uc-14"></a>UC-14: Visualizar/ocultar campo sensível
 
 **Ator:** Usuário
 
@@ -443,9 +441,11 @@
 **Pós-condições:**
 - Nenhuma alteração no segredo ou no cofre.
 
+**Regras de Negócio:** [RN-09](regras-negocio.md#rn-09), [RN-10](regras-negocio.md#rn-10)
+
 ---
 
-### UC-15: Buscar segredos
+### <a id="uc-15"></a>UC-15: Buscar segredos
 
 **Ator:** Usuário
 
@@ -463,11 +463,11 @@
 **Pós-condições:**
 - Nenhuma alteração no cofre.
 
-**Regras de Negócio:** RN-07, RN-08
+**Regras de Negócio:** [RN-10](regras-negocio.md#rn-10), [RN-11](regras-negocio.md#rn-11)
 
 ---
 
-### UC-16: Criar segredo
+### <a id="uc-16"></a>UC-16: Criar segredo
 
 **Ator:** Usuário
 
@@ -485,10 +485,10 @@
 **Fluxos Alternativos:**
 
 *FA-01: Criação com modelo leva à edição padrão*
-1. A aplicação inicia automaticamente o fluxo de edição padrão (UC-18).
+1. A aplicação inicia automaticamente o fluxo de edição padrão ([UC-18](#uc-18)).
 
 *FA-02: Criação vazia leva à edição avançada*
-1. A aplicação inicia automaticamente o fluxo de edição avançada (UC-19) para que o Usuário adicione os campos desejados.
+1. A aplicação inicia automaticamente o fluxo de edição avançada ([UC-19](#uc-19)) para que o Usuário adicione os campos desejados.
 
 *FA-03: Usuário cancela*
 1. O segredo em criação é descartado sem efeito.
@@ -496,11 +496,11 @@
 **Pós-condições:**
 - Novo segredo inserido na posição adequada.
 
-**Regras de Negócio:** RN-10
+**Regras de Negócio:** [RN-08](regras-negocio.md#rn-08), [RN-09](regras-negocio.md#rn-09), [RN-17](regras-negocio.md#rn-17)
 
 ---
 
-### UC-17: Duplicar segredo
+### <a id="uc-17"></a>UC-17: Duplicar segredo
 
 **Ator:** Usuário
 
@@ -516,11 +516,11 @@
 **Pós-condições:**
 - Novo segredo disponível na hierarquia.
 
-**Regras de Negócio:** RN-26
+**Regras de Negócio:** [RN-08](regras-negocio.md#rn-08)
 
 ---
 
-### UC-18: Editar segredo (edição padrão)
+### <a id="uc-18"></a>UC-18: Editar segredo (edição padrão)
 
 **Ator:** Usuário
 
@@ -538,7 +538,7 @@
 **Fluxos Alternativos:**
 
 *FA-01: Alternar para edição avançada*
-1. O Usuário pode a qualquer momento alternar para a edição avançada (UC-19).
+1. O Usuário pode a qualquer momento alternar para a edição avançada ([UC-19](#uc-19)).
 
 *FA-02: Usuário cancela*
 1. O segredo retorna ao estado anterior sem alterações.
@@ -546,11 +546,9 @@
 **Pós-condições:**
 - O segredo foi atualizado com os novos valores.
 
-**Regras de Negócio:** RN-25
-
 ---
 
-### UC-19: Editar segredo (edição avançada)
+### <a id="uc-19"></a>UC-19: Editar segredo (edição avançada)
 
 **Ator:** Usuário
 
@@ -568,7 +566,7 @@
 **Fluxos Alternativos:**
 
 *FA-01: Alternar para edição padrão*
-1. O Usuário pode a qualquer momento alternar para a edição padrão (UC-18).
+1. O Usuário pode a qualquer momento alternar para a edição padrão ([UC-18](#uc-18)).
 
 *FA-02: Usuário cancela*
 1. O segredo retorna ao estado anterior sem alterações.
@@ -576,11 +574,9 @@
 **Pós-condições:**
 - A estrutura do segredo foi atualizada.
 
-**Regras de Negócio:** RN-11, RN-25
-
 ---
 
-### UC-20: Favoritar/desfavoritar segredo
+### <a id="uc-20"></a>UC-20: Favoritar/desfavoritar segredo
 
 **Ator:** Usuário
 
@@ -598,7 +594,7 @@
 
 ---
 
-### UC-21: Excluir segredo reversivelmente
+### <a id="uc-21"></a>UC-21: Excluir segredo reversivelmente
 
 **Ator:** Usuário
 
@@ -615,11 +611,11 @@
 **Pós-condições:**
 - O segredo está na Lixeira, restaurável até o próximo salvamento.
 
-**Regras de Negócio:** RN-04, RN-23, RN-25
+**Regras de Negócio:** [RN-12](regras-negocio.md#rn-12), [RN-13](regras-negocio.md#rn-13), [RN-14](regras-negocio.md#rn-14)
 
 ---
 
-### UC-22: Restaurar segredo da Lixeira
+### <a id="uc-22"></a>UC-22: Restaurar segredo da Lixeira
 
 **Ator:** Usuário
 
@@ -641,11 +637,11 @@
 **Pós-condições:**
 - O segredo voltou à hierarquia principal.
 
-**Regras de Negócio:** RN-24
+**Regras de Negócio:** [RN-15](regras-negocio.md#rn-15)
 
 ---
 
-### UC-23: Mover segredo
+### <a id="uc-23"></a>UC-23: Mover segredo
 
 **Ator:** Usuário
 
@@ -661,11 +657,11 @@
 **Pós-condições:**
 - O segredo está no novo destino.
 
-**Regras de Negócio:** RN-02
+**Regras de Negócio:** [RN-06](regras-negocio.md#rn-06)
 
 ---
 
-### UC-24: Reordenar segredo
+### <a id="uc-24"></a>UC-24: Reordenar segredo
 
 **Ator:** Usuário
 
@@ -682,7 +678,7 @@
 
 ---
 
-### UC-25: Copiar campo de segredo
+### <a id="uc-25"></a>UC-25: Copiar campo de segredo
 
 **Ator:** Usuário
 
@@ -699,7 +695,7 @@
 
 ---
 
-### UC-26: Criar pasta
+### <a id="uc-26"></a>UC-26: Criar pasta
 
 **Ator:** Usuário
 
@@ -716,11 +712,11 @@
 **Pós-condições:**
 - Nova pasta inserida na hierarquia.
 
-**Regras de Negócio:** RN-03
+**Regras de Negócio:** [RN-07](regras-negocio.md#rn-07), [RN-08](regras-negocio.md#rn-08)
 
 ---
 
-### UC-27: Renomear pasta
+### <a id="uc-27"></a>UC-27: Renomear pasta
 
 **Ator:** Usuário
 
@@ -738,7 +734,7 @@
 
 ---
 
-### UC-28: Mover pasta
+### <a id="uc-28"></a>UC-28: Mover pasta
 
 **Ator:** Usuário
 
@@ -754,11 +750,11 @@
 **Pós-condições:**
 - A pasta está no novo destino com toda sua sub-hierarquia.
 
-**Regras de Negócio:** RN-03
+**Regras de Negócio:** [RN-07](regras-negocio.md#rn-07)
 
 ---
 
-### UC-29: Reordenar pasta
+### <a id="uc-29"></a>UC-29: Reordenar pasta
 
 **Ator:** Usuário
 
@@ -775,7 +771,7 @@
 
 ---
 
-### UC-30: Excluir pasta
+### <a id="uc-30"></a>UC-30: Excluir pasta
 
 **Ator:** Usuário
 
@@ -793,11 +789,11 @@
 **Pós-condições:**
 - A pasta não existe mais. Seus filhos estão no nível pai.
 
-**Regras de Negócio:** RN-06
+**Regras de Negócio:** [RN-16](regras-negocio.md#rn-16)
 
 ---
 
-### UC-31: Criar modelo de segredo
+### <a id="uc-31"></a>UC-31: Criar modelo de segredo
 
 **Ator:** Usuário
 
@@ -815,7 +811,7 @@
 
 ---
 
-### UC-32: Editar modelo de segredo
+### <a id="uc-32"></a>UC-32: Editar modelo de segredo
 
 **Ator:** Usuário
 
@@ -831,11 +827,11 @@
 **Pós-condições:**
 - O modelo foi atualizado. As alterações afetam apenas criações futuras de segredos.
 
-**Regras de Negócio:** RN-12
+**Regras de Negócio:** [RN-18](regras-negocio.md#rn-18)
 
 ---
 
-### UC-33: Remover modelo de segredo
+### <a id="uc-33"></a>UC-33: Remover modelo de segredo
 
 **Ator:** Usuário
 
@@ -851,11 +847,11 @@
 **Pós-condições:**
 - O modelo não está mais disponível para uso. Segredos já criados a partir dele não são afetados.
 
-**Regras de Negócio:** RN-10
+**Regras de Negócio:** [RN-17](regras-negocio.md#rn-17)
 
 ---
 
-### UC-34: Criar modelo a partir de segredo existente
+### <a id="uc-34"></a>UC-34: Criar modelo a partir de segredo existente
 
 **Ator:** Usuário
 
@@ -872,4 +868,4 @@
 **Pós-condições:**
 - Novo modelo disponível, baseado na estrutura do segredo.
 
-**Regras de Negócio:** RN-10
+**Regras de Negócio:** [RN-17](regras-negocio.md#rn-17)

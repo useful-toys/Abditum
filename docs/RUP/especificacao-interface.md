@@ -605,13 +605,13 @@ Manual: atalho de bloqueio ──┤
 
 | Seção da Especificação              | Requisitos Associados                                         |
 |--------------------------------------|--------------------------------------------------------------|
-| Modelo de Interação                  | RF-12, RF-13, RF-14                                          |
-| Painel da Hierarquia                 | RF-12, RF-13, RF-26, RF-27 a RF-31                           |
-| Painel do Segredo                    | RF-14, RF-15 a RF-25                                         |
-| Pastas Virtuais                      | RF-19, RF-22, RF-23                                          |
-| Sistema de Feedback                  | RNF-25, RNF-26                                               |
-| Clipboard                           | RF-36, RF-37, RF-38                                          |
-| Bloqueio por Inatividade             | RF-07, RF-08, RN-24                                          |
-| Proteção Shoulder Surfing            | RF-40, RN-25, RN-26                                          |
-| File Picker                         | RF-01, RF-02, RF-05, RF-06                                   |
-| Exportação/Importação                | RF-09, RF-10                                                  |
+| Modelo de Interação                  | [RF-12](srs.md#rf-12), [RF-13](srs.md#rf-13), [RF-14](srs.md#rf-14)                                          |
+| Painel da Hierarquia                 | [RF-12](srs.md#rf-12), [RF-13](srs.md#rf-13), [RF-26](srs.md#rf-26), [RF-27](srs.md#rf-27) a [RF-31](srs.md#rf-31)                           |
+| Painel do Segredo                    | [RF-14](srs.md#rf-14), [RF-15](srs.md#rf-15) a [RF-25](srs.md#rf-25)                                         |
+| Pastas Virtuais                      | [RF-19](srs.md#rf-19), [RF-22](srs.md#rf-22), [RF-23](srs.md#rf-23)                                          |
+| Sistema de Feedback                  | [RNF-25](srs.md#rnf-25), [RNF-26](srs.md#rnf-26)                                               |
+| Clipboard                           | [RF-36](srs.md#rf-36), [RF-37](srs.md#rf-37), [RF-38](srs.md#rf-38)                                          |
+| Bloqueio por Inatividade             | [RF-07](srs.md#rf-07), [RF-08](srs.md#rf-08)                                                 |
+| Proteção Shoulder Surfing            | [RF-40](srs.md#rf-40)                                                        |
+| File Picker                         | [RF-01](srs.md#rf-01), [RF-02](srs.md#rf-02), [RF-05](srs.md#rf-05), [RF-06](srs.md#rf-06)                                   |
+| Exportação/Importação                | [RF-09](srs.md#rf-09), [RF-10](srs.md#rf-10)                                                  |

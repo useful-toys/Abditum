@@ -257,10 +257,10 @@ Ao criar um novo cofre, a aplicação popula a hierarquia com os seguintes eleme
 
 | Entidade          | Requisitos Funcionais                          | Regras de Negócio            |
 |-------------------|------------------------------------------------|------------------------------|
-| Cofre             | RF-01 a RF-11                                 | RN-01, RN-02                 |
-| Configuracoes     | RF-11                                          | RN-24, RN-25, RN-26          |
-| Segredo           | RF-12 a RF-26                                  | RN-03 a RN-12                |
-| CampoSegredo      | RF-17, RF-18, RF-19, RF-20, RF-21             | RN-06, RN-07                 |
-| Pasta             | RF-27 a RF-31                                  | RN-13, RN-14                 |
-| ModeloSegredo      | RF-32 a RF-35                                  | RN-15, RN-16, RN-17          |
-| CampoModeloSegredo| RF-32, RF-33                                   | RN-15                        |
+| Cofre             | [RF-01](srs.md#rf-01) a [RF-11](srs.md#rf-11)                                 | [RN-01](regras-negocio.md#rn-01) a [RN-05](regras-negocio.md#rn-05)                |
+| Configuracoes     | [RF-11](srs.md#rf-11)                                          | [RN-04](regras-negocio.md#rn-04)                        |
+| Segredo           | [RF-12](srs.md#rf-12) a [RF-26](srs.md#rf-26)                                  | [RN-06](regras-negocio.md#rn-06), [RN-08](regras-negocio.md#rn-08) a [RN-12](regras-negocio.md#rn-12), [RN-14](regras-negocio.md#rn-14)  |
+| CampoSegredo      | [RF-17](srs.md#rf-17), [RF-18](srs.md#rf-18), [RF-19](srs.md#rf-19), [RF-20](srs.md#rf-20), [RF-21](srs.md#rf-21)             | [RN-09](regras-negocio.md#rn-09), [RN-10](regras-negocio.md#rn-10)                 |
+| Pasta             | [RF-27](srs.md#rf-27) a [RF-31](srs.md#rf-31)                                  | [RN-07](regras-negocio.md#rn-07), [RN-16](regras-negocio.md#rn-16)                 |
+| ModeloSegredo      | [RF-32](srs.md#rf-32) a [RF-35](srs.md#rf-35)                                  | [RN-17](regras-negocio.md#rn-17), [RN-18](regras-negocio.md#rn-18)                 |
+| CampoModeloSegredo| [RF-32](srs.md#rf-32), [RF-33](srs.md#rf-33)                                   | [RN-17](regras-negocio.md#rn-17)                        |

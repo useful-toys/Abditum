@@ -72,14 +72,14 @@ Este documento define as fases e iterações do projeto Abditum v1, mapeando req
 - Serviço de criptografia (AES-256-GCM + Argon2id)
 - Formato do arquivo `.abditum` (cabeçalho + payload)
 - Leitura e escrita do arquivo binário
-- Testes do serviço de criptografia (TC-C01 a TC-C10)
+- Testes do serviço de criptografia ([TC-C01](plano-testes.md#tc-c01) a [TC-C10](plano-testes.md#tc-c10))
 
 **Requisitos endereçados:**
-- RNF-01 a RNF-05 (criptografia)
-- RNF-20 a RNF-24 (formato de arquivo)
-- RNF-25 a RNF-30 (Argon2id)
+- [RNF-01](srs.md#rnf-01) a [RNF-05](srs.md#rnf-05) (criptografia)
+- [RNF-20](srs.md#rnf-20) a [RNF-24](srs.md#rnf-24) (formato de arquivo)
+- [RNF-25](srs.md#rnf-25) a [RNF-30](srs.md#rnf-30) (Argon2id)
 
-**Riscos mitigados:** RS-01, RS-05
+**Riscos mitigados:** [RS-01](riscos.md#rs-01), [RS-05](riscos.md#rs-05)
 
 **Critérios de conclusão:**
 - [ ] Criptografar e descriptografar payload com sucesso
@@ -97,14 +97,14 @@ Este documento define as fases e iterações do projeto Abditum v1, mapeando req
 - Salvamento atômico (.tmp + rename)
 - Rotação de backup (.bak / .bak2)
 - Pipeline de CI (build + testes em Windows, macOS, Linux)
-- Testes do serviço de armazenamento (TC-A01 a TC-A10)
+- Testes do serviço de armazenamento ([TC-A01](plano-testes.md#tc-a01) a [TC-A10](plano-testes.md#tc-a10))
 
 **Requisitos endereçados:**
-- RNF-08 a RNF-10 (portabilidade)
-- RNF-11 a RNF-15 (confiabilidade)
-- RNF-16 a RNF-19 (compatibilidade — estrutura base)
+- [RNF-08](srs.md#rnf-08) a [RNF-10](srs.md#rnf-10) (portabilidade)
+- [RNF-11](srs.md#rnf-11) a [RNF-15](srs.md#rnf-15) (confiabilidade)
+- [RNF-16](srs.md#rnf-16) a [RNF-19](srs.md#rnf-19) (compatibilidade — estrutura base)
 
-**Riscos mitigados:** RD-01, RD-05, RD-06, RP-01, RP-02, RT-04
+**Riscos mitigados:** [RD-01](riscos.md#rd-01), [RD-05](riscos.md#rd-05), [RD-06](riscos.md#rd-06), [RP-01](riscos.md#rp-01), [RP-02](riscos.md#rp-02), [RT-04](riscos.md#rt-04)
 
 **Critérios de conclusão:**
 - [ ] Salvamento atômico funcional com .tmp + rename
@@ -127,21 +127,21 @@ Este documento define as fases e iterações do projeto Abditum v1, mapeando req
 - Hierarquia recursiva (raiz como pasta sem nome)
 - Configurações embutidas no cofre
 - Estrutura inicial de novos cofres (pastas e modelos pré-definidos)
-- Testes do domínio (TC-D01 a TC-D28)
+- Testes do domínio ([TC-D01](plano-testes.md#tc-d01) a [TC-D28](plano-testes.md#tc-d28))
 
 **Requisitos endereçados:**
-- RF-01 (estrutura inicial), RF-16 a RF-26 (segredos)
-- RF-27 a RF-31 (pastas), RF-32 a RF-35 (modelos)
-- RF-11 (configurações)
-- RN-01 a RN-13, RN-22 a RN-28
+- [RF-01](srs.md#rf-01) (estrutura inicial), [RF-16](srs.md#rf-16) a [RF-26](srs.md#rf-26) (segredos)
+- [RF-27](srs.md#rf-27) a [RF-31](srs.md#rf-31) (pastas), [RF-32](srs.md#rf-32) a [RF-35](srs.md#rf-35) (modelos)
+- [RF-11](srs.md#rf-11) (configurações)
+- [RN-01](regras-negocio.md#rn-01) a [RN-18](regras-negocio.md#rn-18)
 
-**Riscos mitigados:** RT-03
+**Riscos mitigados:** [RT-03](riscos.md#rt-03)
 
 **Critérios de conclusão:**
 - [ ] Todas as entidades implementadas com leitura somente via getters
 - [ ] Mutações apenas via métodos do Manager
 - [ ] Todos os TC-D* passando
-- [ ] Regras de negócio RN-01 a RN-13 validadas por testes
+- [ ] Regras de negócio [RN-01](regras-negocio.md#rn-01) a [RN-18](regras-negocio.md#rn-18) validadas por testes
 
 #### Iteração K2 — Fluxos do Cofre e Integração Cripto + Domínio
 
@@ -156,16 +156,16 @@ Este documento define as fases e iterações do projeto Abditum v1, mapeando req
 - Alterar senha mestra
 - Migração de formato de versões anteriores
 - Importação e exportação JSON
-- Testes de integração (TC-E01 a TC-E08)
-- Testes de compatibilidade (TC-F01 a TC-F04)
-- Testes de importação/exportação (TC-IE01 a TC-IE06)
+- Testes de integração ([TC-E01](plano-testes.md#tc-e01) a [TC-E08](plano-testes.md#tc-e08))
+- Testes de compatibilidade ([TC-F01](plano-testes.md#tc-f01) a [TC-F04](plano-testes.md#tc-f04))
+- Testes de importação/exportação ([TC-IE01](plano-testes.md#tc-ie01) a [TC-IE06](plano-testes.md#tc-ie06))
 
 **Requisitos endereçados:**
-- RF-01 a RF-06, RF-09, RF-10
-- RNF-16 a RNF-19 (compatibilidade completa)
-- RN-14 a RN-19 (bloqueio, importação)
+- [RF-01](srs.md#rf-01) a [RF-06](srs.md#rf-06), [RF-09](srs.md#rf-09), [RF-10](srs.md#rf-10)
+- [RNF-16](srs.md#rnf-16) a [RNF-19](srs.md#rnf-19) (compatibilidade completa)
+- [RN-13](regras-negocio.md#rn-13), [RN-19](regras-negocio.md#rn-19) a [RN-23](regras-negocio.md#rn-23) (persistência, importação, exportação)
 
-**Riscos mitigados:** RD-02, RD-03, RD-04
+**Riscos mitigados:** [RD-02](riscos.md#rd-02), [RD-03](riscos.md#rd-03), [RD-04](riscos.md#rd-04)
 
 **Critérios de conclusão:**
 - [ ] Fluxo criar → salvar → fechar → reabrir funcional
@@ -188,14 +188,13 @@ Este documento define as fases e iterações do projeto Abditum v1, mapeando req
 - File picker integrado à TUI
 - Detecção de tamanho mínimo do terminal
 - Tela inicial (welcome / ASCII art)
-- Golden files visuais (TC-T01 a TC-T08)
-- Testes de comandos (TC-T09 a TC-T12)
+- Golden files visuais ([TC-T01](plano-testes.md#tc-t01) a [TC-T08](plano-testes.md#tc-t08))
+- Testes de comandos ([TC-T09](plano-testes.md#tc-t09) a [TC-T12](plano-testes.md#tc-t12))
 
 **Requisitos endereçados:**
-- RF-07, RF-08, RF-12 a RF-15, RF-36 a RF-41
-- RN-20, RN-21
+- [RF-07](srs.md#rf-07), [RF-08](srs.md#rf-08), [RF-12](srs.md#rf-12) a [RF-15](srs.md#rf-15), [RF-36](srs.md#rf-36) a [RF-41](srs.md#rf-41)
 
-**Riscos mitigados:** RT-01, RU-01, RU-04, RP-03, RP-04
+**Riscos mitigados:** [RT-01](riscos.md#rt-01), [RU-01](riscos.md#ru-01), [RU-04](riscos.md#ru-04), [RP-03](riscos.md#rp-03), [RP-04](riscos.md#rp-04)
 
 **Critérios de conclusão:**
 - [ ] Layout de dois painéis funcional e responsivo
@@ -226,11 +225,10 @@ Este documento define as fases e iterações do projeto Abditum v1, mapeando req
 - Ocultação rápida da interface (shoulder surfing)
 
 **Requisitos endereçados:**
-- Todos os RF restantes (RF-16 a RF-41 na interface)
-- Todos os UC (UC-01 a UC-34 nos fluxos interativos)
-- RN-14, RN-15, RN-20, RN-21
+- Todos os RF restantes ([RF-16](srs.md#rf-16) a [RF-41](srs.md#rf-41) na interface)
+- Todos os UC ([UC-01](casos-de-uso.md#uc-01) a [UC-34](casos-de-uso.md#uc-34) nos fluxos interativos)
 
-**Riscos mitigados:** RS-02, RS-03, RS-04, RS-06, RU-02, RU-03
+**Riscos mitigados:** [RS-02](riscos.md#rs-02), [RS-03](riscos.md#rs-03), [RS-04](riscos.md#rs-04), [RS-06](riscos.md#rs-06), [RU-02](riscos.md#ru-02), [RU-03](riscos.md#ru-03)
 
 **Critérios de conclusão:**
 - [ ] Todos os 34 casos de uso exercitáveis pela TUI
@@ -250,7 +248,7 @@ Este documento define as fases e iterações do projeto Abditum v1, mapeando req
 
 **Entregas:**
 - Correção de defeitos encontrados nas iterações anteriores
-- Testes E2E completos (TC-E01 a TC-E08) executados e aprovados
+- Testes E2E completos ([TC-E01](plano-testes.md#tc-e01) a [TC-E08](plano-testes.md#tc-e08)) executados e aprovados
 - Validação cross-platform final em CI
 - Revisão de segurança final (ausência de logs, zeragem de buffers)
 - Golden files finais aprovados
@@ -259,7 +257,7 @@ Este documento define as fases e iterações do projeto Abditum v1, mapeando req
 
 **Requisitos endereçados:** Validação final de todos os requisitos.
 
-**Riscos mitigados:** RT-02 (cobertura de testes)
+**Riscos mitigados:** [RT-02](riscos.md#rt-02) (cobertura de testes)
 
 **Critérios de conclusão:**
 - [ ] Zero defeitos de severidade Crítica ou Alta em aberto
@@ -275,15 +273,15 @@ Este documento define as fases e iterações do projeto Abditum v1, mapeando req
 | Iteração | Requisitos Funcionais                        | Requisitos Não Funcionais          | Regras de Negócio                    |
 |----------|----------------------------------------------|------------------------------------|--------------------------------------|
 | C1       | —                                            | —                                  | —                                    |
-| E1       | —                                            | RNF-01 a 05, RNF-20 a 24, RNF-25 a 30 | —                              |
-| E2       | —                                            | RNF-08 a 15, RNF-16 a 19 (base)   | —                                    |
-| K1       | RF-01°, RF-11, RF-16 a 35                   | —                                  | RN-01 a 13, RN-22 a 28              |
-| K2       | RF-01 a 06, RF-09, RF-10                    | RNF-16 a 19 (completo)            | RN-14 a 19                           |
-| K3       | RF-07, RF-08, RF-12 a 15, RF-36 a 41        | —                                  | RN-20, RN-21                         |
-| K4       | RF-16 a 41 (TUI)                             | RNF-06, RNF-07                    | RN-14, RN-15, RN-20, RN-21          |
+| E1       | —                                            | [RNF-01](srs.md#rnf-01) a 05, [RNF-20](srs.md#rnf-20) a 24, [RNF-25](srs.md#rnf-25) a 30 | —                              |
+| E2       | —                                            | [RNF-08](srs.md#rnf-08) a 15, [RNF-16](srs.md#rnf-16) a 19 (base)   | —                                    |
+| K1       | [RF-01](srs.md#rf-01)°, [RF-11](srs.md#rf-11), [RF-16](srs.md#rf-16) a 35                   | —                                  | [RN-01](regras-negocio.md#rn-01) a [RN-18](regras-negocio.md#rn-18)              |
+| K2       | [RF-01](srs.md#rf-01) a 06, [RF-09](srs.md#rf-09), [RF-10](srs.md#rf-10)                    | [RNF-16](srs.md#rnf-16) a 19 (completo)            | [RN-13](regras-negocio.md#rn-13), [RN-19](regras-negocio.md#rn-19) a [RN-23](regras-negocio.md#rn-23)                           |
+| K3       | [RF-07](srs.md#rf-07), [RF-08](srs.md#rf-08), [RF-12](srs.md#rf-12) a 15, [RF-36](srs.md#rf-36) a 41        | —                                  | —                         |
+| K4       | [RF-16](srs.md#rf-16) a 41 (TUI)                             | [RNF-06](srs.md#rnf-06), [RNF-07](srs.md#rnf-07)                    | —          |
 | T1       | Validação final de todos                     | Validação final de todos           | Validação final de todas              |
 
-*° RF-01 em K1 cobre apenas a estrutura inicial do cofre; o fluxo completo é realizado em K2.*
+*° [RF-01](srs.md#rf-01) em K1 cobre apenas a estrutura inicial do cofre; o fluxo completo é realizado em K2.*
 
 ---
 
