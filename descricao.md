@@ -326,6 +326,9 @@ Invariante:
   - Se o segredo estava em estado `excluído reversivelmente`, ele não pode ser editado, portanto não pode ocorrer alteração de dados.
 - O estado do segredo não pode mudar espontaneamente sem uma ação do usuário que cause a mudança. Ele deve permanecer estável até que o usuário execute uma ação que o altere.
 - FAvoritar/desfavoritar um segredo não altera seu estado de ciclo de vida.
+- Quando o segredo entrar em edição, a aplicação proverá um mecanismo para "reverter" a as edições caso o usuário deseje cancelar a edição.
+  Para tal, a aplicação poderia criar uma copia do segredo no estado em que ele estava antes da edição. Porém, não vamos estabelecer uma solução específica de implementação.
+- O segredo que estiver em criação poderá ser cancelado. NEste caso, ele não será adicionado ao cofre.
 
 #### Estados da pasta
 
@@ -495,8 +498,8 @@ OBS:
     - Caso o usuário opte por um modelo de segredo, a estrutura inicial do segredo é gerada a partir do modelo escolhido, copiando os campos como snapshot, sem manter vínculo por referência com o modelo de origem.
     - Caso o usuário opte por começar com um segredo vazio, é gerado um segredo sem campos adicionais além do nome e da observação, e os demais campos poderão ser adicionados posteriormente pela edição avançada.
   - Após a confirmação, o novo segredo assume estado `Novo` e é inserido no destino selecionado, e o cofre entra em estado `Cofre Modificado`.
-    - Caso o usuário tenha optado por um modelo de segredo, então a aplicação passa para o fluxo de edição padrão.
-    - Caso o usuário tenha optado por um segredo vazio, então a aplicação passa para o fluxo de edição avançada, para que o usuário possa adicionar os campos desejados.
+    - Caso o usuário tenha optado por um modelo de segredo, a aplicação passa para o fluxo de edição padrão.
+    - Caso o usuário tenha optado por um segredo vazio, a aplicação passa para o fluxo de edição avançada, para que o usuário possa adicionar os campos desejados.
 
 #### Fluxos principais de segredos
 
@@ -506,7 +509,7 @@ Pressupõe-se que:
 
 **Visualizar ou ocultar campo sensível**
   - O usuário visualiza um segredo ativo.
-  - O usuário seleciona um campo do tipo `texto sensível` .
+  - O usuário seleciona um campo do tipo `texto sensível`.
   - O usuário solicita a exibição temporária do valor do campo sensível.
   - A aplicação revela temporariamente o valor do campo.
   - O usuário solicita a exibição temporária do valor do campo sensível. Ou ocorre o encerramento automático da exibição temporária por expiração do tempo configurado no cofre.
@@ -515,7 +518,7 @@ Pressupõe-se que:
 
 **Copiar campo de segredo**
   - O usuário visualiza um segredo ativo.
-  - O usuário seleciona um campo do tipo `texto sensível` .
+  - O usuário seleciona um campo do tipo `texto sensível`.
   - O usuário solicita a copia temporária do valor do campo sensível para a área de transferência do sistema.
   - A aplicação copia o valor atual do campo para a área de transferência do sistema.
   - A aplicação exibe feedback visual de cópia e inicia o temporizador de limpeza automática conforme a configuração do cofre.
@@ -523,62 +526,73 @@ Pressupõe-se que:
   - Esse fluxo não altera o estado do segredo nem o estado do cofre.
 
 **Duplicar segredo**
-  - O usuário solicita a duplicação do segredo ativo.
+  - O usuário solicita a duplicação.
   - A aplicação cria uma nova instância com nova identidade, copiando nome, nome do modelo de segredo, observação, favorito e campos do segredo original.
     - O nome do segredo duplicado recebe um sufixo numérico incremental para evitar confusão com o segredo original. Ex: "Segredo" → "Segredo (1)", "Segredo (2)", etc.
-  - Após a confirmação, o segredo duplicado assume estado `Novo` e é inserido logo abaixo do segredo de origem na mesma coleção, e o cofre entra em estado `Cofre Modificado`.
+  - O segredo duplicado assume estado `Novo`.
+  - Ele é inserido logo abaixo do segredo de origem na mesma coleção
+  - O cofre entra em estado `Cofre Modificado`.
 
 **Favoritar segredo**
-  - O usuário seleciona ou visualiza um segredo disponível e não favoritado, e alterna seu marcador de favorito.
-  - A aplicação altera apenas o atributo `favorito`, sem modificar identidade, conteúdo ou localização do segredo.
-  - A presença do segredo na pasta virtual de Favoritos passa a refletir imediatamente esse estado.
+  - O segredo ativo não está favoritado. 
+  - O usuário solicita favoritar segredo.
+  - O segredo altera seu status de `favorito` para true, sem modificar identidade, conteúdo ou localização do segredo.
+  - A pasta virtual de Favoritos atualiza para refletir imediatamente esse estado: A posição do segredo na pasta favorita será sua posição percorrendo a árvore em profundidade, conforme as listas de segredos e pastas em cada pasta, seguindo a ordem persistida no JSON.
   - O cofre entra em estado `Cofre Modificado`.
 
 **Desfavoritar segredo**
-  - O usuário seleciona ou visualiza um segredo disponível e favoritado, e alterna seu marcador de favorito.
-  - A aplicação altera apenas o atributo `favorito`, sem modificar identidade, conteúdo ou localização do segredo.
-  - A presença do segredo na pasta virtual de Favoritos passa a refletir imediatamente esse estado.
+  - O segredo ativo está favoritado. 
+  - O usuário solicita desfavoritar segredo.
+  - O segredo altera seu status de `favorito` para false, sem modificar identidade, conteúdo ou localização do segredo.
+  - A pasta virtual de Favoritos atualiza para refletir imediatamente esse estado: A posição do segredo na pasta favorita será sua posição percorrendo a árvore em profundidade, conforme as listas de segredos e pastas em cada pasta, seguindo a ordem persistida no JSON.
   - O cofre entra em estado `Cofre Modificado`.
 
 **Editar segredo (edição padrão)**
-  - O usuário seleciona ou visualiza um segredo existente e inicia a edição.
-  - A aplicação abre o segredo no modo de edição padrão.
-  - A aplicação permite alterar nome, observação e valores dos campos existentes.
-  - A identidade do segredo é preservada durante toda a edição.
+  - O usuário visualiza o segredo ou está editando via edição avançada, solicita a edição padrão.
+  - O segredo entra no estado de edição padrão.
+  - A aplicação provê campos para permitir alterar nome, observação e valores dos campos existentes.
+  - O usuário realiza as alterações desejadas através da edição dos campos.
+  - Ao focar sobre um campo do tipo `texto sensível`, a aplicação mostra o valor atual do campo para permitir a edição, ocultando novamente o valor ao sair do foco do campo.
+  - O segredo preserva sua identidade durante toda a edição.
   - O usuário pode alternar para a edição avançada caso precise alterar a estrutura do segredo.
-  - Após a confirmação, o segredo preserva seu estado anterior se já estiver em `Segredo novo` ou `Segredo modificado`.
+  - Durante a edição padrão, o usuário poderá solicitar a edição avançada. As alterações de valores realizadas até o momento serão preservadas, e ficarão disponíveis para edição avançada. 
+  Após a confirmação, o segredo preserva seu estado anterior se já estiver em `Segredo novo` ou `Segredo modificado`.
   - Após a confirmação, se o segredo estava em `Segredo disponível`, ele passa para `Segredo modificado`.
   - Após a confirmação, o cofre entra em estado `Cofre Modificado`.
+  - O segredo volta a visualização normal, mostrando os campos com os dados sensíveis ocultos por padrão.
 
 **Editar segredo (edição avançada)**
-  - O usuário seleciona ou visualiza um segredo existente e inicia a edição avançada.
-  - A aplicação abre o segredo no modo de edição avançada.
+  - O usuário visualiza o segredo ou está editando via edição padrão, solicita a edição avançada.
+  - O segredo entra no modo de edição avançada.
   - Nesse modo, o usuário altera apenas a estrutura do segredo.
   - Não é permitido alterar o tipo de um campo existente. Para isso, é necessário excluir o campo e criar um novo com o tipo desejado.
-  - A identidade do segredo é preservada durante toda a edição.
+  - O segredo preserva sua identidade durante toda a edição.
   - O usuário pode alternar para a edição padrão quando quiser voltar a alterar os valores dos campos.
+  - Durante a edição avançada, o usuário poderá solicitar a edição padrão. As alterações de estrutura realizadas até o momento serão preservadas, e ficarão disponíveis para edição padrão.
   - Após a confirmação, o segredo preserva seu estado anterior se já estiver em `Segredo novo` ou `Segredo modificado`.
   - Após a confirmação, se o segredo estava em `Segredo disponível`, ele passa para `Segredo modificado`.
   - Após a confirmação, o cofre entra em estado `Cofre Modificado`.
+  - O segredo volta a visualização normal, mostrando os campos com os dados sensíveis ocultos por padrão.
 
 **Excluir segredo reversivelmente**
-  - O usuário seleciona ou visualiza um segredo disponível e inicia a ação de remoção.
-  - A aplicação exige confirmação, mas a remoção é reversível até o próximo salvamento do cofre.
-  - A identidade e o conteúdo do segredo permanecem preservados.
+  - O usuário solicita a remoção.
+  - A aplicação exige confirmação (apesar da remoção ser reversível até o próximo salvamento do cofre).
+  - O segredo preserva sua identidade e seu conteúdo durante a remoção.
   - A aplicação memoriza a pasta de origem do segredo (ou a raiz do cofre, caso o segredo estivesse na raiz) e o estado do segredo antes da exclusão, para permitir restauração ao local e estado originais.
   - Enquanto o segredo permanecer na Lixeira, a aplicação não permite edição desse segredo.
   - O cofre entra em estado `Cofre Modificado`, a aplicação retira o segredo da hierarquia principal e o materializa na pasta virtual Lixeira.
 
 **Restaurar segredo excluído reversivelmente**
-  - O usuário seleciona um segredo presente na Lixeira e inicia a ação de restauração.
-  - A identidade e o conteúdo do segredo são preservados durante a restauração.
+  - O segredo ativo é um segredo removido reversivelmente, presente na pasta virtual Lixeira.
+  - O usuário solicita a restauração.
+  - O segredo preserva sua identidade e seu conteúdo durante a restauração.
   - Se a pasta de origem ainda existir na hierarquia, o segredo é reinserido nessa pasta, ao final da lista de segredos.
   - Se a pasta de origem tiver sido excluída após o soft delete, o segredo é reinserido na raiz do cofre, ao final da lista de segredos, e a aplicação exibe uma mensagem informando que a pasta original não existe mais.
   - Após a restauração, o segredo retorna ao estado que possuía antes da exclusão reversível.
   - O cofre entra em estado `Cofre Modificado`.
 
 **Mover segredo**
-  - O usuário seleciona um segredo existente e inicia a ação de movimentação.
+  - O usuário solicita a movimentação para outra pasta ou para a raiz do cofre.
   - A aplicação coleta o novo destino, que pode ser outra pasta ou a raiz do cofre.
   - O segredo é removido da coleção atual e reinserido na coleção de destino, preservando identidade, conteúdo e marcação de favorito.
   - A identidade e o conteúdo do segredo são preservados durante toda a movimentação. O estado do segredo permanece inalterado, mas sua posição na hierarquia é atualizada para refletir o novo destino.
@@ -586,7 +600,7 @@ Pressupõe-se que:
   - Após a confirmação, o cofre entra em estado `Cofre Modificado`.
 
 **Reordenar segredo**
-  - O usuário seleciona um segredo existente e inicia a ação de reordenação relativa.
+  - O usuário solicita a reordenação relativa.
   - A aplicação altera apenas sua posição entre os segredos irmãos da mesma coleção pai.
   - A nova ordem passa a refletir diretamente a ordem persistida e a ordem de exibição.
   - A identidade e o conteúdo do segredo são preservados durante toda a movimentação. O estado do segredo permanece inalterado, mas sua posição na hierarquia é atualizada para refletir o novo destino.
