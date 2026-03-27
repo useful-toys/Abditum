@@ -12,6 +12,17 @@ Ele permite que os usuários armazenem e gerenciem suas senhas e informações c
 ## Conceitos fundamentais
 O cofre é o espaço seguro onde o usuário organiza seus segredos. Cada segredo representa uma credencial ou informação confidencial — como o acesso a um site, um cartão de crédito ou uma chave de API — e é composto por campos. Os campos comuns armazenam informações visíveis, como nome do serviço ou usuário. Os campos sensíveis, como senhas e códigos, permanecem ocultos por padrão.
 
+## Como protegemos seus dados
+ 
+O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém além de você.
+ 
+ - **Criptografia forte**: o cofre é protegido por criptografia AES-256, uma das mais seguras disponíveis atualmente, garantindo que seus dados permaneçam protegidos mesmo se o arquivo do cofre for comprometido.
+ - **Conhecimento zero**: a aplicação não possui meios de acessar ou recuperar seus dados sem a senha mestra. Nem o desenvolvedor do produto tem acesso ao conteúdo do seu cofre.
+ - **Privacidade local**: o Abditum não armazena nenhuma informação fora do arquivo do cofre e não acessa a rede ou serviços em nuvem. O arquivo do cofre fica onde você decidir — inclusive em um serviço de nuvem, se você optar por isso.
+ - **Proteção em memória**: ao bloquear o cofre, a aplicação minimiza a retenção de dados sensíveis em memória e limpa os buffers sob seu controle sempre que possível. A senha mestra é sobrescrita e buffers sensíveis são descartados.
+ - **Proteção visual**: campos sensíveis ficam ocultos por padrão e a interface foi pensada para não chamar atenção — ideal para uso em ambientes públicos ou compartilhados.
+ - **Responsabilidade compartilhada**: a Observação é um campo sempre visível para notas do usuário. Por essa razão, **não deve ser utilizada para dados sensíveis** como senhas, tokens ou informações pessoais — use campos sensíveis do modelo para isso. O uso responsável da Observação é de responsabilidade do usuário.
+
 ## Conceitos (Glossário)
 
 - **Senha mestra**: chave de acesso ao cofre, usada para criptografar e descriptografar os dados
@@ -27,16 +38,6 @@ O cofre é o espaço seguro onde o usuário organiza seus segredos. Cada segredo
 - **Pasta**: estrutura que agrupa segredos e outras pastas dentro do cofre
 - **Modelo de segredo**: estrutura predefinida de campos para agilizar a criação de segredos
 
-## Como protegemos seus dados
- 
-O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém além de você.
- 
- - **Criptografia forte**: o cofre é protegido por criptografia AES-256, uma das mais seguras disponíveis atualmente, garantindo que seus dados permaneçam protegidos mesmo se o arquivo do cofre for comprometido.
- - **Conhecimento zero**: a aplicação não possui meios de acessar ou recuperar seus dados sem a senha mestra. Nem o desenvolvedor do produto tem acesso ao conteúdo do seu cofre.
- - **Privacidade local**: o Abditum não armazena nenhuma informação fora do arquivo do cofre e não acessa a rede ou serviços em nuvem. O arquivo do cofre fica onde você decidir — inclusive em um serviço de nuvem, se você optar por isso.
- - **Proteção em memória**: ao bloquear o cofre, a aplicação minimiza a retenção de dados sensíveis em memória e limpa os buffers sob seu controle sempre que possível.
- - **Proteção visual**: campos sensíveis ficam ocultos por padrão e a interface foi pensada para não chamar atenção — ideal para uso em ambientes públicos ou compartilhados.
- 
 ## Requisitos Funcionais
 
 ### Ciclo de Vida do Cofre
@@ -46,7 +47,8 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - Criar automaticamente os modelos padrão: Login, Cartão de Crédito, Chave de API
 - Abrir cofre a partir de um arquivo existente com senha mestra
   - Validar arquivo contra corrupção e senha incorreta
-  - Se o arquivo estiver corrompido, informar erro e impedir abertura (sem opção de recuperação)
+  - Se o arquivo estiver corrompido, exibir mensagem de erro genérica (sem detalhes técnicos sobre o tipo de corrupção) e impedir abertura (sem opção de recuperação)
+  - Se a Pasta Geral não existir no arquivo, rejeitar com mensagem de erro (arquivo inválido ou corrompido) — não tentar recriar
   - Se a senha for incorreta, exibir mensagem de erro e permitir nova tentativa
 - Salvar cofre no arquivo atual
   - Garantir a integridade e evitar corrompimento do arquivo
@@ -67,6 +69,8 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Bloquear o cofre manualmente ou automaticamente após inatividade
   - Bloquear automaticamente após tempo configurável de inatividade, com valor padrão sugerido de 5 minutos
   - O bloqueio retorna ao fluxo de abertura do cofre, exigindo nova autenticação para retomar o acesso
+  - Ao bloquear, a senha mestra é limpa da memória (sobrescrita com zeros) e buffers sensíveis são descartados
+  - Implementação esforça-se por usar memória protegida (mlock/VirtualLock quando disponível) durante a sessão para impedir swap do arquivo de memória para disco
 - Exportar cofre para arquivo JSON
   - Exibir aviso sobre os riscos de segurança e solicitar confirmação antes de exportar
 - Importar cofre de arquivo JSON
@@ -108,6 +112,9 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Mover segredo para outra pasta
   - O segredo será movido para a pasta de destino escolhida
 - Reordenar segredo dentro da mesma pasta
+  - A ordenação é mantida em memória durante a sessão
+  - Múltiplas reordenações antes de salvar resultam em estado final apenas (histórico de movimentos descartado)
+  - Ao salvar, a ordem final é persistida no arquivo
 
 ### Gerenciamento de Pastas
 - Criar pasta dentro de outra pasta
@@ -116,6 +123,9 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - A pasta será movida para a pasta de destino escolhida
   - O sistema valida e impede movimentos que criariam ciclos na hierarquia (ex: mover Pasta A para dentro de Pasta B se B já está dentro de A)
 - Reordenar pasta dentro da mesma pasta
+  - A ordenação é mantida em memória durante a sessão
+  - Múltiplas reordenações antes de salvar resultam em estado final apenas (histórico de movimentos descartado)
+  - Ao salvar, a ordem final é persistida no arquivo
 - Excluir pasta
   - Ao excluir uma pasta, seus segredos e subpastas são movidos para a pasta que a continha
   - Segredos movidos são adicionados ao final da lista de segredos da pasta que a continha
@@ -200,6 +210,9 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - Abre "versão restrita" do cofre com segredos/pastas sensíveis ocultos
 - Alterar ou remover duress password durante uso normal do cofre
 - Configurar quais segredos/pastas são visíveis na versão restrita
+
+#### ⏳ Decisões Pendentes (v2)
+- **Duress password após alteração de senha mestra**: Se o usuário altera a senha mestra durante uma sessão normal, qual é o relacionamento com duress password? Continua usando a senha mestra antiga ou nova? Como persiste essa mudança na próxima sessão?
 
 ## Fora de Escopo (v1)
 
