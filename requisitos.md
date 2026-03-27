@@ -21,6 +21,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
  - **Privacidade local**: o Abditum não armazena nenhuma informação fora do arquivo do cofre e não acessa a rede ou serviços em nuvem. O arquivo do cofre fica onde você decidir — inclusive em um serviço de nuvem, se você optar por isso.
  - **Proteção em memória**: ao bloquear o cofre, a aplicação minimiza a retenção de dados sensíveis em memória e limpa os buffers sob seu controle sempre que possível. A senha mestra é sobrescrita e buffers sensíveis são descartados.
  - **Proteção visual**: campos sensíveis ficam ocultos por padrão e a interface foi pensada para não chamar atenção — ideal para uso em ambientes públicos ou compartilhados.
+ - **Dependências mínimas**: a aplicação utiliza o menor número possível de dependências externas. Cada dependência foi avaliada individualmente quanto à necessidade e ao risco de segurança. Operações de criptografia são realizadas exclusivamente com packages da standard library de Go e `golang.org/x/crypto` — nunca com libs de terceiros.
  - **Responsabilidade compartilhada**: a Observação é um campo sempre visível para notas do usuário. Por essa razão, **não deve ser utilizada para dados sensíveis** como senhas, tokens ou informações pessoais — use campos sensíveis do modelo para isso. O uso responsável da Observação é de responsabilidade do usuário.
 
 ## Conceitos (Glossário)
