@@ -51,10 +51,17 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Salvar cofre no arquivo atual
   - Garantir a integridade e evitar corrompimento do arquivo
   - Segredos marcados para exclusão são removidos permanentemente
+  - Usar a senha originalmente fornecida ao abrir (ou alterá-la caso tenha sido alterada) — não solicitar novamente
 - Salvar cofre em outro arquivo
   - O arquivo de destino não pode ser o mesmo arquivo atual do cofre
   - Segredos marcados para exclusão são removidos permanentemente
+  - Após a operação, o arquivo de trabalho atual passa a ser o novo arquivo
+  - Próximas modificações e salvamentos ocorrem sobre o novo arquivo, não o original
+  - Usar a senha originalmente fornecida ao abrir (ou alterá-la caso tenha sido alterada) — não solicitar novamente
 - Descartar alterações não salvas e recarregar o cofre
+  - Descarta todas as alterações realizadas desde o último salvamento (se houver) ou desde a abertura do cofre (se nunca foi salvo)
+  - O cofre é recarregado ao seu estado anterior
+  - Usar a senha originalmente fornecida ao abrir — não solicitar novamente
 - Alterar a senha mestra do cofre
   - Exigir digitação dupla para confirmação
 - Bloquear o cofre manualmente ou automaticamente após inatividade
@@ -75,6 +82,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 ### Consulta dos Segredos
 - Exibir o cofre com suas pastas e segredos
 - Buscar segredos por nome, nome de campo, valor de campo comum ou observação
+  - A busca funciona por substring, ignorando acentuação e capitalização (case-insensitive)
   - Campos sensíveis nunca participam da busca
 - Exibir um segredo com nome, seus campos e a observação
 - Exibir temporariamente o valor de um campo sensível
@@ -128,6 +136,12 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Pasta pode conter segredos e outras pastas
 - O cofre sempre contém a pasta Geral
 
+### Hierarquia de Pastas
+- Pastas formam uma estrutura em árvore com a Pasta Geral como raiz
+- Ciclos não são permitidos — uma pasta nunca pode ser movida para dentro de seus próprios descendentes
+- Cada pasta tem exatamente um ancestral direto (exceto a Pasta Geral, que é a raiz)
+- Todas as pastas devem ser navegáveis a partir da Pasta Geral — nenhuma pasta pode ficar desconectada da hierarquia
+
 ### Pasta Geral
 - A pasta Geral não pode ser renomeada
 - A pasta Geral não pode ser movida
@@ -166,6 +180,13 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Observação é um campo comum (sempre visível, não sensível)
 - Observação não é declarada no modelo de segredo
 - O uso responsável da observação é por conta e risco do usuário — o campo não prevê ocultação nem tratamento especial
+
+### Gerenciamento de Senha na Sessão
+- A senha é fornecida uma única vez ao abrir o cofre (ou ao alterar a senha mestra)
+- A mesma senha é usada para todas as operações de criptografia durante a sessão (salvar, descartar)
+- Não há re-solicitation de senha para salvamento ou descarte
+- Se a senha mestra for alterada durante a sessão, a nova senha passa a ser usada para próximas operações
+- Ao bloquear o cofre, a senha é removida da memória e será novamente solicitada na próxima abertura
 
 ## Requisitos v2
 
