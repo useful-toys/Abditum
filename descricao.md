@@ -1,132 +1,42 @@
-# Abditum - Cofre de Senhas Portátil e Seguro
 
-## O que é
+## Decisões de UX
 
-Abditum é um cofre de senhas portátil, seguro e fácil de usar, com uma interface TUI moderna. 
-Ele permite que os usuários armazenem e gerenciem suas senhas e informações confidenciais de forma organizada e protegida, sem depender de serviços em nuvem ou instalações complexas.
+### Pasta Geral
+- Todo segredo vive dentro de uma pasta — não existe segredo fora de uma pasta
+- A pasta Geral é a pasta padrão do cofre, sempre presente e não pode ser renomeada nem excluída
+- Ao mover um segredo ou pasta sem destino definido, o destino padrão é a pasta Geral
 
-## Diferenciais
+### Pastas padrão criadas com o cofre
+Editáveis e removíveis pelo usuário, exceto a pasta Geral:
+- Geral (não removível e não renomeável)
+- Sites e Apps
+- Financeiro
 
-O cofre deve ser completamente portátil e seguro — um único arquivo executável que qualquer pessoa pode copiar e usar discretamente em qualquer lugar, sem persistir dados fora do arquivo do cofre, exceto artefatos transitórios e backups explicitamente previstos pela própria aplicação. 
+### Modelos padrão criados com o cofre
+Editáveis e removíveis pelo usuário como qualquer outro modelo:
+- Modelo "Login": campos URL, Usuário e Senha
+- Modelo "Cartão de Crédito": campos Número, Nome no Cartão, Validade e CVV
+- Modelo "Chave de API": campos Serviço e Chave
 
-O controle e a propriedade dos dados ficam inteiramente nas mãos do usuário, sem depender de terceiros ou serviços em nuvem.
+### Busca
+- Todos os segredos que satisfaçam qualquer critério de busca são exibidos como resultado
 
-O formato do segredo é flexível e personalizável, permitindo que os usuários criem seus próprios modelos de segredo com campos personalizados, além de oferecer modelos pré-definidos para tipos comuns de segredos.
-
-## Requisitos Funcionais
-
-### Ciclo de Vida do Cofre
-
-- Criar novo cofre com caminho e senha mestra
-- Abrir cofre existente com caminho e senha mestra
-- Descartar alterações não salvas e recarregar cofre
-- Salvar cofre no caminho atual
-- Salvar cofre em novo caminho
-- Alterar a senha mestra do cofre
-- Bloquear cofre manualmente (equivale a fechar o cofre, mantendo a aplicação em execução, voltando à tela de abertura do cofre e minimizando a retenção de dados sensíveis em memória, com limpeza dos buffers controlados pela aplicação sempre que possível)
-- Bloquear automaticamente após inatividade (mesmo processo do bloqueio manual, mas acionado por temporizador configurável)
-- Exportar cofre para formato JSON plain text
-- Importar cofre de formato JSON plain text, tratando conflitos com elementos já existentes no cofre atual
-  - Regras de tratamento de conflito na importação:
-    - Pastas com a mesma identidade da pasta já existente no cofre atual têm sua hierarquia mesclada
-    - Se um segredo importado colidir por identidade com um segredo já existente no cofre atual, a aplicação deve criar uma nova identidade para o segredo importado, preservando seus demais dados
-    - Se um segredo importado colidir por nome com outro segredo já existente na mesma pasta de destino (ou na raiz, quando o destino for a raiz), a aplicação deve ajustar seu nome com um sufixo numérico incremental para evitar ambiguidade visual. Ex: "Segredo" → "Segredo (1)", "Segredo (2)", etc.
-    - Se houver conflito de segredos durante a importação, a aplicação deve informar que os segredos conflitantes por nome foram importados com nomes sufixados incrementalmente
-    - Se houver conflito de pastas durante a importação, o merge da hierarquia ocorre silenciosamente
-    - Modelos de segredo com a mesma identidade de um modelo já existente no cofre atual são sobrepostos pelo modelo importado
-    - Se houver conflito de modelos durante a importação, a substituição pelo modelo importado ocorre silenciosamente
-- Configurar o cofre
-  - Tempo para bloqueio automático por inatividade
-  - Tempo para ocultar valor de campo de segredo após exibição temporária
-  - Tempo para limpar a área de transferência automaticamente
+### Importação de Arquivo JSON
+- Conflitos de nome são informados ao usuário ao final da importação
 
 
-### Navegação da Hierarquia do Cofre (somente leitura)
-- Exibir hierarquia do cofre (pastas e segredos)
-- Exibir detalhes do segredo selecionado
-- Exibir temporariamente o valor de um campo de segredo (ex: senha) com opção de ocultar/mostrar
-  - Ocultar automaticamente o valor do campo de segredo conforme a configuração do cofre, com valor padrão sugerido de 15 segundos
+## Decisões Técnicas
+- Derivação de chave realizada com Argon2id com parâmetros de alto custo de memória e tempo, para dificultar ataques de força bruta
+- A busca ocorre apenas em memória após o desbloqueio do cofre, sem nenhum índice persistido em disco
+- Ao bloquear ou fechar o cofre, a aplicação minimiza a retenção de dados sensíveis em memória e limpa os buffers sob seu controle sempre que possível
 
-### Gerenciamento de Segredos
-- Criar um segredo
-  - Como:
-    - Usando um modelo de segredo existente
-    - Começando com um segredo vazio, sem nenhum campo inicial
-    - Quando o segredo é criado a partir de um modelo, ele não mantém vínculo por referência com o modelo. O nome do modelo é guardado apenas como histórico ("snapshot" do momento da criação). Alterar a estrutura (campos), renomear ou excluir o modelo posteriormente não afeta os segredos já criados.
-  - Onde:
-    - Na raiz do cofre
-    - Em uma pasta
-- Duplicar um segredo existente
-- Favoritar/desfavoritar um segredo
-- Editar um segredo existente:
-  - Alterar dados do segredo: alterar nome do segredo, alterar os valores nos campos (dados normais e sensíveis) e alterar a observação.
-  - Alterar estrutura do segredo:
-        - Incluir um novo campo de segredo
-            - Informar o nome do campo de segredo
-            - Informar o tipo do campo de segredo
-        - Alterar um campo de segredo
-            - Alterar o nome do campo de segredo
-          - Não suportado: alterar o tipo do campo de segredo
-        - Excluir um campo de segredo
-        - Alterar a posição (reordenar) de um campo de segredo 
-- Remover um segredo de forma reversível até o próximo salvamento do cofre
-- Restaurar um segredo excluído reversivelmente antes do próximo salvamento do cofre
-- Mover um segredo para outra pasta ou para a raiz do cofre
-- Mover (reordenar) segredo relativamente a outros segredos dentro da mesma pasta ou raiz do cofre
-- Buscar segredos por nome, por nome de campo, por valor de campos do tipo `texto` ou por observação
-  - Campos do tipo `texto sensível` nunca participam da busca
-  - A observação é considerada dado não sensível e não deve ser usada para armazenar segredos
-  - Todos os segredos que satisfaçam qualquer critério de busca devem ser exibidos como resultado, independentemente de haver destaque visual no nome
-  - A busca ocorre apenas em memória, após o desbloqueio do cofre, sem manter qualquer índice persistido
 
-### Gerenciamento de Hierarquia
- - Criar pasta
-   - Onde:
-    - Na raiz do cofre
-    - Em uma pasta
- - Renomear pasta
- - Mover pasta para 
-    - outra pasta
-    - raiz do cofre
- - Mover (reordenar) pasta relativamente a outras pastas dentro da mesma pasta ou raiz do cofre
- - Excluir pasta, movendo seus segredos e suas subpastas filhas para a pasta pai (ou para a raiz do cofre, se a pasta excluída estiver na raiz do cofre). Os segredos promovidos são adicionados ao final da lista de segredos do pai, e as subpastas promovidas são adicionadas ao final da lista de pastas do pai.
- - Pastas pré-definidas ao criar um novo cofre, mas editáveis e removíveis pelo usuário
-    - Pasta "Sites"
-    - Pasta "Financeiro"
-    - Pasta "Serviços"
- 
-### Gerenciamento de Modelos de Segredo
-- Criar modelo de segredo com campos personalizados
-- Editar modelo de segredo existente
-    - A alteração na estrutura de um modelo (adição, modificação ou exclusão de campos) afeta apenas as criações futuras. Os segredos previamente criados a partir deste modelo permanecerão inalterados.
-    - Incluir um novo campo de segredo
-        - Informar o nome do campo de segredo
-        - Informar o tipo do campo de segredo
-    - Alterar um campo de segredo
-        - Alterar o nome do campo de segredo
-        - Alterar o tipo do campo de segredo
-    - Excluir um campo de segredo
-    - Alterar a posição (reordenar) de um campo de segredo
-- Remover modelo de segredo
-- Criar modelo de segredo a partir de um segredo existente, copiando os campos do segredo como estrutura inicial para o novo modelo
-- Modelos de segredo pré-definidos criados no cofre por padrão, mas editáveis e removíveis pelo usuário
-    - Modelo de segredo "Login": campos "URL", "Username" e "Password"
-    - Modelo de segredo "Cartão de Crédito": campos "Número do Cartão", "Nome no Cartão", "Data de Validade" e "CVV"
-    - Modelo de segredo "API Key": campos "Nome da API", "Chave de API"
 
-### Área de Transferência
 
-- Copiar qualquer campo para a área de transferência
-- Limpar automaticamente a área de transferência conforme a configuração do cofre, com valor padrão sugerido de 30 segundos
-- Limpar automaticamente a área de transferência ao bloquear ou fechar o cofre
+## Coisas para Repensar
 
-### Segurança
-- Ao criar ou alterar a senha mestra, exigir digitação dupla para confirmação
-- Os controles de bloqueio automático por inatividade, reocultação temporizada de campos sensíveis e limpeza automática da área de transferência são obrigatórios como mecanismos de redução de exposição e seguem as regras funcionais já definidas nas seções de ciclo de vida do cofre, navegação e área de transferência
-- Proteção contra brute force e ataques offline — garantida através de parâmetros rígidos do Argon2id (custo alto de memória e tempo) para atrasar tentativas de derivação de chave
-- Minimizar a retenção de dados sensíveis em memória e limpar, sempre que possível, os buffers controlados pela aplicação ao bloquear ou fechar o cofre
-- Proteção contra shoulder surfing — atalho para ocultar toda a interface rapidamente
-- Ao exportar o cofre para formato JSON plain text, mostrar mensagem de aviso sobre os riscos de segurança envolvidos e pedir confirmação do usuário antes de prosseguir com a exportação
+- O termo "identidade" aparece nas regras de importação de arquivo JSON mas não foi definido no glossário — é um conceito técnico interno que pode precisar de esclarecimento ou substituição por linguagem mais acessível.
+- 
 
 ## Requisitos não Funcionais
 - Criptografia: AES-256-GCM para criptografia dos dados e Argon2id para derivação de chave a partir da senha mestra
@@ -167,32 +77,6 @@ O formato do segredo é flexível e personalizável, permitindo que os usuários
 - Relatório de Saúde do Cofre (Auditoria): analisar localmente todas as senhas armazenadas e alertar o usuário sobre senhas fracas, reutilizadas em múltiplos segredos ou muito antigas.
 - Autenticação de Dois Fatores Offline (Keyfile / Token de Hardware): permitir que o cofre exija, além da senha mestra, um arquivo físico específico (keyfile) ou interação com um token USB (ex: YubiKey) para ser descriptografado.
 
-## Conceitos (Glossário)
-- Senha mestra: chave de acesso ao cofre, usada para criptografar e descriptografar os dados
-- Cofre: arquivo criptografado que armazena as senhas e informações do usuário
-  - Bloqueio do cofre: processo de proteção em que o aplicativo continua em execução, o acesso ao conteúdo do cofre é interrompido, a aplicação minimiza a retenção de dados sensíveis em memória, limpa os buffers sob seu controle sempre que possível e retorna ao fluxo de abertura do cofre, exigindo nova autenticação para retomar o acesso
-- Segredo: item individual dentro do cofre, com dados comuns e dados sensíveis
-    - Segredo favorito: um segredo marcado pelo usuário como prioritário ou de uso frequente, ganhando destaque para acesso rápido
-- Dados: informações armazenadas em um segredo
-    - Dados comuns: informações não sensíveis, como nome do serviço ou URL
-    - Dados sensíveis: informações confidenciais, como senha, apikeys
-    - Observação: campo de texto livre para o usuário adicionar informações adicionais sobre o segredo
-- Campo de segredo: elemento individual dentro de um segredo, com nome, tipo e valor, que armazena um dado específico
-    - Tipo do campo de segredo: define o tipo de dado que o campo pode armazenar (restrito a texto ou texto sensível).
-- Hierarquia do cofre: organização dos segredos em pastas e subpastas dentro do cofre
-    - Raiz do cofre: o nível estrutural primário e mais alto da hierarquia, que contém os segredos e pastas que não estão aninhados em outras pastas
-    - Pasta: contêiner estrutural utilizado para agrupar e organizar segredos e outras subpastas na hierarquia
-    - Pasta virtual: agrupamento lógico gerado pelo sistema que exibe uma visão de segredos localizados em outras pastas ou na raiz do cofre, com base em características específicas, sem alterar a localização real deles na hierarquia
-- Modelo de segredo: estrutura para criar segredos com campos específicos, como login, senha, URL, etc.
-    - Modelo de segredo pré-definido: modelo de segredo fornecido pelo sistema, com campos comuns para tipos de segredos populares (ex: login, cartão de crédito, apikey)
-    - Modelo de segredo personalizado: modelo de segredo criado e estruturado pelo próprio usuário para atender a necessidades específicas de formato
-    - Campo modelo de segredo: elemento individual dentro de um modelo de segredo que representa um campo específico a ser preenchido ao criar um segredo a partir do modelo, com nome e tipo definidos
-- Senha falsa de coação (Duress Password): senha mestra alternativa configurada para abrir uma versão restrita ou falsa do cofre, protegendo os dados reais em situações de ameaça ou extorsão física
-- Conhecimento Zero (Zero Knowledge): princípio de negócio e segurança em que a aplicação não possui meios de acessar ou recuperar os dados sem a senha mestra do usuário
-- Exclusão reversível (Soft Delete): mecanismo pelo qual um segredo excluído reversivelmente permanece restaurável até o próximo salvamento definitivo do cofre
-- Auditoria de senhas (Saúde do Cofre): processo de análise de segurança para alertar o usuário sobre a presença de senhas fracas, antigas ou reutilizadas
-- TOTP (Autenticação de Dois Fatores): código numérico temporário gerado em tempo real pelo cofre a partir de uma chave secreta, servindo como reforço de segurança para acesso a serviços externos
-- Shoulder Surfing: técnica de espionagem física mitigada pela aplicação, onde um indivíduo mal-intencionado observa a tela do usuário para roubar informações visíveis
 
 ## Modelagem
 
