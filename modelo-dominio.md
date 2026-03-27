@@ -3,10 +3,10 @@
 ## Princípios de Modelagem
 
 - **Hierarquia recursiva**: a raiz do cofre é a Pasta Geral. Pastas podem conter segredos e subpastas em qualquer nível de aninhamento.
-- **Ordenação por posição**: a ordem dos elementos no JSON reflete diretamente a ordem de exibição. Segredos aparecem antes de subpastas dentro de cada coleção. Campos seguem a ordem de inserção/reordenação pelo usuário.
+- **Ordenação por posição**: a ordem dos elementos no JSON reflete diretamente a ordem de exibição. Subpastas aparecem antes dos segredos dentro de cada coleção. Campos seguem a ordem de inserção/reordenação pelo usuário.
 - **Modelo como snapshot**: segredos criados a partir de modelos não mantêm vínculo por referência. O nome do modelo é guardado apenas como registro histórico. Não há distinção estrutural entre segredos criados com ou sem modelo.
 - **Identidade por NanoID**: entidades com identidade persistida (Segredo, Pasta, ModeloSegredo) usam NanoID de 6 caracteres alfanuméricos. O espaço de 62⁶ (~56 bilhões) combinações garante unicidade prática sem coordenação central. O NanoID é diretamente serializável como string JSON e permanece estável através de importação, exportação, movimentação e migração de formato. O nome não é identificador — nomes repetidos são permitidos onde não explicitamente proibido.
-- **Campos uniformes**: o valor de um campo é sempre uma string. String vazia representa campo existente e não preenchido — não há distinção de estado entre preenchido e vazio.
+- **Campos uniformes**: o valor de um campo é sempre texto UTF-8. Em memória, `CampoSegredo.valor` é representado como `[]byte` para permitir zeragem explícita ao bloquear ou encerrar. No JSON persistido, é serializado como string UTF-8 legível — sem Base64 — via marshal/unmarshal customizado. String vazia (ou slice vazio) representa campo existente e não preenchido — não há distinção de estado entre preenchido e vazio.
 - **Observação implícita**: todo segredo possui um campo de observação que não é declarado em modelos e não pode ser removido. Ocupa sempre a última posição. É dado não sensível.
 - **Busca sequencial em memória**: o cofre não mantém índices ou estruturas auxiliares de busca. Buscas são varreduras sequenciais sobre a estrutura carregada.
 - **Configurações embutidas**: as configurações operacionais são armazenadas dentro do próprio arquivo do cofre, sem arquivos externos.
@@ -73,8 +73,8 @@ Nenhum temporizador pode ser desabilitado — todos são obrigatórios.
 |-----------|---------------|------------------------------------------------------------|
 | id        | NanoID        | Identidade persistida                                      |
 | nome      | string        | Nome da pasta. Único entre irmãs da mesma pasta pai.      |
-| segredos  | list[Segredo] | Segredos diretamente nessa pasta, ordenados por posição    |
-| pastas    | list[Pasta]   | Subpastas nessa pasta, ordenadas por posição               |
+| pastas    | list[Pasta]   | Subpastas nessa pasta, ordenadas por posição (exibidas primeiro) |
+| segredos  | list[Segredo] | Segredos diretamente nessa pasta, ordenados por posição (exibidos depois) |
 
 A **Pasta Geral** é a raiz da hierarquia. Não pode ser renomeada, movida ou excluída.
 
@@ -96,7 +96,7 @@ A **Pasta Geral** é a raiz da hierarquia. Não pode ser renomeada, movida ou ex
 |----------|------------------------------|--------------------------------------------------------------|
 | nome     | string                       | Nome do campo. Sem restrição de unicidade dentro do segredo. |
 | tipo     | enum: texto, texto_sensivel  | Determina o comportamento de exibição                        |
-| valor    | string                       | Valor do campo. String vazia = campo não preenchido.         |
+| valor    | []byte (texto UTF-8)         | Valor do campo. Representado em memória como `[]byte` para permitir zeragem. Serializado como string UTF-8 no JSON. Vazio = campo não preenchido. |
 
 O campo **Observação** é um CampoSegredo especial: tipo `texto`, nome fixo "Observação", sempre na última posição, não pode ser renomeado, movido ou excluído.
 
@@ -148,8 +148,8 @@ Cofre:
 Pasta:
   id:       nanoid (6 chars)
   nome:     string
-  segredos: list[Segredo]
-  pastas:   list[Pasta]
+  pastas:   list[Pasta]    -- exibidas primeiro na TUI
+  segredos: list[Segredo]  -- exibidos depois na TUI
 
 Segredo:
   id:                  nanoid (6 chars)
@@ -163,7 +163,7 @@ Segredo:
 CampoSegredo:
   nome:  string
   tipo:  enum { texto | texto_sensivel }
-  valor: string                            -- string vazia = não preenchido
+  valor: []byte (UTF-8 em memória; string no JSON)  -- vazio = não preenchido
 
 ModeloSegredo:
   id:     nanoid (6 chars)

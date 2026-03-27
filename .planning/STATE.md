@@ -1,6 +1,6 @@
 # Project State — Abditum
 
-**Last updated:** 2026-03-27
+**Last updated:** 2026-03-27 (sessão de revisão de documentos)
 **Current phase:** Ready for Phase 1
 **Milestone:** v1.0
 
@@ -13,6 +13,10 @@
 | REQUIREMENTS.md | ✓ 55 requirements defined, traceability mapped |
 | research/ | ✓ STACK, FEATURES, ARCHITECTURE, PITFALLS, SUMMARY |
 | ROADMAP.md | ✓ 11 phases, all requirements mapped |
+| modelo-dominio.md | ✓ Revisado — ordem corrigida (subpastas antes de segredos) |
+| arquitetura.md | ✓ Revisado — versões Bubble Tea v2 explicitadas |
+| formato-arquivo-abditum.md | ✓ Revisado — Argon2id m=256 MiB incorporado ao REQUIREMENTS |
+| descricao.md | ✓ Revisado — ordem corrigida em fluxo \"Visualizar hierarquia\" |
 
 ## Current Phase
 
