@@ -145,73 +145,67 @@
 
 ## Traceability
 
-*(Preenchida durante criação do roadmap)*
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CRYPTO-01 | — | Pending |
-| CRYPTO-02 | — | Pending |
-| CRYPTO-03 | — | Pending |
-| CRYPTO-04 | — | Pending |
-| CRYPTO-05 | — | Pending |
-| CRYPTO-06 | — | Pending |
-| VAULT-01 | — | Pending |
-| VAULT-02 | — | Pending |
-| VAULT-03 | — | Pending |
-| VAULT-04 | — | Pending |
-| VAULT-05 | — | Pending |
-| VAULT-06 | — | Pending |
-| VAULT-07 | — | Pending |
-| VAULT-08 | — | Pending |
-| VAULT-09 | — | Pending |
-| VAULT-10 | — | Pending |
-| VAULT-11 | — | Pending |
-| VAULT-12 | — | Pending |
-| VAULT-13 | — | Pending |
-| VAULT-14 | — | Pending |
-| VAULT-15 | — | Pending |
-| VAULT-16 | — | Pending |
-| VAULT-17 | — | Pending |
-| ATOMIC-01 | — | Pending |
-| ATOMIC-02 | — | Pending |
-| ATOMIC-03 | — | Pending |
-| ATOMIC-04 | — | Pending |
-| COMPAT-01 | — | Pending |
-| COMPAT-02 | — | Pending |
-| COMPAT-03 | — | Pending |
-| QUERY-01 | — | Pending |
-| QUERY-02 | — | Pending |
-| QUERY-03 | — | Pending |
-| QUERY-04 | — | Pending |
-| QUERY-05 | — | Pending |
-| SEC-01 | — | Pending |
-| SEC-02 | — | Pending |
-| SEC-03 | — | Pending |
-| SEC-04 | — | Pending |
-| SEC-05 | — | Pending |
-| SEC-06 | — | Pending |
-| SEC-07 | — | Pending |
-| SEC-08 | — | Pending |
-| SEC-09 | — | Pending |
-| FOLDER-01 | — | Pending |
-| FOLDER-02 | — | Pending |
-| FOLDER-03 | — | Pending |
-| FOLDER-04 | — | Pending |
-| FOLDER-05 | — | Pending |
-| TPL-01 | — | Pending |
-| TPL-02 | — | Pending |
-| TPL-03 | — | Pending |
-| TPL-04 | — | Pending |
-| TPL-05 | — | Pending |
-| PWD-01 | — | Pending |
-| CI-01 | — | Pending |
-| CI-02 | — | Pending |
+| COMPAT-01 | 1 | Pending |
+| CI-01 | 1 | Pending |
+| CRYPTO-01 | 2 | Pending |
+| CRYPTO-02 | 2 | Pending |
+| CRYPTO-03 | 2 | Pending |
+| CRYPTO-04 | 2 | Pending |
+| CRYPTO-05 | 2 | Pending |
+| CRYPTO-06 | 2 | Pending |
+| PWD-01 | 2 | Pending |
+| VAULT-02 | 3 | Pending |
+| SEC-05 | 3 | Pending |
+| FOLDER-01 | 3 | Pending |
+| FOLDER-02 | 3 | Pending |
+| FOLDER-03 | 3 | Pending |
+| FOLDER-04 | 3 | Pending |
+| FOLDER-05 | 3 | Pending |
+| TPL-01 | 3 | Pending |
+| TPL-02 | 3 | Pending |
+| TPL-03 | 3 | Pending |
+| TPL-04 | 3 | Pending |
+| TPL-05 | 3 | Pending |
+| ATOMIC-01 | 4 | Pending |
+| ATOMIC-02 | 4 | Pending |
+| ATOMIC-03 | 4 | Pending |
+| ATOMIC-04 | 4 | Pending |
+| COMPAT-03 | 4 | Pending |
+| VAULT-01 | 6 | Pending |
+| VAULT-03 | 6 | Pending |
+| VAULT-04 | 6 | Pending |
+| VAULT-05 | 6 | Pending |
+| QUERY-01 | 7 | Pending |
+| QUERY-02 | 7 | Pending |
+| SEC-01 | 8 | Pending |
+| SEC-02 | 8 | Pending |
+| SEC-03 | 8 | Pending |
+| SEC-04 | 8 | Pending |
+| SEC-06 | 8 | Pending |
+| SEC-07 | 8 | Pending |
+| SEC-08 | 8 | Pending |
+| SEC-09 | 8 | Pending |
+| QUERY-03 | 8 | Pending |
+| VAULT-06 | 9 | Pending |
+| VAULT-07 | 9 | Pending |
+| VAULT-08 | 9 | Pending |
+| VAULT-09 | 9 | Pending |
+| VAULT-10 | 9 | Pending |
+| VAULT-15 | 9 | Pending |
+| VAULT-16 | 9 | Pending |
+| VAULT-17 | 9 | Pending |
+| VAULT-11 | 10 | Pending |
+| VAULT-12 | 10 | Pending |
+| VAULT-13 | 10 | Pending |
+| VAULT-14 | 10 | Pending |
+| QUERY-04 | 10 | Pending |
+| QUERY-05 | 10 | Pending |
+| CI-02 | 11 | Pending |
+| COMPAT-02 | 11 | Pending |
 
 **Coverage:**
-- v1 requirements: 55 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 55 ⚠️
-
----
-*Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27 after initialization*
+- v1 requirements: 57 total
+- Mapped to phases: 57
+- Unmapped: 0 ✓
