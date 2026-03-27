@@ -7,7 +7,7 @@ Ele permite que os usuários armazenem e gerenciem suas senhas e informações c
 ## Diferenciais
  - A aplicação é portátil e segura — um único arquivo executável que qualquer pessoa pode copiar e usar discretamente em qualquer lugar, sem persistir dados fora do arquivo do cofre (exceto artefatos transitórios e backups explicitamente previstos pela própria aplicação). 
  - O controle e a propriedade dos dados ficam inteiramente nas mãos do usuário, sem depender de terceiros ou serviços em nuvem.
- - O formato do segredo é flexível e personalizável, permitindo que os usuários criem seus próprios modelos de segredo com campos personalizados, além de oferecer modelos pré-definidos para tipos comuns de segredos.
+ - O formato do segredo é flexível e personalizável, permitindo que os usuários criem seus próprios modelos de segredo com campos personalizados, além de oferecer modelos padrão para tipos comuns de segredos.
  
 ## Conceitos fundamentais
 O cofre é o espaço seguro onde o usuário organiza seus segredos. Cada segredo representa uma credencial ou informação confidencial — como o acesso a um site, um cartão de crédito ou uma chave de API — e é composto por campos. Os campos comuns armazenam informações visíveis, como nome do serviço ou usuário. Os campos sensíveis, como senhas e códigos, permanecem ocultos por padrão.
@@ -76,7 +76,6 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Importar cofre de arquivo JSON
   - Pastas importadas que já existem no cofre (mesmo nome) têm seu conteúdo mesclado automaticamente
   - Segredo importado que já existe no cofre (mesmo identificador interno) é salvo como um novo segredo, preservando todos seus dados
-  - Segredo importado com nome conflitante na mesma pasta de destino recebe nome ajustado automaticamente — ex: "Segredo (1)", "Segredo (2)"
   - Modelo importado que já existe no cofre (mesmo identificador interno) é substituído silenciosamente
 - Configurar o cofre
   - Configurar tempo de bloqueio automático por inatividade (padrão: 5 minutos)
@@ -92,7 +91,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Exibir temporariamente o valor de um campo sensível
   - Ocultar o valor automaticamente após tempo configurável, com valor padrão sugerido de 15 segundos
 - Copiar temporariamente o valor de qualquer campo para a área de transferência
-  - Remover o valor da área de transferência automaticamente ao fechar a aplicação ou após tempo configurável, com valor padrão sugerido de 30 segundos
+  - Remover o valor da área de transferência automaticamente ao bloquear ou encerrar a aplicação, ou após tempo configurável, com valor padrão sugerido de 30 segundos
 
 ### Gerenciamento de Segredos
 - Criar segredo
@@ -103,11 +102,12 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - O histórico de modelo do segredo original é preservado no segredo duplicado
 - Editar segredo: alterar o nome do segredo, o valor de campos e/ou observação
   - Não altera a estrutura do segredo (para alterar estrutura, use Adicionar/Renomear/Reordenar/Excluir campo)
-- Alterar estrutura do segredo: adicionar campo (com nome e tipo); renomear campo; reordenar campos;  excluir campo
+- Alterar estrutura do segredo: adicionar campo (com nome e tipo); renomear campo; reordenar campos; excluir campo
   - Não permite alterar o tipo de um campo
   - Não permite alterar a posição, tipo ou nome da observação
 - Favoritar e desfavoritar segredo
 - Marcar e desmarcar segredo para exclusão
+  - Segredo marcado para exclusão permanece na lista, apenas sinalizado visualmente
   - Segredo marcado para exclusão é removido permanentemente ao salvar o cofre
 - Mover segredo para outra pasta
   - O segredo será movido para a pasta de destino escolhida
@@ -158,7 +158,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - A pasta Geral não pode ser reordenada
 - A pasta Geral não pode ser excluída
 - A pasta Geral pode estar vazia
-- A pasta Geral é sempre o destino final quando segredos/subpastas são movidos por exclusão de pasta
+- A pasta Geral, por ser a raiz da hierarquia, é o destino natural quando segredos/subpastas de uma pasta diretamente dentro dela são movidos por exclusão — o mesmo comportamento se aplica a qualquer nível: o destino é sempre a pasta pai imediata da pasta excluída
 
 ### Nomes e Duplicidade
 - Não há restrição quanto a duplicidade do nome entre segredos
@@ -166,7 +166,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Não há restrição quanto a duplicidade do nome entre subpastas dentro da mesma pasta
 - Não há restrição quanto a duplicidade do nome entre modelos de segredo
 - Não há restrição quanto a duplicidade do nome entre campos de um mesmo modelo de segredo
-- Exceção à regra de não restrição de duplicidade: Ao duplicar e ao importar segredos, se houver conflito de nome entre segredos da mesma pasta, nome do segredo importado ou duplicado será ajustado automaticamente — ex: "Segredo (1)", "Segredo (2)"
+- Exceção à regra de não restrição de duplicidade: Ao duplicar um segredo, se houver conflito de nome entre segredos da mesma pasta, o nome do segredo duplicado será ajustado automaticamente — ex: "Segredo (1)", "Segredo (2)"
 
 ### Limites
 - Não há limite de quantidade para: pastas, segredos, modelos, campos em segredo, campos em modelo
@@ -184,11 +184,12 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Edições na estrutura de um modelo não alteram os segredos previamente criados a partir do modelo
 
 ### Observação
-- Observação é um campo que existe automaticamente em todo segredo
+- Observação é um campo que existe automaticamente em todo segredo, independente de como foi criado
 - Observação não pode ser renomeada
 - Observação não pode ser excluída
 - Observação é um campo comum (sempre visível, não sensível)
 - Observação não é declarada no modelo de segredo
+- Se um modelo contiver um campo com o nome "Observação", ele coexistirá com a Observação automática do segredo — não há conflito nem substituição
 - O uso responsável da observação é por conta e risco do usuário — o campo não prevê ocultação nem tratamento especial
 
 ### Gerenciamento de Senha na Sessão
@@ -219,4 +220,3 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 Funcionalidades deliberadamente excluídas desta versão:
 - **Auditoria de senhas**: Análise de força de senha, detecção de duplicatas, avaliação de risco
 - **TOTP (Two-Factor Authentication)**: Geração de código de autenticação de dois fatores
-
