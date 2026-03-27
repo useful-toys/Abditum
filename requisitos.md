@@ -53,20 +53,20 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Salvar cofre no arquivo atual
   - Garantir a integridade e evitar corrompimento do arquivo
   - Segredos marcados para exclusão são removidos permanentemente
-  - Usar a senha originalmente fornecida ao abrir (ou alterá-la caso tenha sido alterada) — não solicitar novamente
+  - Usar a senha ativa na sessão — não solicitar novamente
 - Salvar cofre em outro arquivo
   - O arquivo de destino não pode ser o mesmo arquivo atual do cofre
   - Segredos marcados para exclusão são removidos permanentemente
   - Após a operação, o arquivo de trabalho atual passa a ser o novo arquivo
   - Próximas modificações e salvamentos ocorrem sobre o novo arquivo, não o original
-  - Usar a senha originalmente fornecida ao abrir (ou alterá-la caso tenha sido alterada) — não solicitar novamente
+  - Usar a senha ativa na sessão — não solicitar novamente
 - Descartar alterações não salvas e recarregar o cofre
   - Descarta todas as alterações realizadas desde o último salvamento (se houver) ou desde a abertura do cofre (se nunca foi salvo)
   - O cofre é recarregado ao seu estado anterior
   - Usar a senha ativa no momento do descarte — não solicitar novamente (pode ser a senha original de abertura ou a nova senha, caso a senha mestra tenha sido alterada durante a sessão)
 - Alterar a senha mestra do cofre
   - Exigir digitação dupla para confirmação
-  - A alteração é imediata: o cofre é salvo automaticamente com a nova senha ao confirmar
+  - A alteração é imediata: o cofre é salvo automaticamente com a nova senha ao confirmar, incluindo todas as alterações pendentes da sessão
   - Após a alteração, não é possível descartar essa operação (o arquivo já foi regravado)
 - Bloquear o cofre manualmente ou automaticamente após inatividade
   - Bloquear automaticamente após tempo configurável de inatividade, com valor padrão sugerido de 5 minutos
@@ -75,6 +75,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - Implementação esforça-se por usar memória protegida (mlock/VirtualLock quando disponível) durante a sessão para impedir swap do arquivo de memória para disco
 - Exportar cofre para arquivo JSON
   - Exibir aviso sobre os riscos de segurança e solicitar confirmação antes de exportar
+  - Segredos marcados para exclusão não são incluídos no arquivo exportado
 - Importar cofre de arquivo JSON
   - Pastas importadas que já existem no cofre (mesmo caminho completo na hierarquia) têm seu conteúdo mesclado automaticamente; pastas com mesmo nome mas em caminhos diferentes são tratadas como pastas distintas
   - Novas pastas e novos segredos importados são inseridos ao final da lista correspondente na pasta de destino
@@ -90,6 +91,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Buscar segredos por nome, nome de campo, valor de campo comum ou observação
   - A busca funciona por substring, ignorando acentuação e capitalização (case-insensitive)
   - Campos sensíveis nunca participam da busca
+  - Segredos marcados para exclusão não aparecem nos resultados de busca
 - Exibir um segredo com nome, seus campos e a observação
 - Exibir temporariamente o valor de um campo sensível
   - Ocultar o valor automaticamente após tempo configurável, com valor padrão sugerido de 15 segundos
@@ -101,6 +103,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - A partir de um modelo existente ou como segredo sem campos de modelo — apenas com a Observação
   - O segredo pertencerá a uma pasta, escolhida no momento da criação
 - Duplicar segredo existente
+  - O segredo duplicado é criado na mesma pasta do original, imediatamente após o original na lista
   - O segredo duplicado recebe nome ajustado automaticamente — ex: "Segredo (1)", "Segredo (2)"
   - O histórico de modelo do segredo original é preservado no segredo duplicado
 - Editar segredo: alterar o nome do segredo, o valor de campos e/ou observação
@@ -181,7 +184,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 ### Ordenação
 - A ordenação de segredos, pastas e campos é mantida pela ação do usuário (reordenação manual)
 - A ordenação é persistida no arquivo do cofre
-- A ordenação inicial de novos elementos é determinada pela UX
+- A ordenação inicial de novos elementos é contextual: a UX utiliza o estado da interface no momento da criação (elemento em foco, pasta selecionada, contexto de navegação) como referência de posicionamento
 
 ### Segredos e Modelos
 - O segredo criado a partir de um modelo não mantém vínculo com ele — o nome do modelo é registrado apenas como histórico
@@ -200,10 +203,10 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - O uso responsável da observação é por conta e risco do usuário — o campo não prevê ocultação nem tratamento especial
 
 ### Gerenciamento de Senha na Sessão
-- A senha é fornecida uma única vez ao abrir o cofre (ou ao alterar a senha mestra)
-- A mesma senha é usada para todas as operações de criptografia durante a sessão (salvar, descartar)
-- Não há re-solicitation de senha para salvamento ou descarte
-- Se a senha mestra for alterada durante a sessão, a nova senha passa a ser usada para próximas operações
+- A senha é fornecida uma única vez ao abrir o cofre
+- A senha ativa é usada para todas as operações de criptografia durante a sessão (salvar, descartar)
+- Não há re-solicitação de senha para salvamento ou descarte
+- Alterar a senha mestra é uma operação imediata e irrevogável — o cofre é regravado na hora; não é uma mudança de estado da sessão
 - Ao bloquear o cofre, a senha é removida da memória e será novamente solicitada na próxima abertura
 
 ## Requisitos v2
