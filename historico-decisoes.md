@@ -1,70 +1,354 @@
 ## Histórico de Decisões
 
-**A pasta padrão do cofre se chama "Geral" e não pode ser renomeada**
-Eliminar o conceito técnico de "raiz" simplifica o vocabulário do produto — o usuário só precisa conhecer "pasta" e "segredo". A pasta Geral garante que sempre há um destino disponível para os segredos, sem criar o problema de um cofre sem pasta obrigatória. Não permitir renomear evita que seu comportamento especial fique invisível.
+# ARQUITETURA & HIERARQUIA
 
-**Todo segredo vive dentro de uma pasta — não existe segredo fora de uma pasta**
-A alternativa seria ter um nível "raiz" onde segredos e pastas coexistem sem estar dentro de nada. Essa estrutura gerou dificuldade consistente de descrição no documento, o que sinalizou que o conceito complicava mais do que ajudava. A pasta Geral resolve o problema sem introduzir um conceito novo.
+## 1. Pasta "Geral" como raiz não-renomeável ✓
 
-**O tipo de um campo não pode ser alterado após a criação**
-Converter um campo sensível em comum exporia seu conteúdo, que passaria a ser exibido sem proteção. Essa mudança silenciosa seria um risco de segurança difícil de perceber. A alternativa — excluir e recriar o campo — é explícita e segura.
+**Decisão:** A pasta padrão do cofre se chama "Geral", não pode ser renomeada e é o ponto raiz da hierarquia.
 
-**O segredo criado a partir de um modelo não mantém vínculo com ele**
-Manter vínculo por referência significaria que alterações no modelo afetariam segredos já criados, o que pode ser destrutivo e imprevisível para o usuário. A estrutura de um segredo é imutável após sua criação — o modelo fica livre para evoluir sem afetar segredos existentes. O nome do modelo é registrado apenas como histórico do momento da criação. Essa abordagem oferece ao usuário a segurança de que seus segredos não sofrerão mudanças inesperadas e ao gestor de modelos a liberdade de refatorar estruturas conforme necessário.
+**Contexto:** 
+- Eliminar o conceito técnico de "raiz" simplifica o vocabulário do produto — usuário só conhece "pasta" e "segredo"
+- Pasta Geral garante destino sempre disponível para segredos órfãos
+- Sem renomear, comportamento especial permanece protegido e invisível
 
-**Campos sensíveis não participam da busca**
-Realizar busca sobre valores sensíveis exigiria mantê-los descriptografados em memória durante a operação, aumentando a superfície de exposição. A busca ocorre apenas sobre campos comuns e observações.
+**Justificativa:** Abordagem simplifica UX (sem nível técnico extra) e resolve o problema de sempre haver um lugar seguro para segredos sem criar conceitos abstratos.
 
-**O termo "campo" foi adotado para descrever os elementos de um segredo**
-Alternativas como "dado", "detalhe" e "faceta" foram consideradas. "Detalhe" diminui semanticamente dados críticos como a senha. "Faceta" sugere perspectiva, não composição. "Campo" já faz parte do vocabulário cotidiano do usuário — qualquer pessoa que preencheu um formulário entende o termo sem explicação.
+**Consequências:** Pasta Geral é invariante não-recuperável — se ausente/corrompida, arquivo é rejeitado.
 
-**Auditoria de senhas e TOTP foram descartados do escopo**
-Funcionalidades identificadas durante o processo de definição, mas que não serão implementadas por estarem fora do escopo do produto na sua versão atual.
 
-**Modelos pré-definidos e personalizados foram unificados em um único conceito**
-A distinção entre modelo pré-definido e personalizado é de origem, não de comportamento — na prática ambos funcionam da mesma forma. Manter dois termos adicionava complexidade ao vocabulário sem benefício real. Os modelos criados automaticamente ao criar o cofre são apenas o ponto de partida, editáveis e removíveis como qualquer outro.
 
-**Importação: pastas mescladas silenciosamente, segredos com nome ajustado**
-Na importação de arquivo, pastas com mesmo identificador são mescladas automaticamente, enquanto segredos com conflito de nome recebem nome ajustado visível (ex: "Segredo (1)"). A diferença reflete que apenas o que realmente importa é tratado explicitamente — estrutura de pastas é raramente conflitante em casos reais, enquanto conflito de nomes de segredo é mais comum. Simplificar a interface de resolução de conflitos reduz fricção sem sacrificar segurança.
+## 2. Segredos só vivem dentro de pastas ✓
 
-**Busca funciona por substring, ignorando acentuação e capitalização**
-O algoritmo de busca por substring é a expectativa padrão dos usuários — "pass" deve encontrar "password" e "senhaQuebrada". A busca case-insensitive reduz fricção sem comprometer segurança, já que a busca ocorre apenas sobre campos comuns (não sensíveis). Ignorar acentuação evita que "café" não encontre "cafe", problema comum em buscas que limita a usabilidade. Não implementar regex mantém a simplicidade tanto para o usuário quanto para a implementação.
+**Decisão:** Todo segredo vive dentro de uma pasta — não existe segredo "solto" ou em nível raiz.
 
-**Identidade de pastas, modelos e segredos é determinada por identificador único interno, não por nome**
-Pastas são identificadas por nome (na mesma pasta pai, nomes devem ser únicos). Modelos e segredos são identificados por identificador único interno gerado pelo sistema — dois segredos podem ter o mesmo nome (assim como dois modelos). Isso oferece flexibilidade no produto (permitir renomear sem perder vínculo com o modelo original, importar segredos com nomes duplicados) sem criar ambiguidade na representação. Nomes são apenas metadados descritivos, não identificadores.
+**Contexto:**
+- Alternativa seria ter nível "raiz" onde segredos e pastas coexistem sem contenção
+- Essa estrutura gerou dificuldade consistente de descrição no produto, sinalizando que complicava mais do que ajudava
+- Papel "Geral" resolve o problema sem introduzir conceito novo
 
-Essa é uma decisão deliberada para simplificar a arquitetura da aplicação e evitar complexidade de sincronização. Reconhecemos que nomes repetidos podem criar problemas de usabilidade (confusão visual, dificuldade de identificação pelo usuário), mas confiamos que a UX será capaz de mitigar isso através de contexto visual, ordenação inteligente e affordances claras. A alternativa — impor unicidade de nomes — criaria atrito desnecessário (renomear segredos para poder importar, impossibilidade de ter "Login" e "Login" em contextos diferentes).
+**Consequências:** Modelo conceitual mais simples; sem ambiguidade entre segredos orphan e pastas.
 
-**Sem limites técnicos: "bom senso" governa as restrições**
-O sistema não impõe limites arbitrários (quantidade de segredos, profundidade de pastas, campos por modelo, etc.). Limites técnicos surgem apenas quando o hardware/sistema operacional os impõe. A experiência do usuário é governada pelo bom senso — um cofre com 100 mil segredos pode ser tecnicamente possível, mas não é um caso de uso esperado. Essa abordagem simplifica o produto (sem validações desnecessárias), confia na racionalidade do usuário, e evita a frustração de butts arbitrários. Se um limite técnico se tornar necessário na implementação, será documentado explicitamente.
 
-**"Observação" é um campo especial criado automaticamente em todo segredo para fins de UX**
-A observação oferece um espaço dedicado para notas do usuário sem ocupar um campo customizado no modelo. É um campo comum (sempre visível), não pode ser renomeado ou deletado, e está disponível em todo segredo independentemente do modelo. Essa abordagem simplifica a UX (o usuário sempre tem um lugar previsível para adicionar notas) sem criar complexidade conceitual — é um campo como qualquer outro, apenas com restrições especiais que o usuário entende naturalmente como proteção contra exclusão acidental.
 
-**Exclusão de pasta: conteúdo promovido para a pasta pai imediata**
-Ao excluir uma pasta, seus segredos e subpastas são movidos para a pasta que a continha diretamente — não para a Pasta Geral nem para qualquer outro destino fixo. Essa estratégia é simples e previsível: o conteúdo sobe exatamente um nível na hierarquia, sem deslocamentos abruptos ou perda de contexto. Alternativas como mover tudo para a Pasta Geral seriam destrutivas para estruturas profundas, apagando toda a organização construída pelo usuário. A Pasta Geral é o destino natural apenas no caso em que a pasta excluída está diretamente dentro dela — o que é simplesmente o comportamento geral aplicado a esse nível específico.
+## 3. Hierarquia em árvore, ciclos não permitidos ✓
 
-**A estrutura de pastas é uma árvore — ciclos não são permitidos**
-Pastas formam uma hierarquia em árvore com a Pasta Geral como raiz. Essa estrutura é explicitamente protegida contra ciclos — não é possível mover uma pasta para dentro de seus próprios descendentes. Ciclos criariam ambiguidade de navegação, impossibilidade de definir um "caminho" único para cada pasta, e complexidade desnecessária na representação. A árvore garante que cada pasta tem exatamente um ancestral direito (exceto a raiz), oferecendo clareza total na hierarquia. Essa restrição é validada em tempo real ao mover pastas, com feedback claro ao usuário sobre por que uma operação não é permitida.
+**Decisão:** Pastas formam hierarquia em árvore com Pasta Geral como raiz. Não é possível mover pasta para dentro de seus próprios descendentes.
 
-**Salvamento e descarte usam a senha fornecida ao abrir, sem solicitar novamente**
-Ao abrir o cofre, o usuário fornece a senha mestra. Essa mesma senha é usada para todas as operações de criptografia (salvar, descartar, alterações futuras) durante a sessão. O sistema nunca solicita a senha novamente para salvar ou descartar — a senha permanece na memória da aplicação enquanto o cofre está em uso. Se o usuário alterar a senha mestra, a nova senha passa a ser usada para próximos salvamentos. Essa abordagem simplifica a UX (fluir de trabalho sem interrupções), oferece segurança implícita (bloquear o cofre limpa a memória), e reduz pontos de falha (menos oportunidades de senha incorreta invalidar uma operação de salvamento).
+**Contexto:**
+- Ciclos criariam ambiguidade de navegação
+- Impossibilita definição de "caminho único" para cada pasta
+- Adiciona complexidade desnecessária na representação
 
-**Acesso concorrente ao arquivo: detecção sem lock file externo**
-Não usamos arquivo de lock (.lock) para sincronização porque deixaria rastro no sistema operacional, violando o princípio de portabilidade e privacidade total. Em vez disso, detectamos modificações externas comparando **timestamp e tamanho do arquivo** no momento do salvamento. Se o arquivo foi modificado por outro processo: pedimos confirmação do usuário e oferecemos a opção **"Salvar como novo arquivo"**. Essa é uma simplificação deliberada para v1 — evita a necessidade de implementar merge complexo e sincronização de estado. O custo é que o usuário fica responsável por escolher qual versão manter, mas ganha clareza e segurança (impede corrupção silenciosa). Essa abordagem privilegia segurança dos dados > sofisticação técnica e reconhece que conflitos concorrentes são raros em uso normal.
+**Justificativa:** Árvore garante clareza total — cada pasta tem exatamente um ancestral direto (exceto raiz); caminho único até raiz.
 
-**Diagnóstico de corrupção de arquivo: mensagem opaca por segurança**
-Quando o arquivo do cofre não pode ser aberto por corrupção (magic number inválido, CRC falho, decriptografia falha, ou estrutura JSON corrompida), o sistema exibe uma mensagem genérica e opaca: "Arquivo não pode ser aberto — possível corrupção ou arquivo inválido." Nenhum detalhe técnico específico sobre o tipo de falha é revelado ao usuário. Essa decisão reflexa que revelar quais partes do arquivo falharam geraria vazamento de informação sobre a estrutura criptográfica interna — um atacante poderia usar esses detalhes para inferir padrões de criptografia, tipos de corrupção intencionais, ou características do arquivo. A mensagem genérica oferece privacidade total: nem quem conseguir acesso ao arquivo falhado aprenderá detalhes sobre seu conteúdo ou estrutura.
+**Consequências:** Validação em tempo real ao mover pastas; feedback claro ao usuário sobre por que operação não é permitida.
 
-**Pasta Geral como invariante não recuperável**
-A Pasta Geral é estruturalmente essencial — é a raiz da árvore de pastas e o destino garantido para segredos órfãos. Se ela não existir no arquivo (por corrupção ou manipulação intencional), o sistema **rejeita o arquivo com mensagem de erro opaca**, sem tentar recriar a Pasta Geral automaticamente. Embora fosse tecnicamente possível reconstriuir uma Pasta Geral vazia, fazê-lo entraria em conflito com nossa filosofia de segurança: ausência da Pasta Geral sinaliza que algo corrupto ou alterou o arquivo de forma não prevista, e a ação correta é falhar de forma segura. Tentar "consertar" silenciosamente mascararia problemas reais — o usuário poderia não perceber que seus dados foram alterados. A rejeição é um sinal claro de que o arquivo não é confiável.
 
-**Reordenação: estado final, não histórico de operações**
-Quando o usuário reordena segredos ou pastas múltiplas vezes antes de salvar, o sistema persiste apenas a **ordem final**, descartando o histórico de movimentos. Essa abordagem simplifica a implementação, reduz overhead de dados, e evita complexidade de merge em casos de acesso concorrente. O custo é renunciar a recursos avançados como undo/redo ou reconstrução de intenção de movimentos — mas para v1, estado final é suficiente e oferece clareza total sobre qual será o resultado ao salvar.
 
-**Proteção de senha em memória: trade-off segurança técnica vs. UX**
-A senha mestra é mantida em memória durante toda a sessão para evitar solicitar repetidamente ao usuário — isso oferece fluxo UX fluido e reduz pontos de falha. Idealmente, jamais deveríamos manter a senha em memória, mas as alternativas (solicitar a cada operação criptográfica, ou usar apenas chaves derivadas) resultariam em UX inaceitavelmente tedioso ou complexidade criptográfica excessiva para v1. Decidimos privilegiar a melhor solução técnica viável: implementaremos **memória protegida (mlock/VirtualLock quando disponível para impedir swap) e limpeza agressiva (sobrescrever buffer com zeros ao bloquear o cofre)**. Essa abordagem oferece proteção contra exploração de memória em cenários comuns, reconhecendo que em v1 a UX aceitável previne contra a complexidade de re-solicitation ou derivação contínua. O risco residual — exposição em memória durante a sessão — é mitigado pelo timeout automático de bloqueio e pela possibilidade de bloqueio manual. Essa é uma decisão deliberada: segurança prática > segurança teórica perfeita para o escopo de v1.
+## 4. Exclusão de pasta promove conteúdo um nível ✓
 
-**Proteção contra força bruta: confiança em criptografia forte**
-Não implementamos rate limiting ou lockout para tentativas de autenticação (senha mestra ou duress password). A proteção contra força bruta vem da configuração do algoritmo criptográfico subjacente: será usado um algoritmo de derivação de chave custoso computacionalmente (ex: Argon2, PBKDF2 com iterações elevadas) que torna cada tentativa de senha tão cara que força bruta é economicamente inviável. Essa abordagem simplifica a implementação, evita a complexidade de rastreamento de estado de tentativas, e reconhece que proteção por delay é teatral se a criptografia já torna a tentativa impossível. A confiança reside na força do algoritmo, não em proteções de aplicação.
+**Decisão:** Ao excluir pasta, seus segredos e subpastas são movidos para a pasta pai imediata (um nível acima).
+
+**Contexto:**
+- Alternativa de mover tudo para Pasta Geral seria destrutiva em estruturas profundas
+- Perda de contexto local prejudicaria organização construída pelo usuário
+- Se pasta excluída está dentro de Geral, comportamento geral se aplica naturalmente
+
+**Justificativa:** Previsibilidade local + conservação de contexto.
+
+**Consequências:** Reorganização simples; conteúdo sobe um nível, sem deslocamentos abruptos nem perda de estrutura.
+
+
+
+## 5. Identidade por UUID (modelos/segredos), por nome (pastas) ✓
+
+**Decisão:** 
+- Pastas identificadas por nome (unicidade dentro da pasta pai)
+- Modelos e segredos identificados por UUID gerado pelo sistema
+
+**Contexto:**
+- Permite dois segredos com mesmo nome (em contextos diferentes)
+- Simplifica import/rename sem quebrar vínculo
+- Nomes são apenas metadados descritivos, não identificadores
+
+**Justificativa:** Flexibilidade (renomear sem perder referência, importar dupes); nomes duplicados podem confundir, mas UX mitiga com contexto visual + ordenação inteligente + affordances.
+
+**Consequências:** 
+- UX deve desambiguar visualmente (contexto, cores, ícones)
+- Alternativa (impor unicidade) criaria atrito desnecessário (renomear para poder importar, banir "Login"/"Login" em contextos diferentes)
+
+
+
+# CAMPOS & MODELOS
+
+## 6. Tipo de campo imutável após criação ✓
+
+**Decisão:** O tipo de um campo (comum / sensível) não pode ser alterado após a criação do campo.
+
+**Contexto:**
+- Converter campo sensível→comum exporia conteúdo sem proteção
+- Mudança silenciosa seria risco de segurança difícil de perceber
+- Alternativa (deletar e recriar) é explícita e segura
+
+**Justificativa:** Segurança vem de explicitação — usuário entende claramente quando ocorre mudança de proteção.
+
+**Consequências:** Requer atrito (usuário re-cria campo), mas oferece garantia de auditabilidade completa.
+
+
+
+## 7. Segredo desvinculado de modelo após criação ✓
+
+**Decisão:** Segredo criado a partir de modelo não mantém vínculo dinâmico com ele — é cópia estrutural.
+
+**Contexto:**
+- Vínculo por referência significaria alterações no modelo afetarem segredos criados
+- Seria destrutivo e imprevisível para usuário (dados mudam sem ação)
+- Nome do modelo é armazenado apenas como histórico da criação
+
+**Justificativa:** Segredo é snapshot imutável; modelo evolui livremente; oferece segurança e liberdade de refatoração simultâneas.
+
+**Consequências:** Usuário não vê mudanças em modelo aplicadas retroativamente a segredos; gestor de modelos tem liberdade total de evolução.
+
+
+
+## 8. Termo "campo" para elementos de segredo ✓
+
+**Decisão:** Os componentes de um segredo são chamados "campos", não "dados", "detalhes" ou "facetas".
+
+**Contexto:**
+- Alternativas consideradas: "dado" (genérico), "detalhe" (diminui semanticamente dados críticos), "faceta" (sugere perspectiva, não composição)
+- "Campo" já é parte do vocabulário cotidiano do usuário (qualquer um que preencheu formulário entende)
+
+**Justificativa:** Familiaridade universal reduz fricção de onboarding.
+
+
+
+## 9. Modelos pré-definidos e personalizados unificados ✓
+
+**Decisão:** Não há distinção conceitual entre modelos pré-definidos e modelos personalizados — ambos são "modelos".
+
+**Contexto:**
+- Distinção é de origem (auto-criado vs. usuário-criado), não de comportamento
+- Na prática, ambos funcionam da mesma forma
+- Dois termos adicionava complexidade ao vocabulário sem benefício
+
+**Justificativa:** Um conceito simplifica semântica; modelos auto-criados são apenas ponto de partida, editáveis e removíveis como qualquer outro.
+
+
+
+## 10. Campo "Observação" especial automático ✓
+
+**Decisão:** Todo segredo tem um campo "Observação" especial, criado automaticamente, não deletável e não renomeável.
+
+**Contexto:**
+- Usuário precisa de espaço para notas sem ocupar campo customizado do modelo
+- Deve estar sempre disponível, independentemente do modelo
+- Campo comum (sempre visível), protegido contra exclusão acidental
+
+**Justificativa:** UX simples — lugar previsível para notas; sem complexidade conceitual extra (é um campo como outro, só com restrições especiais).
+
+**Consequências:** Sempre há destino para notas; proteção contra exclusão acidental entendida naturalmente pelo usuário.
+
+
+
+# BUSCA & INDEXAÇÃO
+
+## 11. Campos sensíveis não participam da busca ✓
+
+**Decisão:** Busca ocorre apenas sobre campos comuns e observações — campos sensíveis são excluídos do índice.
+
+**Contexto:**
+- Manter sensíveis descriptografados em memória durante operação de busca aumenta superfície de exposição
+- Qualquer indexação exigiria chaves em memória
+
+**Justificativa:** Reduz superfície de risco criptográfico; compromisso aceitável porque usuário raramente busca por valores sensíveis (de memória).
+
+**Consequências:** Usuário busca por rótulos/observações, não por conteúdo de senhas; sensível permanece encriptado sempre.
+
+
+
+## 12. Importação: pastas mesclam, segredos duplicam, modelos substituem ✓
+
+**Decisão:** Na importação:
+- Pastas com mesmo caminho mesclam automaticamente
+- Segredos com mesmo ID recebem novo UUID e são inseridos como independentes (existente preservado)
+- Modelos com mesmo ID substituem o existente silenciosamente (nome e estrutura sobrescritos)
+
+**Contexto:**
+- Estrutura de pastas raramente conflita em casos reais
+- Segredos são dados críticos do usuário — substituir silenciosamente seria destrutivo e arriscado
+- Modelos são estrutura auxiliar — substituição é simples, situação incomum, e sobrescrever não é crítico
+- Sem diálogo de merge torna importação simples e previsível
+
+**Justificativa:** Assimetria deliberada: segredos são preservados por serem críticos e comuns; modelos são substituídos por serem auxiliares e raros. Pastas mesclam porque conflito estrutural é raro.
+
+**Consequências:** Sem diálogo tedioso de resolução de conflito; segredos nunca são perdidos; modelos podem ser atualizados via importação.
+
+
+
+## 13. Busca: substring, case-insensitive, sem acentuação ✓
+
+**Decisão:** Busca funciona por substring, case-insensitive, ignorando acentuação. Sem suporte a regex.
+
+**Contexto:**
+- Expectativa padrão do usuário: "pass" encontra "password", "café" encontra "cafe"
+- Case-insensitive reduz fricção sem comprometer segurança (busca é só em campos comuns)
+- Regex adiciona complexidade para usuário e implementação
+
+**Justificativa:** Simplicidade + usabilidade são equilibradas.
+
+**Consequências:** Busca mantém campos sensíveis sempre encriptados; reduz fricção de busca sem sacrificar segurança.
+
+
+
+# SEGURANÇA & CRIPTOGRAFIA
+
+## 14. Salvamento/descarte usam senha fornecida ao abrir ✓
+
+**Decisão:** Ao abrir cofre, usuário fornece senha mestra uma única vez. Essa senha é usada para todas operações cripto (salvar, descartar, alterações) durante a sessão.
+
+**Contexto:**
+- Alternativa de re-pedir senha a cada operação criaria UX tedioso
+- Alternativa de chaves derivadas aumentaria complexidade criptográfica para v1
+- Senha permanece em memória enquanto cofre está em uso
+
+**Justificativa:** UX fluido reduz pontos de falha; fluxo de trabalho sem interrupções.
+
+**Consequências:** 
+- Proteção: mlock/VirtualLock para impedir swap; limpeza agressiva ao bloquear (sobrescrever buffer com zeros)
+- Risco residual mitigado por timeout automático + bloqueio manual
+- Trade-off deliberado: segurança prática > segurança teórica perfeita para v1
+
+
+
+## 15. Proteção de senha em memória ✓
+
+**Decisão:** Senha mestra é mantida em memória durante toda sessão (não é descartada após abrir ou entre operações).
+
+**Contexto:**
+- Alternativa (re-pedir senha) criaria UX tedioso; alternativa (chaves derivadas) seria complexa demais para v1
+- Idealmente, senha nunca deveria estar em memória
+- Compromisso pragmático: proteção técnica + UX aceitável
+
+**Justificativa:** UX fluido reduz pontos de falha (menos oportunidades de senha incorreta); fluxo sem interrupções.
+
+**Consequências:** 
+- Proteção implementada: mlock/VirtualLock para impedir swap; limpeza agressiva ao bloquear (sobrescrever buffer com zeros)
+- Risco residual (exposição durante sessão) mitigado por timeout automático + bloqueio manual
+- **Trade-off deliberado: segurança prática > segurança teórica perfeita para escopo de v1**
+
+
+
+## 16. Proteção contra força bruta: confiança em criptografia ✓
+
+**Decisão:** Não implementamos rate limiting ou lockout para tentativas de autenticação (senha mestra). Proteção contra força bruta vem apenas da configuração do algoritmo criptográfico.
+
+**Contexto:**
+- Será usado algoritmo de derivação de chave computacionalmente custoso (Argon2, PBKDF2 com iterações elevadas)
+- Cada tentativa é tão cara que força bruta é economicamente inviável
+- Rate limiting seria apenas proteção "teatral" se criptografia já torna tentativa impossível
+
+**Justificativa:** 
+- Proteção por matemática é mais confiável que por delay de aplicação
+- Evita complexidade de rastreamento estado de tentativas
+- Confiança reside na força do algoritmo, não em proteções de código
+
+**Consequências:** 
+- Simplicidade implementação
+- Segurança depende absolutamente da qualidade da criptografia (sem "fallback" técnico)
+- Configuração incorreta de Argon2/PBKDF2 seria crítica
+
+
+
+# ARQUIVOS & CONCORRÊNCIA
+
+## 17. Acesso concorrente: detecção sem lock file ✓
+
+**Decisão:** Não usamos arquivo de lock (.lock) para sincronização. Detectamos modificações externas comparando timestamp e tamanho do arquivo no momento do salvamento.
+
+**Contexto:**
+- Lock files deixariam rastro no SO, violando privacidade/portabilidade
+- Alternativa é comparação de metadados + confirmação do usuário
+- Conflitos concorrentes são raros em uso normal
+
+**Justificativa:** Privacidade total (nenhum rastro de sistema); usuário tem controle explícito em conflito.
+
+**Consequências:** 
+- Se arquivo foi modificado externamente: pedimos confirmação, oferecemos "Salvar como novo arquivo"
+- Trade-off: requer user decision em conflito (não merge automático)
+- Simplificação deliberada: segurança dados > sofisticação técnica
+
+
+
+## 18. Diagnóstico de corrupção: mensagem opaca ✓
+
+**Decisão:** Se arquivo não pode ser aberto (magic number inválido, CRC falho, JSON corrupto, etc), sistema exibe mensagem genérica e opaca.
+
+**Contexto:**
+- Revelar qual parte falhou vaza informação sobre estrutura criptográfica
+- Atacante poderia usar detalhes para inferir padrões de criptografia
+- Mensagem genérica oferece privacidade total
+
+**Justificativa:** Segurança por obscuridade não é ideal em geral, mas aqui tem propósito claro — impede vazamento de estrutura.
+
+**Consequências:** Mensagem: "Arquivo não pode ser aberto — possível corrupção ou arquivo inválido." Sem diagnóstico técnico ao usuário.
+
+
+
+## 19. Pasta Geral não-recuperável ✓
+
+**Decisão:** Se Pasta Geral está ausente ou corrompida no arquivo, sistema rejeita o arquivo com mensagem de erro opaca (sem tentar recriar).
+
+**Contexto:**
+- Pasta Geral é invariante estrutural — raiz da árvore, destino garantido para segredos órfãos
+- Ausência sinaliza corrupção ou manipulação intencional
+- Seria possível recriar vazia, mas isso entraria em conflito com filosofia de segurança
+
+**Justificativa:** Falha segura é rejeitar, não tentar "consertar" silenciosamente. Tentar "reparar" mascararia problemas reais — usuário não perceberia alteração não autorizada.
+
+**Consequências:** Arquivo é rejeitado com erro opaco; sinaliza ao usuário que arquivo não é confiável.
+
+
+
+## 20. Reordenação: estado final, não histórico ✓
+
+**Decisão:** Quando usuário reordena segredos ou pastas múltiplas vezes antes de salvar, sistema persiste apenas ordem final (descarta histórico de movimentos).
+
+**Contexto:**
+- Rastrear cada movimento serviria apenas para undo/redo (fora do escopo v1)
+- Histórico complica merge em acesso concorrente
+- Overhead de dados desnecessário para v1
+
+**Justificativa:** Simplifica implementação; ordem final é determinística e suficiente.
+
+**Consequências:** Sem undo/redo; sem reconstrução de intenção de movimentos; clareza total sobre resultado ao salvar.
+
+
+
+# DESIGN & RESTRIÇÕES
+
+## 21. Sem limites técnicos arbitrários ✓
+
+**Decisão:** Sistema não impõe limites arbitrários (quantidade de segredos, profundidade de pastas, campos por modelo).
+
+**Contexto:**
+- Limites técnicos surgem apenas onde HW/SO os impõe
+- Um cofre com 100k segredos é tecnicamente possível mas não é caso de uso esperado
+- Validações desnecessárias complicam implementação
+
+**Justificativa:** Confia em racionalidade do usuário; caso real de abuso surgir, limite será documentado explicitamente.
+
+**Consequências:** Experiência governa-se por bom senso, não validação; risco de UX degradada em casos extremos, mas protege contra atrito normal.
+
+
+
+# ESCOPO v1
+
+## 22. Auditoria de senhas e TOTP fora do escopo v1 ✓
+
+**Decisão:** Funcionalidades de auditoria de senhas e geração TOTP foram descartadas do escopo.
+
+**Contexto:** Identificadas durante processo de definição, mas estão fora do foco inicial do produto.
+
+**Consequências:** Podem ser adicionadas em iteração futura; v1 foca em cofre core funcional.
 
