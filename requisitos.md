@@ -43,6 +43,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 ### Ciclo de Vida do Cofre
 - Criar novo cofre em um arquivo com senha mestra
   - Exigir digitação dupla da senha mestra para confirmação
+  - Avaliar a força da senha mestra e exibir aviso informativo caso ela seja considerada fraca — a operação não é bloqueada; o usuário assume a responsabilidade pela escolha da senha
   - Criar automaticamente a Pasta Geral (raiz) contendo as subpastas: Sites e Apps, Financeiro (nesta ordem)
   - Criar automaticamente os modelos padrão:
     - Login: URL (comum), Usuário (comum), Senha (sensível)
@@ -54,7 +55,6 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - Se a Pasta Geral não existir no arquivo, rejeitar com mensagem de erro (arquivo inválido ou corrompido) — não tentar recriar
   - Se a senha for incorreta, exibir mensagem de erro e permitir nova tentativa
 - Salvar cofre no arquivo atual
-  - Garantir a integridade e evitar corrompimento do arquivo
   - Segredos marcados para exclusão são removidos permanentemente
   - Usar a senha ativa na sessão — não solicitar novamente
   - Se o arquivo foi modificado externamente desde a última leitura ou salvamento, avisar o usuário e oferecer as opções: Sobrescrever / Salvar como novo arquivo / Cancelar
@@ -71,17 +71,20 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - Usar a senha ativa no momento do descarte — não solicitar novamente (pode ser a senha original de abertura ou a nova senha, caso a senha mestra tenha sido alterada durante a sessão)
 - Alterar a senha mestra do cofre
   - Exigir digitação dupla para confirmação
+  - Avaliar a força da nova senha mestra e exibir aviso informativo caso ela seja considerada fraca — a operação não é bloqueada; o usuário assume a responsabilidade pela escolha da senha
   - A alteração é imediata: o cofre é salvo automaticamente com a nova senha ao confirmar, incluindo todas as alterações pendentes da sessão
   - Após a alteração, não é possível descartar essa operação (o arquivo já foi regravado)
 - Bloquear o cofre manualmente ou automaticamente após inatividade
   - Bloquear automaticamente após tempo configurável de inatividade, com valor padrão de 5 minutos. Qualquer interação do usuário com a aplicação reseta o temporizador de inatividade
   - O bloqueio retorna ao fluxo de abertura do cofre, exigindo nova autenticação para retomar o acesso
   - Ao bloquear, a senha mestra é limpa da memória (sobrescrita com zeros) e buffers sensíveis são descartados
+  - O terminal é limpo (clear screen) antes de devolver o controle ao shell, evitando que dados visíveis na TUI permaneçam no buffer do terminal
   - Implementação esforça-se por usar memória protegida (mlock/VirtualLock quando disponível) durante a sessão para impedir swap do arquivo de memória para disco. Se memória protegida não estiver disponível, a aplicação opera normalmente sem essa camada de proteção
 - Sair da aplicação
   - Se houver alterações não salvas, exibir confirmação com opções: Salvar e Sair / Descartar e Sair / Cancelar
   - Se não houver alterações pendentes, sair diretamente sem confirmação
   - Ao sair, a senha mestra é limpa da memória e buffers sensíveis são descartados (mesmo comportamento do bloqueio)
+  - O terminal é limpo (clear screen) antes de encerrar, pelo mesmo motivo do bloqueio
 - Exportar cofre para arquivo JSON
   - O arquivo exportado contém toda a estrutura do cofre: pastas, segredos ativos e modelos. Configurações de timers não são exportadas
   - Exibir aviso sobre os riscos de segurança e solicitar confirmação antes de exportar
@@ -222,6 +225,16 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Se o usuário criar manualmente um campo chamado "Observação" no modelo, esse campo é tratado como campo comum regular e coexistirá com a Observação automática do segredo (que permanece na última posição)
 - O uso responsável da observação é por conta e risco do usuário — o campo não prevê ocultação nem tratamento especial
 
+### Força da Senha Mestra
+- Uma senha mestra é considerada **forte** quando satisfaz todos os critérios abaixo:
+  - Comprimento mínimo de 12 caracteres
+  - Contém pelo menos uma letra maiúscula (A–Z)
+  - Contém pelo menos uma letra minúscula (a–z)
+  - Contém pelo menos um dígito (0–9)
+  - Contém pelo menos um caractere especial (qualquer caractere que não seja letra nem dígito)
+- Uma senha que não satisfaça todos os critérios acima é considerada **fraca**
+- O aviso de senha fraca é apenas informativo — não impede a criação do cofre nem a alteração da senha mestra. A responsabilidade pela escolha da senha é inteiramente do usuário
+
 ### Gerenciamento de Senha na Sessão
 - A senha é fornecida uma única vez ao abrir o cofre
 - A senha ativa é usada para todas as operações de criptografia durante a sessão (salvar, descartar)
@@ -234,6 +247,19 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - **Criptografia**: AES-256-GCM para criptografia dos dados; Argon2id para derivação de chave a partir da senha mestra
 - **Formato de armazenamento**: JSON criptografado com AES-256-GCM, encapsulado em arquivo binário com extensão `.abditum`
 - **Compatibilidade**: Windows, macOS e Linux
+- **Privacidade**: Ausência total de logs da aplicação (stdout/stderr) que contenham caminhos de arquivos de cofre, nomes de segredos ou valores de campos
+- **Portabilidade**: A aplicação é distribuída como um único arquivo binário executável, sem instalação. Pode ser copiada para qualquer local do sistema de arquivos e executada diretamente. Não utiliza arquivos de configuração, dados ou estado fora do arquivo do cofre — exceto artefatos transitórios (`.abditum.tmp`) e backups (`.abditum.bak`, `.abditum.bak2`) explicitamente previstos pela própria aplicação
+- **Compatibilidade retroativa**: A aplicação de versão N é capaz de abrir arquivos de cofre criados em qualquer versão anterior do formato suportada pela aplicação. Ao abrir um arquivo antigo, o payload descriptografado é migrado em memória para o modelo atual; ao salvar, o arquivo é sempre regravado no formato da versão atual da aplicação
+- **Confiabilidade (Salvamento Atômico)**: A gravação do arquivo do cofre é sempre atômica, garantindo que uma falha durante o processo não corrompa nem o arquivo principal nem o backup. O protocolo se aplica a toda operação que sobrescreve um arquivo de cofre já existente:
+  - Os dados são gravados primeiramente em `.abditum.tmp`, no mesmo diretório do cofre
+  - Somente após a gravação bem-sucedida, o `.abditum.tmp` é renomeado, substituindo o arquivo original
+  - Em caso de falha, o `.abditum.tmp` é apagado imediatamente para evitar persistência de dados fora do arquivo final
+  - Ao substituir um arquivo existente, manter cópia de backup com extensão `.abditum.bak`:
+    - Se já existir um `.abditum.bak`, renomeá-lo temporariamente para `.abditum.bak2` antes de gerar o novo backup
+    - Se a operação for concluída com sucesso, apagar o `.abditum.bak2`, preservando apenas o novo `.abditum.bak`
+    - Se a operação falhar antes da consolidação, restaurar o `.abditum.bak2` para `.abditum.bak` sempre que possível
+    - Em caso de falha após a geração do backup, exibir mensagem de erro informando que existe um backup disponível para intervenção manual do usuário
+  - Criação de novo cofre em caminho vazio e salvamento em novo caminho vazio não utilizam `.abditum.tmp` — a gravação ocorre diretamente no destino final
 
 ## Requisitos v2
 
@@ -253,15 +279,50 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Permitir que o usuário defina, por campo sensível, uma regra de exibição parcial (ex: mostrar últimos N caracteres, primeiros N caracteres, ou padrão mascarado como "•••• •••• •••• 1234")
 - A exibição parcial não substitui a revelação completa — é um modo adicional de visualização rápida
 
+### Gerador de Senhas
+
+A ser especificado em v2.
+
+### Compartilhamento via QR Code
+
+Renderizar um QR code diretamente na TUI (usando blocos ASCII/Unicode) contendo o valor de um campo, para transferência rápida, offline e segura para outro dispositivo.
+
 #### Decisões Pendentes (v2)
 - **Duress password — armazenamento e validação**: O design de como a duress password é armazenada, criptografada e validada sem comprometer a senha mestra será definido durante o planejamento de v2
 - **Duress password após alteração de senha mestra**: Se o usuário altera a senha mestra durante uma sessão normal, qual é o relacionamento com duress password? Continua usando a senha mestra antiga ou nova? Como persiste essa mudança na próxima sessão?
 - **Exibição parcial**: Regras de mascaramento são por campo individual ou por tipo de modelo? Quais padrões pré-definidos oferecer?
+- **QR Code — escopo do conteúdo**: O QR code deve conter apenas o valor bruto do campo (texto plano, legível por qualquer câmera), ou há intenção de protocolo mais rico? Não existe padrão universal para importação de credenciais entre gerenciadores de senha via QR; o único protocolo padronizado no domínio (`otpauth://`) é exclusivo de TOTP.
 
-## Fora de Escopo (v1)
+### Relatório de Saúde do Cofre (Auditoria)
+
+Analisar localmente todas as senhas armazenadas e alertar o usuário sobre senhas fracas, reutilizadas em múltiplos segredos ou muito antigas.
+
+A ser especificado em v2.
+
+### Tags
+
+Categorização de segredos por tags, com filtragem por tag. A ser especificado em v2.
+
+### Histórico de Versões de Segredos
+
+Registro de versões anteriores de um segredo, com possibilidade de visualização e restauração. A ser especificado em v2.
+
+### Recuperação de Artefatos Órfãos
+
+Ao abrir um cofre, detectar a presença de artefatos residuais de uma operação de salvamento anterior interrompida (`.abditum.tmp` ou `.abditum.bak2` no mesmo diretório). Nesses casos:
+- Alertar o usuário explicando que a última operação de salvamento pode não ter sido concluída normalmente
+- Informar que existe um backup (`.abditum.bak`) disponível para inspeção manual
+- Oferecer a opção de recuperar o cofre a partir do arquivo residual disponível
+
+A ser especificado em v2.
+
+## Fora de Escopo
 
 Funcionalidades deliberadamente excluídas desta versão:
-- **Auditoria de senhas**: Análise de força de senha, detecção de duplicatas, avaliação de risco
-- **TOTP (Two-Factor Authentication)**: Geração de código de autenticação de dois fatores
+- **TOTP (Two-Factor Authentication)**: Geração de código de autenticação de dois fatores — excluído permanentemente, sem previsão para nenhuma versão futura
 - **Backup**: A aplicação não cria, gerencia nem armazena cópias de segurança do cofre. Manter cópias de segurança é responsabilidade exclusiva do usuário
 - **Recuperação de dados**: A criptografia adotada não permite recuperação parcial de arquivos corrompidos. Não há mecanismo de reparo, importação forçada ou abertura em modo degradado
+- **Autenticação por Keyfile / Token de Hardware**: Exigir, além da senha mestra, um arquivo físico (keyfile) ou token USB (ex: YubiKey) para descriptografar o cofre — excluído permanentemente, sem previsão para nenhuma versão futura
+- **Armazenamento na nuvem**: Contraria a filosofia offline e portátil da aplicação — excluído permanentemente
+- **Múltiplos cofres abertos simultaneamente**: Invariante de design — só pode existir um cofre ativo por vez — excluído permanentemente
+- **App mobile ou web**: A aplicação é TUI portátil por design — excluído permanentemente
