@@ -1,12 +1,8 @@
 # Especificação do Formato de Arquivo — `.abditum`
 
-## 1. Visão Geral
+## 1. Estrutura do Arquivo
 
-O arquivo do cofre Abditum possui extensão `.abditum` e é um stream binário composto por duas partes sequenciais: um **cabeçalho de criptografia** em formato fixo (não criptografado) e um **payload criptografado** contendo a estrutura do cofre em JSON.
-
----
-
-## 2. Estrutura do Arquivo
+Stream binário: cabeçalho fixo não-criptografado (49 bytes) + payload criptografado.
 
 ```
 ┌──────────┬─────────────────────────────────────────────────┐
@@ -23,74 +19,79 @@ O arquivo do cofre Abditum possui extensão `.abditum` e é um stream binário c
 └──────────────────────────────────────────────────────────┘
 ```
 
-Tamanho total do cabeçalho: **49 bytes**.
+| Campo            | Offset | Tamanho  | Tipo              | Descrição |
+|------------------|--------|----------|-------------------|-----------|
+| `magic`          | 0      | 4 bytes  | bytes (ASCII)     | Assinatura fixa `ABDT`. Permite rejeitar arquivos inválidos antes de solicitar senha. |
+| `versão_formato` | 4      | 1 byte   | uint8, big-endian | Seleciona o perfil criptográfico completo (KDF + AEAD) e o esquema de migração do payload. |
+| `salt`           | 5      | 32 bytes | bytes             | Salt único por cofre; gerado via CSPRNG na criação, substituído apenas ao alterar a senha mestra. |
+| `nonce`          | 37     | 12 bytes | bytes             | IV do AES-256-GCM (padrão NIST). Regenerado via CSPRNG a cada salvamento. |
 
-### 2.1. Cabeçalho de Criptografia
-
-| Campo            | Offset  | Tamanho | Tipo             | Descrição |
-|------------------|---------|---------|------------------|-----------|
-| `magic`          | 0       | 4 bytes | bytes (ASCII)    | Assinatura fixa `ABDT`. Identifica o arquivo como um cofre Abditum antes de qualquer tentativa de descriptografia. |
-| `versão_formato` | 4       | 1 byte  | uint8, big-endian | Versão do formato do arquivo. Determina o perfil Argon2id a utilizar na derivação de chave e o esquema de migração do payload. |
-| `salt`           | 5       | 32 bytes | bytes            | Salt único por arquivo, usado na derivação da chave com Argon2id. |
-| `nonce`          | 37      | 12 bytes | bytes            | Vetor de inicialização (IV) para AES-256-GCM (padrão NIST). Deve ser único por operação de escrita — um novo nonce é gerado a cada salvamento. |
-
-### 2.2. Payload Criptografado
-
-O restante do stream é o payload, que contém a estrutura do `Cofre` serializada em JSON (UTF-8), criptografada com AES-256-GCM usando a chave derivada de Argon2id.
+O payload contém o `Cofre` serializado em JSON (UTF-8) — todos os valores de string são UTF-8 — seguido pela tag GCM de 16 bytes.
 
 ---
 
-## 3. AAD (Additional Authenticated Data)
+## 2. AAD
 
-Todo o cabeçalho de criptografia (`magic` + `versão_formato` + `salt` + `nonce`) é incluído como AAD do AES-256-GCM. Isso garante que a integridade do cabeçalho seja validada criptograficamente junto ao payload, sem necessidade de checksum adicional da aplicação.
+O cabeçalho completo (`magic` + `versão_formato` + `salt` + `nonce`) é autenticado como AAD do AES-256-GCM, sem necessidade de checksum adicional.
 
 ---
 
-## 4. Derivação de Chave
+## 3. Derivação de Chave
 
-A chave AES-256 (32 bytes) é derivada da senha mestra usando **Argon2id**. O perfil de parâmetros é selecionado com base no campo `versão_formato` do cabeçalho, permitindo que futuras versões adotem parâmetros mais robustos sem quebrar compatibilidade com arquivos antigos.
+A chave AES-256 (32 bytes) é derivada da senha mestra com **Argon2id**, usando o perfil criptográfico completo (KDF + AEAD) definido pelo `versão_formato`. O Argon2id cuida exclusivamente da derivação de chave; a integridade do conteúdo é garantida pela tag GCM.
 
 ### Perfis por versão de formato
 
-| `versão_formato` | Algoritmo | `m`     | `t` | `p` | Saída  |
-|------------------|-----------|---------|-----|-----|--------|
-| 1                | Argon2id  | 65536 KB (64 MB) | 3 | 4 | 32 bytes |
+| `versão_formato` | KDF      | AEAD        | `m`                  | `t` | `p` | Saída    |
+|------------------|----------|-------------|----------------------|-----|-----|----------|
+| 1                | Argon2id | AES-256-GCM | 262144 KB (256 MiB)  | 3   | 4   | 32 bytes |
+
+Versões futuras serão documentadas aqui quando definidas.
+
+### Política de Parametrização (v1)
+
+- Parâmetros fixos e hard-coded; sem calibração por máquina nem variação por arquivo.
+- Piso: `m` ≥ 131072 KB (128 MiB). Teto de referência: `m` ≤ 524288 KB (512 MiB).
+- Mesma política em Windows, macOS e Linux 64 bits.
+- Mudanças exigem decisão explícita de versão + testes de regressão.
+- O perfil é selecionado **exclusivamente** pelo `versão_formato` — nunca por heurística.
+
+### Geração de valores aleatórios
+
+`salt` e `nonce` **DEVEM** ser gerados a partir de fonte criptograficamente segura (CSPRNG do sistema operacional — em Go, `crypto/rand`). O uso de geradores não-criptográficos (como `math/rand`) compromete completamente a segurança do esquema.
 
 ---
 
-## 5. Sequência de Abertura
+## 4. Sequência de Abertura
 
-A aplicação segue esta ordem ao abrir um arquivo `.abditum`:
+1. `magic` inválido → rejeitar sem solicitar senha
+2. `versão_formato` > suportado → rejeitar com erro de incompatibilidade; senão selecionar perfil Argon2id
+3. Ler `salt` e `nonce`
+4. Solicitar senha mestra
+5. Derivar chave com Argon2id
+6. Descriptografar e autenticar com AES-256-GCM (AAD = cabeçalho) — falha: erro de autenticação
+7. Desserializar JSON para estrutura de domínio em memória
+8. Validar modelo: Pasta Geral deve existir com nome `"Geral"` — falha: erro de integridade
+9. Se formato histórico: migrar dados em memória para o modelo corrente
+10. Cofre disponível
 
-1. Ler `magic` — se inválido, rejeitar imediatamente com erro de tipo de arquivo (não solicitar senha)
-2. Ler `versão_formato` — selecionar o perfil Argon2id correspondente
-3. Ler `salt` e `nonce` do cabeçalho
-4. Solicitar senha mestra ao usuário
-5. Derivar a chave com Argon2id usando `salt` e o perfil selecionado
-6. Descriptografar e autenticar o payload com AES-256-GCM (usando o cabeçalho como AAD)
-   - Se a autenticação falhar: erro de senha incorreta ou integridade comprometida
-7. Desserializar o JSON do payload para a estrutura de domínio em memória
-8. Se `versão_formato` indicar formato histórico suportado: migrar os dados em memória para o modelo corrente
-9. Cofre disponível para uso
+### Categorias de erro
 
-### Categorias de erro na abertura
+| Categoria           | Condição                                                           | Comportamento |
+|---------------------|--------------------------------------------------------------------|---------------|
+| Tipo de arquivo     | `magic` inválido                                                   | Rejeitar; sem nova tentativa |
+| Versão incompatível | `versão_formato` > suportado                                       | Rejeitar; sem nova tentativa |
+| Autenticação        | Tag GCM inválida                                                   | Mensagem genérica; permitir nova tentativa |
+| Integridade         | Payload corrompido, JSON inválido ou Pasta Geral ausente/inválida  | Mensagem genérica; sem nova tentativa |
 
-| Categoria       | Condição                                              | Comportamento |
-|-----------------|-------------------------------------------------------|---------------|
-| Tipo de arquivo | `magic` inválido ou ausente                           | Rejeitar antes de solicitar senha; sem nova tentativa |
-| Autenticação    | Tag GCM inválida (senha incorreta)                    | Exibir mensagem genérica; permitir nova tentativa |
-| Integridade     | Payload corrompido, JSON inválido, Pasta Geral ausente | Exibir mensagem genérica; bloquear abertura sem nova tentativa |
-
-Em todos os casos, a mensagem exibida ao usuário é genérica e não revela detalhes técnicos sobre a falha.
-
----
-
-## 6. Escrita
-
-A aplicação sempre escreve o arquivo no formato da versão atual, atualizando `versão_formato` quando necessário e gerando um novo `nonce` a cada salvamento. O `salt` é gerado uma única vez na criação do cofre e substituído apenas quando a senha mestra é alterada.
+Mensagens ao usuário são sempre genéricas, sem detalhes técnicos.
 
 ---
 
-## 7. Compatibilidade Retroativa
+## 5. Escrita e Compatibilidade
 
-A aplicação de versão N é capaz de abrir arquivos criados em qualquer versão anterior do formato suportada. Ao abrir um arquivo antigo, o payload é migrado em memória para o modelo corrente do domínio. Ao salvar, o arquivo é sempre regravado no formato da versão atual da aplicação.
+A escrita sempre usa o formato atual, com novo `nonce` gerado via CSPRNG. O `salt` é gerado na criação e substituído apenas ao alterar a senha mestra.
+
+A escrita **DEVE** ser atômica (gravar em arquivo temporário e renomear) para evitar corrupção do cofre em caso de falha durante a gravação (crash, queda de energia).
+
+A aplicação abre qualquer versão anterior suportada, migrando o payload em memória. Salva sempre no formato atual. Versões superiores ao suportado são rejeitadas com erro claro. Mudanças de formato devem ser raras e acompanhadas de rotina de migração e testes de regressão para todos os formatos históricos suportados.
