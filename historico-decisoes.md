@@ -344,7 +344,85 @@
 
 # ESCOPO v1
 
-## 22. Auditoria de senhas e TOTP fora do escopo v1 ✓
+## 22. `CampoSegredo.valor` representado como `[]byte` em memória para todos os campos ✓
+
+**Decisão:** O atributo `valor` de `CampoSegredo` é representado como `[]byte` em memória — para campos `texto` e `texto_sensivel` igualmente — em vez de `string`. No JSON persistido, o valor continua sendo serializado como string UTF-8 legível, via `MarshalJSON`/`UnmarshalJSON` customizados em `CampoSegredo`.
+
+**Contexto:**
+- A arquitetura exige zeragem explícita de dados sensíveis ao bloquear/encerrar (sobrescrever buffer com zeros)
+- `string` em Go é imutável — uma vez criada, a memória não pode ser sobrescrita pelo programa; cópias podem existir em heap locations inaccessíveis
+- `[]byte` é mutável e pode ser zerado com `for i := range b { b[i] = 0 }`
+- A alternativa de dois campos distintos (`valor_texto string` + `valor_sensivel []byte`) foi considerada e descartada:
+  - O `tipo` do campo já é o discriminador comportamental; adicionar dois campos de valor cria redundância estrutural
+  - A invariante "preencha apenas o campo correspondente ao tipo" ficaria no Manager, não na estrutura — aumenta superfície de erro
+  - Zeragem seria assimétrica (só `valor_sensivel`) — campos `texto` em `string` persistiriam em memória sem possibilidade de limpeza
+- Campos `texto` (não-sensíveis) também recebem `[]byte` para uniformidade: estrutura única, zeragem uniforme, sem lógica condicional no caminho de limpeza
+- `encoding/json` serializa `[]byte` automaticamente como Base64, o que quebraria compatibilidade e legibilidade do arquivo — por isso `CampoSegredo` implementa marshal/unmarshal customizados que tratam `valor` como string UTF-8 no JSON
+
+**Justificativa:** Uniformidade elimina lógica condicional na zeragem; `[]byte` é pré-requisito para a promessa de limpeza de memória ser honrável; o custo (marshal customizado + conversões `string(b)`/`[]byte(s)` nos pontos de exibição) é pequeno e bem localizado.
+
+**Consequências:**
+- `CampoSegredo` requer implementação de `MarshalJSON`/`UnmarshalJSON` — não pode usar serialização padrão
+- Conversões `string(campo.valor)` necessárias nos pontos de exibição na TUI
+- Zeragem ao bloquear/encerrar percorre todos os campos sem distinguir tipo — código mais simples
+- O JSON gravado em disco é idêntico ao que seria com `string` — compatibilidade de formato preservada
+
+
+
+## 23. Lixeira como lista in-memory no Manager, sem campo `marcado_exclusao` no Segredo ✓
+
+**Decisão:** `Segredo` não possui campo `marcado_exclusao` nem qualquer flag de estado de exclusão. A Lixeira é uma lista in-memory separada, mantida exclusivamente pelo Manager durante a sessão. Ao salvar, os segredos da Lixeira são descartados — não são persistidos.
+
+**Alternativa descartada — campo no Segredo:**
+- Adicionar `marcado_exclusao bool` ao `Segredo` tornaria o estado de exclusão parte da entidade de domínio
+- Segredo passaria a ter estado misto (dados + estado operacional transitório), violando o princípio de entidade de domínio puro
+- Criaria risco de o campo ser acidentalmente persistido no JSON
+- Zeragem de memória ficaria mais complexa (campo extra a limpar)
+
+**Alternativa escolhida — lista separada no Manager:**
+- `Segredo` permanece imutável como entidade de domínio puro: nome, campos, favorito, datas
+- Manager mantém internamente um conjunto (slice ou set) de segredos pendentes de exclusão
+- O ciclo de vida da Lixeira é estritamente atrelado ao ciclo de vida do Manager — ao bloquear sem salvar, os segredos da Lixeira são zerados junto com os demais dados sensíveis
+- Mais coeso: decisão de exclusão é operação do Manager, não estado da entidade
+
+**Implicação de API obrigatória (deve ser definida antes de implementar):**
+A TUI precisa saber se um segredo está na Lixeira para exibi-lo com marcação visual adequada (e para oferecer as ações de restaurar / confirmar exclusão). O Manager deve expor isso explicitamente — por exemplo:
+- um método `IsNaLixeira(id string) bool`, ou
+- incluir os segredos da Lixeira em um tipo de retorno anotado (ex: `SegredoComEstado`), ou
+- expor a Lixeira como coleção navegável distinta
+
+A forma exata da API é decisão de implementação, mas a interface do Manager deve resolê-la **antes** de qualquer código de TUI que renderize a Lixeira.
+
+**Consequências:**
+- `Segredo` não carrega estado transitório — domínio permanece limpo
+- Lixeira não sobrevive a bloqueio sem save — comportamento esperado e desejado
+- Zeragem ao bloquear deve incluir explicitamente os segredos da Lixeira
+- A interface do Manager precisa de um contrato deliberado para exposição do estado de Lixeira à TUI
+
+
+
+## 24. Segredos e pastas em listas separadas dentro de Pasta — blocos fixos, pastas antes dos segredos ✓
+
+**Decisão:** `Pasta` mantém duas listas independentes: `pastas` e `segredos`. Na exibição, pastas aparecem sempre em bloco antes dos segredos. Reordenação é permitida dentro de cada bloco, mas não é possível intercalar um segredo entre duas pastas nem uma pasta entre dois segredos.
+
+**Contexto:**
+- A estrutura de domínio (`Pasta.pastas` + `Pasta.segredos` como listas separadas) é uma decisão de modelo que implica diretamente a UX de ordenação — essa implicação não estava explicitada nos requisitos
+- Alternativa descartada: lista única com posição global (segredos e pastas intercalados por posição)
+  - Exigiria campo `posição` ou ordem por índice numa lista única de tipo polimórfico
+  - Aumenta complexidade de serialização e de reordenação no Manager
+  - A UX de arrastar uma pasta para entre dois segredos (ou vice-versa) não traz benefício claro para cofres de senhas pessoais
+- Blocos fixos (pastas antes de segredos) é o padrão de navegadores de arquivos e gerenciadores de senhas — expectativa natural do usuário
+
+**Justificativa:** Listas separadas são mais simples de implementar, serializar e raciocinar. A restrição de blocos é transparente ao usuário — ele nunca tentará colocar uma pasta entre dois segredos porque a interface simplesmente não oferece essa opção.
+
+**Consequências:**
+- Reordenação de pastas afeta apenas `Pasta.pastas`; reordenação de segredos afeta apenas `Pasta.segredos` — sem conflito entre as duas operações
+- A TUI deve renderizar sempre o bloco de pastas antes do bloco de segredos dentro de cada nível da hierarquia
+- Não é possível representar uma ordem interleaved, mesmo que um futuro formato de arquivo quisesse — a estrutura impõe o modelo
+
+
+
+## 25. Auditoria de senhas e TOTP fora do escopo v1 ✓
 
 **Decisão:** Funcionalidades de auditoria de senhas e geração TOTP foram descartadas do escopo.
 
