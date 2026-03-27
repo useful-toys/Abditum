@@ -1,37 +1,37 @@
-# Abditum — Project State
+# Project State — Abditum
 
-**Last updated:** 2026-03-24
-**Status:** Planning complete. Ready for Phase 1.
+**Last updated:** 2026-03-27
+**Current phase:** Ready for Phase 1
+**Milestone:** v1.0
 
-## Project Reference
+## Status
 
-See: `.planning/PROJECT.md` (updated 2026-03-24)
+| Artifact | Status |
+|----------|--------|
+| PROJECT.md | ✓ Created |
+| config.json | ✓ Created |
+| REQUIREMENTS.md | ✓ 55 requirements defined, traceability mapped |
+| research/ | ✓ STACK, FEATURES, ARCHITECTURE, PITFALLS, SUMMARY |
+| ROADMAP.md | ✓ 11 phases, all requirements mapped |
 
-**Core value:** A single portable binary that any user can carry on a USB drive and use on any machine — opening, managing, and saving an encrypted vault without installing anything or touching the cloud.
-**Current focus:** Pre-Phase 1 — ready to begin implementation
+## Current Phase
 
-## Phase Status
+None started. Run `/gsd-plan-phase 1` to begin.
 
-| Phase | Name | Status |
-|-------|------|--------|
-| 1 | Foundation (crypto + storage) | Not started |
-| 2 | Domain Model | Not started |
-| 3 | Authentication TUI | Not started |
-| 4 | Main TUI | Not started |
-| 5 | Polish & Release | Not started |
+## Phase History
 
-## Planning Artifacts
+*(empty — no phases completed yet)*
 
-| Artifact | Path | Status |
-|----------|------|--------|
-| Project definition | `.planning/PROJECT.md` | Done |
-| Requirements | `.planning/REQUIREMENTS.md` | Done |
-| Roadmap | `.planning/ROADMAP.md` | Done |
-| TUI architecture research | `.planning/research/tui-architecture.md` | Done |
-| Crypto & vault format research | `.planning/research/crypto-vault-format.md` | Done |
-| Portable build research | `.planning/research/portable-build.md` | Done |
-| UX benchmarks research | `.planning/research/ux-benchmarks.md` | Done |
+## Open Decisions
 
-## Next Action
+- Help overlay de teclado (`?` key / footer hints) — especificar antes da Phase 5 (TUI scaffold)
 
-Run `/gsd-plan-phase 1` to plan Phase 1 (Foundation — crypto + storage).
+## Notes
+
+- Bubble Tea v2 import path: `charm.land/bubbletea/v2` (não v1)
+- Argon2id: m=256 MiB, t=3, p=4 (conforme formato-arquivo-abditum.md)
+- Lixeira: lista in-memory no Manager, sem campo no Segredo
+- Exibição dentro de pasta: subpastas primeiro, segredos depois
+- NanoID: implementar internamente com `crypto/rand`
+- Datetime: RFC 3339 UTC
+- Favoritos: DFS na ordem do JSON
