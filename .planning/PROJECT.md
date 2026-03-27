@@ -2,179 +2,161 @@
 
 ## What This Is
 
-Abditum is a portable, secure, offline password vault with a modern TUI interface. It stores and manages secrets (passwords, API keys, credit card data, and user-defined structured secrets) in an AES-256-GCM encrypted file, requiring no installation, no cloud account, and persisting no data outside the vault file (except transitory artifacts and backups explicitly provided by the application). It targets privacy-conscious users, developers, and sysadmins who want full ownership of their credentials data.
+Abditum é um cofre de senhas portátil, seguro e offline, distribuído como um único binário executável Go com interface TUI moderna (Bubble Tea). Permite que o usuário armazene e gerencie credenciais e informações confidenciais organizadas em pastas hierárquicas, com segredos compostos por campos comuns e sensíveis, protegidos por criptografia AES-256-GCM e derivação de chave Argon2id — sem dependências de nuvem, sem instalação e sem rastreamento.
 
 ## Core Value
 
-A single portable binary that any user can carry on a USB drive and use on any machine — opening, managing, and saving an encrypted vault without installing anything or touching the cloud.
+O usuário tem controle total e exclusivo sobre seus segredos: os dados existem apenas no arquivo `.abditum` e na memória da sessão ativa — nenhum terceiro, serviço externo ou processo paralelo tem acesso a eles.
 
 ## Requirements
 
 ### Validated
 
-<!-- Shipped and confirmed valuable. -->
-
 (None yet — ship to validate)
 
 ### Active
 
-**Vault Lifecycle**
-- [ ] Create new vault with path and master password (double-entry confirmation for master password)
-- [ ] Open existing vault with master password
-- [ ] Save vault atomically (write to .abditum.tmp → rename on success; delete tmp on failure)
-- [ ] Keep `.abditum.bak` backup of previous vault on every save: before writing the new backup, rename any existing `.abditum.bak` to `.abditum.bak2`; on success delete `.abditum.bak2`; on failure restore `.abditum.bak2` → `.abditum.bak` where possible
-- [ ] Save vault to a new path (Save As)
-- [ ] Discard unsaved changes and reload vault from disk
-- [ ] Change master password (double-entry confirmation required)
-- [ ] Export vault to plain-text JSON (with security warning + confirmation)
-- [ ] Import vault from plain-text JSON with conflict handling:
-  - Folders with same identity → hierarchy merged silently
-  - Secrets with same identity (ID collision) → imported secret receives a new identity; its data is preserved
-  - Secrets with same name in the same destination folder → name suffixed incrementally (e.g. "Secret (1)"); user is notified of all name-suffixed imports
-  - Templates with same identity → imported template replaces existing silently
-- [ ] Configure vault settings (stored inside vault file): auto-lock timeout, field reveal timeout, clipboard clear timeout
+#### Cofre — Ciclo de Vida
+- [ ] **VAULT-01**: Usuário pode criar novo cofre em arquivo com senha mestra (confirmação dupla + avaliação de força)
+- [ ] **VAULT-02**: Ao criar cofre, Pasta Geral é criada automaticamente com subpastas "Sites e Apps" e "Financeiro" e modelos padrão (Login, Cartão de Crédito, Chave de API)
+- [ ] **VAULT-03**: Usuário pode abrir cofre a partir de arquivo existente com senha mestra
+- [ ] **VAULT-04**: Erros de abertura distinguem autenticação (nova tentativa) de integridade (bloqueio total)
+- [ ] **VAULT-05**: Usuário pode salvar cofre no arquivo atual (sem re-solicitar senha; segredos marcados excluídos removidos permanentemente)
+- [ ] **VAULT-06**: Usuário pode salvar cofre em outro arquivo (arquivo de trabalho passa a ser o novo; segredos marcados excluídos removidos)
+- [ ] **VAULT-07**: Se arquivo foi modificado externamente antes de salvar, usuário recebe aviso e opções: Sobrescrever / Salvar como novo / Cancelar
+- [ ] **VAULT-08**: Usuário pode descartar alterações não salvas e recarregar cofre do arquivo
+- [ ] **VAULT-09**: Usuário pode alterar senha mestra (confirmação dupla + avaliação de força; salva imediatamente e irreversivelmente)
+- [ ] **VAULT-10**: Cofre bloqueia automaticamente após tempo configurável de inatividade (padrão: 5 min; qualquer interação reseta o timer)
+- [ ] **VAULT-11**: Usuário pode bloquear o cofre manualmente
+- [ ] **VAULT-12**: Ao bloquear, senha mestra é sobrescrita na memória e terminal é limpo (clear screen)
+- [ ] **VAULT-13**: Usuário pode sair da aplicação (confirmação com opções se houver alterações pendentes; limpeza de memória e terminal ao sair)
+- [ ] **VAULT-14**: Usuário pode exportar cofre para JSON (com aviso de risco e confirmação; segredos marcados excluídos não incluídos)
+- [ ] **VAULT-15**: Usuário pode importar cofre de JSON (mesclagem de pastas por caminho; tratamento de conflitos de nome; segredos/modelos com ID duplicado tratados conforme regras documentadas)
+- [ ] **VAULT-16**: Usuário pode configurar tempo de bloqueio por inatividade, tempo de ocultação de campo sensível e tempo de limpeza de clipboard
 
-**Authentication**
-- [ ] Unlock vault with master password
-- [ ] Manual lock: return to vault open screen, clear app-controlled sensitive buffers where possible
-- [ ] Auto-lock after configurable inactivity timeout (same behavior as manual lock)
-- [ ] Brute-force protection via Argon2id (high memory and time cost)
-- [ ] Spinner/progress indicator during Argon2id key derivation
+#### Consulta de Segredos
+- [ ] **QUERY-01**: Usuário visualiza cofre com sua hierarquia de pastas e segredos
+- [ ] **QUERY-02**: Usuário pode buscar segredos por nome, nome de campo, valor de campo comum ou observação (substring, case-insensitive, sem acento; campos sensíveis excluídos; segredos marcados excluídos ocultos)
+- [ ] **QUERY-03**: Usuário visualiza segredo com nome, campos e observação
+- [ ] **QUERY-04**: Usuário pode revelar temporariamente o valor de campo sensível (ocultação automática após timer configurável; padrão: 15 s)
+- [ ] **QUERY-05**: Usuário pode copiar qualquer campo para clipboard (limpeza automática ao bloquear/sair ou após timer configurável; padrão: 30 s)
 
-**Vault Navigation (read-only)**
-- [ ] Display vault hierarchy (folders and secrets) in a sidebar tree
-- [ ] Display secret details in a detail panel
-- [ ] Temporarily reveal a sensitive field value; auto-hide after configurable timeout (suggested default 15 s)
-- [ ] Virtual folder: Favorites (all favorited secrets, regardless of location)
-- [ ] Virtual folder: Trash / Exclusão Reversível (all soft-deleted secrets, restorable until next save)
+#### Gerenciamento de Segredos
+- [ ] **SEC-01**: Usuário pode criar segredo a partir de modelo existente ou sem modelo (somente Observação), escolhendo a pasta
+- [ ] **SEC-02**: Usuário pode duplicar segredo (cópia na mesma pasta imediatamente após original, nome ajustado automaticamente, histórico de modelo preservado)
+- [ ] **SEC-03**: Usuário pode editar segredo: nome, valores de campos e observação
+- [ ] **SEC-04**: Usuário pode alterar estrutura do segredo: adicionar campo (nome + tipo), renomear campo, reordenar campos, excluir campo
+- [ ] **SEC-05**: Observação existe em todo segredo: não pode ser renomeada, excluída ou movida de posição — sempre na última posição; é campo comum
+- [ ] **SEC-06**: Usuário pode favoritar/desfavoritar segredo
+- [ ] **SEC-07**: Usuário pode marcar/desmarcar segredo para exclusão (permanece visível sinalizado; removido ao salvar)
+- [ ] **SEC-08**: Usuário pode mover segredo para outra pasta
+- [ ] **SEC-09**: Usuário pode reordenar segredo dentro da mesma pasta (ordem persistida ao salvar)
 
-**Secret Management**
-- [ ] Create secret from any existing template, OR start with a blank secret (no initial fields); template is a snapshot at creation time — changes to the template do not affect existing secrets; template name stored as historical record only
-- [ ] Create secret at vault root or inside any folder
-- [ ] Duplicate an existing secret
-- [ ] Favorite / unfavorite a secret
-- [ ] Edit secret data: change secret name, field values, and observation
-- [ ] Alter secret structure: add, remove, rename, reorder fields on an existing secret; changing a field's type is not supported — delete the field and add a new one with the desired type instead
-- [ ] Soft-delete a secret (reversible until next save; deleted secret moves to Trash virtual folder)
-- [ ] Restore a soft-deleted secret from Trash before the next save
-- [ ] Move secret to another folder or vault root
-- [ ] Reorder secret relative to other items in same parent
-- [ ] Search secrets by: secret name, field name, `texto`-type field value, or note (observation); `texto sensível` fields are never searched; all matching secrets shown
+#### Gerenciamento de Pastas
+- [ ] **FOLDER-01**: Usuário pode criar pasta dentro de outra pasta (nome único dentro da pasta pai)
+- [ ] **FOLDER-02**: Usuário pode renomear pasta (nome único dentro da pasta pai; Pasta Geral não pode ser renomeada)
+- [ ] **FOLDER-03**: Usuário pode mover pasta (validação contra ciclos; nome único no destino; Pasta Geral não pode ser movida)
+- [ ] **FOLDER-04**: Usuário pode reordenar pasta dentro da mesma pasta (ordem persistida ao salvar)
+- [ ] **FOLDER-05**: Usuário pode excluir pasta (segredos e subpastas promovidos para pasta pai; conflitos de nome em subpastas resolvidos com sufixo numérico; Pasta Geral não pode ser excluída)
 
-**Folder Management**
-- [ ] Create folder at vault root or inside another folder
-- [ ] Rename folder
-- [ ] Move folder to another folder or vault root
-- [ ] Reorder folder relative to other items in same parent
-- [ ] Delete folder: its secrets and subfolders are promoted to the parent (or vault root); promoted secrets appended to end of parent's secret list; promoted subfolders appended to end of parent's folder list; folder itself is permanently removed (not soft-deleted)
-- [ ] Pre-defined folders on vault creation: "Sites", "Financeiro", "Serviços" (user-editable/removable)
+#### Gerenciamento de Modelos
+- [ ] **TPL-01**: Usuário pode criar modelo de segredo com campos personalizados (nome + tipo)
+- [ ] **TPL-02**: Usuário pode renomear modelo (nome único entre modelos)
+- [ ] **TPL-03**: Usuário pode alterar estrutura do modelo: adicionar campo, renomear campo, alterar tipo, reordenar campos, excluir campo (sem efeito em segredos já criados)
+- [ ] **TPL-04**: Usuário pode excluir modelo
+- [ ] **TPL-05**: Usuário pode criar modelo a partir de segredo existente (Observação automática ignorada; campo usuário chamado "Observação" incluído normalmente)
 
-**Secret Template Management**
-- [ ] Create custom template with named, typed fields
-- [ ] Edit template (add, remove, rename, retype, reorder fields); changes only affect future secrets
-- [ ] Delete template; existing secrets are unaffected
-- [ ] Create template from existing secret (copies field names and types as initial structure; values are not copied)
-- [ ] Pre-defined templates on vault creation: "Login" (URL, Username, Password), "Cartão de Crédito" (Número do Cartão, Nome no Cartão, Data de Validade, CVV), "API Key" (Nome da API, Chave de API)
-- [ ] Templates stored inside the vault file; each vault has its own independent template set
-
-**Clipboard**
-- [ ] Copy any field value to the system clipboard
-- [ ] Auto-clear clipboard after configurable timeout (suggested default 30 s)
-- [ ] Clear clipboard on lock or vault close
-
-**Security**
-- [ ] Minimize sensitive data retention in memory; clear app-controlled buffers on lock or close where possible
-- [ ] Shoulder-surfing protection: hotkey to instantly hide the entire TUI; restore on same hotkey
-- [ ] Export warning: show security risk message and require explicit confirmation before exporting plain-text JSON
-
-**Data Model**
-- [ ] Vault payload contains: settings (auto-lock timeout default 2 min, field reveal timeout default 15 s, clipboard clear timeout default 30 s), secrets (root level), folders (root level), secret templates, creation date, last-modified date
-- [ ] Secret fields: id (NanoID 6 chars), name, template name (optional, historical), fields list, favorite flag, note/observation (implicit on every secret, not part of templates), creation date, last-modified date
-- [ ] Folder fields: id (NanoID 6 chars), name, secrets list, subfolders list (recursive)
-- [ ] Template fields: id (NanoID 6 chars), name, template-fields list
-- [ ] Field types: `texto` (plain text) and `texto sensível` (sensitive text); field value may be empty string
-- [ ] Name uniqueness not enforced: duplicate names are permitted for secrets, folders, and templates
-- [ ] Every secret has an implicit observation field (free text, non-sensitive, not in templates, cannot be removed)
-
-**Format & Compatibility**
-- [ ] Vault file format: `.abditum` extension
-- [ ] Binary file: fixed header (`magic=ABDT` + `versão_formato` + `salt` + `nonce`) followed by AES-256-GCM ciphertext of JSON payload; entire header is GCM AAD
-- [ ] Argon2id parameters for key derivation (high-cost: ≥64 MiB memory, time=3)
-- [ ] App version N can open vaults created with any previously supported format version; payload migrated in-memory; saved in current format version
-- [ ] No application logs (stdout/stderr) containing vault paths, secret names, or field values
-- [ ] No data persisted outside the vault file except `.abditum.tmp` (transitory) and `.abditum.bak` (backup)
+#### Requisitos Não Funcionais / Técnicos
+- [ ] **SEC-CRYPTO-01**: Criptografia AES-256-GCM; derivação de chave Argon2id; dependências de crypto exclusivamente de stdlib Go + `golang.org/x/crypto`
+- [ ] **SEC-PRIV-01**: Zero logs de stdout/stderr com caminhos de arquivo, nomes de segredos ou valores de campos
+- [ ] **COMPAT-01**: Compatibilidade retroativa de formato de arquivo: versão N abre arquivos de versões anteriores (migração em memória; sempre salva no formato atual)
+- [ ] **ATOMIC-01**: Salvamento atômico via `.abditum.tmp` com rollback e backup `.abditum.bak` / `.abditum.bak2`
+- [ ] **PORT-01**: Binário único executável, cross-platform: Windows, macOS, Linux
+- [ ] **MEM-01**: Ao bloquear/sair, sobrescrever senha mestra e descartar buffers sensíveis; usar `mlock`/`VirtualLock` quando disponível
+- [ ] **CI-01**: CI obrigatório: build + lint + testes completos em todo push
 
 ### Out of Scope
 
-- Cloud sync / cloud storage — zero-knowledge by design; no network dependency
-- Multiple vaults open simultaneously — single vault at a time, by design
-- Mobile or web app — portable TUI is the product
-- Tags — folder hierarchy is sufficient for v1
-- Secret version history — deferred to v2
-- TOTP/2FA field type — deferred to v2
-- Password generator — deferred to v2
-- Duress password — deferred to v2
-- QR Code sharing — deferred to v2
-- Vault health / password audit report — deferred to v2
-- Hardware token / keyfile second factor — deferred to v2
-- Changing the type of an existing secret field — delete the field and add a new one with the desired type instead
-- Re-authentication to save — the vault is already unlocked and authenticated in the session; the master password is not required again to save
+- **TOTP (autenticação de dois fatores)** — excluído permanentemente; fora do foco de gerenciamento de credenciais estáticas
+- **Backup automático** — responsabilidade do usuário; a app não gerencia cópias de segurança
+- **Recuperação de dados corrompidos** — a criptografia não permite recuperação parcial; design intencional
+- **Keyfile / Token de hardware (YubiKey)** — excluído permanentemente; fora do modelo de segurança atual
+- **Armazenamento em nuvem** — contraria filosofia offline e portátil; excluído permanentemente
+- **Múltiplos cofres simultâneos** — invariante de design; só um cofre ativo por vez
+- **App mobile ou web** — TUI portátil é o produto; excluído permanentemente
+- **Duress password (senha falsa de coação)** — planejado para v2; não pertence a v1
+- **Gerador de senhas** — planejado para v2
+- **QR Code de campo** — planejado para v2
+- **Tags** — planejado para v2
+- **Histórico de versões de segredos** — planejado para v2
+- **Relatório de saúde do cofre** — planejado para v2
+- **Recuperação de artefatos órfãos** — planejado para v2
 
 ## Context
 
-- **Greenfield project** — no existing codebase; starting from scratch
-- **Language:** Go — compiles to a single static binary, strong stdlib crypto, excellent cross-platform support
-- **TUI:** Bubble Tea + Lip Gloss — modern component-based TUI framework, production-proven
-- **Vault format:** AES-256-GCM for data encryption, Argon2id for key derivation from master password
-- **Target users:** privacy-conscious individuals, developers, sysadmins who distrust cloud password managers
-- **Portability requirement** rules out external config files, registry writes, or any persistent data outside the vault file path
+**Estado atual:** O projeto possui documentação de requisitos, arquitetura, domínio, BDD e RUP extensamente elaborada. Nenhuma implementação Go existe ainda — estamos na fase de inicialização do desenvolvimento.
+
+**Stack definida:**
+- Linguagem: **Go** — compilado como binário único, sem runtime externo
+- TUI: **Bubble Tea (Charm)** — modelo Elm de atualização de estado
+- Testes de TUI: **teatest/v2**
+- Crypto: **AES-256-GCM + Argon2id** (stdlib Go + `golang.org/x/crypto`)
+
+**Estrutura de pacotes planejada:**
+```
+cmd/abditum/          -- ponto de entrada (main)
+internal/vault/       -- domínio e lógica de negócio (Manager, entidades, regras)
+internal/crypto/      -- derivação de chave e criptografia/descriptografia
+internal/storage/     -- leitura/escrita do arquivo .abditum (formato binário + salvamento atômico)
+internal/tui/         -- interface TUI (modelos Bubble Tea, telas, componentes, navegação)
+```
+
+**Padrão arquitetural:** Manager centraliza toda mutação do domínio. A TUI interage com o domínio exclusivamente via Manager.
+
+**Audiência:** Usuários que valorizam privacidade local e não querem depender de serviços em nuvem — podem ser técnicos ou não, desde que confortáveis com TUI.
+
+**Filosofia de segurança:** Zero-knowledge, local-only, dependências mínimas, sem logs sensíveis.
 
 ## Constraints
 
-- **Tech Stack:** Go + Bubble Tea + Lip Gloss (TUI) + teatest/v2 (TUI testing) — single static binary, no runtime dependencies, CGO_ENABLED=0
-- **Crypto:** AES-256-GCM + Argon2id — non-negotiable; Argon2id used exclusively for KDF (not content integrity); GCM handles integrity via authentication tag
-- **Argon2id parameters (v1, hard-coded):** memory=256 MiB, time=3 iterations, parallelism=min(4, logical CPUs); security floor=128 MiB (app refuses to operate below); reference ceiling=512 MiB; parameters fixed per app version, not configurable per file
-- **Portability:** No data persisted outside the vault file (except `.abditum.tmp` and `.abditum.bak`); no OS registry, config directory, or external files
-- **Compatibility:** Windows, macOS, Linux 64-bit — all three from day one; same security policy on all platforms
-- **Privacy:** Zero application logs containing sensitive data (paths, names, values)
-- **Reliability:** Atomic save (`.abditum.tmp` → rename) + `.abditum.bak` backup rotation (existing `.bak` renamed to `.bak2` before new backup is written; `.bak2` deleted on success, restored on failure); nonce regenerated on every save; salt unique per vault (random at creation, stored in header)
-- **Backward Compatibility:** App version N opens vaults from any previously supported format version; Argon2id profile selected by `versão_formato` from header; format version > app max → explicit incompatibility error; migration in-memory; saves always in current format
-- **CI:** Mandatory; runs on Ubuntu, Windows, macOS runners
+- **Tech Stack**: Go + Bubble Tea + teatest/v2 — definido e não negociável
+- **Crypto**: Apenas stdlib Go e `golang.org/x/crypto` para operações criptográficas — sem libs de terceiros
+- **Portabilidade**: Binário único, sem instalação, sem configuração externa — Windows + macOS + Linux
+- **Privacidade**: Nenhum log com dados sensíveis (caminhos, nomes, valores)
+- **Offline**: Sem acesso a rede, sem cloud, sem telemetria de qualquer natureza
+- **CI**: Build + lint + testes obrigatórios em todo push — mudanças que quebrem o build não são aceitas
+- **Comentários**: Política generosa — código deve ser acessível a leitores menos familiarizados com Go, Bubble Tea e criptografia
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Go as implementation language | Single static binary requirement; excellent cross-platform builds; strong stdlib crypto; CGO_ENABLED=0 | — Pending |
-| Bubble Tea + Lip Gloss for TUI; teatest/v2 for TUI tests | Modern, component-based; widely adopted; pairs naturally with Go; teatest/v2 is the official testing companion | — Pending |
-| AES-256-GCM + Argon2id | Industry-standard symmetric encryption + memory-hard KDF; strong against offline brute-force | — Pending |
-| Argon2id used exclusively for KDF | Content integrity handled by GCM authentication tag; clean separation of concerns | — Pending |
-| Argon2id v1 params: 256 MiB, time=3, parallelism=min(4,CPUs) | UX target 0.8–1.5 s unlock on modern hardware; strong offline resistance; floor=128 MiB, ceiling=512 MiB | — Pending |
-| Argon2id params hard-coded per app version, not stored in file | Simplifies format; eliminates param downgrade attack via crafted file; all v1 vaults use the same strong params | — Pending |
-| Argon2id profile selected by `versão_formato` when opening old vaults | Decouples app params from file params; allows future param evolution without breaking old vaults | — Pending |
-| Vault format: encrypted JSON, UTF-8 | Human-readable internals (after decryption), easy migration/export, flexible schema; UTF-8 supports all characters | — Pending |
-| Binary header: `magic(ABDT)` + `versão_formato` + `salt` + `nonce` | Enables format detection before decryption; magic bytes distinguish wrong-file-type from wrong-password | — Pending |
-| Entire header as GCM AAD | Tamper-detection of magic/version/salt/nonce at no extra cost; no separate checksum needed | — Pending |
-| Salt: random at creation, unique per vault, stored in header | Standard Argon2id practice; prevents rainbow table attacks across vaults | — Pending |
-| Nonce: regenerated on every save | Prevents nonce reuse under the same key; nonce reuse with GCM is catastrophic | — Pending |
-| Format version > app max → explicit incompatibility error | Prevents silent data corruption when a newer vault is opened with an older app | — Pending |
-| Trash = virtual folder, purge on save | No separate "empty trash" UX; save intent is clear; keeps model simple | — Pending |
-| Folders are NOT soft-deleted | Only secrets are soft-deleted; folders are permanently removed and their children promoted | — Pending |
-| Templates stored inside vault | Each vault is self-contained; portability guaranteed; no shared config files | — Pending |
-| Templates are snapshots at creation time | Avoids retroactive mutations of existing secrets when templates evolve | — Pending |
-| Favorites + Trash as only virtual folders | Covers the primary access patterns (quick access + undo delete) without over-engineering | — Pending |
-| Search is in-memory sequential scan | Vault is fully in memory after unlock; no index needed; avoids any persistent index data | — Pending |
-| NanoID (6 chars, 62^6 ≈ 56B combinations) for entity IDs | Uniqueness for identity/conflict resolution in import; names are not identifiers; JSON-serializable | — Pending |
-| Name uniqueness not enforced | Simplifies data model; UX responsibility, not data integrity concern | — Pending |
-| Implicit observation field on every secret | Always available for notes without polluting templates; treated as non-sensitive | — Pending |
-| Import: identity collision → new ID for imported secret | Prevents secret data loss without silently overwriting existing secrets; preserves both | — Pending |
-| Import: name collision in same folder → suffix name | Avoids visual ambiguity; user is notified; distinct from identity collision resolution | — Pending |
-| Import: folders merged, templates replaced | Merge preserves structure; template replace assumes newer = better | — Pending |
-| Vault root is a nameless implicit folder | Recursive hierarchy: root contains secrets and folders just like any other folder; no special-casing in data model | — Pending |
-| JSON array order = display order | No separate order field; position in the JSON array is the canonical display order for secrets, folders, and fields | — Pending |
-| .bak2 rotation before generating new backup | Prevents losing the last good backup if a crash occurs mid-save; safe rollback to .bak2 on failure | — Pending |
-| Lock = minimize retention, clear controlled buffers | Go GC limits hard zeroing guarantees; honest about what the app can and cannot control | — Pending |
-| CI mandatory on Ubuntu + Windows + macOS | Cross-platform guarantee; catches platform-specific regressions early | — Pending |
+| Go como linguagem | Binário único sem runtime externo; tipagem forte; performance adequada para TUI | — Pending |
+| Bubble Tea (Charm) para TUI | Modelo Elm bem estabelecido; componentes reutilizáveis; suporte multiplataforma | — Pending |
+| AES-256-GCM + Argon2id | Padrão de mercado para criptografia simétrica + derivação de chave resistente a brute-force | — Pending |
+| Manager pattern para domínio | Centraliza regras de negócio; impede mutação direta de entidades pela TUI | — Pending |
+| JSON criptografado como formato | Legível para exportação, versionável com migração em memória | — Pending |
+| Salvamento atômico via .tmp + rollback | Garante que falha durante gravação não corrompe o arquivo principal | — Pending |
+| Sem recuperação de dados corrompidos | A criptografia autenticada (GCM) detecta corrupção; recuperação parcial comprometeria a integridade | — Pending |
+| Exclusão soft (marcar para excluir) | Dá ao usuário oportunidade de reverter antes de salvar; remoção permanente só ocorre ao persistir | — Pending |
+| Observação automática em todo segredo | Campo de notas livre sempre acessível, sem ser parte do modelo de template | — Pending |
+
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
 
 ---
-*Last updated: 2026-03-24 after 4th requirement revision (import two-level conflict rules, .bak2 rotation, re-auth-to-save out of scope, root-as-folder and JSON-order modeling decisions, settings defaults)*
+*Last updated: 2026-03-27 after initialization*
