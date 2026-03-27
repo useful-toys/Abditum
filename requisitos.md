@@ -63,9 +63,11 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Descartar alterações não salvas e recarregar o cofre
   - Descarta todas as alterações realizadas desde o último salvamento (se houver) ou desde a abertura do cofre (se nunca foi salvo)
   - O cofre é recarregado ao seu estado anterior
-  - Usar a senha originalmente fornecida ao abrir — não solicitar novamente
+  - Usar a senha ativa no momento do descarte — não solicitar novamente (pode ser a senha original de abertura ou a nova senha, caso a senha mestra tenha sido alterada durante a sessão)
 - Alterar a senha mestra do cofre
   - Exigir digitação dupla para confirmação
+  - A alteração é imediata: o cofre é salvo automaticamente com a nova senha ao confirmar
+  - Após a alteração, não é possível descartar essa operação (o arquivo já foi regravado)
 - Bloquear o cofre manualmente ou automaticamente após inatividade
   - Bloquear automaticamente após tempo configurável de inatividade, com valor padrão sugerido de 5 minutos
   - O bloqueio retorna ao fluxo de abertura do cofre, exigindo nova autenticação para retomar o acesso
@@ -74,9 +76,10 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Exportar cofre para arquivo JSON
   - Exibir aviso sobre os riscos de segurança e solicitar confirmação antes de exportar
 - Importar cofre de arquivo JSON
-  - Pastas importadas que já existem no cofre (mesmo nome) têm seu conteúdo mesclado automaticamente
+  - Pastas importadas que já existem no cofre (mesmo caminho completo na hierarquia) têm seu conteúdo mesclado automaticamente; pastas com mesmo nome mas em caminhos diferentes são tratadas como pastas distintas
+  - Novas pastas e novos segredos importados são inseridos ao final da lista correspondente na pasta de destino
   - Segredo importado que já existe no cofre (mesmo identificador interno) é salvo como um novo segredo, preservando todos seus dados
-  - Modelo importado que já existe no cofre (mesmo identificador interno) é substituído silenciosamente
+  - Modelo importado que já existe no cofre (mesmo identificador interno) é substituído silenciosamente, mantendo sua posição na lista de modelos
 - Configurar o cofre
   - Configurar tempo de bloqueio automático por inatividade (padrão: 5 minutos)
   - Configurar tempo de ocultação automática de campo sensível (padrão: 15 segundos)
@@ -95,7 +98,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 
 ### Gerenciamento de Segredos
 - Criar segredo
-  - A partir de um modelo existente ou como segredo vazio sem campos iniciais
+  - A partir de um modelo existente ou como segredo sem campos de modelo — apenas com a Observação
   - O segredo pertencerá a uma pasta, escolhida no momento da criação
 - Duplicar segredo existente
   - O segredo duplicado recebe nome ajustado automaticamente — ex: "Segredo (1)", "Segredo (2)"
@@ -105,6 +108,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Alterar estrutura do segredo: adicionar campo (com nome e tipo); renomear campo; reordenar campos; excluir campo
   - Não permite alterar o tipo de um campo
   - Não permite alterar a posição, tipo ou nome da observação
+  - A Observação ocupa sempre a última posição na lista de campos — campos adicionados pelo usuário são posicionados acima dela
 - Favoritar e desfavoritar segredo
 - Marcar e desmarcar segredo para exclusão
   - Segredo marcado para exclusão permanece na lista, apenas sinalizado visualmente
@@ -138,6 +142,8 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - Os segredos previamente criados a partir do modelo não são afetados pelas alterações no modelo, mantendo seus campos inalterados
 - Excluir modelo de segredo
 - Criar modelo a partir de um segredo existente
+  - A Observação automática do segredo é sempre ignorada — não é copiada para o modelo
+  - Campos criados manualmente pelo usuário com o nome "Observação" são tratados como campos comuns e incluídos normalmente no modelo gerado
 
 ## Regras Transversais
 
@@ -188,6 +194,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Observação não pode ser renomeada
 - Observação não pode ser excluída
 - Observação é um campo comum (sempre visível, não sensível)
+- Observação ocupa sempre a última posição na lista de campos do segredo
 - Observação não é declarada no modelo de segredo
 - Se um modelo contiver um campo com o nome "Observação", ele coexistirá com a Observação automática do segredo — não há conflito nem substituição
 - O uso responsável da observação é por conta e risco do usuário — o campo não prevê ocultação nem tratamento especial
