@@ -26,11 +26,41 @@ internal/
 
 ---
 
-## 3. Padrão Manager
 
-As entidades do domínio (`Cofre`, `Pasta`, `Segredo`, `ModeloSegredo`) são navegáveis somente leitura externamente. Toda mutação é realizada exclusivamente por métodos explícitos do `Manager` (`internal/vault`).
+## 3. Camada de Serviço de Aplicação (Padrão Manager)
 
-O Manager é o contrato central de manipulação do domínio: centraliza as regras de negócio, garante consistência das estruturas de dados e impede manipulações diretas potencialmente inseguras. A TUI interage com o domínio exclusivamente via Manager.
+A interação com o modelo de domínio é controlada por uma camada de serviço de aplicação, cujo principal componente é o `Manager`. Este padrão atua como a API pública para o domínio, garantindo que toda interação siga as regras de negócio e preserve a consistência dos dados. A TUI (ou qualquer outro cliente) interage com o domínio **exclusivamente** através do Manager.
+
+### Princípios
+
+1.  **Contrato Central e Ponto de Entrada Único**: Toda mutação no estado do cofre (criar, editar, excluir segredos/pastas) é realizada exclusivamente por métodos explícitos no `Manager`. As entidades do domínio (`Cofre`, `Pasta`, `Segredo`) expõem seus dados de forma navegável e somente leitura para o exterior, mas suas funções de mutação são privadas ao pacote, podendo ser chamadas apenas pelo `Manager` ou pelo agregado `Cofre`.
+
+2.  **Orquestração, não Lógica**: O `Manager` não contém lógica de negócio. Sua responsabilidade é **orquestrar** o fluxo de um caso de uso. Ele recebe a solicitação, utiliza um Repositório para carregar o estado, invoca o método de negócio apropriado no agregado `Cofre`, e então utiliza o Repositório novamente para persistir o novo estado. A lógica de negócio real (validações, regras, invariantes) reside inteiramente dentro do modelo de domínio (no agregado `Cofre` e suas entidades).
+
+3.  **Barreira Transacional**: Cada método público no `Manager` representa uma transação completa e atômica. Uma operação só é considerada bem-sucedida se a lógica de negócio for validada **e** a persistência for concluída com sucesso. Isso garante que o cofre nunca seja deixado em um estado inconsistente.
+
+### Fluxo de uma Operação Típica (Ex: Renomear um Segredo)
+
+1.  A **TUI** captura a intenção do usuário (o ID do segredo e o novo nome) e chama um único método no `Manager`, ex: `manager.RenomearSegredo(secretID, "novo nome")`.
+2.  O **Manager** recebe a chamada. Ele não valida nada. Sua primeira ação é invocar o método correspondente no agregado `Cofre` que está em memória: `cofre.RenomearSegredo(secretID, "novo nome")`.
+3.  O agregado **Cofre** executa a lógica de negócio:
+    *   Encontra o segredo e sua pasta pai.
+    *   Verifica se o novo nome já está em uso na mesma pasta (regra de unicidade).
+    *   Se a regra for violada, retorna um erro, e o Manager o repassa para a TUI. A operação é abortada.
+    *   Se a regra for válida, ele comanda a entidade `Segredo` a alterar seu estado interno, atualiza o `estado_sessao` para `modificado` e atualiza a data de modificação do cofre.
+4.  Se o método no `Cofre` retornar sem erros, o **Manager** prossegue para a próxima etapa: ele chama o Repositório (camada de `storage`) para salvar o estado modificado do agregado `Cofre`: `repositorio.Salvar(cofre)`.
+5.  A camada de **storage** executa a serialização para JSON, criptografia e escrita atômica no arquivo `.abditum`.
+6.  O resultado final (sucesso ou erro de IO) é retornado ao longo da cadeia até a TUI, que atualiza a tela para o usuário.
+
+### Benefícios Deste Padrão
+
+*   **Proteção do Domínio**: As regras de negócio são encapsuladas e não podem ser contornadas. Isso previne que o cofre entre em um estado inválido (ex: dois segredos com o mesmo nome na mesma pasta).
+*   **Separação Clara de Responsabilidades**: A TUI lida com a apresentação. O Domínio lida com as regras de negócio. O Storage lida com a persistência. O Manager conecta todas elas sem misturar suas responsabilidades, o que aumenta drasticamente a testabilidade de cada componente de forma isolada.
+*   **Clareza dos Casos de Uso**: A interface pública do `Manager` serve como uma lista clara de todas as operações que um usuário pode realizar no sistema, tornando a intenção do código explícita.
+
+
+
+
 
 ---
 
