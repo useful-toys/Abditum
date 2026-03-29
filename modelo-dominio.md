@@ -161,7 +161,7 @@ Objeto de valor que define a estrutura de um campo no ModeloSegredo. Identidade 
 | Atributo | Tipo                         | Descrição               |
 |----------|------------------------------|-------------------------|
 | nome     | string                       | Nome do campo           |
-| tipo     | enum: texto, texto_sensivel  | Tipo (imutável à criação) |
+| tipo     | enum: texto, texto_sensivel  | Tipo (mutável — pode ser alterado após a criação) |
 
 ---
 
