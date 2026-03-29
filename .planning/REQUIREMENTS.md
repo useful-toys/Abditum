@@ -31,7 +31,7 @@
 - [ ] **VAULT-13**: Ao bloquear, senha mestra é sobrescrita em memória, buffers sensíveis descartados e terminal limpo (clear screen incluindo scrollback `\033[3J`)
 - [ ] **VAULT-14**: Usuário pode sair da aplicação; se houver alterações pendentes, confirmação com opções: Salvar e Sair / Descartar e Sair / Cancelar; sem confirmação se não houver alterações; mesma limpeza de memória e terminal do bloqueio
 - [ ] **VAULT-15**: Usuário pode exportar cofre para JSON (aviso de risco + confirmação; segredos marcados excluídos omitidos; pastas, segredos ativos e modelos incluídos; configurações de timers não exportadas)
-- [ ] **VAULT-16**: Usuário pode importar cofre de JSON (regras de mesclagem por caminho de pasta; tratamento de conflitos de nome com sufixo numérico; segredos com ID duplicado inseridos como independentes; modelos com ID duplicado substituem silenciosamente o existente)
+- [ ] **VAULT-16**: Usuário pode importar cofre de JSON (arquivo deve ser válido e conter Pasta Geral — se inválido ou Pasta Geral ausente, falha com mensagem de erro genérica; estrutura de pastas mesclada por caminho completo: pasta já existente → conteúdo mesclado; pasta nova → criada; dentro de cada pasta mesclada: segredo com mesmo **nome** → **substitui** o existente; segredo com nome único → adicionado; modelo com mesmo **nome** → **substitui** o existente; modelo com nome único → adicionado)
 - [ ] **VAULT-17**: Usuário pode configurar: tempo de bloqueio por inatividade (padrão 5 min), tempo de ocultação de campo sensível (padrão 15 s), tempo de limpeza de clipboard (padrão 30 s); todos os timers são obrigatórios
 
 ### Salvamento Atômico
@@ -50,10 +50,11 @@
 ### Consulta de Segredos
 
 - [ ] **QUERY-01**: Usuário visualiza cofre com hierarquia de pastas e segredos
-- [ ] **QUERY-02**: Usuário pode buscar segredos por nome, nome de campo, valor de campo comum ou observação (substring, case-insensitive, normalização de acentuação; campos sensíveis excluídos da busca; segredos marcados excluídos não aparecem)
+- [ ] **QUERY-02**: Usuário pode buscar segredos por nome, nome de campo (incluindo nomes de campos sensíveis), valor de campo comum ou observação (substring, case-insensitive, normalização de acentuação; somente **valores** de campos sensíveis são excluídos da busca — nomes de campos participam normalmente; segredos com estado `excluido` não aparecem)
 - [ ] **QUERY-03**: Usuário visualiza segredo com nome, todos os campos e observação
 - [ ] **QUERY-04**: Usuário pode revelar temporariamente o valor de campo sensível; valor ocultado automaticamente após timer configurável (padrão: 15 s)
 - [ ] **QUERY-05**: Usuário pode copiar valor de qualquer campo para clipboard; clipboard limpa automaticamente ao bloquear, sair ou após timer configurável (padrão: 30 s); limpeza de clipboard depende de suporte do SO (Wayland: best-effort, requer `wl-clipboard` ou `xclip` em execução)
+- [ ] **QUERY-06**: Segredos exibem indicadores de estado de sessão na listagem: "adicionado" (criado na sessão), "modificado" (alterado na sessão), "excluído" (marcado para remoção); segredos sem alteração desde o carregamento não exibem indicador
 
 ### Gerenciamento de Segredos
 
@@ -73,15 +74,15 @@
 - [ ] **FOLDER-02**: Usuário pode renomear pasta; nome único dentro da pasta pai; Pasta Geral não pode ser renomeada
 - [ ] **FOLDER-03**: Usuário pode mover pasta; validação contra ciclos hierárquicos; nome único no destino; Pasta Geral não pode ser movida
 - [ ] **FOLDER-04**: Usuário pode reordenar pasta dentro da mesma pasta; ordem persistida ao salvar
-- [ ] **FOLDER-05**: Usuário pode excluir pasta; segredos e subpastas promovidos para pasta pai imediata; conflitos de nome em subpastas resolvidos com sufixo numérico (usuário avisado); Pasta Geral não pode ser excluída
+- [ ] **FOLDER-05**: Usuário pode excluir pasta; segredos e subpastas promovidos para pasta pai imediata; conflito de nome entre segredo promovido e segredo existente na pasta pai → renomeado com sufixo numérico (usuário avisado sobre renomeações); conflito de nome entre subpasta promovida e subpasta existente na pasta pai → conteúdo mesclado; Pasta Geral não pode ser excluída
 
 ### Gerenciamento de Modelos de Segredo
 
 - [ ] **TPL-01**: Usuário pode criar modelo de segredo com campos personalizados (nome + tipo: comum ou sensível)
 - [ ] **TPL-02**: Usuário pode renomear modelo; nome único entre modelos
-- [ ] **TPL-03**: Usuário pode alterar estrutura do modelo: adicionar campo, renomear campo, alterar tipo de campo, reordenar campos, excluir campo; alterações não afetam segredos já criados
+- [ ] **TPL-03**: Usuário pode alterar estrutura do modelo: adicionar campo, renomear campo, alterar tipo de campo, reordenar campos, excluir campo; não é permitido adicionar ou renomear campo para o nome 'Observação'; alterações não afetam segredos já criados
 - [ ] **TPL-04**: Usuário pode excluir modelo
-- [ ] **TPL-05**: Usuário pode criar modelo a partir de segredo existente; Observação automática é ignorada; campo usuário chamado "Observação" incluído normalmente
+- [ ] **TPL-05**: Usuário pode criar modelo a partir de segredo existente; todos os campos com nome 'Observação' são excluídos — tanto a Observação automática quanto qualquer campo de usuário com esse nome; o campo 'Observação' não pode existir em modelo
 
 ### Força de Senha
 
