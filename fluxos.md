@@ -6,11 +6,48 @@ Detalhes de implementação de UI são intencionalmente omitidos.
 
 ---
 
+## Conceitos de Interface e Navegação
+
+Para entender os fluxos de usuário, é importante contextualizar como a interação ocorre na interface TUI do Abditum. A aplicação sempre opera dentro de um **Contexto de Navegação**, que é definido por um **Container**, e foca em **Elementos em Foco** específicos.
+
+### Contexto de Navegação
+
+O Contexto de Navegação refere-se à área principal da interface com a qual o usuário está interagindo ativamente. Ele determina quais elementos estão visíveis, quais ações são possíveis e qual subconjunto de dados do cofre está sendo apresentado. O usuário navega entre diferentes contextos para realizar suas tarefas (ex: da lista de segredos para a edição de um segredo).
+
+O contexto é fortemente guiado pelo **Container** que está ativo no momento. Um Container é um componente da interface que agrupa e gerencia uma coleção de elementos (como uma lista de pastas, uma lista de segredos, ou um formulário de edição).
+
+O **Estado Lógico do Container** é fundamental:
+*   **Container Editável**: Permite ações de modificação (ex: adicionar novo elemento, editar elementos existentes, renomear).
+*   **Container Somente Leitura**: Restringe as ações a operações de consulta (ex: pesquisar, copiar valor, visualizar detalhes), impedindo edições ou criações diretas. Um exemplo seria a pasta virtual "Favoritos", que exibe segredos, mas não permite criá-los ou movê-los diretamente nela.
+
+As ações disponíveis na TUI (como "pesquisar", "incluir novo elemento") são tipicamente associadas ao Container ativo e ao seu estado lógico.
+
+### Elementos em Foco
+
+Dentro de um Contexto de Navegação e do Container ativo, um **elemento em foco** (ou simplesmente "em foco") é o item atualmente destacado para interação. O foco é uma referência ao elemento individual que está pronto para receber uma ação do usuário (ex: abrir, editar, mover, copiar). Em uma TUI, geralmente há apenas um elemento em foco por vez na área ativa, guiando a interação do usuário.
+
+Ações específicas sobre o elemento em foco também são condicionadas pelo Container pai:
+*   Se o **Segredo em Foco** está em um **Container Editável** (ex: lista de segredos de uma pasta real), ações como "editar segredo" ou "marcar para exclusão" são possíveis.
+*   Se o **Segredo em Foco** está em um **Container Somente Leitura** (ex: pasta virtual "Favoritos"), as ações podem se limitar a "copiar valor de campo" ou "visualizar detalhes", mas não "editar" ou "excluir".
+*   Similarmente, se o **Campo em Foco** está em um formulário de edição dentro de um **Container Editável**, o campo pode ser modificado. Se estiver em uma visualização somente leitura (ex: um segredo na pasta "Favoritos"), apenas a cópia do valor pode ser permitida.
+
+Exemplos de elementos que podem estar em foco:
+
+*   **Pasta em Foco**: A pasta atualmente selecionada ou "aberta" na árvore de navegação. Suas subpastas e segredos são exibidos.
+*   **Segredo em Foco**: O segredo atualmente selecionado em uma lista.
+*   **Campo em Foco**: Em telas de edição ou visualização de segredos, um campo específico (ex: "Usuário", "Senha", "Observação").
+*   **Opção em Foco**: Em menus, caixas de diálogo ou listas de opções, a opção atualmente destacada para seleção.
+
+A manipulação do foco, em conjunto com o estado do Container, é central para a experiência na TUI, permitindo que o usuário interaja de forma eficiente com os elementos visíveis e limitando as ações às permissões lógicas do contexto atual.
+
+
 ## Pré-condições
 
 Cada fluxo declara as pré-condições necessárias para que ele possa iniciar. As pré-condições descrevem o **estado do mundo** no momento em que o fluxo começa — não o caminho percorrido para chegar lá. Um mesmo estado pode ser alcançado por múltiplos caminhos, e o fluxo não depende de qual foi.
 
 As dimensões de estado que podem aparecer nas pré-condições são:
+
+
 
 ### Estado da aplicação
 | Estado | Descrição |
@@ -160,3 +197,23 @@ flowchart TD
 - Se não há alterações pendentes (ou a aplicação está em estado `inicial`): encerra diretamente, sem confirmação.
 - Se há alterações não salvas: é avisado e escolhe entre salvar antes de sair, descartar as alterações e sair, ou cancelar e continuar.
 - Ao encerrar por qualquer caminho, a tela é limpa antes de devolver o controle ao terminal.
+
+```mermaid
+flowchart TD
+    A([Usuário pede para sair]) --> B{Estado do cofre?}
+    B -- "salvo, ou aplicação inicial" --> C([Aplicação encerra])
+    B -- com alterações --> D[Aviso de alterações pendentes\nOpções: Salvar e Sair / Descartar e Sair / Cancelar]
+    D -- Salvar e Sair --> E[Cofre salvo]
+    E --> C
+    D -- Descartar e Sair --> C
+    D -- Cancelar --> F([Usuário continua na aplicação])
+```
+
+**O que o usuário vê e faz:**
+
+- Se não há alterações pendentes (ou a aplicação está em estado `inicial`): encerra diretamente, sem confirmação.
+- Se há alterações não salvas: é avisado e escolhe entre salvar antes de sair, descartar as alterações e sair, ou cancelar e continuar.
+- Ao encerrar por qualquer caminho, a tela é limpa antes de devolver o controle ao terminal.
+
+
+
