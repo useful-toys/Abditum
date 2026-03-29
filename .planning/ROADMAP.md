@@ -54,14 +54,10 @@ Plans:
 
 **Requirements:** CRYPTO-01, CRYPTO-02, CRYPTO-03, CRYPTO-04, CRYPTO-05, CRYPTO-06, PWD-01
 
-**Plans:**
-1. Write `doc.go` with package-level comments explaining Argon2id purpose (KDF — not encryption), chosen parameters (t=3, m=256 MiB = 262144 KiB, p=4, keyLen=32), and AES-256-GCM AEAD concept (nonce, ciphertext, tag) — accessible to a non-expert Go reader; define `ArgonParams` struct and `FormatVersion` constant
-2. Implement `GenerateSalt() ([]byte, error)` (32 random bytes via `crypto/rand`) and `DeriveKey(password, salt []byte, p ArgonParams) ([]byte, error)` using `golang.org/x/crypto/argon2.IDKey`; key is caller's responsibility to zero after use
-3. Implement `Encrypt(key, plaintext []byte) ([]byte, error)` — call `GenerateNonce()` (12 random bytes via `io.ReadFull(rand.Reader, nonce)`) immediately before `gcm.Seal()`; output layout = `nonce (12 bytes) || ciphertext+tag`; nonce never reused across calls
-4. Implement `Decrypt(key, ciphertext []byte) ([]byte, error)` — split nonce from first 12 bytes; call `gcm.Open()`; return typed sentinel `ErrAuthFailed` on tag mismatch (never expose GCM internals in error message)
-5. Implement `ZeroBytes(b []byte)` (fill with 0x00 using `copy` and `make`) and memory-locking primitives with build tags: `mlock_unix.go` (`unix.Mlock` via `golang.org/x/sys/unix`), `mlock_windows.go` (`windows.VirtualLock` via `golang.org/x/sys/windows`), `mlock_other.go` (no-op); failure is non-fatal — return error and continue normally; never `append` to a locked buffer (pre-allocate exact sizes)
-6. Implement `EvaluatePasswordStrength(password []byte) StrengthLevel` returning `StrengthWeak` or `StrengthStrong`; Strong requires: ≥12 characters AND ≥1 uppercase AND ≥1 lowercase AND ≥1 digit AND ≥1 special character (PWD-01); implemented without any `string` conversion of the password
-7. Write exhaustive unit tests: nonce-uniqueness smoke test (encrypt same plaintext twice → ciphertexts differ), encrypt/decrypt roundtrip byte-for-byte equality, wrong-key decryption returns `ErrAuthFailed` not panic, short ciphertext returns error, `ZeroBytes` fills entire slice with 0x00, password strength boundary cases (11 chars = Weak; exactly 12 chars with all categories = Strong; missing any one category = Weak)
+**Plans:** 1 plan in 1 wave
+
+Plans:
+- [ ] 02-01-PLAN.md — Complete crypto package: Argon2id KDF, AES-256-GCM AEAD, memory security primitives, password strength evaluation, comprehensive tests
 
 **UAT:**
 - [ ] `Encrypt(key, p)` + `Decrypt(key, c)` roundtrip returns original plaintext byte-for-byte
