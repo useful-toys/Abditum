@@ -79,13 +79,13 @@
 
 **Goal:** `internal/vault` delivers a complete, fully-tested in-memory domain layer — all entity types, the full Manager API, and every business rule enforced and verified via unit tests — before any file I/O or TUI code depends on it.
 
-**Requirements:** VAULT-02, SEC-05, FOLDER-01, FOLDER-02, FOLDER-03, FOLDER-04, FOLDER-05, TPL-01, TPL-02, TPL-03, TPL-04, TPL-05
+**Requirements:** VAULT-02, SEC-05, FOLDER-01, FOLDER-02, FOLDER-03, FOLDER-04, FOLDER-05, TPL-01, TPL-02, TPL-03, TPL-04, TPL-05, TPL-06
 
 **Plans:**
 1. Define all entity types (`entities.go`): `Vault` (root aggregate), `Folder` (NanoID, name, ordered subfolders+secrets), `Secret` (NanoID, name, templateName history, fields, favorite, timestamps, plus transient `sessionState SessionState` — not serialized), `Field` (name, type `FieldTypeCommon`/`FieldTypeSensitive`, value as `[]byte` with custom `MarshalJSON`/`UnmarshalJSON` serializing as UTF-8 string — never Base64), `Template` (NanoID, name, ordered `TemplateField` definitions), `Settings` (lock/reveal/clipboard durations); define `SessionState` enum: `StateOriginal` (loaded from file, unmodified), `StateIncluded` (created this session), `StateModified` (existed in file, changed this session), `StateDeleted` (marked for deletion — stores `prevState` for restoration); NanoID generation via `go-nanoid/v2` using its default alphabet (`crypto/rand`-backed)
 2. Implement `Manager` struct and vault lifecycle: `Create(path string, password []byte) error` (allocates vault, calls `seed()`, stores path/password reference), `Open(path string, password []byte) error` (delegates to storage — added Phase 4; stubbed in Phase 3 as error if storage unavailable), `Lock()` (zeros password and field buffers, clears vault reference), `IsLocked()`, `IsModified()`, `Vault() *Vault` (read-only snapshot — return copy or immutable view), `CurrentPath() string`, `Settings() Settings`, `UpdateSettings(Settings) error`; seed function creates: Pasta Geral root folder + "Sites e Apps" + "Financeiro" subfolders + Login (URL/Usuário/Senha) + Cartão de Crédito (Titular/Número/Validade/CVV) + Chave de API (Serviço/Chave) templates
 3. Implement folder management: `CreateFolder(parentID, name string) (*Folder, error)` (unique name within parent), `RenameFolder(id, name string) error` (unique within parent; reject Pasta Geral), `MoveFolder(id, destParentID string) error` (reject Pasta Geral; reject if destParentID is a descendant of id — cycle detection via full ancestor walk; reject if destination folder already contains a subfolder with the same name as the folder being moved), `ReorderFolder(id string, newIndex int) error`, `DeleteFolder(id string) error` (reject Pasta Geral; promote all direct children and secrets to parent; secret name conflict with existing secret in parent → rename with numeric suffix " (N)" (warn of renames via returned []string); subfolder name conflict with existing subfolder in parent → merge contents recursively)
-4. Implement template management: `CreateTemplate(name string, fields []TemplateField) (*Template, error)` (unique name among templates), `RenameTemplate(id, name string) error` (unique), `UpdateTemplateStructure(id string, changes TemplateStructureChanges) error` (add field, rename field, change field type, reorder fields, delete field — no effect on existing secrets; adding or renaming a field to 'Observação' is rejected with explicit error), `DeleteTemplate(id string) error`, `CreateTemplateFromSecret(secretID, name string) (*Template, error)` (copies all fields except those named 'Observação' — both the auto-Observation and any user-named field called 'Observação' are excluded; field name 'Observação' is prohibited in templates)
+4. Implement template management: `CreateTemplate(name string, fields []TemplateField) (*Template, error)` (unique name among templates), `RenameTemplate(id, name string) error` (unique), `UpdateTemplateStructure(id string, changes TemplateStructureChanges) error` (add field, rename field, change field type, reorder fields, delete field — no effect on existing secrets; adding or renaming a field to 'Observação' is rejected with explicit error), `DeleteTemplate(id string) error`, `CreateTemplateFromSecret(secretID, name string) (*Template, error)` (copies all fields except those named 'Observação' — both the auto-Observation and any user-named field called 'Observação' are excluded; field name 'Observação' is prohibited in templates); after any `CreateTemplate` or `RenameTemplate` operation, re-sort the templates slice alphabetically by name — templates are never user-reorderable (TPL-06)
 5. Implement secret session state machine and lifecycle: `CreateSecret(folderID, templateID string) (*Secret, error)` (copies template fields as `Field` values; always appends auto-Observation as last field with type `FieldTypeCommon`; assigns NanoID; sets `sessionState = StateIncluded`); `SoftDeleteSecret(id string) error` (saves current `sessionState` to `prevState`; sets `sessionState = StateDeleted`); `RestoreSecret(id string) error` (restores `sessionState` from `prevState`); at Open and Discard: all loaded secrets initialized with `sessionState = StateOriginal`; `StateDeleted` secrets excluded from search results and exports; removed permanently on save; enforce Observation invariant at all mutation points: last position, cannot be renamed/deleted/moved
 6. Implement secret CRUD and management; all mutating operations apply the state transition rule — if `sessionState == StateOriginal` → `StateModified`; if `sessionState == StateIncluded` → unchanged: `UpdateSecret(id string, changes SecretChanges) error` (name, field values only — no structural change), `UpdateSecretStructure(id string, changes SecretStructureChanges) error` (add field, rename field, reorder fields, delete field; Observation excluded from all operations), `FavoriteSecret(id string, fav bool) error`, `MoveSecret(id, destFolderID string) error`, `ReorderSecret(id string, newIndex int) error`, `DuplicateSecret(id string) (*Secret, error)` (placed immediately after original in same folder; name scheme "Name (1)" → "Name (2)" for successive copies; template history preserved; duplicate starts with `sessionState = StateIncluded`)
 7. Write comprehensive unit test suite: Pasta Geral protection (all mutating operations return typed error), cycle detection in `MoveFolder` (parent→child and distant ancestor), name uniqueness on `CreateFolder`/`RenameFolder`/`CreateTemplate`/`RenameTemplate`, Observation invariant (auto-created on `CreateSecret`, absent from `UpdateSecretStructure` field list, immutable), session state machine (`StateOriginal` → `StateModified` on mutation; `StateIncluded` for new secrets; `StateDeleted` on soft-delete with `prevState` saved; `RestoreSecret` restores `prevState`), `DuplicateSecret` name progression, `CreateTemplateFromSecret` excludes auto-Observation; **write QUERY-02 negative test now**: search function over secrets must return zero results when queried string exists only in a `FieldTypeSensitive` field value
@@ -94,7 +94,7 @@
 - [ ] `Manager.Create` initializes vault with Pasta Geral + "Sites e Apps" + "Financeiro" subfolders + 3 default templates (Login, Cartão de Crédito, Chave de API)
 - [ ] `Manager.CreateFolder` returns error when name already exists in the target parent
 - [ ] `Manager.MoveFolder` returns error when moving a folder into one of its own descendants (cycle)
-- [ ] `Manager.DeleteFolder` promotes children and resolves name conflicts with numeric suffix; Pasta Geral deletion returns explicit error
+- [ ] `Manager.DeleteFolder` promotes children (including `StateDeleted` secrets, which retain their `StateDeleted` state) and resolves name conflicts with numeric suffix; Pasta Geral deletion returns explicit error
 - [ ] `Manager.CreateSecret` always produces a secret with Observation as the last field; `UpdateSecretStructure` cannot rename, reorder, or delete the Observation field
 - [ ] `DuplicateSecret("X")` produces "X (1)"; duplicating "X (1)" produces "X (2)"
 - [ ] `CreateTemplateFromSecret` excludes ALL fields named 'Observação' (both auto-Observation and any user-named field with that name); a template produced from such a secret never contains a field named 'Observação'
@@ -102,6 +102,7 @@
 - [ ] Search function called with a string present only in a `FieldTypeSensitive` field **value** returns zero results; search called with the **name** of a sensitive field returns secrets containing that field
 - [ ] `CreateSecret` produces secret with `sessionState = StateIncluded`; `UpdateSecret` on a `StateOriginal` secret → `StateModified`; `UpdateSecret` on `StateIncluded` → remains `StateIncluded`; `SoftDeleteSecret` → `StateDeleted` (stores `prevState`); `RestoreSecret` → restores previous state
 - [ ] `StateDeleted` secret is excluded from search results; at Open/Discard all loaded secrets have `sessionState = StateOriginal`
+- [ ] Templates are always returned in alphabetical order by name regardless of creation order; creating "Z-Template", "A-Template", "M-Template" in sequence returns them as A-Template, M-Template, Z-Template (TPL-06)
 
 **Pitfall watch:** Pasta Geral protection requires the Manager to store the root folder's NanoID and check it in every destructive method. NanoID must use `crypto/rand` — verify `go-nanoid`'s `gonanoid.New()` uses the secure alphabet by default. Cycle detection must walk the FULL ancestor chain, not just immediate parent. `Manager.Vault()` must return a snapshot — exposing a live pointer to domain state allows TUI bugs to corrupt the domain silently.
 
@@ -190,11 +191,11 @@
 
 **Goal:** Users can navigate the complete folder/secret hierarchy, expand/collapse any folder, instantly filter by name and common-field content, and see favorites and soft-deleted secrets with distinct visual treatments.
 
-**Requirements:** QUERY-01, QUERY-02, QUERY-06
+**Requirements:** QUERY-01, QUERY-02, QUERY-06, QUERY-07
 
 **Plans:**
-1. Implement custom tree renderer (`tree.go`) — **do NOT use `bubbles/list`** (insufficient for recursive folder+secret hierarchy); recursive `renderNode(folder *vault.Folder, depth int, expandState map[string]bool)` producing indented lines with box-drawing characters; folders shown before secrets at each level; folder lines: fold indicator (`▶`/`▼`) + folder name + recursive active-secret count `(N)` (counts all non-`StateDeleted` secrets in folder and all its subfolders recursively — QUERY-01); secret lines: name + optional favorite `★` prefix + optional session-state indicator (`+` for `StateIncluded`, `~` for `StateModified`, `✗` for `StateDeleted` — QUERY-06) + optional dim/strikethrough for `StateDeleted`
-2. Implement keyboard navigation in `vaultModel`: `j`/`↓` (next item), `k`/`↑` (prev item), `l`/`→` or Enter-on-folder (expand folder), `h`/`←` (collapse folder), Enter-on-secret (open secret detail → `stateSecretDetail`); maintain `cursor int` into a flattened renderable item list rebuilt on each tree mutation; maintain `expandState map[string]bool` (default: top-level folders expanded, subfolders collapsed); `n` (new secret — trigger create flow from Phase 8); `N` (new folder); `/` (open search overlay)
+1. Implement custom tree renderer (`tree.go`) — **do NOT use `bubbles/list`** (insufficient for recursive folder+secret hierarchy); recursive `renderNode(folder *vault.Folder, depth int, expandState map[string]bool)` producing indented lines with box-drawing characters; folders shown before secrets at each level; folder lines: fold indicator (`▶`/`▼`) + folder name + recursive active-secret count `(N)` (counts all non-`StateDeleted` secrets in folder and all its subfolders recursively — QUERY-01); secret lines: name + optional favorite `★` prefix + optional session-state indicator (`+` for `StateIncluded`, `~` for `StateModified`, `✗` for `StateDeleted` — QUERY-06) + optional dim/strikethrough for `StateDeleted`; render virtual "Favoritos" node as a fixed sibling above Pasta Geral — always visible, never expandable past its own contents, fold indicator follows same `▶`/`▼` convention; Favoritos always expanded by default (QUERY-07)
+2. Implement keyboard navigation in `vaultModel`: `j`/`↓` (next item), `k`/`↑` (prev item), `l`/`→` or Enter-on-folder (expand folder), `h`/`←` (collapse folder), Enter-on-secret (open secret detail → `stateSecretDetail`); maintain `cursor int` into a flattened renderable item list rebuilt on each tree mutation; maintain `expandState map[string]bool` (default: Favoritos expanded, top-level real folders expanded, subfolders collapsed); cursor can reach the Favoritos virtual node and its secret entries — Enter on a Favoritos entry navigates to that secret in detail view; pressing `n`/`N`/`d`/`m` while cursor is on the Favoritos node or its entries is a no-op (read-only); `n` (new secret — trigger create flow from Phase 8); `N` (new folder); `/` (open search overlay)
 3. Implement session-state and favorite visual treatment: `lipgloss` style `Strikethrough(true).Faint(true)` for `StateDeleted` secrets; `★` prefix for favorites; `StateDeleted` items shown in tree but visually distinguished; `StateIncluded` and `StateModified` secrets show inline session-state indicator (QUERY-06); search must exclude `StateDeleted` secrets from results
 4. Implement search overlay (`/` key): inline `textinput` at bottom of tree view; on every keystroke call `vault.Search(query string, v *vault.Vault) []*vault.Secret` — match by: secret name, all field names (including names of sensitive fields — field names are always searchable regardless of type), common field values, Observation value (case-insensitive, accentuation-normalized via `golang.org/x/text/unicode/norm` NFD + stripping); **never read `field.Value` when `field.Type == FieldTypeSensitive`** (QUERY-02 hard gate); ESC clears search and returns to tree; Enter on result selects secret
 5. Write QUERY-02 negative test (must be written FIRST, before search implementation): construct a secret with one sensitive field whose value is `"hunter2"`; call `Search("hunter2", vault)` → assert result is empty slice; this test must fail if search ever accidentally reads sensitive field values
@@ -209,6 +210,7 @@
 - [ ] Searching for a string that exists only in a sensitive field **value** returns zero results (hard requirement)
 - [ ] Favorite secrets show `★`; `StateDeleted` secrets show dim/strikethrough; `StateIncluded` and `StateModified` secrets show distinct session-state indicator
 - [ ] Pressing Enter on a secret transitions to secret detail view (Phase 8) with that secret's ID
+- [ ] "Favoritos" virtual node appears above Pasta Geral in the tree, expanded by default; entering it shows all `favorito = true` secrets; Enter on a Favoritos entry opens that secret in detail view; no write operations (create/move/delete) are available from within the Favoritos node
 
 **Pitfall watch:** `bubbles/list` cannot render a recursive folder+secret tree with expand/collapse — implement a custom renderer. Accentuation normalization for QUERY-02 requires `golang.org/x/text/unicode/norm` NFD decomposition (not just `strings.ToLower`). **Write the sensitive-field negative test FIRST, before the search loop** — it is easy to accidentally iterate all field values without the `IsSensitive` guard.
 
@@ -352,6 +354,7 @@
 | TPL-03 | 3 | Alter template structure — no effect on existing secrets |
 | TPL-04 | 3 | Delete template |
 | TPL-05 | 3 | Create template from secret — auto-Observation excluded |
+| TPL-06 | 3 | Templates always displayed in alphabetical order — not user-reorderable |
 | ATOMIC-01 | 4 | Atomic write via `.abditum.tmp` → rename; delete tmp on failure |
 | ATOMIC-02 | 4 | `.bak` / `.bak2` backup chain with startup recovery |
 | ATOMIC-03 | 4 | New vault: direct write to destination (no tmp) |
@@ -364,6 +367,7 @@
 | QUERY-01 | 7 | View folder/secret hierarchy with folder tree + recursive active-secret count per folder |
 | QUERY-02 | 7 | Search by name/field name/common value/note; sensitive excluded |
 | QUERY-06 | 7 | Session state indicators in tree: included/modified/deleted |
+| QUERY-07 | 7 | Virtual "Favoritos" node as sibling above Pasta Geral; read-only; depth-first favorites list |
 | SEC-01 | 8 | Create secret from template or blank (Observation only) |
 | SEC-02 | 8 | Duplicate secret — name "X (1)" / "X (2)" — template history preserved |
 | SEC-03 | 8 | Edit secret values (name, field values, Observation) |
@@ -394,7 +398,7 @@
 
 ## Coverage Summary
 
-- **v1 requirements:** 58
+- **v1 requirements:** 60
 - **Phases:** 11
 - **All requirements mapped:** ✓
 
@@ -402,13 +406,13 @@
 |-------|---------------------|-------|
 | 1 | COMPAT-01, CI-01 | 2 |
 | 2 | CRYPTO-01–06, PWD-01 | 7 |
-| 3 | VAULT-02, SEC-05, FOLDER-01–05, TPL-01–05 | 12 |
+| 3 | VAULT-02, SEC-05, FOLDER-01–05, TPL-01–06 | 13 |
 | 4 | ATOMIC-01–04, COMPAT-03 | 5 |
 | 5 | *(foundational — no direct user requirement)* | 0 |
 | 6 | VAULT-01, VAULT-03–05 | 4 |
-| 7 | QUERY-01–02, QUERY-06 | 3 |
+| 7 | QUERY-01–02, QUERY-06–07 | 4 |
 | 8 | SEC-01–04, SEC-06–09, QUERY-03 | 9 |
 | 9 | VAULT-06–10, VAULT-15–17 | 8 |
 | 10 | VAULT-11–14, QUERY-04–05 | 6 |
 | 11 | CI-02, COMPAT-02 | 2 |
-| **Total** | | **58** |
+| **Total** | | **60** |

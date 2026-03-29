@@ -69,7 +69,7 @@ Todo `Segredo` carrega um `estado_sessao` transiente (não serializado no arquiv
 **Transições:**
 - Ao abrir ou descartar: todos os segredos iniciam como `original`
 - Criar segredo: → `incluido`
-- Alterar nome, campos, favorito ou mover segredo `original`: → `modificado`
+- Alterar nome, campos ou favorito de segredo `original`: → `modificado`
 - Alterar segredo `incluido`: permanece `incluido`
 - Marcar para exclusão (qualquer estado): → `excluido`; estado anterior memorizado para eventual restauração
 - Desmarcar exclusão: restaura o estado anterior à marcação
@@ -171,7 +171,7 @@ Pastas virtuais são **vistas derivadas** do estado em memória. Não são persi
 
 | Pasta Virtual | Definição                                                                                                                                                  |
 |---------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Favoritos** | Conjunto de segredos com `favorito = true`, percorrido em profundidade seguindo a ordem do JSON.                                                           |
+| **Favoritos** | Conjunto de segredos com `favorito = true`, percorrido em profundidade seguindo a ordem do JSON. Exibida na árvore como nó irmão da Pasta Geral (acima dela). Somente leitura — não suporta criação, movimentação ou exclusão de segredos diretamente a partir desta vista. Não pode ser renomeada, movida ou excluída. |
 
 ---
 

@@ -109,9 +109,13 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 ### Consulta dos Segredos
 - Exibir o cofre com suas pastas e segredos
   - Cada pasta exibe a contagem total de segredos ativos (não marcados para exclusão) contidos nela e em todas as suas subpastas recursivamente
+- Exibir pasta virtual "Favoritos" como nó irmão da Pasta Geral na árvore (acima dela)
+  - Lista todos os segredos com favorito = verdadeiro, percorridos em profundidade seguindo a ordem do cofre
+  - A pasta virtual é somente leitura — não é possível criar, mover ou excluir segredos diretamente a partir dela
+  - A pasta virtual não pode ser renomeada, movida ou excluída
 - Buscar segredos por nome, nome de campo, valor de campo comum ou observação
   - A busca funciona por substring, ignorando acentuação e capitalização (case-insensitive)
-  - Campos sensíveis nunca participam da busca
+  - Valores de campos sensíveis nunca participam da busca — nomes de campos sensíveis participam normalmente
   - Segredos marcados para exclusão não aparecem nos resultados de busca
 - Exibir um segredo com nome, seus campos e a observação
 - Exibir indicadores de estado de sessão na listagem de segredos

@@ -40,6 +40,8 @@ O usuário tem controle total e exclusivo sobre seus segredos: os dados existem 
 - [ ] **QUERY-03**: Usuário visualiza segredo com nome, campos e observação
 - [ ] **QUERY-04**: Usuário pode revelar temporariamente o valor de campo sensível (ocultação automática após timer configurável; padrão: 15 s)
 - [ ] **QUERY-05**: Usuário pode copiar qualquer campo para clipboard (limpeza automática ao bloquear/sair ou após timer configurável; padrão: 30 s)
+- [ ] **QUERY-06**: Segredos exibem indicadores de estado de sessão na listagem: adicionado (criado na sessão), modificado (alterado na sessão), excluído (marcado para remoção); segredos sem alteração não exibem indicador
+- [ ] **QUERY-07**: Pasta virtual "Favoritos" exibida como nó irmão da Pasta Geral na árvore (acima dela); lista todos os segredos com `favorito = true`, percorridos em profundidade; somente leitura — não é possível criar, mover ou excluir segredos diretamente a partir desta vista; não pode ser renomeada, movida ou excluída
 
 #### Gerenciamento de Segredos
 - [ ] **SEC-01**: Usuário pode criar segredo a partir de modelo existente ou sem modelo (somente Observação), escolhendo a pasta
@@ -57,14 +59,14 @@ O usuário tem controle total e exclusivo sobre seus segredos: os dados existem 
 - [ ] **FOLDER-02**: Usuário pode renomear pasta (nome único dentro da pasta pai; Pasta Geral não pode ser renomeada)
 - [ ] **FOLDER-03**: Usuário pode mover pasta (validação contra ciclos; nome único no destino; Pasta Geral não pode ser movida)
 - [ ] **FOLDER-04**: Usuário pode reordenar pasta dentro da mesma pasta (ordem persistida ao salvar)
-- [ ] **FOLDER-05**: Usuário pode excluir pasta (segredos e subpastas promovidos para pasta pai; conflitos de nome em subpastas resolvidos com sufixo numérico; Pasta Geral não pode ser excluída)
+- [ ] **FOLDER-05**: Usuário pode excluir pasta (segredos e subpastas promovidos para pasta pai; conflito de nome em segredo promovido → renomeado com sufixo numérico; conflito de nome em subpasta promovida → conteúdo mesclado; Pasta Geral não pode ser excluída)
 
 #### Gerenciamento de Modelos
 - [ ] **TPL-01**: Usuário pode criar modelo de segredo com campos personalizados (nome + tipo)
 - [ ] **TPL-02**: Usuário pode renomear modelo (nome único entre modelos)
 - [ ] **TPL-03**: Usuário pode alterar estrutura do modelo: adicionar campo, renomear campo, alterar tipo, reordenar campos, excluir campo (sem efeito em segredos já criados)
 - [ ] **TPL-04**: Usuário pode excluir modelo
-- [ ] **TPL-05**: Usuário pode criar modelo a partir de segredo existente (Observação automática ignorada; campo usuário chamado "Observação" incluído normalmente)
+- [ ] **TPL-05**: Usuário pode criar modelo a partir de segredo existente (todos os campos com nome 'Observação' são excluídos — tanto a Observação automática quanto campos do usuário com esse nome)
 
 #### Requisitos Não Funcionais / Técnicos
 - [ ] **SEC-CRYPTO-01**: Criptografia AES-256-GCM; derivação de chave Argon2id; dependências de crypto exclusivamente de stdlib Go + `golang.org/x/crypto`

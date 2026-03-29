@@ -55,6 +55,7 @@
 - [ ] **QUERY-04**: Usuário pode revelar temporariamente o valor de campo sensível; valor ocultado automaticamente após timer configurável (padrão: 15 s)
 - [ ] **QUERY-05**: Usuário pode copiar valor de qualquer campo para clipboard; clipboard limpa automaticamente ao bloquear, sair ou após timer configurável (padrão: 30 s); limpeza de clipboard depende de suporte do SO (Wayland: best-effort, requer `wl-clipboard` ou `xclip` em execução)
 - [ ] **QUERY-06**: Segredos exibem indicadores de estado de sessão na listagem: "adicionado" (criado na sessão), "modificado" (alterado na sessão), "excluído" (marcado para remoção); segredos sem alteração desde o carregamento não exibem indicador
+- [ ] **QUERY-07**: Pasta virtual "Favoritos" exibida como nó irmão da Pasta Geral na árvore (acima dela); lista todos os segredos com `favorito = true`, percorridos em profundidade seguindo a ordem do JSON; somente leitura — não é possível criar, mover ou excluir segredos diretamente a partir desta vista; não pode ser renomeada, movida ou excluída
 
 ### Gerenciamento de Segredos
 
@@ -74,7 +75,7 @@
 - [ ] **FOLDER-02**: Usuário pode renomear pasta; nome único dentro da pasta pai; Pasta Geral não pode ser renomeada
 - [ ] **FOLDER-03**: Usuário pode mover pasta; validação contra ciclos hierárquicos; nome único no destino; Pasta Geral não pode ser movida
 - [ ] **FOLDER-04**: Usuário pode reordenar pasta dentro da mesma pasta; ordem persistida ao salvar
-- [ ] **FOLDER-05**: Usuário pode excluir pasta; segredos e subpastas promovidos para pasta pai imediata; conflito de nome entre segredo promovido e segredo existente na pasta pai → renomeado com sufixo numérico (usuário avisado sobre renomeações); conflito de nome entre subpasta promovida e subpasta existente na pasta pai → conteúdo mesclado; Pasta Geral não pode ser excluída
+- [ ] **FOLDER-05**: Usuário pode excluir pasta; segredos e subpastas promovidos para pasta pai imediata (incluindo segredos com estado `StateDeleted`, que mantêm seu estado); conflito de nome entre segredo promovido e segredo existente na pasta pai → renomeado com sufixo numérico (usuário avisado sobre renomeações); conflito de nome entre subpasta promovida e subpasta existente na pasta pai → conteúdo mesclado; Pasta Geral não pode ser excluída
 
 ### Gerenciamento de Modelos de Segredo
 
@@ -83,6 +84,7 @@
 - [ ] **TPL-03**: Usuário pode alterar estrutura do modelo: adicionar campo, renomear campo, alterar tipo de campo, reordenar campos, excluir campo; não é permitido adicionar ou renomear campo para o nome 'Observação'; alterações não afetam segredos já criados
 - [ ] **TPL-04**: Usuário pode excluir modelo
 - [ ] **TPL-05**: Usuário pode criar modelo a partir de segredo existente; todos os campos com nome 'Observação' são excluídos — tanto a Observação automática quanto qualquer campo de usuário com esse nome; o campo 'Observação' não pode existir em modelo
+- [ ] **TPL-06**: Modelos de segredo são sempre exibidos em ordem alfabética — não são reordenáveis pelo usuário
 
 ### Força de Senha
 
@@ -169,6 +171,7 @@
 | TPL-03 | 3 | Pending |
 | TPL-04 | 3 | Pending |
 | TPL-05 | 3 | Pending |
+| TPL-06 | 3 | Pending |
 | ATOMIC-01 | 4 | Pending |
 | ATOMIC-02 | 4 | Pending |
 | ATOMIC-03 | 4 | Pending |
@@ -180,6 +183,8 @@
 | VAULT-05 | 6 | Pending |
 | QUERY-01 | 7 | Pending |
 | QUERY-02 | 7 | Pending |
+| QUERY-06 | 7 | Pending |
+| QUERY-07 | 7 | Pending |
 | SEC-01 | 8 | Pending |
 | SEC-02 | 8 | Pending |
 | SEC-03 | 8 | Pending |
@@ -207,6 +212,6 @@
 | COMPAT-02 | 11 | Pending |
 
 **Coverage:**
-- v1 requirements: 57 total
-- Mapped to phases: 57
+- v1 requirements: 60 total
+- Mapped to phases: 60
 - Unmapped: 0 ✓
