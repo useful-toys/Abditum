@@ -30,12 +30,12 @@
 
 **Requirements:** COMPAT-01, CI-01
 
-**Plans:**
-1. Initialize `go.mod` (module path `github.com/user/abditum`, Go 1.24+); add all production dependencies: `charm.land/bubbletea/v2`, `charm.land/bubbles/v2`, `charm.land/lipgloss/v2`, `golang.org/x/crypto`, `golang.org/x/sys`, `golang.org/x/text`, `github.com/atotto/clipboard`, `github.com/matoous/go-nanoid/v2`
-2. Create canonical directory tree: `cmd/abditum/main.go` (exits 0, no logic), `internal/crypto/doc.go`, `internal/vault/doc.go`, `internal/storage/doc.go`, `internal/tui/doc.go` (package stubs only — each package stub with one-sentence package doc)
-3. Write `.github/workflows/ci.yml` — jobs: `build` (`GOOS=linux CGO_ENABLED=0 go build ./cmd/abditum`), `lint` (`golangci-lint run`), `test` (`CGO_ENABLED=0 go test ./... -race -count=1`) — all triggered on push and pull_request to main
-4. Add `Makefile` with targets: `build` (CGO_ENABLED=0, GOOS from env), `test` (with -race), `lint`, `vet`, `clean`
-5. Add `.golangci.yml` enabling: `errcheck`, `govet`, `staticcheck`, `revive`, `gosec`, `gocritic`, `forbidigo` (forbid `math/rand`, `net`, `net/http`); configure severity thresholds and nolint exceptions for empty stubs
+**Plans:** 3 plans in 1 wave
+
+Plans:
+- [ ] 01-01-PLAN.md — Initialize Go module with dependencies and create directory structure with package stubs
+- [ ] 01-02-PLAN.md — Configure CI workflow and Makefile for automated building, linting, and testing
+- [ ] 01-03-PLAN.md — Configure golangci-lint with security rules and verify forbidden pattern detection
 
 **UAT:**
 - [ ] `CGO_ENABLED=0 go build ./cmd/abditum` succeeds and produces an executable binary
