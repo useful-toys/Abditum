@@ -43,7 +43,7 @@
 
 ### Compatibilidade e Portabilidade
 
-- [ ] **COMPAT-01**: Aplicação construída como binário único executável, sem runtime externo, sem arquivos de configuração ou dados fora do cofre (exceto `.abditum.tmp`, `.abditum.bak`, `.abditum.bak2`)
+- [x] **COMPAT-01**: Aplicação construída como binário único executável, sem runtime externo, sem arquivos de configuração ou dados fora do cofre (exceto `.abditum.tmp`, `.abditum.bak`, `.abditum.bak2`)
 - [ ] **COMPAT-02**: Suporte a Windows, macOS e Linux
 - [ ] **COMPAT-03**: Compatibilidade retroativa de formato: versão N abre arquivos de versões anteriores; migração em memória; sempre salva no formato atual
 
@@ -92,7 +92,7 @@
 
 ### Integração Contínua
 
-- [ ] **CI-01**: CI obrigatório executando build + lint + suíte completa de testes em todo push; mudanças que quebrem build ou testes não são aceitas
+- [x] **CI-01**: CI obrigatório executando build + lint + suíte completa de testes em todo push; mudanças que quebrem build ou testes não são aceitas
 - [ ] **CI-02**: Matriz de CI cobrindo Windows, macOS e Linux
 
 ## v2 Requirements
@@ -150,8 +150,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| COMPAT-01 | 1 | Pending |
-| CI-01 | 1 | Pending |
+| COMPAT-01 | 1 | Complete |
+| CI-01 | 1 | Complete |
 | CRYPTO-01 | 2 | Pending |
 | CRYPTO-02 | 2 | Pending |
 | CRYPTO-03 | 2 | Pending |
