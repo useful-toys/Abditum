@@ -1,0 +1,53 @@
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - revive
+    - gosec
+    - gocritic
+    - forbidigo
+
+linters-settings:
+  forbidigo:
+    forbid:
+      - p: 'math/rand'
+        msg: 'Use crypto/rand instead of math/rand for security-critical randomness'
+      - p: '^net\.'
+        msg: 'Network calls are prohibited - application must be offline-only'
+      - p: '^net/http\.'
+        msg: 'HTTP calls are prohibited - application must be offline-only'
+  
+  errcheck:
+    check-blank: true
+  
+  govet:
+    enable-all: true
+  
+  staticcheck:
+    checks: ["all"]
+  
+  revive:
+    rules:
+      - name: exported
+        disabled: false
+      - name: package-comments
+        disabled: false
+
+issues:
+  exclude-rules:
+    # Allow doc.go files to have minimal content
+    - path: doc\.go
+      linters:
+        - revive
+      text: "package comment"
+    
+    # Empty packages are intentional stubs in Phase 1
+    - path: internal/
+      linters:
+        - gocritic
+      text: "commentFormatting"
+
+run:
+  timeout: 5m
+  go: '1.23'
