@@ -1,0 +1,56 @@
+# Binários Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.so.*
+*.dylib
+bin/
+dist/
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.*.local
+
+# Dependências Go
+vendor/
+go.sum
+
+# Cache do Go
+/pkg/
+*.test
+*.out
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+
+# Build tools
+/build/
+*.o
+*.a
+
+# Cobertura de testes
+*.coverprofile
+coverage.html
+coverage.out
+
+# Arquivos temporários
+tmp/
+temp/
+*.tmp
+
+# VS Code
+.vscode-test/
+.vsix
+
+# Arquivos de configuração locais
+config.local.yml
+config.local.yaml
+secret.env
