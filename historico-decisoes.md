@@ -60,22 +60,32 @@
 
 
 
-## 5. Identidade por UUID (modelos/segredos), por nome (pastas) ✓
+## 5. Identidades Naturais: Composite Keys por Nome, Sem UUID ✓
 
 **Decisão:** 
-- Pastas identificadas por nome (unicidade dentro da pasta pai)
-- Modelos e segredos identificados por UUID gerado pelo sistema
+- Segredos identificados por composite key (pastasPai, nomePasta) — nome único dentro da pasta pai
+- Pastas identificadas por composite key (pastasPai, nomePasta) — nome único entre irmãs
+- Modelos identificados por nome (único globalmente no cofre)
+- Não há UUID/NanoID no modelo de dados persistido
 
 **Contexto:**
-- Permite dois segredos com mesmo nome (em contextos diferentes)
-- Simplifica import/rename sem quebrar vínculo
-- Nomes são apenas metadados descritivos, não identificadores
+- UUID anterior criava "identificador fantasma" — theoretically imutável mas na prática não era usado como identidade de negócio
+- Assimetria: Segredo tinha UUID, mas identidade verdadeira era (pastaId, nome); Pasta tinha UUID mas identidade era (parentId, nome); Modelo tinha UUID mas identidade era nome
+- Essa assimetria gerava confusão em DDD — qual é realmente a identidade?
+- Solução: eliminar fantasmas, usar identidades semânticas baseadas em nomes (composite keys)
 
-**Justificativa:** Flexibilidade (renomear sem perder referência, importar dupes); nomes duplicados podem confundir, mas UX mitiga com contexto visual + ordenação inteligente + affordances.
+**Justificativa:** 
+- Simetria total: todas as entidades usam identidades naturais (nomes ou composite keys)
+- DDD limpo: Equals compara o que é realmente único, não ID artificioso
+- JSON legível: identidades são explícitas no documento, sem UUIDs ocultos
+- Simplicidade: renomeação/movimentação é natural (identidade muda semanticamente)
+- Colisão é trivial: auto-rename com sufixo numérico se duas entidades com mesmo nome tentam coexistir
 
 **Consequências:** 
-- UX deve desambiguar visualmente (contexto, cores, ícones)
-- Alternativa (impor unicidade) criaria atrito desnecessário (renomear para poder importar, banir "Login"/"Login" em contextos diferentes)
+- Renomeação muda identidade (não é refatoração "segura" em sentido tradicional, mas isso é correto semanticamente)
+- Ao mover pasta/segredo para destino com colisão de nome, operação não falha — renomeia automaticamente
+- Importação com colisão: pastas mesclam, segredos trocam valores (merge by name), modelos substituem
+- Estrutura JSON é a fonte de verdade — não há referências cruzadas por ID técnico a ser sincronizado
 
 
 
@@ -167,22 +177,27 @@
 
 
 
-## 12. Importação: pastas mesclam, segredos duplicam, modelos substituem ✓
+## 12. Importação: pastas mesclam sempre, segredos sincronizam, modelos substituem ✓
 
 **Decisão:** Na importação:
-- Pastas com mesmo caminho mesclam automaticamente
-- Segredos com mesmo ID recebem novo UUID e são inseridos como independentes (existente preservado)
-- Modelos com mesmo ID substituem o existente silenciosamente (nome e estrutura sobrescritos)
+- Pastas: sempre mesclam — se subpasta importada tem o mesmo caminho (mesma pasta pai + mesmo nome), seu conteúdo é consolidado com a pasta existente
+- Segredos: sincronização completa na pasta — mesma identidade (mesma pasta pai + mesmo nome) = **sobrescrita de campos**; identidade única = inserido; ausente na importação = **marcado para exclusão**
+- Modelos: mesmo nome = **substituição silenciosa**
 
 **Contexto:**
-- Estrutura de pastas raramente conflita em casos reais
-- Segredos são dados críticos do usuário — substituir silenciosamente seria destrutivo e arriscado
-- Modelos são estrutura auxiliar — substituição é simples, situação incomum, e sobrescrever não é crítico
+- Estrutura de pastas raramente conflita e merge é sempre seguro (aditivo)
+- Segredos são dados críticos — importação atua como sincronização: arquivo importado é fonte de verdade
+- Subpastas **não** são renomeadas porque pasta é container primário — merge é a operação natural
+- Ausência de segredo na importação sinaliza que deve ser removido (sincronização completa)
 - Sem diálogo de merge torna importação simples e previsível
 
-**Justificativa:** Assimetria deliberada: segredos são preservados por serem críticos e comuns; modelos são substituídos por serem auxiliares e raros. Pastas mesclam porque conflito estrutural é raro.
+**Justificativa:** Assimetria deliberada reflete papel de cada entidade: pastas são containers (mesclam sempre), segredos são dados (sincronizam por nome — criam, atualizam, deletam), modelos são templates (substituem). Importação de segredos não é "merge parcial", é **sincronização**: o cofre fica igual ao arquivo importado na estrutura de pastas selecionada.
 
-**Consequências:** Sem diálogo tedioso de resolução de conflito; segredos nunca são perdidos; modelos podem ser atualizados via importação.
+**Consequências:** 
+- Pastas importadas sempre consolidam com existentes (não há rejeição)
+- Segredos podem ser criados, atualizados ou marcados para exclusão via importação
+- Arquivo importado é tratado como "estado desejado" — diferenças são sincronizadas
+- Modelos podem ser distribuídos/atualizados via importação
 
 
 
@@ -387,7 +402,7 @@
 
 **Implicação de API obrigatória (deve ser definida antes de implementar):**
 A TUI precisa saber se um segredo está na Lixeira para exibi-lo com marcação visual adequada (e para oferecer as ações de restaurar / confirmar exclusão). O Manager deve expor isso explicitamente — por exemplo:
-- um método `IsNaLixeira(id string) bool`, ou
+- um método `IsNaLixeira(nomePasta, nomeSegredo string) bool`, ou
 - incluir os segredos da Lixeira em um tipo de retorno anotado (ex: `SegredoComEstado`), ou
 - expor a Lixeira como coleção navegável distinta
 

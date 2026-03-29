@@ -3,15 +3,12 @@
 ## Princípios de Modelagem
 
 - **Hierarquia recursiva**: a raiz do cofre é a Pasta Geral. Pastas podem conter segredos e subpastas em qualquer nível de aninhamento.
-- **Ordenação por posição**: a ordem dos elementos no JSON reflete diretamente a ordem de exibição. Subpastas aparecem antes dos segredos dentro de cada coleção. Campos seguem a ordem de inserção/reordenação pelo usuário.
-- **Modelo como snapshot**: segredos criados a partir de modelos não mantêm vínculo por referência. O nome do modelo é guardado apenas como registro histórico. Não há distinção estrutural entre segredos criados com ou sem modelo.
-- **Identidade por NanoID**: entidades com identidade persistida (Segredo, Pasta, ModeloSegredo) usam NanoID de 6 caracteres alfanuméricos. O espaço de 62⁶ (~56 bilhões) combinações garante unicidade prática sem coordenação central. O NanoID é diretamente serializável como string JSON e permanece estável através de importação, exportação, movimentação e migração de formato. O nome não é identificador — nomes repetidos são permitidos onde não explicitamente proibido.
-- **Campos uniformes**: o valor de um campo é sempre texto UTF-8. Em memória, `CampoSegredo.valor` é representado como `[]byte` para permitir zeragem explícita ao bloquear ou encerrar. No JSON persistido, é serializado como string UTF-8 legível — sem Base64 — via marshal/unmarshal customizado. String vazia (ou slice vazio) representa campo existente e não preenchido — não há distinção de estado entre preenchido e vazio.
-- **Observação implícita**: todo segredo possui um campo de observação que não é declarado em modelos e não pode ser removido. Ocupa sempre a última posição. É dado não sensível.
-- **Busca sequencial em memória**: o cofre não mantém índices ou estruturas auxiliares de busca. Buscas são varreduras sequenciais sobre a estrutura carregada.
-- **Configurações embutidas**: as configurações operacionais são armazenadas dentro do próprio arquivo do cofre, sem arquivos externos.
-
----
+- **Ordenação por posição**: Pasta mantém duas listas separadas (subpastas e segredos); ambas preservam ordem definida pelo usuário. Campos em Segredo e ModeloSegredo também preservam ordem. Ordem é persistida e restaurada ao carregar.
+- **Modelo como snapshot**: segredos criados a partir de modelos não mantêm vínculo — no segredo, o nome do modelo é apenas histórico.
+- **Campos uniformes**: valor é sempre UTF-8. Em memória: `[]byte` para zeragem; persistido: string legível via marshal customizado.
+- **Observação implícita**: todo segredo tem campo automático "Observação" (tipo texto, última posição, não-deletável).
+- **Busca sequencial**: sem índices — varreduras sobre estrutura em memória.
+- **Configurações embutidas**: tempos de bloqueio, ocultação e limpeza armazenados no arquivo do cofre.
 
 ## Classificação dos Tipos
 
@@ -23,13 +20,13 @@
 
 ### Entidades
 
-Têm identidade estável representada por NanoID. A identidade é independente do nome e persiste ao longo de operações de renomeação, movimentação e migração de formato.
+Têm identidade baseada em nomes (composite keys ou nome simples). Em DDD/Go, igualdade é determinada pela identidade semântica.
 
-| Entidade       | Identidade         | Observação                                                   |
-|----------------|--------------------|--------------------------------------------------------------|
-| Pasta          | NanoID (6 chars)   | Inclui a Pasta Geral, que é a raiz imutável da hierarquia   |
-| Segredo        | NanoID (6 chars)   | Unidade principal de armazenamento de credenciais            |
-| ModeloSegredo  | NanoID (6 chars)   | Estrutura reutilizável; alterações não afetam segredos existentes |
+| Entidade       | Identidade                    |
+|--------|----------------------------------|
+| Pasta          | (parentId, nome)               |
+| Segredo        | (pastaId, nome)                |
+| ModeloSegredo  | nome                           |
 
 ### Objetos de Valor
 
@@ -37,27 +34,40 @@ Sem identidade própria. Definidos inteiramente pelos seus atributos. São sempr
 
 | Objeto de Valor    | Pertence a     | Observação                                                              |
 |--------------------|----------------|-------------------------------------------------------------------------|
-| CampoSegredo       | Segredo        | Definido por nome + tipo + valor. Não tem ID. Ordenado por posição.     |
-| CampoModeloSegredo | ModeloSegredo  | Definido por nome + tipo. Não tem ID. Ordenado por posição.             |
-| Configuracoes      | Cofre          | Tempos de bloqueio, ocultação e limpeza de clipboard.                   |
+| CampoSegredo       | Segredo        | Identidade = posição (índice na lista). Nomes podem ser duplicados (sem restrição). |
+| CampoModeloSegredo | ModeloSegredo  | Identidade = posição (índice na lista). Nomes podem ser duplicados (sem restrição). |
+| Configuracoes      | Cofre          | Instância única. Tempos de bloqueio, ocultação e limpeza.                   |
 
 ---
 
-## Estrutura do Domínio
+## Regras de Identidade e Unicidade
+
+**Pasta e Segredo** (identidade composite key):
+- Nome deve ser único dentro do container pai (pasta para Segredo; pasta para Pasta)
+- Renomeação muda a identidade semântica
+- Mover/renomear com colisão — renomeação automática com sufixo numérico (ex: "Login (1)", "Login (2)")
+
+**ModeloSegredo** (identidade: nome):
+- Nome deve ser único globalmente no cofre
+- Renomeação muda a identidade
+- Renomear com colisão — renomeação automática com sufixo numérico
+
+---
 
 ### Cofre
 
-Raiz agregada. Contém toda a estrutura persistida no arquivo `.abditum`.
+Agregado raiz que encapsula todo o cofre de senhas. Ponto de entrada único para mutação do domínio; nenhuma entidade interna é modificada fora do contexto do cofre. Toda persistência é feita sobre o cofre como unidade atômica.
 
 | Atributo                    | Tipo                    | Descrição                                              |
 |-----------------------------|-------------------------|--------------------------------------------------------|
 | configuracoes               | Configuracoes           | Configurações operacionais                             |
 | pasta_geral                 | Pasta                   | Raiz da hierarquia. Todo segredo vive dentro de uma Pasta. |
-| modelos_segredo             | list[ModeloSegredo]     | Modelos disponíveis no cofre                           |
 | data_criacao                | datetime                | Data/hora de criação do cofre                          |
 | data_ultima_modificacao     | datetime                | Data/hora da última modificação persistida             |
 
 ### Configuracoes
+
+Objeto de valor que concentra as preferências operacionais do cofre (tempos de bloqueio, ocultação e limpeza). Instância única por cofre; imutável durante execução (valores carregados do arquivo e persistidos en bloc ao salvar).
 
 | Atributo                                     | Tipo    | Padrão | Descrição                                    |
 |----------------------------------------------|---------|--------|----------------------------------------------|
@@ -69,53 +79,61 @@ Nenhum temporizador pode ser desabilitado — todos são obrigatórios.
 
 ### Pasta
 
+Container hierárquico que agrupa segredos e outras pastas. Identidade é (parentId, nome); nome único entre irmãs.
+
 | Atributo  | Tipo          | Descrição                                                  |
 |-----------|---------------|------------------------------------------------------------|
-| id        | NanoID        | Identidade persistida                                      |
-| nome      | string        | Nome da pasta. Único entre irmãs da mesma pasta pai.      |
-| pastas    | list[Pasta]   | Subpastas nessa pasta, ordenadas por posição (exibidas primeiro) |
-| segredos  | list[Segredo] | Segredos diretamente nessa pasta, ordenados por posição (exibidos depois) |
+| nome      | string        | Nome da pasta                                              |
+| parentId  | string        | Referência ao pai (nulo para Pasta Geral)                  |
+| pastas    | list[Pasta]   | Subpastas (exibidas primeiro, ordem preservada)            |
+| segredos  | list[Segredo] | Segredos diretos (exibidos depois, ordem preservada)       |
 
-A **Pasta Geral** é a raiz da hierarquia. Não pode ser renomeada, movida ou excluída.
+**Pasta Geral**: raiz (parentId nulo); não pode ser renomeada, movida ou excluída.
 
 ### Segredo
 
-| Atributo                | Tipo               | Descrição                                                                  |
-|-------------------------|--------------------|----------------------------------------------------------------------------|
-| id                      | NanoID             | Identidade persistida                                                      |
-| nome                    | string             | Nome do segredo. Sem restrição de unicidade.                               |
-| nome_modelo_segredo     | string (opcional)  | Registro histórico do modelo usado na criação. Não é vínculo ativo.        |
-| campos                  | list[CampoSegredo] | Campos do segredo, ordenados por posição. A Observação ocupa a última posição. |
-| favorito                | booleano           | Indica se o segredo está favoritado                                        |
-| data_criacao            | datetime           | Data/hora de criação do segredo                                            |
-| data_ultima_modificacao | datetime           | Data/hora da última modificação do segredo                                 |
+Credencial ou informação confidencial armazenada dentro de uma pasta. Identidade é (pastaId, nome); nome único dentro da pasta pai.
+
+| Atributo                | Tipo               | Descrição                                                         |
+|-------------------------|--------------------|-------------------------------------------------------------------| 
+| nome                    | string             | Nome do segredo                                                   |
+| nome_modelo_segredo     | string (opcional)  | Histórico: qual modelo foi usado na criação                       |
+| campos                  | list[CampoSegredo] | Campos em ordem definida pelo usuário (Observação sempre última)  |
+| favorito                | booleano           | Marca segredo como favorito                                        |
+| data_criacao            | datetime           | Quando foi criado                                                  |
+| data_ultima_modificacao | datetime           | Última alteração                                                   |
 
 ### CampoSegredo
 
-| Atributo | Tipo                         | Descrição                                                    |
-|----------|------------------------------|--------------------------------------------------------------|
-| nome     | string                       | Nome do campo. Sem restrição de unicidade dentro do segredo. |
-| tipo     | enum: texto, texto_sensivel  | Determina o comportamento de exibição                        |
-| valor    | []byte (texto UTF-8)         | Valor do campo. Representado em memória como `[]byte` para permitir zeragem. Serializado como string UTF-8 no JSON. Vazio = campo não preenchido. |
+Objeto de valor que representa um campo individual dentro de um Segredo. Identidade é determinada por posição (índice) na lista; nomes podem ser duplicados sem restrição. Tipo define comportamento (sensível sofre ocultação automática).
 
-O campo **Observação** é um CampoSegredo especial: tipo `texto`, nome fixo "Observação", sempre na última posição, não pode ser renomeado, movido ou excluído.
+| Atributo | Tipo                         | Descrição                            |
+|----------|------------------------------|--------------------------------------|
+| nome     | string                       | Nome do campo (sem restrição unicidade) |
+| tipo     | enum: texto, texto_sensivel  | Define comportamento (visibilidade)  |
+| valor    | []byte (texto UTF-8)         | Sempre UTF-8; zerável em memória      |
+
+**Observação**: CampoSegredo especial (nome fixo "Observação", tipo texto, última posição, não-deletável).
 
 ### ModeloSegredo
 
-| Atributo | Tipo                      | Descrição                                                         |
-|----------|---------------------------|-------------------------------------------------------------------|
-| id       | NanoID                    | Identidade persistida                                             |
-| nome     | string                    | Nome do modelo. Único entre todos os modelos do cofre.            |
-| campos   | list[CampoModeloSegredo]  | Estrutura de campos do modelo, ordenados por posição              |
+Estrutura reutilizável de campos para agilizar criação de segredos. Identidade é o nome (único globalmente no cofre).
 
-Modelos são exibidos em ordem alfabética — não são reordenáveis manualmente.
+| Atributo | Tipo                      | Descrição                                |
+|----------|---------------------------|------------------------------------------|
+| nome     | string                    | Nome do modelo (único globalmente)        |
+| campos   | list[CampoModeloSegredo]  | Estrutura de campos (ordem preservada)   |
+
+**Exibição**: ordem alfabética (não-reordenável).
 
 ### CampoModeloSegredo
 
-| Atributo | Tipo                         | Descrição                                |
-|----------|------------------------------|------------------------------------------|
-| nome     | string                       | Nome do campo.                           |
-| tipo     | enum: texto, texto_sensivel  | Tipo do campo. Permite alteração no modelo (não no segredo). |
+Objeto de valor que define a estrutura de um campo no ModeloSegredo. Identidade é determinada por posição (índice) na lista; nomes podem ser duplicados. Tipo é imutável à criação (define o template).
+
+| Atributo | Tipo                         | Descrição               |
+|----------|------------------------------|-------------------------|
+| nome     | string                       | Nome do campo           |
+| tipo     | enum: texto, texto_sensivel  | Tipo (imutável à criação) |
 
 ---
 
@@ -130,72 +148,70 @@ Pastas virtuais são **vistas derivadas** do estado em memória. Não são persi
 
 ---
 
-## Esquema Compacto
 
-Representação concisa da estrutura persistida no payload JSON do arquivo `.abditum`.
 
-```
-Cofre:
-  configuracoes:
-    tempo_bloqueio_inatividade_minutos:       inteiro  (padrão: 5)
-    tempo_ocultar_segredo_segundos:           inteiro  (padrão: 15)
-    tempo_limpar_area_transferencia_segundos: inteiro  (padrão: 30)
-  pasta_geral:            Pasta
-  modelos_segredo:        list[ModeloSegredo]
-  data_criacao:           datetime
-  data_ultima_modificacao: datetime
 
-Pasta:
-  id:       nanoid (6 chars)
-  nome:     string
-  pastas:   list[Pasta]    -- exibidas primeiro na TUI
-  segredos: list[Segredo]  -- exibidos depois na TUI
 
-Segredo:
-  id:                  nanoid (6 chars)
-  nome:                string
-  nome_modelo_segredo: string?
-  campos:              list[CampoSegredo]   -- último é sempre a Observação
-  favorito:            booleano
-  data_criacao:        datetime
-  data_ultima_modificacao: datetime
 
-CampoSegredo:
-  nome:  string
-  tipo:  enum { texto | texto_sensivel }
-  valor: []byte (UTF-8 em memória; string no JSON)  -- vazio = não preenchido
 
-ModeloSegredo:
-  id:     nanoid (6 chars)
-  nome:   string
-  campos: list[CampoModeloSegredo]
 
-CampoModeloSegredo:
-  nome: string
-  tipo: enum { texto | texto_sensivel }
-```
 
----
 
-## Invariantes
 
-### Pertencimento único
-- Um segredo pertence a exatamente uma Pasta — nunca a duas simultaneamente.
-- Uma pasta pertence a exatamente uma pasta pai — nunca a duas simultaneamente.
 
-### Hierarquia acíclica
-- Ciclos não são permitidos — uma pasta nunca pode ser descendente de si mesma.
-- Todas as pastas são navegáveis a partir da Pasta Geral — nenhuma pasta pode ficar desconectada.
 
-### Pasta Geral
-- Sempre presente no cofre. Não pode ser renomeada, movida ou excluída.
 
-### Unicidade de nomes
-- Duas subpastas com o mesmo nome não podem coexistir na mesma pasta pai.
-- Dois modelos de segredo com o mesmo nome não podem coexistir no cofre.
-- Nomes de segredos e de campos não têm restrição de unicidade.
 
-### Observação
-- Presente em todo segredo, sempre na última posição, sempre do tipo `texto`. Imutável em nome, tipo e posição.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

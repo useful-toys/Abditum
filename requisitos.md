@@ -41,6 +41,10 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 
 ## Requisitos Funcionais
 
+*Nota sobre o formato: Para manter a descrição compacta, esta seção utiliza uma representação simplificada. Cada item principal (`-`) é um requisito funcional, enquanto os sub-itens (`  -`) representam as regras e condições específicas daquele requisito.*
+
+*Questões de dúvidas e questionamentos recorrentes são marcados como "Nota:".*
+
 ### Ciclo de Vida do Cofre
 - Criar novo cofre em um arquivo com senha mestra
   - Exigir digitação dupla da senha mestra para confirmação
@@ -60,7 +64,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - Usar a senha ativa na sessão — não solicitar novamente
   - Se o arquivo foi modificado externamente desde a última leitura ou salvamento, avisar o usuário e oferecer as opções: Sobrescrever / Salvar como novo arquivo / Cancelar
 - Salvar cofre em outro arquivo
-  - O arquivo de destino não pode ser o mesmo arquivo atual do cofre
+  - O arquivo de destino não pode ser o mesmo arquivo atual do cofre. *Nota: Esta restrição é uma medida de segurança para evitar a complexidade de sobrescrever um arquivo em uso e eliminar riscos de corrupção. Para gravar no arquivo atual, a função "Salvar" deve ser utilizada.*
   - Segredos marcados para exclusão são removidos permanentemente
   - Após a operação, o arquivo de trabalho atual passa a ser o novo arquivo
   - Próximas modificações e salvamentos ocorrem sobre o novo arquivo, não o original
@@ -92,10 +96,14 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - Segredos marcados para exclusão não são incluídos no arquivo exportado
 - Importar cofre de arquivo JSON
   - O arquivo JSON deve ser válido em estrutura e conteúdo; a existência da Pasta Geral é uma premissa. Se o JSON for inválido ou não contiver Pasta Geral, a importação falha com mensagem de erro
-  - Pastas importadas que já existem no cofre (mesmo caminho completo na hierarquia) têm seu conteúdo mesclado automaticamente; pastas com mesmo nome mas em caminhos diferentes são tratadas como pastas distintas. Se a mesclagem resultar em subpastas com nomes conflitantes dentro da mesma pasta de destino, as subpastas importadas são renomeadas automaticamente com sufixo numérico e o usuário é avisado
-  - Novas pastas e novos segredos importados são inseridos ao final da lista existente na pasta de destino, após todos os elementos (incluindo segredos marcados para exclusão)
-  - Segredo importado com mesmo identificador interno de um segredo já existente no cofre: o segredo existente é preservado inalterado; o segredo importado recebe um novo identificador único e é inserido como segredo independente, com os dados (nome, campos, valores, observação) vindos da importação
-  - Modelo importado com mesmo identificador interno de um modelo já existente no cofre: o modelo existente é substituído silenciosamente — nome e estrutura de campos (nomes, tipos, ordem) são sobrescritos pelo modelo importado, mantendo sua posição na lista de modelos. Segredos previamente criados a partir do modelo não são afetados
+  - **Pastas**: Pastas são sempre mescladas — não há conceito de "colisão" de pasta. Quando pasta importada já existe no cofre (mesma pasta pai + mesmo nome), seu conteúdo é mesclado com a respectiva pasta do cofre. 
+  - Uma pasta da importação que não existir no cofre (mesma pasta pai + mesmo nome) é criada no cofre.
+  - Uma pasta que não existir na importação mas existir no cofre (mesma pasta pai + mesmo nome) é ignorada.
+  -
+  Isso significa: subpastas da importação mas que não existem no cofre serão criadas no cofre. Segredos importados são processados conforme regra de segredos abaixo (se mesmo nome, sobrescrevem; se nome único, são adicionados). 
+  - **Segredos**: Segredos importados com a mesma identidade (mesma pasta pai + mesmo nome) do cofre: os campos (estrutura e valores) do segredo existente são **substituídos** pelos valores importados. O segredo é marcado como "editado" via UX. Segredos com nomes únicos na pasta são simplesmente inseridos. **Segredos que existem na pasta do cofre mas não estão na importação correspondente são marcados para exclusão** (a importação atua como sincronização: dados que não estão no arquivo importado são tratados como suprimidos).
+  - **Modelos**: Modelo importado com mesmo nome de um modelo já existente no cofre: o modelo existente é **substituído silenciosamente** pelo importado. Segredos previamente criados a partir do modelo não são afetados.
+  - *Nota sobre a política de importação*: A política de **pastas** é sempre mesclar (não há rejeção nem renomeação por colisão de pasta). A política de **segredos** dentro da pasta mesclada é sincronizar: mesmo nome = sobrescrita de valores; nome único = inserção; ausente na importação = marcação para exclusão. A política de **modelos** substitui totalmente. Essas diferenças refletem que pastas são containers estruturais (devem sempre mesclar), segredos são dados (sincronização completa), e modelos são templates (substituição é aceitável).
 - Configurar o cofre
   - Todos os tempos são iniciados com valor padrão ao criar o cofre e podem ser ajustados pelo usuário via configurações do cofre. Nenhum temporizador pode ser desabilitado — todos são obrigatórios
   - Configurar tempo de bloqueio automático por inatividade (padrão: 5 minutos)
@@ -119,8 +127,9 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - A partir de um modelo existente ou como segredo sem campos de modelo — apenas com a Observação
   - O segredo pertencerá a uma pasta, escolhida no momento da criação
 - Duplicar segredo existente
-  - O segredo duplicado é criado na mesma pasta do original, imediatamente após o original na lista
-  - O segredo duplicado recebe nome ajustado automaticamente — ex: "Segredo (1)", "Segredo (2)"
+  - Um novo segredo é criado com o mesmo conteúdo do original
+  - O novo segredo recebe automaticamente um nome único na pasta (ex: "Gmail (1)" se "Gmail" já existe)
+  - O novo segredo é posicionado imediatamente após o original na lista
   - O histórico de modelo do segredo original é preservado no segredo duplicado
 - Editar segredo: alterar o nome do segredo, o valor de campos e/ou observação
   - Não altera a estrutura do segredo (para alterar estrutura, use Adicionar/Renomear/Reordenar/Excluir campo)
@@ -156,8 +165,9 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Excluir pasta
   - Ao excluir uma pasta, seus segredos e subpastas são movidos para a pasta que a continha
   - Segredos movidos são adicionados ao final da lista de segredos da pasta que a continha
-  - Subpastas movidas são adicionadas ao final da lista de pastas da pasta que a continha
-  - Se alguma subpasta promovida tiver o mesmo nome de uma subpasta já existente na pasta pai, ela é renomeada automaticamente com sufixo numérico — ex: "Config (1)", "Config (2)". O usuário é avisado sobre as renomeações ocorridas
+  - Subpastas movidas são adicionadas ao final da lista de pastas da pasta que a continha (se subpasta com mesmo nome já existe, conteúdo é mesclado)
+  - Se algum segredo promovido tiver o mesmo nome de um segredo já existente na pasta pai, ele é renomeado automaticamente com sufixo numérico — ex: "Gmail (1)", "Gmail (2)"
+  - O usuário é avisado sobre as renomeações ocorridas
 
 ### Gerenciamento de Modelos de Segredo
 - Criar modelo de segredo com campos personalizados
@@ -181,6 +191,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 
 ### Hierarquia de Pastas
 - Pastas formam uma estrutura em árvore com a Pasta Geral como raiz
+- Duas pastas não podem ter o mesmo caminho completo de hierarquia (nome da pasta + caminho de seus ancestrais)
 - Ciclos não são permitidos — uma pasta nunca pode ser movida para dentro de seus próprios descendentes
 - Cada pasta tem exatamente um ancestral direto (exceto a Pasta Geral, que é a raiz)
 - Todas as pastas devem ser navegáveis a partir da Pasta Geral — nenhuma pasta pode ficar desconectada da hierarquia
@@ -193,12 +204,12 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - A pasta Geral, por ser a raiz da hierarquia, é o destino natural quando segredos/subpastas de uma pasta diretamente dentro dela são movidos por exclusão — o mesmo comportamento se aplica a qualquer nível: o destino é sempre a pasta pai imediata da pasta excluída
 
 ### Nomes e Duplicidade
-- Não há restrição quanto a duplicidade do nome entre segredos
+- Não é permitido ter dois segredos com o mesmo nome dentro da mesma pasta pai. A identidade do segredo é a composite key (pastasPai, nomePasta).
 - Não há restrição quanto a duplicidade do nome entre campos de um mesmo segredo
-- Não é permitido ter duas subpastas com o mesmo nome dentro da mesma pasta pai
-- Não é permitido ter dois modelos de segredo com o mesmo nome
+- Não é permitido ter duas subpastas com o mesmo nome dentro da mesma pasta pai. A identidade da pasta é a composite key (pastasPai, nomePasta).
+- Não é permitido ter dois modelos de segredo com o mesmo nome globalmente. A identidade do modelo é seu nome.
 - Não há restrição quanto a duplicidade do nome entre campos de um mesmo modelo de segredo
-- Exceção à regra de não restrição de duplicidade: Ao duplicar um segredo, se houver conflito de nome entre segredos da mesma pasta, o nome do segredo duplicado será ajustado automaticamente — ex: "Segredo (1)", "Segredo (2)"
+
 
 ### Limites
 - Não há limite de quantidade para: pastas, segredos, modelos, campos em segredo, campos em modelo
@@ -264,16 +275,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 
 ## Requisitos v2
 
-### Duress Password (Senha Falsa de Coação)
-- Criar duress password ao criar novo cofre ou ao configurar cofre existente
-  - Exigir digitação dupla para confirmação
-  - Duress password deve ser diferente da senha mestra
-- Abrir cofre com duress password
-  - Validar credenciais (tenta duress password primeiro, se falhar tenta senha mestra)
-  - Usuário não é informado qual foi validada
-  - Abre "versão restrita" do cofre com segredos/pastas sensíveis ocultos
-- Alterar ou remover duress password durante uso normal do cofre
-- Configurar quais segredos/pastas são visíveis na versão restrita
+*As funcionalidades a seguir estão planejadas para uma futura versão e não serão especificadas ou detalhadas neste momento. Servem como um registro de ideias para a evolução do produto.*
 
 ### Exibição Parcial de Campos Sensíveis
 - Permitir configurar exibição parcial de campos sensíveis — revelar apenas parte do valor (ex: últimos 4 dígitos de número de cartão de crédito)
@@ -289,8 +291,6 @@ A ser especificado em v2.
 Renderizar um QR code diretamente na TUI (usando blocos ASCII/Unicode) contendo o valor de um campo, para transferência rápida, offline e segura para outro dispositivo.
 
 #### Decisões Pendentes (v2)
-- **Duress password — armazenamento e validação**: O design de como a duress password é armazenada, criptografada e validada sem comprometer a senha mestra será definido durante o planejamento de v2
-- **Duress password após alteração de senha mestra**: Se o usuário altera a senha mestra durante uma sessão normal, qual é o relacionamento com duress password? Continua usando a senha mestra antiga ou nova? Como persiste essa mudança na próxima sessão?
 - **Exibição parcial**: Regras de mascaramento são por campo individual ou por tipo de modelo? Quais padrões pré-definidos oferecer?
 - **QR Code — escopo do conteúdo**: O QR code deve conter apenas o valor bruto do campo (texto plano, legível por qualquer câmera), ou há intenção de protocolo mais rico? Não existe padrão universal para importação de credenciais entre gerenciadores de senha via QR; o único protocolo padronizado no domínio (`otpauth://`) é exclusivo de TOTP.
 
@@ -320,6 +320,7 @@ A ser especificado em v2.
 ## Fora de Escopo
 
 Funcionalidades deliberadamente excluídas desta versão:
+- **Senha Falsa de Coação (Duress Password)**: Uma senha alternativa que abre uma versão restrita do cofre para proteger os dados reais em situações de ameaça. Embora valiosa, a complexidade de implementação para garantir a segurança e a usabilidade corretas a coloca fora do escopo da versão inicial.
 - **TOTP (Two-Factor Authentication)**: Geração de código de autenticação de dois fatores — excluído permanentemente, sem previsão para nenhuma versão futura
 - **Backup**: A aplicação não cria, gerencia nem armazena cópias de segurança do cofre. Manter cópias de segurança é responsabilidade exclusiva do usuário
 - **Recuperação de dados**: A criptografia adotada não permite recuperação parcial de arquivos corrompidos. Não há mecanismo de reparo, importação forçada ou abertura em modo degradado
@@ -327,3 +328,6 @@ Funcionalidades deliberadamente excluídas desta versão:
 - **Armazenamento na nuvem**: Contraria a filosofia offline e portátil da aplicação — excluído permanentemente
 - **Múltiplos cofres abertos simultaneamente**: Invariante de design — só pode existir um cofre ativo por vez — excluído permanentemente
 - **App mobile ou web**: A aplicação é TUI portátil por design — excluído permanentemente
+
+
+
