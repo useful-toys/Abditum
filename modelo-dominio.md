@@ -8,6 +8,7 @@
 - **Campos uniformes**: valor é sempre UTF-8. Em memória: `[]byte` para zeragem; persistido: string legível via marshal customizado.
 - **Observação implícita**: todo segredo tem campo automático "Observação" (tipo texto, última posição, não-deletável).
 - **Busca sequencial**: sem índices — varreduras sobre estrutura em memória.
+- **Estado de sessão**: cada `Segredo` carrega um estado transiente (não persistido) que rastreia sua condição em relação ao arquivo: `original`, `incluido`, `modificado` ou `excluido`. Esse estado governa comportamentos do domínio (busca, exportação) e a observabilidade pelo usuário.
 - **Configurações embutidas**: tempos de bloqueio, ocultação e limpeza armazenados no arquivo do cofre.
 
 ## Classificação dos Tipos
@@ -51,6 +52,32 @@ Sem identidade própria. Definidos inteiramente pelos seus atributos. São sempr
 - Nome deve ser único globalmente no cofre
 - Renomeação muda a identidade
 - Renomear com colisão — renomeação automática com sufixo numérico
+
+---
+
+## Regras de Estado de Sessão
+
+Todo `Segredo` carrega um `estado_sessao` transiente (não serializado no arquivo) que reflete sua condição em relação ao estado persistido.
+
+| Estado       | Significado                                                       |
+|--------------|-------------------------------------------------------------------|
+| `original`   | Carregado do arquivo sem alterações na sessão                    |
+| `incluido`   | Criado durante a sessão; não existe no arquivo ainda             |
+| `modificado` | Existia no arquivo; foi alterado durante a sessão                |
+| `excluido`   | Marcado para remoção; será suprimido ao salvar                   |
+
+**Transições:**
+- Ao abrir ou descartar: todos os segredos iniciam como `original`
+- Criar segredo: → `incluido`
+- Alterar nome, campos, favorito ou mover segredo `original`: → `modificado`
+- Alterar segredo `incluido`: permanece `incluido`
+- Marcar para exclusão (qualquer estado): → `excluido`; estado anterior memorizado para eventual restauração
+- Desmarcar exclusão: restaura o estado anterior à marcação
+
+**Efeitos sobre o domínio:**
+- `excluido`: excluído da busca; excluído da exportação; removido permanentemente ao salvar
+- `incluido`, `modificado`, `excluido`: exibem indicador visual na UI
+- `original`: sem indicador
 
 ---
 
@@ -102,6 +129,7 @@ Credencial ou informação confidencial armazenada dentro de uma pasta. Identida
 | favorito                | booleano           | Marca segredo como favorito                                        |
 | data_criacao            | datetime           | Quando foi criado                                                  |
 | data_ultima_modificacao | datetime           | Última alteração                                                   |
+| estado_sessao           | enum (transiente)  | `original` / `incluido` / `modificado` / `excluido` — não persistido |
 
 ### CampoSegredo
 
@@ -144,7 +172,6 @@ Pastas virtuais são **vistas derivadas** do estado em memória. Não são persi
 | Pasta Virtual | Definição                                                                                                                                                  |
 |---------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Favoritos** | Conjunto de segredos com `favorito = true`, percorrido em profundidade seguindo a ordem do JSON.                                                           |
-| **Lixeira**   | Conjunto de segredos pendentes de exclusão, mantidos pelo Manager durante a sessão. Não fazem parte da hierarquia persistida. Removidos permanentemente ao salvar. |
 
 ---
 
