@@ -7,12 +7,12 @@
 
 ### Criptografia e Segurança
 
-- [ ] **CRYPTO-01**: Criptografia AES-256-GCM com nonce único por operação de escrita; derivação de chave Argon2id (t=3, m=256 MiB, p=4, keyLen=32); parâmetros fixos por versão de formato, sem calibração por máquina
-- [ ] **CRYPTO-02**: Dependências de criptografia exclusivamente de stdlib Go e `golang.org/x/crypto` — sem libs de terceiros
-- [ ] **CRYPTO-03**: Todos os dados sensíveis (senha mestra, buffers de chave) manipulados exclusivamente como `[]byte` zeráveis — nunca como `string`
-- [ ] **CRYPTO-04**: Ao bloquear ou sair, senha mestra e buffers sensíveis são sobrescritos com zeros e descartados antes de retornar ao shell
-- [ ] **CRYPTO-05**: Uso de `mlock`/`VirtualLock` quando disponíveis no SO para impedir swap de memória sensível para disco; aplicação opera normalmente quando indisponível
-- [ ] **CRYPTO-06**: Zero logs de stdout/stderr que contenham caminhos de arquivo de cofre, nomes de segredos ou valores de campos
+- [x] **CRYPTO-01**: Criptografia AES-256-GCM com nonce único por operação de escrita; derivação de chave Argon2id (t=3, m=256 MiB, p=4, keyLen=32); parâmetros fixos por versão de formato, sem calibração por máquina
+- [x] **CRYPTO-02**: Dependências de criptografia exclusivamente de stdlib Go e `golang.org/x/crypto` — sem libs de terceiros
+- [x] **CRYPTO-03**: Todos os dados sensíveis (senha mestra, buffers de chave) manipulados exclusivamente como `[]byte` zeráveis — nunca como `string`
+- [x] **CRYPTO-04**: Ao bloquear ou sair, senha mestra e buffers sensíveis são sobrescritos com zeros e descartados antes de retornar ao shell
+- [x] **CRYPTO-05**: Uso de `mlock`/`VirtualLock` quando disponíveis no SO para impedir swap de memória sensível para disco; aplicação opera normalmente quando indisponível
+- [x] **CRYPTO-06**: Zero logs de stdout/stderr que contenham caminhos de arquivo de cofre, nomes de segredos ou valores de campos
 
 ### Ciclo de Vida do Cofre
 
@@ -88,7 +88,7 @@
 
 ### Força de Senha
 
-- [ ] **PWD-01**: Força avaliada como forte quando: ≥12 caracteres, ≥1 maiúscula, ≥1 minúscula, ≥1 dígito, ≥1 caractere especial; aviso exibido se fraca mas operação não bloqueada
+- [x] **PWD-01**: Força avaliada como forte quando: ≥12 caracteres, ≥1 maiúscula, ≥1 minúscula, ≥1 dígito, ≥1 caractere especial; aviso exibido se fraca mas operação não bloqueada
 
 ### Integração Contínua
 
@@ -152,13 +152,13 @@
 |-------------|-------|--------|
 | COMPAT-01 | 1 | Complete |
 | CI-01 | 1 | Complete |
-| CRYPTO-01 | 2 | Pending |
-| CRYPTO-02 | 2 | Pending |
-| CRYPTO-03 | 2 | Pending |
-| CRYPTO-04 | 2 | Pending |
-| CRYPTO-05 | 2 | Pending |
-| CRYPTO-06 | 2 | Pending |
-| PWD-01 | 2 | Pending |
+| CRYPTO-01 | 2 | Complete |
+| CRYPTO-02 | 2 | Complete |
+| CRYPTO-03 | 2 | Complete |
+| CRYPTO-04 | 2 | Complete |
+| CRYPTO-05 | 2 | Complete |
+| CRYPTO-06 | 2 | Complete |
+| PWD-01 | 2 | Complete |
 | VAULT-02 | 3 | Pending |
 | SEC-05 | 3 | Pending |
 | FOLDER-01 | 3 | Pending |

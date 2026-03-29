@@ -9,7 +9,7 @@
 ## Phases
 
 - [ ] **Phase 1: Project Scaffold + CI Foundation** — Go module, directory tree, static binary build, GitHub Actions CI green on Linux
-- [ ] **Phase 2: Crypto Package** — Argon2id key derivation, AES-256-GCM AEAD, memory wipe primitives, mlock, password strength evaluator
+- [x] **Phase 2: Crypto Package** — Argon2id key derivation, AES-256-GCM AEAD, memory wipe primitives, mlock, password strength evaluator (completed 2026-03-29)
 - [ ] **Phase 3: Vault Domain + Manager** — All entity types, full Manager API, business rules, invariant enforcement — verified by unit tests
 - [ ] **Phase 4: Storage Package** — Binary `.abditum` format, atomic save with `.bak`/`.bak2` chain, Windows MoveFileEx, migration scaffold, startup recovery
 - [ ] **Phase 5: TUI Scaffold + Root Model** — Session state machine, root model, global tick, timer fields, modal overlay — no screens yet
@@ -54,10 +54,10 @@ Plans:
 
 **Requirements:** CRYPTO-01, CRYPTO-02, CRYPTO-03, CRYPTO-04, CRYPTO-05, CRYPTO-06, PWD-01
 
-**Plans:** 1 plan in 1 wave
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 02-01-PLAN.md — Complete crypto package: Argon2id KDF, AES-256-GCM AEAD, memory security primitives, password strength evaluation, comprehensive tests
+- [x] 02-01-PLAN.md — Complete crypto package: Argon2id KDF, AES-256-GCM AEAD, memory security primitives, password strength evaluation, comprehensive tests
 
 **UAT:**
 - [ ] `Encrypt(key, p)` + `Decrypt(key, c)` roundtrip returns original plaintext byte-for-byte
