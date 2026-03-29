@@ -90,20 +90,16 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - Se não houver alterações pendentes, sair diretamente sem confirmação
   - Ao sair, a senha mestra é limpa da memória e buffers sensíveis são descartados (mesmo comportamento do bloqueio)
   - O terminal é limpo (clear screen) antes de encerrar, pelo mesmo motivo do bloqueio
-- Exportar cofre para arquivo JSON
+- Exportar cofre para um arquivo de intercâmbio (não criptografado)
   - O arquivo exportado contém toda a estrutura do cofre: pastas, segredos ativos e modelos. Configurações de timers não são exportadas
   - Exibir aviso sobre os riscos de segurança e solicitar confirmação antes de exportar
   - Segredos marcados para exclusão não são incluídos no arquivo exportado
-- Importar cofre de arquivo JSON
-  - O arquivo JSON deve ser válido em estrutura e conteúdo; a existência da Pasta Geral é uma premissa. Se o JSON for inválido ou não contiver Pasta Geral, a importação falha com mensagem de erro
-  - **Pastas**: Pastas são sempre mescladas — não há conceito de "colisão" de pasta. Quando pasta importada já existe no cofre (mesma pasta pai + mesmo nome), seu conteúdo é mesclado com a respectiva pasta do cofre. 
-  - Uma pasta da importação que não existir no cofre (mesma pasta pai + mesmo nome) é criada no cofre.
-  - Uma pasta que não existir na importação mas existir no cofre (mesma pasta pai + mesmo nome) é ignorada.
-  -
-  Isso significa: subpastas da importação mas que não existem no cofre serão criadas no cofre. Segredos importados são processados conforme regra de segredos abaixo (se mesmo nome, sobrescrevem; se nome único, são adicionados). 
-  - **Segredos**: Segredos importados com a mesma identidade (mesma pasta pai + mesmo nome) do cofre: os campos (estrutura e valores) do segredo existente são **substituídos** pelos valores importados. O segredo é marcado como "editado" via UX. Segredos com nomes únicos na pasta são simplesmente inseridos. **Segredos que existem na pasta do cofre mas não estão na importação correspondente são marcados para exclusão** (a importação atua como sincronização: dados que não estão no arquivo importado são tratados como suprimidos).
-  - **Modelos**: Modelo importado com mesmo nome de um modelo já existente no cofre: o modelo existente é **substituído silenciosamente** pelo importado. Segredos previamente criados a partir do modelo não são afetados.
-  - *Nota sobre a política de importação*: A política de **pastas** é sempre mesclar (não há rejeção nem renomeação por colisão de pasta). A política de **segredos** dentro da pasta mesclada é sincronizar: mesmo nome = sobrescrita de valores; nome único = inserção; ausente na importação = marcação para exclusão. A política de **modelos** substitui totalmente. Essas diferenças refletem que pastas são containers estruturais (devem sempre mesclar), segredos são dados (sincronização completa), e modelos são templates (substituição é aceitável).
+- Importar cofre de um arquivo de intercâmbio
+  - O arquivo de intercâmbio deve ser válido em estrutura e conteúdo; a existência da Pasta Geral é uma premissa. Se o arquivo for inválido ou não contiver Pasta Geral, a importação falha com mensagem de erro
+    - **Pastas**: A estrutura de pastas é mesclada. Se uma pasta do arquivo de importação já existe no cofre (no mesmo caminho), seu conteúdo é mesclado com a pasta correspondente no cofre. Se a pasta não existe, ela é criada.
+  - **Segredos**: Dentro de uma pasta mesclada, segredos importados que têm o mesmo nome de um segredo existente são **substituídos** pelo segredo do arquivo de importação. Segredos com nomes únicos são adicionados.
+  - **Modelos**: Modelos importados com o mesmo nome de um modelo existente no cofre **substituem** o modelo do cofre.
+  - *Nota sobre a política de importação*: A política de importação é intencionalmente baseada na **mesclagem** de estruturas de pastas e na **sobrescrita** de segredos e modelos com nomes conflitantes. Este comportamento difere da operação de exclusão de pasta, onde um conflito de nome resulta em renomeação para evitar perda de dados não intencional. Na importação, a sobrescrita é a ação esperada.
 - Configurar o cofre
   - Todos os tempos são iniciados com valor padrão ao criar o cofre e podem ser ajustados pelo usuário via configurações do cofre. Nenhum temporizador pode ser desabilitado — todos são obrigatórios
   - Configurar tempo de bloqueio automático por inatividade (padrão: 5 minutos)
@@ -112,11 +108,17 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 
 ### Consulta dos Segredos
 - Exibir o cofre com suas pastas e segredos
+  - Cada pasta exibe a contagem total de segredos ativos (não marcados para exclusão) contidos nela e em todas as suas subpastas recursivamente
 - Buscar segredos por nome, nome de campo, valor de campo comum ou observação
   - A busca funciona por substring, ignorando acentuação e capitalização (case-insensitive)
   - Campos sensíveis nunca participam da busca
   - Segredos marcados para exclusão não aparecem nos resultados de busca
 - Exibir um segredo com nome, seus campos e a observação
+- Exibir indicadores de estado de sessão na listagem de segredos
+  - Indicador "adicionado" para segredos criados na sessão atual
+  - Indicador "modificado" para segredos alterados na sessão atual (nome, campos ou favorito)
+  - Indicador "excluído" para segredos marcados para exclusão
+  - Segredos sem alterações desde o carregamento não exibem indicador
 - Exibir temporariamente o valor de um campo sensível
   - Ocultar o valor automaticamente após tempo configurável, com valor padrão de 15 segundos
 - Copiar temporariamente o valor de qualquer campo para a área de transferência
@@ -139,9 +141,13 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - A Observação ocupa sempre a última posição na lista de campos — campos adicionados pelo usuário são posicionados acima dela
   - A Observação não pode ser movida — apenas campos do usuário participam da reordenação
 - Favoritar e desfavoritar segredo
-- Marcar e desmarcar segredo para exclusão
-  - Segredo marcado para exclusão permanece na lista, apenas sinalizado visualmente
-  - Segredo marcado para exclusão é removido permanentemente ao salvar o cofre
+- Marcar segredo para exclusão
+  - O segredo permanece na lista da pasta, visualmente sinalizado como excluído
+  - Não aparece em resultados de busca enquanto marcado
+  - Ao salvar, é removido permanentemente do cofre
+  - Se a pasta do segredo for excluída antes de salvar, o segredo marcado é movido junto para a pasta pai (mantendo o estado de exclusão; com renomeação automática por colisão se necessário)
+- Desmarcar exclusão de segredo
+  - Restaura o segredo ao estado que tinha antes de ser marcado para exclusão
 - Mover segredo para outra pasta
   - O segredo será movido para a pasta de destino escolhida
 - Reordenar segredo dentro da mesma pasta
@@ -163,7 +169,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - Múltiplas reordenações antes de salvar resultam em estado final apenas (histórico de movimentos descartado)
   - Ao salvar, a ordem final é persistida no arquivo
 - Excluir pasta
-  - Ao excluir uma pasta, seus segredos e subpastas são movidos para a pasta que a continha
+  - Ao excluir uma pasta, seus segredos e subpastas são movidos para a pasta que a continha — inclusive segredos marcados para exclusão, que mantêm seu estado
   - Segredos movidos são adicionados ao final da lista de segredos da pasta que a continha
   - Subpastas movidas são adicionadas ao final da lista de pastas da pasta que a continha (se subpasta com mesmo nome já existe, conteúdo é mesclado)
   - Se algum segredo promovido tiver o mesmo nome de um segredo já existente na pasta pai, ele é renomeado automaticamente com sufixo numérico — ex: "Gmail (1)", "Gmail (2)"
@@ -180,7 +186,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Excluir modelo de segredo
 - Criar modelo a partir de um segredo existente
   - A Observação automática do segredo é sempre ignorada — não é copiada para o modelo
-  - Campos criados manualmente pelo usuário com o nome "Observação" são tratados como campos comuns e incluídos normalmente no modelo gerado
+  - O campo "Observação" não pode ser adicionado, renomeado ou copiado para um modelo. A aplicação deve impedir a criação de um campo com este nome em um modelo.
 
 ## Regras Transversais
 
@@ -234,7 +240,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Observação é um campo comum (sempre visível, não sensível)
 - Observação ocupa sempre a última posição na lista de campos do segredo
 - A Observação automática não faz parte da estrutura do modelo — modelos não declaram nem controlam a Observação
-- Se o usuário criar manualmente um campo chamado "Observação" no modelo, esse campo é tratado como campo comum regular e coexistirá com a Observação automática do segredo (que permanece na última posição)
+- O campo "Observação" não pode ser criado em um modelo de segredo, para evitar duplicidade com o campo de observação automático que todo segredo possui.
 - O uso responsável da observação é por conta e risco do usuário — o campo não prevê ocultação nem tratamento especial
 
 ### Força da Senha Mestra
