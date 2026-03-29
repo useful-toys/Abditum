@@ -18,7 +18,7 @@ planning via /gsd-plan-phase --reviews.
 </objective>
 
 <execution_context>
-@C:/g/Abditum/.opencode/get-shit-done/workflows/review.md
+@C:/git/Abditum/.opencode/get-shit-done/workflows/review.md
 </execution_context>
 
 <context>
@@ -32,5 +32,5 @@ Phase number: extracted from $ARGUMENTS (required)
 </context>
 
 <process>
-Execute the review workflow from @C:/g/Abditum/.opencode/get-shit-done/workflows/review.md end-to-end.
+Execute the review workflow from @C:/git/Abditum/.opencode/get-shit-done/workflows/review.md end-to-end.
 </process>

@@ -16,10 +16,10 @@ Remove a workspace directory after confirmation. For worktree strategy, runs `gi
 </objective>
 
 <execution_context>
-@C:/g/Abditum/.opencode/get-shit-done/workflows/remove-workspace.md
-@C:/g/Abditum/.opencode/get-shit-done/references/ui-brand.md
+@C:/git/Abditum/.opencode/get-shit-done/workflows/remove-workspace.md
+@C:/git/Abditum/.opencode/get-shit-done/references/ui-brand.md
 </execution_context>
 
 <process>
-Execute the remove-workspace workflow from @C:/g/Abditum/.opencode/get-shit-done/workflows/remove-workspace.md end-to-end.
+Execute the remove-workspace workflow from @C:/git/Abditum/.opencode/get-shit-done/workflows/remove-workspace.md end-to-end.
 </process>

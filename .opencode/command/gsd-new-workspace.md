@@ -33,11 +33,11 @@ Create a physical workspace directory containing copies of specified git repos (
 </objective>
 
 <execution_context>
-@C:/g/Abditum/.opencode/get-shit-done/workflows/new-workspace.md
-@C:/g/Abditum/.opencode/get-shit-done/references/ui-brand.md
+@C:/git/Abditum/.opencode/get-shit-done/workflows/new-workspace.md
+@C:/git/Abditum/.opencode/get-shit-done/references/ui-brand.md
 </execution_context>
 
 <process>
-Execute the new-workspace workflow from @C:/g/Abditum/.opencode/get-shit-done/workflows/new-workspace.md end-to-end.
+Execute the new-workspace workflow from @C:/git/Abditum/.opencode/get-shit-done/workflows/new-workspace.md end-to-end.
 Preserve all workflow gates (validation, approvals, commits, routing).
 </process>

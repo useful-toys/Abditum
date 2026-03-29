@@ -19,11 +19,11 @@ Routes to the settings workflow which handles:
 </objective>
 
 <execution_context>
-@C:/g/Abditum/.opencode/get-shit-done/workflows/settings.md
+@C:/git/Abditum/.opencode/get-shit-done/workflows/settings.md
 </execution_context>
 
 <process>
-**Follow the settings workflow** from `@C:/g/Abditum/.opencode/get-shit-done/workflows/settings.md`.
+**Follow the settings workflow** from `@C:/git/Abditum/.opencode/get-shit-done/workflows/settings.md`.
 
 The workflow handles all logic including:
 1. Config file creation with defaults if missing

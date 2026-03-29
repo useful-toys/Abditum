@@ -19,9 +19,9 @@ Consumed by: /gsd-new-milestone (scans seeds and presents matches)
 </objective>
 
 <execution_context>
-@C:/g/Abditum/.opencode/get-shit-done/workflows/plant-seed.md
+@C:/git/Abditum/.opencode/get-shit-done/workflows/plant-seed.md
 </execution_context>
 
 <process>
-Execute the plant-seed workflow from @C:/g/Abditum/.opencode/get-shit-done/workflows/plant-seed.md end-to-end.
+Execute the plant-seed workflow from @C:/git/Abditum/.opencode/get-shit-done/workflows/plant-seed.md end-to-end.
 </process>

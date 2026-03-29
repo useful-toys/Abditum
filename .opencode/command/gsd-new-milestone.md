@@ -24,11 +24,11 @@ Brownfield equivalent of new-project. Project exists, PROJECT.md has history. Ga
 </objective>
 
 <execution_context>
-@C:/g/Abditum/.opencode/get-shit-done/workflows/new-milestone.md
-@C:/g/Abditum/.opencode/get-shit-done/references/questioning.md
-@C:/g/Abditum/.opencode/get-shit-done/references/ui-brand.md
-@C:/g/Abditum/.opencode/get-shit-done/templates/project.md
-@C:/g/Abditum/.opencode/get-shit-done/templates/requirements.md
+@C:/git/Abditum/.opencode/get-shit-done/workflows/new-milestone.md
+@C:/git/Abditum/.opencode/get-shit-done/references/questioning.md
+@C:/git/Abditum/.opencode/get-shit-done/references/ui-brand.md
+@C:/git/Abditum/.opencode/get-shit-done/templates/project.md
+@C:/git/Abditum/.opencode/get-shit-done/templates/requirements.md
 </execution_context>
 
 <context>
@@ -38,6 +38,6 @@ Project and milestone context files are resolved inside the workflow (`init new-
 </context>
 
 <process>
-Execute the new-milestone workflow from @C:/g/Abditum/.opencode/get-shit-done/workflows/new-milestone.md end-to-end.
+Execute the new-milestone workflow from @C:/git/Abditum/.opencode/get-shit-done/workflows/new-milestone.md end-to-end.
 Preserve all workflow gates (validation, questioning, research, requirements, roadmap approval, commits).
 </process>

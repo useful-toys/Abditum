@@ -24,8 +24,8 @@ Uses ROADMAP.md phase discovery and Skill() flat invocations for each phase comm
 </objective>
 
 <execution_context>
-@C:/g/Abditum/.opencode/get-shit-done/workflows/autonomous.md
-@C:/g/Abditum/.opencode/get-shit-done/references/ui-brand.md
+@C:/git/Abditum/.opencode/get-shit-done/workflows/autonomous.md
+@C:/git/Abditum/.opencode/get-shit-done/references/ui-brand.md
 </execution_context>
 
 <context>
@@ -35,6 +35,6 @@ Project context, phase list, and state are resolved inside the workflow using in
 </context>
 
 <process>
-Execute the autonomous workflow from @C:/g/Abditum/.opencode/get-shit-done/workflows/autonomous.md end-to-end.
+Execute the autonomous workflow from @C:/git/Abditum/.opencode/get-shit-done/workflows/autonomous.md end-to-end.
 Preserve all workflow gates (phase discovery, per-phase execution, blocker handling, progress display).
 </process>

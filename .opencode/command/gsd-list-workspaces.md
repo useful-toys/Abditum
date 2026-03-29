@@ -9,10 +9,10 @@ Scan `~/gsd-workspaces/` for workspace directories containing `WORKSPACE.md` man
 </objective>
 
 <execution_context>
-@C:/g/Abditum/.opencode/get-shit-done/workflows/list-workspaces.md
-@C:/g/Abditum/.opencode/get-shit-done/references/ui-brand.md
+@C:/git/Abditum/.opencode/get-shit-done/workflows/list-workspaces.md
+@C:/git/Abditum/.opencode/get-shit-done/references/ui-brand.md
 </execution_context>
 
 <process>
-Execute the list-workspaces workflow from @C:/g/Abditum/.opencode/get-shit-done/workflows/list-workspaces.md end-to-end.
+Execute the list-workspaces workflow from @C:/git/Abditum/.opencode/get-shit-done/workflows/list-workspaces.md end-to-end.
 </process>

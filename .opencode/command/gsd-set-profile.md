@@ -7,4 +7,4 @@ tools:
 
 Show the following output to the user verbatim, with no extra commentary:
 
-!`node "C:/g/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs" config-set-model-profile $ARGUMENTS --raw`
+!`node "C:/git/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs" config-set-model-profile $ARGUMENTS --raw`

@@ -8,9 +8,9 @@ This workflow wires Phase 1 (session pipeline) and Phase 2 (profiling engine) in
 Read all files referenced by the invoking prompt's execution_context before starting.
 
 Key references:
-- @C:/g/Abditum/.opencode/get-shit-done/references/ui-brand.md (display patterns)
-- @C:/g/Abditum/.opencode/get-shit-done/agents/gsd-user-profiler.md (profiler agent definition)
-- @C:/g/Abditum/.opencode/get-shit-done/references/user-profiling.md (profiling reference doc)
+- @C:/git/Abditum/.opencode/get-shit-done/references/ui-brand.md (display patterns)
+- @C:/git/Abditum/.opencode/get-shit-done/agents/gsd-user-profiler.md (profiler agent definition)
+- @C:/git/Abditum/.opencode/get-shit-done/references/user-profiling.md (profiling reference doc)
 </required_reading>
 
 <process>
@@ -24,7 +24,7 @@ Parse flags from $ARGUMENTS:
 Check for existing profile:
 
 ```bash
-PROFILE_PATH="C:/g/Abditum/.opencode/get-shit-done/USER-PROFILE.md"
+PROFILE_PATH="C:/git/Abditum/.opencode/get-shit-done/USER-PROFILE.md"
 [ -f "$PROFILE_PATH" ] && echo "EXISTS" || echo "NOT_FOUND"
 ```
 
@@ -46,7 +46,7 @@ If "Cancel": Display "No changes made." and exit.
 
 Backup existing profile:
 ```bash
-cp "C:/g/Abditum/.opencode/get-shit-done/USER-PROFILE.md" "C:/g/Abditum/.opencode/get-shit-done/USER-PROFILE.backup.md"
+cp "C:/git/Abditum/.opencode/get-shit-done/USER-PROFILE.md" "C:/git/Abditum/.opencode/get-shit-done/USER-PROFILE.backup.md"
 ```
 
 Display: "Re-analyzing your sessions to update your profile."
@@ -90,7 +90,7 @@ Your recent Claude Code sessions, looking for patterns in these
 
 ✓ Reads session files locally (read-only, nothing modified)
 ✓ Analyzes message patterns (not content meaning)
-✓ Stores profile at C:/g/Abditum/.opencode/get-shit-done/USER-PROFILE.md
+✓ Stores profile at C:/git/Abditum/.opencode/get-shit-done/USER-PROFILE.md
 ✗ Nothing is sent to external services
 ✗ Sensitive content (API keys, passwords) is automatically excluded
 ```
@@ -128,7 +128,7 @@ Display: "◆ Scanning sessions..."
 
 Run session scan:
 ```bash
-SCAN_RESULT=$(node C:/g/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs scan-sessions --json 2>/dev/null)
+SCAN_RESULT=$(node C:/git/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs scan-sessions --json 2>/dev/null)
 ```
 
 Parse the JSON output to get session count and project count.
@@ -148,7 +148,7 @@ Display: "◆ Sampling messages..."
 
 Run profile sampling:
 ```bash
-SAMPLE_RESULT=$(node C:/g/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs profile-sample --json 2>/dev/null)
+SAMPLE_RESULT=$(node C:/git/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs profile-sample --json 2>/dev/null)
 ```
 
 Parse the JSON output to get the temp directory path and message count.
@@ -161,13 +161,13 @@ Display: "◆ Analyzing patterns..."
 
 Use the Task tool to spawn the `gsd-user-profiler` agent. Provide it with:
 - The sampled JSONL file path from profile-sample output
-- The user-profiling reference doc at `C:/g/Abditum/.opencode/get-shit-done/references/user-profiling.md`
+- The user-profiling reference doc at `C:/git/Abditum/.opencode/get-shit-done/references/user-profiling.md`
 
 The agent prompt should follow this structure:
 ```
 Read the profiling reference document and the sampled session messages, then analyze the developer's behavioral patterns across all 8 dimensions.
 
-Reference: @C:/g/Abditum/.opencode/get-shit-done/references/user-profiling.md
+Reference: @C:/git/Abditum/.opencode/get-shit-done/references/user-profiling.md
 Session data: @{temp_dir}/profile-sample.jsonl
 
 Analyze these messages and return your analysis in the <analysis> JSON format specified in the reference document.
@@ -199,7 +199,7 @@ Display: "Using questionnaire to build your profile."
 
 **Get questions:**
 ```bash
-QUESTIONS=$(node C:/g/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs profile-questionnaire --json 2>/dev/null)
+QUESTIONS=$(node C:/git/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs profile-questionnaire --json 2>/dev/null)
 ```
 
 Parse the questions JSON. It contains 8 questions, one per dimension.
@@ -222,7 +222,7 @@ Write the answers JSON to `$ANSWERS_PATH`.
 
 **Convert answers to analysis:**
 ```bash
-ANALYSIS_RESULT=$(node C:/g/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs profile-questionnaire --answers "$ANSWERS_PATH" --json 2>/dev/null)
+ANALYSIS_RESULT=$(node C:/git/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs profile-questionnaire --answers "$ANSWERS_PATH" --json 2>/dev/null)
 ```
 
 Parse the analysis JSON from the result.
@@ -269,10 +269,10 @@ Write updated analysis JSON back to `$ANALYSIS_PATH`.
 Display: "◆ Writing profile..."
 
 ```bash
-node C:/g/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs write-profile --input "$ANALYSIS_PATH" --json 2>/dev/null
+node C:/git/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs write-profile --input "$ANALYSIS_PATH" --json 2>/dev/null
 ```
 
-Display: "✓ Profile written to C:/g/Abditum/.opencode/get-shit-done/USER-PROFILE.md"
+Display: "✓ Profile written to C:/git/Abditum/.opencode/get-shit-done/USER-PROFILE.md"
 
 ---
 
@@ -335,9 +335,9 @@ Use question with multiSelect:
 - options (ALL pre-selected by default):
   - "/gsd-dev-preferences command file" -- "Load your preferences in any session"
   - "AGENTS.md profile section" -- "Add profile to this project's AGENTS.md"
-  - "Global AGENTS.md" -- "Add profile to C:/g/Abditum/.opencode/AGENTS.md for all projects"
+  - "Global AGENTS.md" -- "Add profile to C:/git/Abditum/.opencode/AGENTS.md for all projects"
 
-**If no artifacts selected:** Display "No artifacts generated. Your profile is saved at C:/g/Abditum/.opencode/get-shit-done/USER-PROFILE.md" and jump to step 10.
+**If no artifacts selected:** Display "No artifacts generated. Your profile is saved at C:/git/Abditum/.opencode/get-shit-done/USER-PROFILE.md" and jump to step 10.
 
 ---
 
@@ -348,15 +348,15 @@ Generate selected artifacts sequentially (file I/O is fast, no benefit from para
 **For /gsd-dev-preferences (if selected):**
 
 ```bash
-node C:/g/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs generate-dev-preferences --analysis "$ANALYSIS_PATH" --json 2>/dev/null
+node C:/git/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs generate-dev-preferences --analysis "$ANALYSIS_PATH" --json 2>/dev/null
 ```
 
-Display: "✓ Generated /gsd-dev-preferences at C:/g/Abditum/.opencode/commands/gsd/dev-preferences.md"
+Display: "✓ Generated /gsd-dev-preferences at C:/git/Abditum/.opencode/commands/gsd/dev-preferences.md"
 
 **For AGENTS.md profile section (if selected):**
 
 ```bash
-node C:/g/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs generate-claude-profile --analysis "$ANALYSIS_PATH" --json 2>/dev/null
+node C:/git/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs generate-claude-profile --analysis "$ANALYSIS_PATH" --json 2>/dev/null
 ```
 
 Display: "✓ Added profile section to AGENTS.md"
@@ -364,10 +364,10 @@ Display: "✓ Added profile section to AGENTS.md"
 **For Global AGENTS.md (if selected):**
 
 ```bash
-node C:/g/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs generate-claude-profile --analysis "$ANALYSIS_PATH" --global --json 2>/dev/null
+node C:/git/Abditum/.opencode/get-shit-done/bin/gsd-tools.cjs generate-claude-profile --analysis "$ANALYSIS_PATH" --global --json 2>/dev/null
 ```
 
-Display: "✓ Added profile section to C:/g/Abditum/.opencode/AGENTS.md"
+Display: "✓ Added profile section to C:/git/Abditum/.opencode/AGENTS.md"
 
 **Error handling:** If any gsd-tools.cjs call fails, display the error message and use question to offer "Retry" or "Skip this artifact". On retry, re-run the command. On skip, continue to next artifact.
 
@@ -381,7 +381,7 @@ Read both old backup and new analysis to compare dimension ratings/confidence.
 
 Read the backed-up profile:
 ```bash
-BACKUP_PATH="C:/g/Abditum/.opencode/get-shit-done/USER-PROFILE.backup.md"
+BACKUP_PATH="C:/git/Abditum/.opencode/get-shit-done/USER-PROFILE.backup.md"
 ```
 
 Compare each dimension's rating and confidence between old and new. Display diff table showing only changed dimensions:
@@ -404,15 +404,15 @@ If nothing changed: Display "No changes detected -- your profile is already up t
  GSD > PROFILE COMPLETE ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Your profile:    C:/g/Abditum/.opencode/get-shit-done/USER-PROFILE.md
+Your profile:    C:/git/Abditum/.opencode/get-shit-done/USER-PROFILE.md
 ```
 
 Then list paths for each generated artifact:
 ```
 Artifacts:
-  ✓ /gsd-dev-preferences   C:/g/Abditum/.opencode/commands/gsd/dev-preferences.md
+  ✓ /gsd-dev-preferences   C:/git/Abditum/.opencode/commands/gsd/dev-preferences.md
   ✓ AGENTS.md section       ./AGENTS.md
-  ✓ Global AGENTS.md        C:/g/Abditum/.opencode/AGENTS.md
+  ✓ Global AGENTS.md        C:/git/Abditum/.opencode/AGENTS.md
 ```
 
 (Only show artifacts that were actually generated.)

@@ -8,10 +8,10 @@ Use when `.planning/phases/` has accumulated directories from past milestones.
 </objective>
 
 <execution_context>
-@C:/g/Abditum/.opencode/get-shit-done/workflows/cleanup.md
+@C:/git/Abditum/.opencode/get-shit-done/workflows/cleanup.md
 </execution_context>
 
 <process>
-Follow the cleanup workflow at @C:/g/Abditum/.opencode/get-shit-done/workflows/cleanup.md.
+Follow the cleanup workflow at @C:/git/Abditum/.opencode/get-shit-done/workflows/cleanup.md.
 Identify completed milestones, show a dry-run summary, and archive on confirmation.
 </process>

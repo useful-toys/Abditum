@@ -9,9 +9,9 @@ Display comprehensive project statistics including phase progress, plan executio
 </objective>
 
 <execution_context>
-@C:/g/Abditum/.opencode/get-shit-done/workflows/stats.md
+@C:/git/Abditum/.opencode/get-shit-done/workflows/stats.md
 </execution_context>
 
 <process>
-Execute the stats workflow from @C:/g/Abditum/.opencode/get-shit-done/workflows/stats.md end-to-end.
+Execute the stats workflow from @C:/git/Abditum/.opencode/get-shit-done/workflows/stats.md end-to-end.
 </process>

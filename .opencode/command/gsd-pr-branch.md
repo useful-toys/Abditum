@@ -16,9 +16,9 @@ changes that are irrelevant to code review.
 </objective>
 
 <execution_context>
-@C:/g/Abditum/.opencode/get-shit-done/workflows/pr-branch.md
+@C:/git/Abditum/.opencode/get-shit-done/workflows/pr-branch.md
 </execution_context>
 
 <process>
-Execute the pr-branch workflow from @C:/g/Abditum/.opencode/get-shit-done/workflows/pr-branch.md end-to-end.
+Execute the pr-branch workflow from @C:/git/Abditum/.opencode/get-shit-done/workflows/pr-branch.md end-to-end.
 </process>

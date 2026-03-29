@@ -26,7 +26,6 @@ internal/
 
 ---
 
-
 ## 3. Camada de Serviço de Aplicação (Padrão Manager)
 
 A interação com o modelo de domínio é controlada por uma camada de serviço de aplicação, cujo principal componente é o `Manager`. Este padrão atua como a API pública para o domínio, garantindo que toda interação siga as regras de negócio e preserve a consistência dos dados. A TUI (ou qualquer outro cliente) interage com o domínio **exclusivamente** através do Manager.
@@ -57,10 +56,6 @@ A interação com o modelo de domínio é controlada por uma camada de serviço 
 *   **Proteção do Domínio**: As regras de negócio são encapsuladas e não podem ser contornadas. Isso previne que o cofre entre em um estado inválido (ex: dois segredos com o mesmo nome na mesma pasta).
 *   **Separação Clara de Responsabilidades**: A TUI lida com a apresentação. O Domínio lida com as regras de negócio. O Storage lida com a persistência. O Manager conecta todas elas sem misturar suas responsabilidades, o que aumenta drasticamente a testabilidade de cada componente de forma isolada.
 *   **Clareza dos Casos de Uso**: A interface pública do `Manager` serve como uma lista clara de todas as operações que um usuário pode realizar no sistema, tornando a intenção do código explícita.
-
-
-
-
 
 ---
 

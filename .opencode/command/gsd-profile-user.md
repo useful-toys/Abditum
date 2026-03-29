@@ -18,8 +18,8 @@ Routes to the profile-user workflow which orchestrates the full flow: consent ga
 </objective>
 
 <execution_context>
-@C:/g/Abditum/.opencode/get-shit-done/workflows/profile-user.md
-@C:/g/Abditum/.opencode/get-shit-done/references/ui-brand.md
+@C:/git/Abditum/.opencode/get-shit-done/workflows/profile-user.md
+@C:/git/Abditum/.opencode/get-shit-done/references/ui-brand.md
 </execution_context>
 
 <context>
