@@ -274,6 +274,135 @@ func (m *Manager) removerExcluidosRecursivamente(pasta *Pasta) {
 	}
 }
 
+// Template Operations
+
+// CriarModelo creates a new template with the given name and fields.
+// Templates are automatically sorted alphabetically after insertion (TPL-02, TPL-06).
+// Per D-29: "Observação" is a reserved field name and is prohibited.
+// Returns the created template or an error.
+func (m *Manager) CriarModelo(nome string, campos []CampoModelo) (*ModeloSegredo, error) {
+	if m.bloqueado {
+		return nil, ErrCofreBloqueado
+	}
+
+	// Validation phase
+	if err := m.cofre.validarCriacaoModelo(nome, campos); err != nil {
+		return nil, err
+	}
+
+	// Mutation phase
+	modelo := m.cofre.criarModelo(nome, campos)
+	m.cofre.modificado = true
+	m.cofre.dataUltimaModificacao = time.Now().UTC()
+
+	return modelo, nil
+}
+
+// RenomearModelo renames a template and re-sorts the template list alphabetically.
+// Per TPL-02, TPL-06, D-23: templates always displayed in alphabetical order.
+// Returns error if name conflicts or validation fails.
+func (m *Manager) RenomearModelo(modelo *ModeloSegredo, novoNome string) error {
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Validation phase
+	if err := modelo.validarRenomear(m.cofre, novoNome); err != nil {
+		return err
+	}
+
+	// Mutation phase
+	modelo.renomear(novoNome)
+	m.cofre.modificado = true
+	m.cofre.dataUltimaModificacao = time.Now().UTC()
+
+	return nil
+}
+
+// ExcluirModelo deletes a template from the vault.
+// Per TPL-04, D-26: templates can be deleted unless referenced by a secret.
+// Returns ErrModeloEmUso if any secret references the template.
+func (m *Manager) ExcluirModelo(modelo *ModeloSegredo) error {
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Validation phase
+	if err := modelo.validarExclusao(m.cofre); err != nil {
+		return err
+	}
+
+	// Mutation phase
+	modelo.excluir(m.cofre)
+	m.cofre.modificado = true
+	m.cofre.dataUltimaModificacao = time.Now().UTC()
+
+	return nil
+}
+
+// AdicionarCampo adds a field to a template at the specified position.
+// Per D-29: "Observação" is a reserved field name and is prohibited.
+// Position is 0-indexed. Position == len(campos) means append.
+// Returns error if position is invalid or field name is reserved.
+func (m *Manager) AdicionarCampo(modelo *ModeloSegredo, nome string, tipo TipoCampo, posicao int) error {
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Validation phase
+	if err := modelo.validarAdicionarCampo(nome, posicao); err != nil {
+		return err
+	}
+
+	// Mutation phase
+	modelo.adicionarCampo(nome, tipo, posicao)
+	m.cofre.modificado = true
+	m.cofre.dataUltimaModificacao = time.Now().UTC()
+
+	return nil
+}
+
+// RemoverCampo removes a field from a template by index.
+// Returns error if index is out of bounds.
+func (m *Manager) RemoverCampo(modelo *ModeloSegredo, indice int) error {
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Validation phase
+	if err := modelo.validarRemoverCampo(indice); err != nil {
+		return err
+	}
+
+	// Mutation phase
+	modelo.removerCampo(indice)
+	m.cofre.modificado = true
+	m.cofre.dataUltimaModificacao = time.Now().UTC()
+
+	return nil
+}
+
+// ReordenarCampo moves a field from one position to another in a template.
+// Both indices must be valid (0 <= index < len(campos)).
+// Returns error if indices are out of bounds.
+func (m *Manager) ReordenarCampo(modelo *ModeloSegredo, indiceOrigem, indiceDestino int) error {
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Validation phase
+	if err := modelo.validarReordenarCampo(indiceOrigem, indiceDestino); err != nil {
+		return err
+	}
+
+	// Mutation phase
+	modelo.reordenarCampo(indiceOrigem, indiceDestino)
+	m.cofre.modificado = true
+	m.cofre.dataUltimaModificacao = time.Now().UTC()
+
+	return nil
+}
+
 // Folder Operations
 
 // CriarPasta creates a new subfolder in the specified parent folder at the given position.

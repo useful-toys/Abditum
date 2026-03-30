@@ -17,4 +17,7 @@ var (
 	ErrSegredoNaoEncontrado = errors.New("segredo não encontrado")
 	ErrCofreBloqueado       = errors.New("cofre está bloqueado")
 	ErrDestinoInvalido      = errors.New("destino inválido para operação")
+	ErrCampoInvalido        = errors.New("índice de campo inválido")
+	ErrModeloEmUso          = errors.New("modelo está em uso por segredos")
+	ErrNomeReservado        = errors.New("nome é reservado e não pode ser usado")
 )
