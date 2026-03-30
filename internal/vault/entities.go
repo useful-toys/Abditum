@@ -260,6 +260,53 @@ func (c *CampoModelo) Tipo() TipoCampo {
 	return c.tipo
 }
 
+// Private entity methods for secret operations
+
+// validarRenomear validates secret rename parameters.
+// Checks: name non-empty, length <= 255, unique in parent folder.
+func (s *Segredo) validarRenomear(novoNome string) error {
+	// Validate name non-empty
+	if novoNome == "" {
+		return ErrNomeVazio
+	}
+
+	// Validate name length <= 255
+	if len(novoNome) > 255 {
+		return ErrNomeMuitoLongo
+	}
+
+	// Validate name unique within parent folder (excluding self)
+	for _, outro := range s.pasta.segredos {
+		if outro != s && outro.nome == novoNome {
+			return ErrNameConflict
+		}
+	}
+
+	return nil
+}
+
+// renomear changes the secret name and returns whether an actual change occurred.
+// Per D-11: marks estadoSessao = Modificado if currently Original.
+// Per D-12: returns (false, nil) if name unchanged (no-op).
+// PRECONDITION: validarRenomear must pass (cannot fail after validation per D-05).
+func (s *Segredo) renomear(novoNome string) (alterado bool, err error) {
+	// Check if name actually changed (D-12)
+	if s.nome == novoNome {
+		return false, nil // No-op
+	}
+
+	// Update name
+	s.nome = novoNome
+
+	// Mark as modified if currently Original (D-11)
+	if s.estadoSessao == EstadoOriginal {
+		s.estadoSessao = EstadoModificado
+	}
+	// Note: EstadoIncluido and EstadoModificado remain unchanged
+
+	return true, nil
+}
+
 // Private entity methods for folder operations
 
 // contemSubpastaComNome checks if a subfolder with the given name exists.

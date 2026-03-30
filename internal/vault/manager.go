@@ -589,3 +589,36 @@ func (m *Manager) ExcluirPasta(pasta *Pasta) ([]Renomeacao, error) {
 
 	return renomeacoes, nil
 }
+
+// Secret content mutation operations
+
+// RenomearSegredo renames a secret within its folder.
+// Per D-11: marks estadoSessao = Modificado if currently Original.
+// Per D-12: no-op if name unchanged (doesn't mark modified).
+// Validates: locked vault, name non-empty, length <= 255, unique in parent.
+func (m *Manager) RenomearSegredo(segredo *Segredo, novoNome string) error {
+	// Validate locked state
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Validate rename parameters
+	if err := segredo.validarRenomear(novoNome); err != nil {
+		return err
+	}
+
+	// Perform rename
+	alterado, err := segredo.renomear(novoNome)
+	if err != nil {
+		return err
+	}
+
+	// Only mark vault modified if actual change occurred (D-12)
+	if alterado {
+		segredo.dataUltimaModificacao = time.Now().UTC()
+		m.cofre.modificado = true
+		m.cofre.dataUltimaModificacao = time.Now().UTC()
+	}
+
+	return nil
+}

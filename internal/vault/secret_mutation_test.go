@@ -16,7 +16,7 @@ func TestRenomearSegredo(t *testing.T) {
 
 	manager := NewManager(cofre, nil)
 
-	pasta, err2 := manager.CriarPasta(cofre.PastaGeral(), "Trabalho", -1)
+	pasta, err2 := manager.CriarPasta(cofre.PastaGeral(), "Trabalho", 0)
 	if err2 != nil {
 		t.Fatalf("Failed to create folder: %v", err2)
 	}
