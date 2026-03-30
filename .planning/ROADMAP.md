@@ -81,7 +81,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — Domain Entities + Factory: Define Cofre, Pasta, Segredo, Modelo, Campo types, EstadoSessao enum, factory functions, error types, comprehensive entity tests
-- [ ] 03-02-PLAN.md — Manager + Cofre Lifecycle: Manager struct, Lock with memory wiping, Salvar with atomic two-phase commit, timestamp tracking, lifecycle tests
+- [x] 03-02-PLAN.md — Manager + Cofre Lifecycle: Manager struct, Lock with memory wiping, Salvar with atomic two-phase commit, timestamp tracking, lifecycle tests
 - [ ] 03-03-PLAN.md — Folder Management: CriarPasta, RenomearPasta, MoverPasta with cycle detection, ExcluirPasta with promotion and conflict resolution, Pasta Geral protection
 - [ ] 03-04-PLAN.md — Template Management: CriarModelo, RenomearModelo, ExcluirModelo with in-use check, field operations (add/remove/reorder), alphabetical ordering, "Observação" prohibition
 - [ ] 03-05-PLAN.md — Secret Lifecycle + State Machine: CriarSegredo, ExcluirSegredo, RestaurarSegredo, FavoritarSegredo, DuplicarSegredo with name progression, estadoSessao transitions
