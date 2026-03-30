@@ -734,3 +734,54 @@ func TestCriarSegredoEstadoInicial(t *testing.T) {
 		t.Error("Expected cofre to be modified after creating secret")
 	}
 }
+
+// TestExcluirSegredoSoftDelete verifies secret deletion follows soft-delete pattern.
+// Per D-14: Delete is reversible until Salvar (estadoSessao transitions based on current state).
+func TestExcluirSegredoSoftDelete(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, nil)
+
+	pastaGeral := cofre.PastaGeral()
+	modelos := cofre.Modelos()
+	var modeloLogin *ModeloSegredo
+	for _, m := range modelos {
+		if m.Nome() == "Login" {
+			modeloLogin = m
+			break
+		}
+	}
+
+	// Create a secret
+	segredo, err := manager.CriarSegredo(pastaGeral, "TestSecret", modeloLogin)
+	if err != nil {
+		t.Fatalf("Failed to create secret: %v", err)
+	}
+
+	// Verify initial state
+	if segredo.EstadoSessao() != EstadoModificado {
+		t.Errorf("Expected EstadoModificado after creation, got %v", segredo.EstadoSessao())
+	}
+
+	// Delete the secret
+	err = manager.ExcluirSegredo(segredo)
+	if err != nil {
+		t.Fatalf("Failed to delete secret: %v", err)
+	}
+
+	// Verify estadoSessao = Excluido (soft delete)
+	if segredo.EstadoSessao() != EstadoExcluido {
+		t.Errorf("Expected EstadoExcluido after deletion, got %v", segredo.EstadoSessao())
+	}
+
+	// Verify cofre.modificado = true
+	if !manager.IsModified() {
+		t.Error("Expected cofre to be modified after deleting secret")
+	}
+
+	// Verify double-delete fails with ErrSegredoJaExcluido
+	err = manager.ExcluirSegredo(segredo)
+	if err != ErrSegredoJaExcluido {
+		t.Errorf("Expected ErrSegredoJaExcluido for double-delete, got %v", err)
+	}
+}
