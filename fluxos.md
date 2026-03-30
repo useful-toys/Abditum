@@ -165,7 +165,24 @@ Só existe quando há um cofre carregado. Descreve o elemento que é o assunto d
 
 ### Modos no Abditum
 
-> ⏳ **Pendente de discussão.** Os modos concretos do Abditum ainda não foram definidos. Questões em aberto incluem: navegação e visualização são modos distintos? Confirmação e progresso são modos ou interrupções temporárias de qualquer modo? Os modos serão identificados e nomeados à medida que os fluxos forem descritos e validados.
+#### Modo do segredo
+
+Define as ações possíveis quando um segredo está no entorno.
+
+| Modo | Descrição |
+|------|-----------|
+| **Visualização** | Leitura do conteúdo; sem alteração de dados |
+| **Edição de valores** | Revisão e modificação dos valores dos campos |
+| **Alteração de estrutura** | Adição, remoção ou reordenação de campos |
+
+#### Modo do cofre
+
+Define as ações possíveis ao trabalhar com o cofre como um todo.
+
+| Modo | Descrição |
+|------|-----------|
+| **Visualização/navegação** | Navegar entre pastas e segredos |
+| **Busca** | Filtragem de segredos por critério |
 
 ---
 
