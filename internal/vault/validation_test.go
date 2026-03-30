@@ -187,3 +187,32 @@ func TestCampoOperacoes(t *testing.T) {
 		t.Errorf("Expected ErrCampoInvalido for invalid reorder index, got: %v", err)
 	}
 }
+
+// TestRenomearModeloNoOp verifies that renaming to same name doesn't mark vault as modified.
+// Per D-12: change detection based on actual value difference.
+func TestRenomearModeloNoOp(t *testing.T) {
+	cofre := NovoCofre()
+	manager := NewManager(cofre, nil)
+
+	// Create a template
+	modelo, err := manager.CriarModelo("Original", []CampoModelo{
+		{nome: "Campo1", tipo: TipoCampoComum},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create template: %v", err)
+	}
+
+	// Mark vault as unmodified (simulate a save)
+	cofre.modificado = false
+
+	// Rename to same name (no-op)
+	err = manager.RenomearModelo(modelo, "Original")
+	if err != nil {
+		t.Errorf("Expected no error for no-op rename, got: %v", err)
+	}
+
+	// Verify vault NOT marked as modified
+	if cofre.Modificado() {
+		t.Errorf("Expected vault to NOT be modified after no-op rename")
+	}
+}

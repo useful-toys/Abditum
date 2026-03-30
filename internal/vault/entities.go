@@ -314,6 +314,45 @@ func (p *Pasta) criarSubpasta(nome string, posicao int) *Pasta {
 	return novaPasta
 }
 
+// validarRenomear validates folder rename parameters.
+// Checks: not Pasta Geral, name non-empty, length <= 255, unique in parent.
+func (p *Pasta) validarRenomear(novoNome string) error {
+	// Check not Pasta Geral
+	if p.pai == nil {
+		return ErrPastaGeralProtected
+	}
+
+	// Validate name non-empty
+	if novoNome == "" {
+		return ErrNomeVazio
+	}
+
+	// Validate name length <= 255
+	if len(novoNome) > 255 {
+		return ErrNomeMuitoLongo
+	}
+
+	// Validate name unique within parent (excluding self)
+	for _, sub := range p.pai.subpastas {
+		if sub != p && sub.nome == novoNome {
+			return ErrNameConflict
+		}
+	}
+
+	return nil
+}
+
+// renomear changes the folder name and returns whether an actual change occurred.
+// Returns (true, nil) if name changed, (false, nil) if no change (same name per D-12).
+// PRECONDITION: validarRenomear must pass (cannot fail after validation per D-05).
+func (p *Pasta) renomear(novoNome string) (alterado bool, err error) {
+	if p.nome == novoNome {
+		return false, nil // No actual change (D-12)
+	}
+	p.nome = novoNome
+	return true, nil
+}
+
 // Factory methods
 
 // NovoCofre creates a new empty vault with Pasta Geral and default configurations.
@@ -481,9 +520,14 @@ func (m *ModeloSegredo) validarRenomear(cofre *Cofre, novoNome string) error {
 
 // renomear changes the template name and re-sorts the template list.
 // Per D-23: templates always sorted alphabetically.
+// Per D-12: returns true if name actually changed, false if no-op.
 // Cannot fail after validation.
-func (m *ModeloSegredo) renomear(novoNome string) {
+func (m *ModeloSegredo) renomear(novoNome string) bool {
+	if m.nome == novoNome {
+		return false // No change
+	}
 	m.nome = novoNome
+	return true // Name changed
 	// Note: Caller (Manager) is responsible for re-sorting if needed.
 	// Since Cofre.Modelos() returns sorted copy, internal order doesn't affect TUI.
 	// We rely on the getter's sort behavior (already implemented).

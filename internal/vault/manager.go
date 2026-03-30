@@ -300,6 +300,7 @@ func (m *Manager) CriarModelo(nome string, campos []CampoModelo) (*ModeloSegredo
 
 // RenomearModelo renames a template and re-sorts the template list alphabetically.
 // Per TPL-02, TPL-06, D-23: templates always displayed in alphabetical order.
+// Per D-12: only marks modified if name actually changes.
 // Returns error if name conflicts or validation fails.
 func (m *Manager) RenomearModelo(modelo *ModeloSegredo, novoNome string) error {
 	if m.bloqueado {
@@ -311,10 +312,11 @@ func (m *Manager) RenomearModelo(modelo *ModeloSegredo, novoNome string) error {
 		return err
 	}
 
-	// Mutation phase
-	modelo.renomear(novoNome)
-	m.cofre.modificado = true
-	m.cofre.dataUltimaModificacao = time.Now().UTC()
+	// Mutation phase (returns true if actually changed)
+	if modelo.renomear(novoNome) {
+		m.cofre.modificado = true
+		m.cofre.dataUltimaModificacao = time.Now().UTC()
+	}
 
 	return nil
 }
@@ -427,4 +429,38 @@ func (m *Manager) CriarPasta(pai *Pasta, nome string, posicao int) (*Pasta, erro
 	m.cofre.dataUltimaModificacao = time.Now().UTC()
 
 	return novaPasta, nil
+}
+
+// RenomearPasta renames a folder with Pasta Geral protection and change detection.
+// Per D-12: Only marks vault as modified if name actually changes (no-op if same name).
+// Returns ErrPastaGeralProtected if attempting to rename Pasta Geral.
+// Validates: not Pasta Geral, name non-empty, length <= 255, unique among siblings.
+func (m *Manager) RenomearPasta(pasta *Pasta, novoNome string) error {
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Check Pasta Geral protection (additional Manager-level check)
+	if pasta == m.cofre.pastaGeral {
+		return ErrPastaGeralProtected
+	}
+
+	// Phase 1: Validate (can fail)
+	if err := pasta.validarRenomear(novoNome); err != nil {
+		return err
+	}
+
+	// Phase 2: Mutate and check if actual change occurred (D-12)
+	alterado, err := pasta.renomear(novoNome)
+	if err != nil {
+		return err // Should never happen after validation per D-05
+	}
+
+	// Only update global state if actual change (D-12)
+	if alterado {
+		m.cofre.modificado = true
+		m.cofre.dataUltimaModificacao = time.Now().UTC()
+	}
+
+	return nil
 }
