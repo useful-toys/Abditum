@@ -273,3 +273,29 @@ func (m *Manager) removerExcluidosRecursivamente(pasta *Pasta) {
 		m.removerExcluidosRecursivamente(subpasta)
 	}
 }
+
+// Folder Operations
+
+// CriarPasta creates a new subfolder in the specified parent folder at the given position.
+// Position semantics (D-22): 0-indexed, position == len means append at end.
+// Validates: name non-empty, length <= 255, unique in parent, valid position [0, len].
+// Marks vault as modified and updates timestamp per D-05.
+func (m *Manager) CriarPasta(pai *Pasta, nome string, posicao int) (*Pasta, error) {
+	if m.bloqueado {
+		return nil, ErrCofreBloqueado
+	}
+
+	// Phase 1: Validate (can fail)
+	if err := pai.validarCriacaoSubpasta(nome, posicao); err != nil {
+		return nil, err
+	}
+
+	// Phase 2: Mutate (cannot fail after validation per D-05)
+	novaPasta := pai.criarSubpasta(nome, posicao)
+
+	// Update global state
+	m.cofre.modificado = true
+	m.cofre.dataUltimaModificacao = time.Now().UTC()
+
+	return novaPasta, nil
+}

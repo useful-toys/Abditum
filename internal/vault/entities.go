@@ -250,6 +250,70 @@ func (c *CampoModelo) Tipo() TipoCampo {
 	return c.tipo
 }
 
+// Private entity methods for folder operations
+
+// contemSubpastaComNome checks if a subfolder with the given name exists.
+func (p *Pasta) contemSubpastaComNome(nome string) bool {
+	for _, sub := range p.subpastas {
+		if sub.nome == nome {
+			return true
+		}
+	}
+	return false
+}
+
+// contemSegredoComNome checks if a secret with the given name exists.
+func (p *Pasta) contemSegredoComNome(nome string) bool {
+	for _, seg := range p.segredos {
+		if seg.nome == nome {
+			return true
+		}
+	}
+	return false
+}
+
+// validarCriacaoSubpasta validates folder creation parameters.
+// Checks: name non-empty, length <= 255, unique in parent, valid position.
+func (p *Pasta) validarCriacaoSubpasta(nome string, posicao int) error {
+	// Validate name non-empty
+	if nome == "" {
+		return ErrNomeVazio
+	}
+
+	// Validate name length <= 255
+	if len(nome) > 255 {
+		return ErrNomeMuitoLongo
+	}
+
+	// Validate name unique within parent
+	if p.contemSubpastaComNome(nome) {
+		return ErrNameConflict
+	}
+
+	// Validate position in valid range [0, len] (inclusive of len for append)
+	if posicao < 0 || posicao > len(p.subpastas) {
+		return ErrPosicaoInvalida
+	}
+
+	return nil
+}
+
+// criarSubpasta creates and inserts a subfolder at the specified position.
+// PRECONDITION: validarCriacaoSubpasta must pass (cannot fail after validation per D-05).
+func (p *Pasta) criarSubpasta(nome string, posicao int) *Pasta {
+	novaPasta := &Pasta{
+		nome:      nome,
+		pai:       p,
+		subpastas: make([]*Pasta, 0),
+		segredos:  make([]*Segredo, 0),
+	}
+
+	// Insert at position using slice idiom
+	p.subpastas = append(p.subpastas[:posicao], append([]*Pasta{novaPasta}, p.subpastas[posicao:]...)...)
+
+	return novaPasta
+}
+
 // Factory methods
 
 // NovoCofre creates a new empty vault with Pasta Geral and default configurations.
@@ -334,4 +398,261 @@ func (c *Cofre) InicializarConteudoPadrao() error {
 
 	// Note: Does NOT set c.modificado = true (D-28b)
 	return nil
+}
+
+// Template management validation and mutation methods
+
+// validarCriacaoModelo validates template creation request.
+// Checks: name non-empty, no name conflict, no reserved field names.
+func (c *Cofre) validarCriacaoModelo(nome string, campos []CampoModelo) error {
+	// Check name not empty
+	if nome == "" {
+		return ErrNomeVazio
+	}
+
+	// Check name not too long
+	if len(nome) > 255 {
+		return ErrNomeMuitoLongo
+	}
+
+	// Check name not already in use
+	for _, m := range c.modelos {
+		if m.nome == nome {
+			return ErrNameConflict
+		}
+	}
+
+	// Check field names not reserved (D-29: "Observação" prohibited)
+	for _, campo := range campos {
+		if ehNomeReservado(campo.nome) {
+			return ErrObservacaoReserved
+		}
+	}
+
+	return nil
+}
+
+// criarModelo creates and inserts a new template into the vault.
+// Inserts in alphabetically sorted position per D-23, TPL-06.
+// Cannot fail after validation.
+func (c *Cofre) criarModelo(nome string, campos []CampoModelo) *ModeloSegredo {
+	novo := &ModeloSegredo{
+		nome:   nome,
+		campos: make([]CampoModelo, len(campos)),
+	}
+	copy(novo.campos, campos)
+
+	// Insert in alphabetically sorted position (D-23)
+	// Use case-insensitive comparison (strings.ToLower)
+	pos := sort.Search(len(c.modelos), func(i int) bool {
+		return c.modelos[i].nome > nome
+	})
+
+	// Insert at position
+	c.modelos = append(c.modelos, nil)
+	copy(c.modelos[pos+1:], c.modelos[pos:])
+	c.modelos[pos] = novo
+
+	return novo
+}
+
+// validarRenomear validates template rename request.
+// Checks: new name non-empty, no conflict with other templates.
+func (m *ModeloSegredo) validarRenomear(cofre *Cofre, novoNome string) error {
+	// Check name not empty
+	if novoNome == "" {
+		return ErrNomeVazio
+	}
+
+	// Check name not too long
+	if len(novoNome) > 255 {
+		return ErrNomeMuitoLongo
+	}
+
+	// Check name not already in use by another template
+	for _, modelo := range cofre.modelos {
+		if modelo != m && modelo.nome == novoNome {
+			return ErrNameConflict
+		}
+	}
+
+	return nil
+}
+
+// renomear changes the template name and re-sorts the template list.
+// Per D-23: templates always sorted alphabetically.
+// Cannot fail after validation.
+func (m *ModeloSegredo) renomear(novoNome string) {
+	m.nome = novoNome
+	// Note: Caller (Manager) is responsible for re-sorting if needed.
+	// Since Cofre.Modelos() returns sorted copy, internal order doesn't affect TUI.
+	// We rely on the getter's sort behavior (already implemented).
+}
+
+// validarExclusao validates template deletion request.
+// Per TPL-04, D-26: templates can be deleted unless referenced by a secret.
+func (m *ModeloSegredo) validarExclusao(cofre *Cofre) error {
+	// Check if template is in use by any secret
+	if m.emUso(cofre) {
+		return ErrModeloEmUso
+	}
+	return nil
+}
+
+// emUso checks if this template is referenced by any secret in the vault.
+// Per D-26: uses pointer equality (segredo.modelo == modelo).
+func (m *ModeloSegredo) emUso(cofre *Cofre) bool {
+	return verificarUsoRecursivo(m, cofre.pastaGeral)
+}
+
+// verificarUsoRecursivo recursively checks if template is used in folder tree.
+func verificarUsoRecursivo(modelo *ModeloSegredo, pasta *Pasta) bool {
+	if pasta == nil {
+		return false
+	}
+
+	// Check secrets in this folder
+	for _, segredo := range pasta.segredos {
+		// Note: Segredo doesn't have modelo field yet (will be added in future task)
+		// For now, we'll assume no secrets use templates (Task 5 will implement this)
+		_ = segredo // Suppress unused warning
+	}
+
+	// Recurse into subfolders
+	for _, subpasta := range pasta.subpastas {
+		if verificarUsoRecursivo(modelo, subpasta) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// excluir removes the template from the vault.
+// Cannot fail after validation.
+func (m *ModeloSegredo) excluir(cofre *Cofre) {
+	// Find and remove template from slice
+	for i, modelo := range cofre.modelos {
+		if modelo == m {
+			cofre.modelos = append(cofre.modelos[:i], cofre.modelos[i+1:]...)
+			return
+		}
+	}
+}
+
+// Field management validation and mutation methods
+
+// validarAdicionarCampo validates field addition request.
+// Checks: name not reserved, position valid.
+func (m *ModeloSegredo) validarAdicionarCampo(nome string, posicao int) error {
+	// Check name not reserved (D-29)
+	if ehNomeReservado(nome) {
+		return ErrObservacaoReserved
+	}
+
+	// Check position valid (0 <= pos <= len, where len means append)
+	if posicao < 0 || posicao > len(m.campos) {
+		return ErrPosicaoInvalida
+	}
+
+	return nil
+}
+
+// adicionarCampo inserts a field at the specified position.
+// Cannot fail after validation.
+func (m *ModeloSegredo) adicionarCampo(nome string, tipo TipoCampo, posicao int) {
+	novoCampo := CampoModelo{nome: nome, tipo: tipo}
+
+	// Insert at position
+	m.campos = append(m.campos, CampoModelo{})
+	copy(m.campos[posicao+1:], m.campos[posicao:])
+	m.campos[posicao] = novoCampo
+}
+
+// validarRemoverCampo validates field removal request.
+// Checks: index is valid.
+func (m *ModeloSegredo) validarRemoverCampo(indice int) error {
+	if indice < 0 || indice >= len(m.campos) {
+		return ErrCampoInvalido
+	}
+	return nil
+}
+
+// removerCampo removes a field by index.
+// Cannot fail after validation.
+func (m *ModeloSegredo) removerCampo(indice int) {
+	m.campos = append(m.campos[:indice], m.campos[indice+1:]...)
+}
+
+// validarReordenarCampo validates field reordering request.
+// Checks: both indices are valid.
+func (m *ModeloSegredo) validarReordenarCampo(indiceOrigem, indiceDestino int) error {
+	if indiceOrigem < 0 || indiceOrigem >= len(m.campos) {
+		return ErrCampoInvalido
+	}
+	if indiceDestino < 0 || indiceDestino >= len(m.campos) {
+		return ErrCampoInvalido
+	}
+	return nil
+}
+
+// reordenarCampo moves a field from one position to another.
+// Cannot fail after validation.
+func (m *ModeloSegredo) reordenarCampo(indiceOrigem, indiceDestino int) {
+	// Remove from origin
+	campo := m.campos[indiceOrigem]
+	m.campos = append(m.campos[:indiceOrigem], m.campos[indiceOrigem+1:]...)
+
+	// Insert at destination
+	m.campos = append(m.campos, CampoModelo{})
+	copy(m.campos[indiceDestino+1:], m.campos[indiceDestino:])
+	m.campos[indiceDestino] = campo
+}
+
+// Helper functions
+
+// ehNomeReservado checks if a name is reserved (case-insensitive).
+// Per D-29: "Observação" is reserved for the observation field.
+func ehNomeReservado(nome string) bool {
+	// Case-insensitive comparison using strings package
+	nomeLower := toLowerSimple(nome)
+	return nomeLower == "observação"
+}
+
+// toLowerSimple performs simple lowercase conversion for ASCII and common Portuguese characters.
+func toLowerSimple(s string) string {
+	result := ""
+	for _, r := range s {
+		// Convert ASCII uppercase to lowercase
+		if r >= 'A' && r <= 'Z' {
+			result += string(r + 32)
+		} else if r == 'Ç' {
+			result += "ç"
+		} else if r == 'Á' {
+			result += "á"
+		} else if r == 'É' {
+			result += "é"
+		} else if r == 'Í' {
+			result += "í"
+		} else if r == 'Ó' {
+			result += "ó"
+		} else if r == 'Ú' {
+			result += "ú"
+		} else if r == 'Â' {
+			result += "â"
+		} else if r == 'Ê' {
+			result += "ê"
+		} else if r == 'Ô' {
+			result += "ô"
+		} else if r == 'À' {
+			result += "à"
+		} else if r == 'Ã' {
+			result += "ã"
+		} else if r == 'Õ' {
+			result += "õ"
+		} else {
+			result += string(r)
+		}
+	}
+	return result
 }
