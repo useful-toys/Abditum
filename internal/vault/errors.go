@@ -26,4 +26,5 @@ var (
 	ErrSegredoInvalido        = errors.New("segredo inválido ou nulo")
 	ErrSegredoJaExcluido      = errors.New("segredo já está marcado como excluído")
 	ErrSegredoNaoExcluido     = errors.New("segredo não está marcado como excluído")
+	ErrObservacaoMuitoLonga   = errors.New("observação excede 1000 caracteres")
 )

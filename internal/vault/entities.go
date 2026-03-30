@@ -344,6 +344,30 @@ func (s *Segredo) editarCampo(indice int, novoValor []byte) (alterado bool, err 
 	return true, nil
 }
 
+// editarObservacao updates the observação field and returns whether an actual change occurred.
+// Per D-11: marks estadoSessao = Modificado if currently Original.
+// Per D-12: returns (false, nil) if value unchanged (no-op).
+// Per D-29: observação is separate field, not in campos slice.
+// PRECONDITION: validation must pass (cannot fail after validation per D-05).
+func (s *Segredo) editarObservacao(novoTexto string) (alterado bool, err error) {
+	// Check if value actually changed (D-12)
+	textoAtual := string(s.observacao.valor)
+	if textoAtual == novoTexto {
+		return false, nil // No-op
+	}
+
+	// Update observação value (convert string to []byte)
+	s.observacao.valor = []byte(novoTexto)
+
+	// Mark as modified if currently Original (D-11)
+	if s.estadoSessao == EstadoOriginal {
+		s.estadoSessao = EstadoModificado
+	}
+	// Note: EstadoIncluido and EstadoModificado remain unchanged
+
+	return true, nil
+}
+
 // Private entity methods for folder operations
 
 // contemSubpastaComNome checks if a subfolder with the given name exists.

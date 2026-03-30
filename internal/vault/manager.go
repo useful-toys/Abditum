@@ -799,3 +799,35 @@ func (m *Manager) EditarCampoSegredo(segredo *Segredo, indice int, novoValor []b
 
 	return nil
 }
+
+// EditarObservacao edits the observação field of a secret.
+// Per D-11: marks estadoSessao = Modificado if currently Original.
+// Per D-12: no-op if value unchanged (doesn't mark modified).
+// Per D-29: observação is separate field, not in campos slice.
+// Validates: locked vault, length <= 1000 chars.
+func (m *Manager) EditarObservacao(segredo *Segredo, novoTexto string) error {
+	// Validate locked state
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Validate length <= 1000 chars
+	if len(novoTexto) > 1000 {
+		return ErrObservacaoMuitoLonga
+	}
+
+	// Perform edit
+	alterado, err := segredo.editarObservacao(novoTexto)
+	if err != nil {
+		return err
+	}
+
+	// Only mark vault modified if actual change occurred (D-12)
+	if alterado {
+		segredo.dataUltimaModificacao = time.Now().UTC()
+		m.cofre.modificado = true
+		m.cofre.dataUltimaModificacao = time.Now().UTC()
+	}
+
+	return nil
+}
