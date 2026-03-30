@@ -54,23 +54,25 @@ Em termos de granularidade: **casos de uso ⊂ fluxos ⊂ cenários BDD**. Cada 
 
 ## Conceitos de contexto
 
-Para descrever com precisão quando um fluxo pode ser iniciado, usamos o conceito de **contexto**: o conjunto de condições verdadeiras no momento em que o fluxo começa. O contexto descreve *o estado do mundo*, não o caminho percorrido. Um mesmo estado pode ser alcançado por múltiplos caminhos, e o fluxo comporta-se identicamente.
+Para descrever com precisão quando um fluxo pode ser iniciado, usamos o conceito de **contexto**: o conjunto de condições verdadeiras no momento em que o fluxo começa. O contexto descreve *o estado lógico do sistema visível para o usuário*, e não o caminho percorrido pelo usuário. Um mesmo estado lógico pode ser alcançado por múltiplos caminhos, e o fluxos estarão dipsoníveis e se comportarão de acordo com o estado lógico, independentemente do caminho percorrido até então.
 
-O contexto é composto por sete dimensões: **foco**, **contexto implícito ao foco**, **entorno local**, **entorno global**, **modo**, **estado do cofre** e **estado das entidades**. As quatro primeiras são conceitos de navegação e se somam em ordem decrescente de especificidade; o modo descreve o comportamento do entorno; as duas últimas são o estado concreto dos dados.
+O contexto é composto por cinco dimensões: **foco**, **contexto implícito ao foco**, **entorno local**, **entorno global**, **estado das entidades** que estão no contexto. As quatro primeiras são conceitos de navegação e se somam em ordem decrescente de especificidade; a última o estado concreto dos dados.
+
+O contexto é formado por elementos que informam ou descrevem o estado lógico do sistema. Podem ser entidades, podem ser objetos de dados, podem ser flags. Jamais falaremos de elementos de UI no contexto, pois a UI é o estado visual e não o estado lógico da aplicação.
 
 ### Foco
 
-O **foco** é o elemento que é o *assunto do momento* — aquilo com o qual o usuário está trabalhando no instante em que o fluxo é iniciado. O foco deve ser compreendido de forma completamente independente de como o usuário chegou até ele: dois caminhos diferentes podem levar ao mesmo foco, e uma vez lá, o fluxo se comporta de forma idêntica.
+O **foco** é o elemento que é o *assunto do momento* no estado lógico visível para o usuário — aquilo com o qual o usuário está trabalhando no instante em que o fluxo é iniciado. Normalmente, a UI destaca o foco de alguma forma, mas o foco é um conceito lógico, não visual. Entede-se que a UI irá disponibilizar ações relevantes para o foco, o comportamento das ações é especificado pelos fluxos.
 
-**Nota importante:** pode não haver um foco no momento. A interface pode estar visível (exibindo o entorno, opções, elementos auxiliares) mas o usuário ainda não interagiu com nenhum elemento específico. Nesse caso, o contexto é descrito como "sem foco".
+O foco deve ser compreendido de forma completamente independente de como o usuário chegou até ele: dois caminhos diferentes podem levar ao mesmo foco, e uma vez lá, o fluxo se comporta de forma idêntica.
+
+**Nota importante:** pode não haver um foco no momento. A interface pode estar visível mas o usuário ainda não interagiu com nenhum elemento específico. Nesse caso, o contexto é descrito como "sem foco".
 
 #### Contexto implícito ao foco
 
-Quando um elemento está em foco, outros elementos podem estar implicitamente em contexto também. São elementos fortemente relacionados — tão fortemente que um não se separa do outro. O contexto implícito não é uma decisão do designer; é uma consequência lógica da estrutura do sistema.
+Quando um elemento está em foco, dizemos que o elementos está no contexto. Outros elementos também podem estar implicitamente em contexto. São elementos fortemente relacionados — tão fortemente que um não se separa do outro. O contexto implícito não é uma decisão do designer; é uma consequência lógica da estrutura do sistema.
 
-No caso mais concreto que temos — elementos em **hierarquia de árvore** — quando um elemento está em foco, seus ancestrais estão implicitamente em contexto também, porque um elemento não pode existir sem seu container. O pai é parte indissolúvel do contexto do filho.
-
-O contexto implícito nunca é declarado nas pré-condições dos fluxos; é determinado automaticamente pela estrutura. Um ancestral está em contexto porque seu descendente é o foco explícito — não porque foi colocado em foco separadamente.
+No caso mais concreto que temos — elementos em **hierarquia de árvore** — quando um elemento está em foco, seus ancestrais estão implicitamente em contexto também, porque um elemento não pode existir sem seu container. O pai é parte indissolúvel do contexto do filho. O contexto não distingue um elemento do foco dos elementos implícitos, mas o elemento do foco tem mais prioridade que os implícitos.
 
 **Nota importante:** o contexto implícito existe no nível lógico da especificação mas não necessariamente está visível para o usuário. Um ancestral pode estar em contexto sem que a UI o destaque visualmente. O que importa para os fluxos é que o contexto implícito existe logicamente, afetando quais ações são aplicáveis.
 
