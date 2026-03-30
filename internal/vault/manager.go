@@ -1,6 +1,8 @@
 package vault
 
 import (
+	"time"
+
 	"github.com/useful-toys/abditum/internal/crypto"
 )
 
@@ -49,6 +51,34 @@ func (m *Manager) IsModified() bool {
 		return false
 	}
 	return m.cofre.modificado
+}
+
+// AlterarConfiguracoes updates vault timer settings.
+// Per D-20: All timers are mandatory (must be > 0).
+// Returns ErrConfigInvalida if any timer is <= 0.
+// Marks vault as modified and updates timestamp.
+func (m *Manager) AlterarConfiguracoes(novasConfig Configuracoes) error {
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Validate all timers > 0 (VAULT-17: all mandatory)
+	if novasConfig.tempoBloqueioInatividadeMinutos <= 0 {
+		return ErrConfigInvalida
+	}
+	if novasConfig.tempoOcultarSegredoSegundos <= 0 {
+		return ErrConfigInvalida
+	}
+	if novasConfig.tempoLimparAreaTransferenciaSegundos <= 0 {
+		return ErrConfigInvalida
+	}
+
+	// Update configuration
+	m.cofre.configuracoes = novasConfig
+	m.cofre.modificado = true
+	m.cofre.dataUltimaModificacao = time.Now().UTC()
+
+	return nil
 }
 
 // Lock securely locks the vault by wiping sensitive data from memory.
