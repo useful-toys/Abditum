@@ -56,7 +56,7 @@ Em termos de granularidade: **casos de uso ⊂ fluxos ⊂ cenários BDD**. Cada 
 
 Para descrever com precisão quando um fluxo pode ser iniciado, usamos o conceito de **contexto**: o conjunto de condições verdadeiras no momento em que o fluxo começa. O contexto descreve *o estado do mundo*, não o caminho percorrido. Um mesmo estado pode ser alcançado por múltiplos caminhos, e o fluxo comporta-se identicamente.
 
-O contexto é composto por cinco dimensões: **foco**, **entorno**, **modo**, **estado do cofre** e **estado das entidades**. As três primeiras são conceitos abstratos de navegação; as duas últimas são o estado concreto dos dados.
+O contexto é composto por sete dimensões: **foco**, **contexto implícito ao foco**, **entorno local**, **entorno global**, **modo**, **estado do cofre** e **estado das entidades**. As quatro primeiras são conceitos de navegação e se somam em ordem decrescente de especificidade; o modo descreve o comportamento do entorno; as duas últimas são o estado concreto dos dados.
 
 ### Foco
 
@@ -74,15 +74,25 @@ O contexto implícito nunca é declarado nas pré-condições dos fluxos; é det
 
 **Nota importante:** o contexto implícito existe no nível lógico da especificação mas não necessariamente está visível para o usuário. Um ancestral pode estar em contexto sem que a UI o destaque visualmente. O que importa para os fluxos é que o contexto implícito existe logicamente, afetando quais ações são aplicáveis.
 
-### Entorno
+### Entorno local
 
-O **entorno** é o conjunto de elementos adicionais presentes no contexto — elementos de dados ou lógicos que facilitam as tarefas do usuário.
+O **entorno local** é o conjunto de elementos adicionais presentes no contexto em função do foco — elementos de dados ou lógicos que facilitam as tarefas do usuário quando um determinado elemento está em foco.
 
-O entorno não é inerente ao sistema; é uma escolha do designer. É composto por elementos que não são o foco (o assunto principal) mas que estão presentes porque o foco existe. Podem ser: dados relacionados, opções disponíveis em função do foco, listas de candidatos, contexto histórico — toda informação que o designer escolhe tornar relevante.
+O entorno local não é inerente ao sistema; é uma escolha do designer. É composto por elementos que não são o foco (o assunto principal) mas que estão presentes porque o foco existe. Podem ser: dados relacionados, opções disponíveis em função do foco, listas de candidatos, contexto histórico — toda informação que o designer escolhe tornar relevante ao foco atual.
 
-**Importante:** o entorno é composto por elementos de dados e lógica, não elementos de UX. Como apresentar o entorno (qual tela, painel, menu) é decisão separada de design, feita posteriormente. O entorno descreve *o que está contextualmente relevante*, não *como é apresentado*.
+**Importante:** o entorno local é composto por elementos de dados e lógica, não elementos de UX. Como apresentar o entorno local (qual tela, painel, menu) é decisão separada de design, feita posteriormente. O entorno local descreve *o que está contextualmente relevante*, não *como é apresentado*.
 
-Um mesmo foco pode ter diferentes entornos conforme as decisões de design. O que importa para os fluxos é que o entorno influencia quais ações estão disponíveis — mas os fluxos **não declaram o entorno explicitamente** nas pré-condições. O entorno é uma consequência do contexto, definida durante o design de UI.
+Um mesmo foco pode ter diferentes entornos locais conforme as decisões de design. O que importa para os fluxos é que o entorno local influencia quais ações estão disponíveis — mas os fluxos **não declaram o entorno local explicitamente** nas pré-condições. O entorno local é uma consequência do contexto, definida durante o design de UI.
+
+#### Entorno global
+
+Alguns sistemas têm elementos de contexto presentes independentemente do foco — dados que existem e habilitam ações durante toda a sessão, não porque um elemento específico está em foco, mas porque a aplicação está em determinado estado. Esses elementos constituem o **entorno global**.
+
+O entorno global habilita fluxos que não dependem de nenhum foco em particular. Exemplos genéricos: em um sistema com conta de usuário, o perfil do usuário autenticado é entorno global — habilita fluxos como editar perfil ou alterar senha independentemente do que estiver em foco.
+
+Ao contrário do entorno local, o entorno global **é declarado explicitamente** no contexto necessário dos fluxos que dele dependem — pois sua presença ou ausência é uma pré-condição real, não uma consequência resolvida durante o design de UI.
+
+**No Abditum:** o cofre carregado é o entorno global da sessão. Enquanto um cofre está carregado, seus dados e estado estão presentes no contexto independentemente do foco atual — habilitando fluxos como salvar, bloquear, fechar e configurar o cofre, que não dependem de nenhum elemento específico estar em foco.
 
 ### Modo
 
@@ -104,11 +114,12 @@ O modo é o aspecto do entorno mais diretamente relevante para determinar quais 
 Cada fluxo declara qual contexto é necessário para ser iniciado. O contexto necessário é tipicamente composto por condições sobre as seguintes dimensões — todas opcionais, usadas apenas quando relevantes para o fluxo:
 
 - **Foco** *(opcional, mas muito comum)*: qual elemento ou tipo de elemento é o assunto do momento. Ex: "segredo em foco", "campo em foco".
+- **Entorno global**: qual entorno global deve estar presente. Ex: "cofre carregado no entorno". Ao contrário do entorno local, o entorno global é declarado explicitamente — sua presença é uma pré-condição real do fluxo.
 - **Modo**: qual comportamento está ativo no entorno. Ex: "modo visualização", "modo edição".
-- **Estado do cofre**: condições sobre os dados do cofre. Ex: "cofre alterado", "cofre inalterado".
-- **Estado das entidades**: condições sobre elementos específicos. Ex: "segredo não está `excluido`", "cofre carregado".
+- **Estado do cofre**: condições sobre os dados do cofre. Ex: "cofre `alterado`", "cofre `inalterado`".
+- **Estado das entidades**: condições sobre elementos específicos. Ex: "segredo não está `excluido`".
 
-O entorno não é declarado — é uma consequência do contexto, resolvida durante o design de UI.
+O entorno local não é declarado — é uma consequência do foco, resolvida durante o design de UI.
 
 Se o contexto necessário não for integralmente atendido, o fluxo não pode ser iniciado.
 
@@ -197,93 +208,81 @@ Cada fluxo é composto por:
 
 ---
 
-## Fluxo 1 — Iniciar a Aplicação
+## Fluxo 1 — Abrir Cofre Existente
 
-**Contexto necessário:** nenhum cofre carregado.
+**Contexto necessário:** nenhum. O fluxo é aplicável independentemente de haver ou não um cofre carregado.
 
-**Passos:**
+**Nota sobre a UX atual:** a interface não oferece o gesto de abrir cofre enquanto há um cofre carregado. Essa é uma restrição de UX, não do fluxo — o fluxo em si não impõe essa limitação.
 
-1. O usuário executa o binário.
-2. Se um caminho de arquivo foi fornecido como argumento:
-   - Se o arquivo existe → prossegue para o **Fluxo 2: Abrir Cofre**.
-   - Se o arquivo não existe → o sistema comunica o erro e a aplicação encerra.
-3. Se nenhum argumento foi fornecido → o sistema apresenta as opções: criar novo cofre ou abrir cofre existente.
-   - Se o usuário escolhe criar → prossegue para o **Fluxo 3: Criar Novo Cofre**.
-   - Se o usuário escolhe abrir → o usuário informa o caminho do arquivo e prossegue para o **Fluxo 2: Abrir Cofre**.
-
-**Contexto resultante:**
-- Arquivo não encontrado → aplicação encerrada.
-- Usuário escolhe criar → contexto do **Fluxo 3**.
-- Usuário informa caminho → contexto do **Fluxo 2**.
-
----
-
-## Fluxo 2 — Abrir Cofre Existente
-
-**Contexto necessário:** nenhum cofre carregado + caminho de arquivo conhecido.
-
-O caminho pode ter chegado de qualquer forma: argumento de linha de comando, escolha no Fluxo 1, ou retorno de um bloqueio — neste último caso o caminho já está preenchido com o arquivo que estava aberto anteriormente.
+**Entrada antecipada via argumento de linha de comando:** se a aplicação for iniciada com um caminho de arquivo como argumento, o fluxo começa com o caminho já preenchido. O sistema verifica imediatamente se o arquivo é reconhecido como cofre válido — se sim, avança direto para a solicitação de senha (passo 2); se não, comunica o erro e o usuário permanece no passo 1 para rever o caminho.
 
 **Passos:**
 
-1. O sistema verifica se o arquivo é reconhecido como um cofre válido.
-   - Se não for reconhecido → o sistema comunica o erro e a aplicação encerra. Sem nova tentativa.
-2. O sistema solicita a senha mestra. O usuário a informa.
-3. O sistema verifica a senha.
+1. O usuário informa o caminho do arquivo do cofre. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se o arquivo não for reconhecido como cofre válido → o sistema comunica o erro. O usuário pode corrigir o caminho e tentar novamente. Volta ao passo 1.
+2. O sistema solicita a senha mestra. O usuário a informa. O usuário pode desistir e voltar ao passo 1.
    - Se a senha estiver incorreta → o sistema comunica o erro. O usuário pode tentar novamente. Volta ao passo 2.
-4. O sistema verifica a integridade do conteúdo do arquivo.
-   - Se o conteúdo estiver corrompido → o sistema comunica o erro e a aplicação encerra. Sem nova tentativa.
-5. O cofre é carregado.
+3. O sistema verifica a integridade do conteúdo do arquivo.
+   - Se o conteúdo estiver corrompido → o sistema comunica o erro. Volta ao passo 1.
+4. O cofre atual, se houver, é fechado. O novo cofre é carregado.
 
 **Contexto resultante:**
-- Arquivo não reconhecido → aplicação encerrada.
-- Conteúdo corrompido → aplicação encerrada.
+- Fluxo abandonado → contexto inalterado.
 - Sucesso → cofre `inalterado`, pasta Geral em foco.
 
 **Nota:** as mensagens de erro são sempre genéricas — o sistema não informa se o problema foi a senha ou a integridade do arquivo.
 
 ```mermaid
 flowchart TD
-    A([Nenhum cofre carregado\ncaminho conhecido]) --> B{Arquivo\nreconhecido?}
-    B -- Não --> C([Erro — aplicação encerra])
-    B -- Sim --> D[Sistema solicita senha mestra]
-    D --> E{Senha\ncorreta?}
-    E -- Não --> F[Comunica erro\nNova tentativa]
-    F --> D
-    E -- Sim --> G{Conteúdo\níntegro?}
-    G -- Não --> H([Erro — aplicação encerra])
-    G -- Sim --> I([Cofre carregado\nEstado: inalterado])
+    A([Contexto: qualquer]) --> B[Usuário informa caminho do arquivo]
+    B -- Desiste --> Z([Contexto inalterado])
+    B --> C(Arquivo\nreconhecido?)
+    C -- Não --> D[Comunica erro]
+    D --> B
+    C -- Sim --> E[Sistema solicita senha mestra]
+    E -- Volta --> B
+    E --> F(Senha\ncorreta?)
+    F -- Não --> G[Comunica erro\nNova tentativa]
+    G --> E
+    F -- Sim --> H(Conteúdo\níntegro?)
+    H -- Não --> I[Comunica erro]
+    I --> B
+    H -- Sim --> J([Cofre carregado\nEstado: inalterado])
 ```
 
 ---
 
-## Fluxo 3 — Criar Novo Cofre
+## Fluxo 2 — Criar Novo Cofre
 
-**Contexto necessário:** nenhum cofre carregado.
+**Contexto necessário:** nenhum. O fluxo é aplicável independentemente de haver ou não um cofre carregado.
+
+**Nota sobre a UX atual:** a interface não oferece o gesto de criar cofre enquanto há um cofre carregado. Essa é uma restrição de UX, não do fluxo — o fluxo em si não impõe essa limitação.
 
 **Passos:**
 
-1. O usuário informa onde salvar o arquivo do cofre (caminho e nome). A extensão `.abditum` é adicionada automaticamente se omitida.
-2. O sistema solicita a senha mestra. O usuário a informa duas vezes para confirmação.
-3. O sistema verifica se as duas entradas coincidem.
-   - Se não coincidem → o sistema comunica o erro. O usuário tenta novamente. Volta ao passo 2.
-4. O sistema avalia a força da senha.
+1. O usuário informa onde salvar o arquivo do cofre (caminho e nome). A extensão `.abditum` é adicionada automaticamente se omitida. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+2. O sistema solicita a senha mestra. O usuário a informa duas vezes para confirmação. O usuário pode desistir e voltar ao passo 1.
+   - Se as duas entradas não coincidem → o sistema comunica o erro. O usuário tenta novamente. Volta ao passo 2.
+3. O sistema avalia a força da senha.
    - Se a senha for considerada fraca → o sistema comunica os critérios não atendidos e solicita uma decisão: prosseguir mesmo assim ou revisar a senha.
      - Se o usuário escolhe revisar → volta ao passo 2.
-     - Se o usuário escolhe prosseguir → continua para o passo 5.
-5. O cofre é criado com a estrutura inicial e gravado em disco.
+     - Se o usuário escolhe prosseguir → continua para o passo 4.
+4. O cofre atual, se houver, é fechado. O novo cofre é criado com a estrutura inicial e gravado em disco.
 
 **Contexto resultante:**
+- Fluxo abandonado → contexto inalterado.
 - Sucesso → cofre `inalterado`, pasta Geral em foco. Estrutura inicial presente: Pasta Geral com subpastas "Sites e Apps" e "Financeiro"; modelos padrão Login, Cartão de Crédito e Chave de API.
 
 ```mermaid
 flowchart TD
-    A([Nenhum cofre carregado]) --> B[Usuário informa caminho do arquivo]
+    A([Contexto: qualquer]) --> B[Usuário informa caminho do arquivo]
+    B -- Desiste --> Z([Contexto inalterado])
     B --> C[Sistema solicita senha mestra\nduas vezes]
-    C --> D{Senhas\ncoincidem?}
+    C -- Volta --> B
+    C --> D(Senhas\ncoincidem?)
     D -- Não --> E[Comunica erro]
     E --> C
-    D -- Sim --> F{Senha\nforte?}
+    D -- Sim --> F(Senha\nforte?)
     F -- Sim --> G
     F -- Não --> H[Comunica critérios não atendidos\nUsuário decide]
     H -- Revisar --> C
@@ -293,21 +292,106 @@ flowchart TD
 
 ---
 
-## Fluxo 4 — Sair da Aplicação
+## Fluxo 3 — Sair sem cofre aberto
 
-**Contexto necessário:** nenhum — o usuário pode solicitar sair a qualquer momento.
+**Contexto necessário:** nenhum cofre carregado.
 
 **Passos:**
 
 1. O usuário solicita sair.
-2. Se não há cofre carregado, ou o cofre está `inalterado` → a aplicação encerra. Fim.
-3. Se o cofre está `alterado` → o sistema comunica que há alterações não salvas e solicita uma decisão: salvar e sair, descartar e sair, ou cancelar.
-   - Se o usuário escolhe salvar e sair → o cofre é salvo e a aplicação encerra.
-   - Se o usuário escolhe descartar e sair → a aplicação encerra sem salvar.
-   - Se o usuário escolhe cancelar → o fluxo é interrompido e nada muda.
+2. O sistema solicita confirmação.
+   - Se o usuário confirma → a aplicação encerra.
+   - Se o usuário volta → o fluxo é interrompido e nada muda.
 
 **Contexto resultante:**
-- Salvar e sair → aplicação encerrada.
+- Confirmado → aplicação encerrada.
+- Voltou → contexto inalterado.
+
+---
+
+## Fluxo 4 — Sair com cofre aberto sem modificações
+
+**Contexto necessário:** cofre carregado no entorno global; cofre `inalterado`.
+
+**Passos:**
+
+1. O usuário solicita sair.
+2. O sistema solicita confirmação.
+   - Se o usuário confirma → a aplicação encerra.
+   - Se o usuário volta → o fluxo é interrompido e nada muda.
+
+**Contexto resultante:**
+- Confirmado → aplicação encerrada.
+- Voltou → contexto inalterado.
+
+---
+
+## Fluxo 5 — Sair com cofre aberto com modificações
+
+**Contexto necessário:** cofre carregado no entorno global; cofre `alterado`.
+
+**Passos:**
+
+1. O usuário solicita sair.
+2. O sistema comunica que há alterações não salvas e solicita uma decisão: salvar e sair, descartar e sair, ou voltar.
+   - Se o usuário escolhe salvar e sair → o cofre é salvo e a aplicação encerra.
+     - Se o salvamento falhar → o sistema comunica o erro. O cofre permanece carregado e o fluxo é encerrado.
+   - Se o usuário escolhe descartar e sair → a aplicação encerra sem salvar.
+   - Se o usuário escolhe voltar → o fluxo é interrompido e nada muda.
+
+**Contexto resultante:**
+- Salvar e sair (sucesso) → aplicação encerrada.
+- Salvar e sair (falha) → cofre carregado e `alterado`, contexto inalterado.
 - Descartar e sair → aplicação encerrada.
-- Cancelar → contexto inalterado.
-- Se o salvamento falhar → o sistema comunica o erro e o cofre permanece carregado.
+- Voltou → contexto inalterado.
+
+---
+
+## Fluxo 6 — Bloquear cofre
+
+**Contexto necessário:** cofre carregado no entorno global.
+
+**Nota sobre o acionamento:** este fluxo pode ser iniciado pelo usuário (bloqueio manual) ou pelo sistema quando o temporizador de inatividade expira (bloqueio automático). O comportamento é idêntico nos dois casos.
+
+**Nota sobre alterações não salvas:** se houver alterações não salvas, elas são descartadas silenciosamente — sem confirmação. Essa é uma decisão de projeto: o bloqueio por inatividade ocorre em sessão desassistida, e o bloqueio manual pode ter caráter emergencial (proteção contra visualização não autorizada), tornando a confirmação inadequada em ambos os casos.
+
+**Passos:**
+
+1. O cofre é bloqueado: buffers sensíveis são limpos, a área de transferência é limpa e a tela é apagada.
+2. O sistema retorna ao estado sem cofre carregado, com o caminho do cofre recém-bloqueado pré-preenchido para facilitar a reabertura.
+
+**Contexto resultante:**
+- Cofre bloqueado → sem cofre carregado; caminho do cofre pré-preenchido para o Fluxo 1 (Abrir Cofre Existente).
+
+---
+
+## Fluxo 7 — Aviso de bloqueio iminente por inatividade
+
+**Contexto necessário:** cofre carregado no entorno global.
+
+**Nota sobre o acionamento:** este fluxo é iniciado exclusivamente pelo sistema, quando o temporizador de inatividade atinge 75% do tempo configurado. Não é iniciado pelo usuário.
+
+**Passos:**
+
+1. O sistema comunica que o cofre será bloqueado em breve por inatividade.
+
+**Contexto resultante:**
+- Aviso exibido → contexto inalterado.
+
+**Nota:** este fluxo não tem dependência com o Fluxo 8 (Bloqueio automático por inatividade). Qualquer atividade do usuário após o aviso reinicia o temporizador de inatividade, mas isso não é parte deste fluxo — é comportamento contínuo do sistema de temporização.
+
+---
+
+## Fluxo 8 — Bloqueio automático por inatividade
+
+**Contexto necessário:** cofre carregado no entorno global.
+
+**Nota sobre o acionamento:** este fluxo é iniciado exclusivamente pelo sistema, quando o temporizador de inatividade atinge 100% do tempo configurado. Não é iniciado pelo usuário. Não depende de o Fluxo 7 ter ocorrido.
+
+**Passos:**
+
+1. O cofre é bloqueado: buffers sensíveis são limpos, a área de transferência é limpa e a tela é apagada.
+2. O sistema retorna ao estado sem cofre carregado, com o caminho do cofre recém-bloqueado pré-preenchido para facilitar a reabertura.
+
+**Contexto resultante:**
+- Cofre bloqueado → sem cofre carregado; caminho do cofre pré-preenchido para o Fluxo 1 (Abrir Cofre Existente).
