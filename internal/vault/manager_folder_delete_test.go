@@ -276,8 +276,8 @@ func TestExcluirPasta_PastaGeralProtection(t *testing.T) {
 	manager := NewManager(cofre, &mockRepository{})
 
 	_, err := manager.ExcluirPasta(cofre.PastaGeral())
-	if !errors.Is(err, ErrPastaGeralProtected) {
-		t.Errorf("Expected ErrPastaGeralProtected, got %v", err)
+	if !errors.Is(err, ErrPastaGeralNaoExcluivel) {
+		t.Errorf("Expected ErrPastaGeralNaoExcluivel, got %v", err)
 	}
 
 	if manager.IsModified() {

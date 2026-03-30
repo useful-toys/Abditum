@@ -5,6 +5,8 @@ package vault
 
 import (
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -478,6 +480,154 @@ func (p *Pasta) reposicionar(novaPosicao int) (alterado bool, err error) {
 	p.pai.subpastas = append(p.pai.subpastas[:novaPosicao], append([]*Pasta{p}, p.pai.subpastas[novaPosicao:]...)...)
 
 	return true, nil
+}
+
+// encontrarSubpastaPorNome finds a subfolder by name (case-insensitive).
+// Returns the subfolder if found, nil otherwise.
+func (p *Pasta) encontrarSubpastaPorNome(nome string) *Pasta {
+	nomeLower := strings.ToLower(nome)
+	for _, sub := range p.subpastas {
+		if strings.ToLower(sub.nome) == nomeLower {
+			return sub
+		}
+	}
+	return nil
+}
+
+// encontrarSegredoPorNome finds a secret by name (case-insensitive).
+// Returns the secret if found, nil otherwise.
+func (p *Pasta) encontrarSegredoPorNome(nome string) *Segredo {
+	nomeLower := strings.ToLower(nome)
+	for _, seg := range p.segredos {
+		if strings.ToLower(seg.nome) == nomeLower {
+			return seg
+		}
+	}
+	return nil
+}
+
+// gerarNomeSufixado generates a unique name with numeric suffix "(N)" for conflicts.
+// Pattern: "Name (1)", "Name (2)", etc.
+// Checks both secrets and subfolders in the target pasta.
+func gerarNomeSufixado(nomeBase string, pasta *Pasta) string {
+	// Try base name first
+	if pasta.encontrarSegredoPorNome(nomeBase) == nil && pasta.encontrarSubpastaPorNome(nomeBase) == nil {
+		return nomeBase
+	}
+
+	// Generate suffixed names
+	for i := 1; i < 10000; i++ {
+		nomeSufixado := nomeBase + " (" + strconv.Itoa(i) + ")"
+		if pasta.encontrarSegredoPorNome(nomeSufixado) == nil && pasta.encontrarSubpastaPorNome(nomeSufixado) == nil {
+			return nomeSufixado
+		}
+	}
+
+	// Fallback (should never happen)
+	return nomeBase + " (conflict)"
+}
+
+// mesclarPastas recursively merges contents from origem into destino.
+// Handles name conflicts:
+// - Subfolders: recursive merge
+// - Secrets: rename with suffix, track in renomeacoes
+// Returns slice of Renomeacao for renamed secrets.
+func mesclarPastas(origem *Pasta, destino *Pasta) []Renomeacao {
+	renomeacoes := make([]Renomeacao, 0)
+
+	// Merge subfolders (recursive)
+	for _, subOrigem := range origem.subpastas {
+		subDestino := destino.encontrarSubpastaPorNome(subOrigem.nome)
+		if subDestino != nil {
+			// Conflict: merge recursively
+			renomRecursivas := mesclarPastas(subOrigem, subDestino)
+			renomeacoes = append(renomeacoes, renomRecursivas...)
+		} else {
+			// No conflict: move subfolder
+			subOrigem.pai = destino
+			destino.subpastas = append(destino.subpastas, subOrigem)
+		}
+	}
+
+	// Merge secrets
+	for _, segredo := range origem.segredos {
+		if destino.encontrarSegredoPorNome(segredo.nome) != nil {
+			// Conflict: rename
+			nomeOriginal := segredo.nome
+			segredo.nome = gerarNomeSufixado(nomeOriginal, destino)
+			renomeacoes = append(renomeacoes, Renomeacao{
+				Antigo: nomeOriginal,
+				Novo:   segredo.nome,
+				Pasta:  destino.nome,
+			})
+		}
+		// Move secret
+		segredo.pasta = destino
+		destino.segredos = append(destino.segredos, segredo)
+	}
+
+	return renomeacoes
+}
+
+// validarExclusao validates that a folder can be deleted.
+// Pasta Geral cannot be deleted.
+func (p *Pasta) validarExclusao() error {
+	if p.pai == nil {
+		return ErrPastaGeralNaoExcluivel
+	}
+	return nil
+}
+
+// excluir removes this pasta from its parent and promotes all children (secrets and subfolders) to the parent.
+// Handles name conflicts:
+// - Subfolders: recursive merge via mesclarPastas
+// - Secrets: rename with suffix, track in renomeacoes
+// Per FOLDER-05: Secrets with EstadoExcluido retain that state when promoted.
+// Per D-27: Hard delete (immediate removal).
+// Returns slice of Renomeacao for renamed secrets.
+func (p *Pasta) excluir(pai *Pasta) []Renomeacao {
+	renomeacoes := make([]Renomeacao, 0)
+
+	// Promote subfolders (with conflict resolution)
+	for _, sub := range p.subpastas {
+		existente := pai.encontrarSubpastaPorNome(sub.nome)
+		if existente != nil {
+			// Conflict: merge recursively
+			renomRecursivas := mesclarPastas(sub, existente)
+			renomeacoes = append(renomeacoes, renomRecursivas...)
+		} else {
+			// No conflict: move subfolder
+			sub.pai = pai
+			pai.subpastas = append(pai.subpastas, sub)
+		}
+	}
+
+	// Promote secrets (with conflict resolution)
+	for _, segredo := range p.segredos {
+		if pai.encontrarSegredoPorNome(segredo.nome) != nil {
+			// Conflict: rename
+			nomeOriginal := segredo.nome
+			segredo.nome = gerarNomeSufixado(nomeOriginal, pai)
+			renomeacoes = append(renomeacoes, Renomeacao{
+				Antigo: nomeOriginal,
+				Novo:   segredo.nome,
+				Pasta:  pai.nome,
+			})
+		}
+		// Move secret (EstadoExcluido retained per FOLDER-05)
+		segredo.pasta = pai
+		pai.segredos = append(pai.segredos, segredo)
+	}
+
+	// Remove this pasta from parent
+	for i, subpasta := range pai.subpastas {
+		if subpasta == p {
+			pai.subpastas = append(pai.subpastas[:i], pai.subpastas[i+1:]...)
+			break
+		}
+	}
+
+	return renomeacoes
 }
 
 // Factory methods

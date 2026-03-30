@@ -561,3 +561,31 @@ func (m *Manager) DescerPastaNaPosicao(pasta *Pasta) error {
 	// Move to position + 1
 	return m.ReposicionarPasta(pasta, posicaoAtual+1)
 }
+
+// ExcluirPasta deletes a folder and promotes its children (secrets and subfolders) to the parent folder.
+// Handles name conflicts automatically:
+// - Subfolders with conflicting names: merge contents recursively
+// - Secrets with conflicting names: rename with numeric suffix "(N)" and track in returned slice
+// Per FOLDER-05: Secrets with EstadoExcluido retain that state when promoted.
+// Per D-27: Hard delete (immediate removal from hierarchy).
+// Returns slice of Renomeacao to inform TUI which secrets were renamed.
+// Validates: locked vault, Pasta Geral protection.
+func (m *Manager) ExcluirPasta(pasta *Pasta) ([]Renomeacao, error) {
+	// Validate locked state
+	if m.bloqueado {
+		return nil, ErrCofreBloqueado
+	}
+
+	// Validate not Pasta Geral
+	if err := pasta.validarExclusao(); err != nil {
+		return nil, err
+	}
+
+	// Perform deletion with promotion and conflict resolution
+	renomeacoes := pasta.excluir(pasta.pai)
+
+	// Mark vault as modified
+	m.cofre.modificado = true
+
+	return renomeacoes, nil
+}
