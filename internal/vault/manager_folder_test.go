@@ -513,3 +513,226 @@ func TestMoverPasta_WhenLocked(t *testing.T) {
 		t.Errorf("Expected ErrCofreBloqueado, got %v", err)
 	}
 }
+
+// Task 4 Tests: Repositioning
+
+func TestReposicionarPasta_Success(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao() // Creates "Sites e Apps" (0) and "Financeiro" (1)
+	manager := NewManager(cofre, &mockRepository{})
+
+	// Create third folder
+	manager.CriarPasta(cofre.PastaGeral(), "Terceiro", 2)
+
+	// Clear modified flag
+	cofre.modificado = false
+
+	// Get folders
+	subpastas := cofre.PastaGeral().Subpastas()
+	financeiro := subpastas[1] // Currently at position 1
+
+	// Move Financeiro from position 1 to position 2
+	err := manager.ReposicionarPasta(financeiro, 2)
+	if err != nil {
+		t.Fatalf("ReposicionarPasta failed: %v", err)
+	}
+
+	// Verify position changed
+	subpastasAfter := cofre.PastaGeral().Subpastas()
+	if subpastasAfter[2] != financeiro {
+		t.Error("Financeiro should be at position 2")
+	}
+
+	if !manager.IsModified() {
+		t.Error("Vault should be marked modified after reposition")
+	}
+}
+
+func TestReposicionarPasta_CurrentPosition_NoOp(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+
+	subpastas := cofre.PastaGeral().Subpastas()
+	sitesEApps := subpastas[0]
+
+	// Reposition to current position (no-op per D-12, D-23)
+	err := manager.ReposicionarPasta(sitesEApps, 0)
+	if err != nil {
+		t.Fatalf("ReposicionarPasta to current position should not fail: %v", err)
+	}
+
+	// Should NOT mark vault as modified (D-12)
+	if manager.IsModified() {
+		t.Error("Vault should not be modified when repositioning to current position (D-12)")
+	}
+}
+
+func TestReposicionarPasta_InvalidPosition(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao() // 2 folders
+	manager := NewManager(cofre, &mockRepository{})
+
+	pasta := cofre.PastaGeral().Subpastas()[0]
+
+	tests := []struct {
+		nome     string
+		posicao  int
+		expected error
+	}{
+		{"negative", -1, ErrPosicaoInvalida},
+		{"beyond end", 2, ErrPosicaoInvalida}, // len=2, max valid=1 (0-indexed)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.nome, func(t *testing.T) {
+			err := manager.ReposicionarPasta(pasta, tt.posicao)
+			if !errors.Is(err, tt.expected) {
+				t.Errorf("Expected %v, got %v", tt.expected, err)
+			}
+
+			if manager.IsModified() {
+				t.Error("Vault should not be modified after validation failure")
+			}
+		})
+	}
+}
+
+func TestSubirPastaNaPosicao_Success(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao() // Sites (0), Financeiro (1)
+	manager := NewManager(cofre, &mockRepository{})
+
+	subpastas := cofre.PastaGeral().Subpastas()
+	financeiro := subpastas[1] // Currently at position 1
+
+	// Move up (1 -> 0)
+	err := manager.SubirPastaNaPosicao(financeiro)
+	if err != nil {
+		t.Fatalf("SubirPastaNaPosicao failed: %v", err)
+	}
+
+	subpastasAfter := cofre.PastaGeral().Subpastas()
+	if subpastasAfter[0] != financeiro {
+		t.Error("Financeiro should be at position 0 after Subir")
+	}
+
+	if !manager.IsModified() {
+		t.Error("Vault should be marked modified")
+	}
+}
+
+func TestSubirPastaNaPosicao_AtPosition0_NoOp(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+
+	subpastas := cofre.PastaGeral().Subpastas()
+	sitesEApps := subpastas[0] // Already at position 0
+
+	// Try to move up when already at top (no-op per D-23)
+	err := manager.SubirPastaNaPosicao(sitesEApps)
+	if err != nil {
+		t.Fatalf("SubirPastaNaPosicao at position 0 should not fail: %v", err)
+	}
+
+	// Should NOT mark vault as modified (D-23 edge case)
+	if manager.IsModified() {
+		t.Error("Vault should not be modified when Subir at position 0 (D-23)")
+	}
+
+	// Position should remain unchanged
+	subpastasAfter := cofre.PastaGeral().Subpastas()
+	if subpastasAfter[0] != sitesEApps {
+		t.Error("Pasta should remain at position 0")
+	}
+}
+
+func TestDescerPastaNaPosicao_Success(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao() // Sites (0), Financeiro (1)
+	manager := NewManager(cofre, &mockRepository{})
+
+	subpastas := cofre.PastaGeral().Subpastas()
+	sitesEApps := subpastas[0] // Currently at position 0
+
+	// Move down (0 -> 1)
+	err := manager.DescerPastaNaPosicao(sitesEApps)
+	if err != nil {
+		t.Fatalf("DescerPastaNaPosicao failed: %v", err)
+	}
+
+	subpastasAfter := cofre.PastaGeral().Subpastas()
+	if subpastasAfter[1] != sitesEApps {
+		t.Error("Sites e Apps should be at position 1 after Descer")
+	}
+
+	if !manager.IsModified() {
+		t.Error("Vault should be marked modified")
+	}
+}
+
+func TestDescerPastaNaPosicao_AtLastPosition_NoOp(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+
+	subpastas := cofre.PastaGeral().Subpastas()
+	financeiro := subpastas[1] // Last position (len=2, index=1)
+
+	// Try to move down when already at bottom (no-op per D-23)
+	err := manager.DescerPastaNaPosicao(financeiro)
+	if err != nil {
+		t.Fatalf("DescerPastaNaPosicao at last position should not fail: %v", err)
+	}
+
+	// Should NOT mark vault as modified (D-23 edge case)
+	if manager.IsModified() {
+		t.Error("Vault should not be modified when Descer at last position (D-23)")
+	}
+
+	// Position should remain unchanged
+	subpastasAfter := cofre.PastaGeral().Subpastas()
+	if subpastasAfter[1] != financeiro {
+		t.Error("Pasta should remain at last position")
+	}
+}
+
+func TestReposicionarPasta_WhenLocked(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+	pasta := cofre.PastaGeral().Subpastas()[0]
+	manager.Lock()
+
+	err := manager.ReposicionarPasta(pasta, 1)
+	if !errors.Is(err, ErrCofreBloqueado) {
+		t.Errorf("Expected ErrCofreBloqueado, got %v", err)
+	}
+}
+
+func TestSubirPastaNaPosicao_WhenLocked(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+	pasta := cofre.PastaGeral().Subpastas()[1]
+	manager.Lock()
+
+	err := manager.SubirPastaNaPosicao(pasta)
+	if !errors.Is(err, ErrCofreBloqueado) {
+		t.Errorf("Expected ErrCofreBloqueado, got %v", err)
+	}
+}
+
+func TestDescerPastaNaPosicao_WhenLocked(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+	pasta := cofre.PastaGeral().Subpastas()[0]
+	manager.Lock()
+
+	err := manager.DescerPastaNaPosicao(pasta)
+	if !errors.Is(err, ErrCofreBloqueado) {
+		t.Errorf("Expected ErrCofreBloqueado, got %v", err)
+	}
+}
