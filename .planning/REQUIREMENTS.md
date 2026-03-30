@@ -17,7 +17,7 @@
 ### Ciclo de Vida do Cofre
 
 - [ ] **VAULT-01**: Usuário pode criar novo cofre em arquivo com senha mestra; confirmação dupla obrigatória; avaliação de força exibida (sem bloquear operação)
-- [ ] **VAULT-02**: Ao criar cofre, Pasta Geral é criada automaticamente com subpastas "Sites e Apps" e "Financeiro" e modelos padrão: Login (URL, Usuário, Senha), Cartão de Crédito (Titular, Número, Validade, CVV), Chave de API (Serviço, Chave)
+- [x] **VAULT-02**: Ao criar cofre, Pasta Geral é criada automaticamente com subpastas "Sites e Apps" e "Financeiro" e modelos padrão: Login (URL, Usuário, Senha), Cartão de Crédito (Titular, Número, Validade, CVV), Chave de API (Serviço, Chave)
 - [ ] **VAULT-03**: Usuário pode abrir cofre a partir de arquivo existente com senha mestra
 - [ ] **VAULT-04**: Erros de abertura classificados em 4 categorias: tipo de arquivo inválido (magic incorreto → rejeitar), versão incompatível (versão_formato > suportado → rejeitar), autenticação (tag GCM inválida → nova tentativa permitida), integridade (JSON inválido ou Pasta Geral ausente → rejeitar); mensagens sempre genéricas, sem detalhes técnicos
 - [ ] **VAULT-05**: Se a Pasta Geral não existir no arquivo aberto, rejeitar com mensagem de erro (arquivo inválido) — sem tentativa de recriar
@@ -63,7 +63,7 @@
 - [ ] **SEC-02**: Usuário pode duplicar segredo (cópia na mesma pasta imediatamente após original; nome ajustado automaticamente: "Segredo (1)", "Segredo (2)"; histórico de modelo preservado)
 - [ ] **SEC-03**: Usuário pode editar segredo: nome, valores de campos e observação (sem alterar estrutura)
 - [ ] **SEC-04**: Usuário pode alterar estrutura do segredo: adicionar campo (nome + tipo), renomear campo, reordenar campos, excluir campo; tipo de campo não pode ser alterado; Observação não participa de reordenação, não pode ser renomeada/excluída/movida
-- [ ] **SEC-05**: Observação existe automaticamente em todo segredo na última posição; campo comum; não pode ser renomeada, excluída ou movida
+- [x] **SEC-05**: Observação existe automaticamente em todo segredo na última posição; campo comum; não pode ser renomeada, excluída ou movida
 - [ ] **SEC-06**: Usuário pode favoritar/desfavoritar segredo
 - [ ] **SEC-07**: Usuário pode marcar/desmarcar segredo para exclusão; segredo permanece visível sinalizado; removido permanentemente ao salvar
 - [ ] **SEC-08**: Usuário pode mover segredo para outra pasta
@@ -71,7 +71,7 @@
 
 ### Gerenciamento de Pastas
 
-- [ ] **FOLDER-01**: Usuário pode criar pasta dentro de outra pasta; nome único dentro da pasta pai
+- [x] **FOLDER-01**: Usuário pode criar pasta dentro de outra pasta; nome único dentro da pasta pai
 - [ ] **FOLDER-02**: Usuário pode renomear pasta; nome único dentro da pasta pai; Pasta Geral não pode ser renomeada
 - [ ] **FOLDER-03**: Usuário pode mover pasta; validação contra ciclos hierárquicos; nome único no destino; Pasta Geral não pode ser movida
 - [ ] **FOLDER-04**: Usuário pode reordenar pasta dentro da mesma pasta; ordem persistida ao salvar
@@ -79,12 +79,12 @@
 
 ### Gerenciamento de Modelos de Segredo
 
-- [ ] **TPL-01**: Usuário pode criar modelo de segredo com campos personalizados (nome + tipo: comum ou sensível)
+- [x] **TPL-01**: Usuário pode criar modelo de segredo com campos personalizados (nome + tipo: comum ou sensível)
 - [ ] **TPL-02**: Usuário pode renomear modelo; nome único entre modelos
 - [ ] **TPL-03**: Usuário pode alterar estrutura do modelo: adicionar campo, renomear campo, alterar tipo de campo, reordenar campos, excluir campo; não é permitido adicionar ou renomear campo para o nome 'Observação'; alterações não afetam segredos já criados
 - [ ] **TPL-04**: Usuário pode excluir modelo
 - [ ] **TPL-05**: Usuário pode criar modelo a partir de segredo existente; todos os campos com nome 'Observação' são excluídos — tanto a Observação automática quanto qualquer campo de usuário com esse nome; o campo 'Observação' não pode existir em modelo
-- [ ] **TPL-06**: Modelos de segredo são sempre exibidos em ordem alfabética — não são reordenáveis pelo usuário
+- [x] **TPL-06**: Modelos de segredo são sempre exibidos em ordem alfabética — não são reordenáveis pelo usuário
 
 ### Força de Senha
 
@@ -159,19 +159,19 @@
 | CRYPTO-05 | 2 | Complete |
 | CRYPTO-06 | 2 | Complete |
 | PWD-01 | 2 | Complete |
-| VAULT-02 | 3 | Pending |
-| SEC-05 | 3 | Pending |
-| FOLDER-01 | 3 | Pending |
+| VAULT-02 | 3 | Complete |
+| SEC-05 | 3 | Complete |
+| FOLDER-01 | 3 | Complete |
 | FOLDER-02 | 3 | Pending |
 | FOLDER-03 | 3 | Pending |
 | FOLDER-04 | 3 | Pending |
 | FOLDER-05 | 3 | Pending |
-| TPL-01 | 3 | Pending |
+| TPL-01 | 3 | Complete |
 | TPL-02 | 3 | Pending |
 | TPL-03 | 3 | Pending |
 | TPL-04 | 3 | Pending |
 | TPL-05 | 3 | Pending |
-| TPL-06 | 3 | Pending |
+| TPL-06 | 3 | Complete |
 | ATOMIC-01 | 4 | Pending |
 | ATOMIC-02 | 4 | Pending |
 | ATOMIC-03 | 4 | Pending |
