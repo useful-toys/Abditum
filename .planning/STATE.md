@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 03
 status: executing
-last_updated: "2026-03-30T08:57:28.037Z"
+last_updated: "2026-03-30T10:14:43Z"
 progress:
   total_phases: 11
   completed_phases: 2
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Project State — Abditum
 
-**Last updated:** 2026-03-29T14:22:00Z
+**Last updated:** 2026-03-30T10:14:43Z
 **Current phase:** 03
 **Milestone:** v1.0
 
@@ -137,6 +137,10 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 03-05]: Favorito flag independent of estadoSessao (only updates cofre.modificado per D-11)
 - [Phase 03-05]: Soft-delete: EstadoIncluido secrets removed from parent list, others marked Excluido
 - [Phase 03-05]: Name conflict uses fmt.Sprintf for (N) progression with 9999 safety limit
+- [Phase 03-06]: Content mutations (rename, edit fields, edit observação) mark estadoSessao = Modificado per D-11
+- [Phase 03-06]: Structural operations (move, reposition) only update cofre.modificado, NOT estadoSessao per D-16
+- [Phase 03-06]: Observação architecturally separated (CampoSegredo field, excluded from campos slice) per D-29
+- [Phase 03-06]: Change detection returns (alterado bool, err error) - no-op edits don't mark modified per D-12
 
 ### Phase 02 Decisions
 
