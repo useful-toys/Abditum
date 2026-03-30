@@ -368,6 +368,51 @@ func (s *Segredo) editarObservacao(novoTexto string) (alterado bool, err error) 
 	return true, nil
 }
 
+// validarMover validates secret move parameters.
+// Checks: destino not nil, name unique in destino.
+func (s *Segredo) validarMover(destino *Pasta) error {
+	// Check destino not nil
+	if destino == nil {
+		return ErrPastaInvalida
+	}
+
+	// Check name uniqueness in destination (excluding self if moving within same folder)
+	for _, outro := range destino.segredos {
+		if outro != s && outro.nome == s.nome {
+			return ErrNameConflict
+		}
+	}
+
+	return nil
+}
+
+// mover removes secret from origem and adds to destino at specified position.
+// Per D-16: Move is structural operation - does NOT change estadoSessao.
+// PRECONDITION: validarMover must pass (cannot fail after validation per D-05).
+func (s *Segredo) mover(destino *Pasta, posicao int) {
+	// Remove from origem (current pasta)
+	if s.pasta != nil {
+		for i, seg := range s.pasta.segredos {
+			if seg == s {
+				s.pasta.segredos = append(s.pasta.segredos[:i], s.pasta.segredos[i+1:]...)
+				break
+			}
+		}
+	}
+
+	// Add to destino at position
+	if posicao < 0 || posicao >= len(destino.segredos) {
+		// Invalid position or append - just append
+		destino.segredos = append(destino.segredos, s)
+	} else {
+		// Insert at position
+		destino.segredos = append(destino.segredos[:posicao], append([]*Segredo{s}, destino.segredos[posicao:]...)...)
+	}
+
+	// Update parent reference
+	s.pasta = destino
+}
+
 // Private entity methods for folder operations
 
 // contemSubpastaComNome checks if a subfolder with the given name exists.

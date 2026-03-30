@@ -831,3 +831,28 @@ func (m *Manager) EditarObservacao(segredo *Segredo, novoTexto string) error {
 
 	return nil
 }
+
+// MoverSegredo moves a secret to a different folder at the specified position.
+// Per D-16: Move is structural operation - does NOT change estadoSessao.
+// Only updates cofre.modificado.
+// Validates: locked vault, destino not nil, name unique in destino.
+func (m *Manager) MoverSegredo(segredo *Segredo, destino *Pasta, posicao int) error {
+	// Validate locked state
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Validate move parameters
+	if err := segredo.validarMover(destino); err != nil {
+		return err
+	}
+
+	// Perform move
+	segredo.mover(destino, posicao)
+
+	// Update vault state (cofre.modificado = true, but NOT estadoSessao per D-16)
+	m.cofre.modificado = true
+	m.cofre.dataUltimaModificacao = time.Now().UTC()
+
+	return nil
+}
