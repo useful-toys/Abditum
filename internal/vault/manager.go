@@ -127,6 +127,31 @@ func (m *Manager) RestaurarSegredo(segredo *Segredo) error {
 	return nil
 }
 
+// AlternarFavoritoSegredo toggles the favorito flag on a secret.
+// Per D-11: favorito is independent of estadoSessao (only updates cofre.modificado).
+func (m *Manager) AlternarFavoritoSegredo(segredo *Segredo) error {
+	// Validate locked state
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Validate toggle parameters
+	if err := segredo.validarAlternarFavorito(); err != nil {
+		return err
+	}
+
+	// Toggle favorite flag
+	segredo.alternarFavorito()
+
+	// Update vault state (cofre.modificado = true, but estadoSessao unchanged per D-11)
+	now := time.Now().UTC()
+	segredo.dataUltimaModificacao = now
+	m.cofre.modificado = true
+	m.cofre.dataUltimaModificacao = now
+
+	return nil
+}
+
 // IsLocked returns true if the vault is currently locked.
 func (m *Manager) IsLocked() bool {
 	return m.bloqueado

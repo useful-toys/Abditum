@@ -1140,3 +1140,22 @@ func (s *Segredo) restaurarSegredo() {
 	// Restore to Modificado (content was marked as deleted, now restored)
 	s.estadoSessao = EstadoModificado
 }
+
+// validarAlternarFavorito validates favorite toggle parameters.
+// Returns error if segredo is nil or excluded.
+func (s *Segredo) validarAlternarFavorito() error {
+	if s == nil {
+		return ErrSegredoInvalido
+	}
+	if s.estadoSessao == EstadoExcluido {
+		return ErrSegredoJaExcluido
+	}
+	return nil
+}
+
+// alternarFavorito toggles the favorito flag.
+// Per D-11: favorito is independent of estadoSessao (does NOT change content state).
+// PRECONDITION: validarAlternarFavorito must pass.
+func (s *Segredo) alternarFavorito() {
+	s.favorito = !s.favorito
+}
