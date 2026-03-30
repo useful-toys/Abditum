@@ -1024,3 +1024,65 @@ func toLowerSimple(s string) string {
 	}
 	return result
 }
+
+// Secret creation and lifecycle validation/mutation methods
+
+// validarCriacaoSegredo validates secret creation parameters.
+// Checks: pasta not nil, nome non-empty and unique, modelo not nil.
+func (p *Pasta) validarCriacaoSegredo(nome string, modelo *ModeloSegredo) error {
+	if nome == "" {
+		return ErrNomeVazio
+	}
+	if len(nome) > 255 {
+		return ErrNomeMuitoLongo
+	}
+	if modelo == nil {
+		return ErrModeloInvalido
+	}
+	// Check name uniqueness within folder
+	if p.contemSegredoComNome(nome) {
+		return ErrNameConflict
+	}
+	return nil
+}
+
+// criarSegredo creates a new secret with template-based structure.
+// Per D-11: estadoSessao = Normal initially (will be set to Modificado by Manager).
+// Per D-13: campos initialized from template with empty values.
+// PRECONDITION: validarCriacaoSegredo must pass.
+func (p *Pasta) criarSegredo(nome string, modelo *ModeloSegredo) *Segredo {
+	agora := time.Now().UTC()
+
+	// Initialize campos from template structure with empty values
+	campos := make([]CampoSegredo, len(modelo.campos))
+	for i, campoModelo := range modelo.campos {
+		campos[i] = CampoSegredo{
+			nome:  campoModelo.nome,
+			tipo:  campoModelo.tipo,
+			valor: []byte{}, // Empty value
+		}
+	}
+
+	// Create Observação field (always common type, empty value)
+	observacao := CampoSegredo{
+		nome:  "Observação",
+		tipo:  TipoCampoComum,
+		valor: []byte{},
+	}
+
+	segredo := &Segredo{
+		nome:                  nome,
+		campos:                campos,
+		observacao:            observacao,
+		pasta:                 p,
+		favorito:              false,
+		estadoSessao:          EstadoOriginal, // Will be changed to Modificado by Manager
+		dataCriacao:           agora,
+		dataUltimaModificacao: agora,
+	}
+
+	// Add to pasta's secrets list
+	p.segredos = append(p.segredos, segredo)
+
+	return segredo
+}

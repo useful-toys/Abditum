@@ -40,6 +40,36 @@ func (m *Manager) Vault() *Cofre {
 	return m.cofre
 }
 
+// CriarSegredo creates a new secret in a folder using a template.
+// The secret is initialized with campos from the template (empty values),
+// estadoSessao set to EstadoModificado, and favorito set to false.
+// Returns the created secret or an error if validation fails.
+func (m *Manager) CriarSegredo(pasta *Pasta, nome string, modelo *ModeloSegredo) (*Segredo, error) {
+	// Validate locked state
+	if m.bloqueado {
+		return nil, ErrCofreBloqueado
+	}
+
+	// Validate creation parameters (pasta not nil, nome unique, modelo not nil)
+	if err := pasta.validarCriacaoSegredo(nome, modelo); err != nil {
+		return nil, err
+	}
+
+	// Create secret with campos from template
+	segredo := pasta.criarSegredo(nome, modelo)
+
+	// Set estadoSessao to Modificado (new secret is a modification)
+	segredo.estadoSessao = EstadoModificado
+
+	// Update vault state
+	now := time.Now().UTC()
+	segredo.dataUltimaModificacao = now
+	m.cofre.modificado = true
+	m.cofre.dataUltimaModificacao = now
+
+	return segredo, nil
+}
+
 // IsLocked returns true if the vault is currently locked.
 func (m *Manager) IsLocked() bool {
 	return m.bloqueado
