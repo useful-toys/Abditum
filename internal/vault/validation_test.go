@@ -840,3 +840,76 @@ func TestRestaurarSegredoReversao(t *testing.T) {
 		t.Errorf("Expected ErrSegredoNaoExcluido for restoring non-deleted secret, got %v", err)
 	}
 }
+
+// TestFavoritarSegredoIndependencia verifies favorito flag is independent of estadoSessao.
+// Per D-11: favoriting does NOT change estadoSessao, only cofre.modificado.
+func TestFavoritarSegredoIndependencia(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, nil)
+
+	pastaGeral := cofre.PastaGeral()
+	modelos := cofre.Modelos()
+	var modeloLogin *ModeloSegredo
+	for _, m := range modelos {
+		if m.Nome() == "Login" {
+			modeloLogin = m
+			break
+		}
+	}
+
+	// Create a secret (estadoSessao = Modificado, favorito = false)
+	segredo, err := manager.CriarSegredo(pastaGeral, "TestSecret", modeloLogin)
+	if err != nil {
+		t.Fatalf("Failed to create secret: %v", err)
+	}
+
+	initialEstado := segredo.EstadoSessao()
+	if segredo.Favorito() {
+		t.Error("Expected favorito false for new secret")
+	}
+
+	// Toggle favorite ON
+	err = manager.AlternarFavoritoSegredo(segredo)
+	if err != nil {
+		t.Fatalf("Failed to toggle favorite: %v", err)
+	}
+
+	// Verify favorito = true, estadoSessao unchanged
+	if !segredo.Favorito() {
+		t.Error("Expected favorito true after toggle")
+	}
+	if segredo.EstadoSessao() != initialEstado {
+		t.Errorf("Expected estadoSessao unchanged (%v), got %v", initialEstado, segredo.EstadoSessao())
+	}
+
+	// Verify cofre.modificado = true
+	if !manager.IsModified() {
+		t.Error("Expected cofre to be modified after favoriting secret")
+	}
+
+	// Toggle favorite OFF
+	err = manager.AlternarFavoritoSegredo(segredo)
+	if err != nil {
+		t.Fatalf("Failed to toggle favorite off: %v", err)
+	}
+
+	// Verify favorito = false, estadoSessao still unchanged
+	if segredo.Favorito() {
+		t.Error("Expected favorito false after toggle off")
+	}
+	if segredo.EstadoSessao() != initialEstado {
+		t.Errorf("Expected estadoSessao unchanged (%v), got %v", initialEstado, segredo.EstadoSessao())
+	}
+
+	// Verify toggling deleted secret fails with ErrSegredoJaExcluido
+	err = manager.ExcluirSegredo(segredo)
+	if err != nil {
+		t.Fatalf("Failed to delete secret: %v", err)
+	}
+
+	err = manager.AlternarFavoritoSegredo(segredo)
+	if err != ErrSegredoJaExcluido {
+		t.Errorf("Expected ErrSegredoJaExcluido for favoriting deleted secret, got %v", err)
+	}
+}
