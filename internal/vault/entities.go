@@ -33,6 +33,14 @@ const (
 	EstadoExcluido
 )
 
+// Renomeacao records an automatic rename during folder deletion (for TUI display).
+// Used by ExcluirPasta to inform user which secrets were renamed due to name conflicts.
+type Renomeacao struct {
+	Antigo string // Original secret name
+	Novo   string // New name with numeric suffix
+	Pasta  string // Parent folder name where rename occurred
+}
+
 // Configuracoes contains operational settings for the vault (timers for auto-lock, reveal, clipboard).
 type Configuracoes struct {
 	tempoBloqueioInatividadeMinutos      int // Default: 5 min
