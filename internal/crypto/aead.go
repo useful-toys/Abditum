@@ -1,4 +1,4 @@
-package crypto
+﻿package crypto
 
 import (
 	"crypto/aes"
@@ -141,6 +141,95 @@ func Decrypt(key, ciphertext []byte) ([]byte, error) {
 	if err != nil {
 		// Return single sentinel error for both wrong key and corruption.
 		// This prevents timing attacks that could distinguish between the two cases.
+		return nil, ErrAuthFailed
+	}
+
+	return plaintext, nil
+}
+
+// EncryptWithAAD encrypts plaintext using AES-256-GCM with additional authenticated data (AAD).
+//
+// Unlike Encrypt, this function returns the nonce and ciphertext separately. This is
+// required for the .abditum file format, where the nonce is written to the binary
+// header (bytes 37-48) and the ciphertext is written as the payload after the header.
+// The AAD is the full 49-byte file header -- any header byte tampering causes authentication failure.
+//
+// Parameters:
+//   - key: A 32-byte AES-256 key (must be exactly 32 bytes)
+//   - plaintext: The data to encrypt (any length, including empty)
+//   - aad: Additional authenticated data (the file header bytes)
+//
+// Returns:
+//   - nonce: 12-byte GCM nonce (written to header bytes 37-48)
+//   - ciphertext: Encrypted data + 16-byte GCM tag (written as file payload)
+//   - error: ErrInvalidParams if key is not 32 bytes
+//     ErrInsufficientEntropy if nonce generation fails
+//
+// CRITICAL: Never reuse a key+nonce pair. This function generates a fresh
+// nonce for every call via crypto/rand.
+func EncryptWithAAD(key, plaintext, aad []byte) (nonce []byte, ciphertext []byte, err error) {
+	if len(key) != 32 {
+		return nil, nil, ErrInvalidParams
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	nonce = make([]byte, gcm.NonceSize()) // 12 bytes
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, nil, ErrInsufficientEntropy
+	}
+
+	// Seal with AAD. Pass nil as dst so ciphertext does NOT include the nonce prefix.
+	// The storage layer writes nonce to the header and ciphertext separately.
+	sealed := gcm.Seal(nil, nonce, plaintext, aad)
+
+	return nonce, sealed, nil
+}
+
+// DecryptWithAAD decrypts ciphertext using AES-256-GCM with additional authenticated data (AAD).
+//
+// The nonce is provided explicitly (read from the file header bytes 37-48).
+// The AAD is the full 49-byte file header -- any header byte tampering causes authentication failure.
+//
+// Parameters:
+//   - key: A 32-byte AES-256 key (must be exactly 32 bytes)
+//   - ciphertext: Encrypted data + 16-byte GCM tag (file payload after header)
+//   - nonce: 12-byte GCM nonce (from file header bytes 37-48)
+//   - aad: Additional authenticated data (the full file header bytes 0-48)
+//
+// Returns:
+//   - []byte: The decrypted plaintext
+//   - error: ErrInvalidParams if key is not 32 bytes
+//     ErrAuthFailed if tag verification fails (wrong key, tampered AAD, or corrupted ciphertext)
+func DecryptWithAAD(key, ciphertext, nonce, aad []byte) ([]byte, error) {
+	if len(key) != 32 {
+		return nil, ErrInvalidParams
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(nonce) != gcm.NonceSize() {
+		return nil, ErrAuthFailed
+	}
+
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, aad)
+	if err != nil {
 		return nil, ErrAuthFailed
 	}
 
