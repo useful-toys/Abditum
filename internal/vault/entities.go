@@ -420,6 +420,58 @@ func (p *Pasta) mover(destino *Pasta) {
 	p.adicionarAoPai(destino)
 }
 
+// obterPosicaoAtual returns the current position of this pasta in its parent's subpastas list.
+// Returns -1 if pasta has no parent (Pasta Geral).
+func (p *Pasta) obterPosicaoAtual() int {
+	if p.pai == nil {
+		return -1 // Pasta Geral has no position
+	}
+
+	for i, sub := range p.pai.subpastas {
+		if sub == p {
+			return i
+		}
+	}
+
+	return -1 // Should never happen if tree is consistent
+}
+
+// validarReposicionar validates folder repositioning parameters.
+// Checks: position in valid range [0, len-1] (0-indexed, cannot be equal to len).
+func (p *Pasta) validarReposicionar(novaPosicao int) error {
+	if p.pai == nil {
+		return ErrPastaGeralProtected // Cannot reposition Pasta Geral
+	}
+
+	// Validate position in valid range [0, len-1] for repositioning
+	// Note: Unlike criarSubpasta where len is valid (append), repositioning requires existing position
+	if novaPosicao < 0 || novaPosicao >= len(p.pai.subpastas) {
+		return ErrPosicaoInvalida
+	}
+
+	return nil
+}
+
+// reposicionar moves this pasta to a new position within its parent.
+// Returns (true, nil) if position changed, (false, nil) if no change (D-12, D-23 no-op).
+// PRECONDITION: validarReposicionar must pass (cannot fail after validation per D-05).
+func (p *Pasta) reposicionar(novaPosicao int) (alterado bool, err error) {
+	posicaoAtual := p.obterPosicaoAtual()
+
+	// No-op if already at target position (D-12, D-23)
+	if posicaoAtual == novaPosicao {
+		return false, nil
+	}
+
+	// Remove from current position
+	p.pai.subpastas = append(p.pai.subpastas[:posicaoAtual], p.pai.subpastas[posicaoAtual+1:]...)
+
+	// Insert at new position
+	p.pai.subpastas = append(p.pai.subpastas[:novaPosicao], append([]*Pasta{p}, p.pai.subpastas[novaPosicao:]...)...)
+
+	return true, nil
+}
+
 // Factory methods
 
 // NovoCofre creates a new empty vault with Pasta Geral and default configurations.

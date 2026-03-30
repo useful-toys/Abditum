@@ -493,3 +493,71 @@ func (m *Manager) MoverPasta(pasta *Pasta, destino *Pasta) error {
 
 	return nil
 }
+
+// ReposicionarPasta moves a folder to a new position within its parent.
+// Position semantics (D-22): 0-indexed, valid range [0, len-1].
+// Edge case (D-12, D-23): Moving to current position is a no-op - returns nil without marking modified.
+// Validates: position in valid range.
+func (m *Manager) ReposicionarPasta(pasta *Pasta, novaPosicao int) error {
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Phase 1: Validate (can fail)
+	if err := pasta.validarReposicionar(novaPosicao); err != nil {
+		return err
+	}
+
+	// Phase 2: Mutate and check if actual change occurred (D-12, D-23)
+	alterado, err := pasta.reposicionar(novaPosicao)
+	if err != nil {
+		return err // Should never happen after validation per D-05
+	}
+
+	// Only update global state if actual change (D-12, D-23)
+	if alterado {
+		m.cofre.modificado = true
+		m.cofre.dataUltimaModificacao = time.Now().UTC()
+	}
+
+	return nil
+}
+
+// SubirPastaNaPosicao moves a folder one position up (position - 1) within its parent.
+// Edge case (D-23): If already at position 0, this is a no-op - returns nil without marking modified.
+func (m *Manager) SubirPastaNaPosicao(pasta *Pasta) error {
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Get current position
+	posicaoAtual := pasta.obterPosicaoAtual()
+
+	// Edge case: already at top (D-23 no-op)
+	if posicaoAtual == 0 {
+		return nil // No-op, don't mark modified
+	}
+
+	// Move to position - 1
+	return m.ReposicionarPasta(pasta, posicaoAtual-1)
+}
+
+// DescerPastaNaPosicao moves a folder one position down (position + 1) within its parent.
+// Edge case (D-23): If already at last position, this is a no-op - returns nil without marking modified.
+func (m *Manager) DescerPastaNaPosicao(pasta *Pasta) error {
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Get current position and max position
+	posicaoAtual := pasta.obterPosicaoAtual()
+	maxPosicao := len(pasta.pai.subpastas) - 1
+
+	// Edge case: already at bottom (D-23 no-op)
+	if posicaoAtual == maxPosicao {
+		return nil // No-op, don't mark modified
+	}
+
+	// Move to position + 1
+	return m.ReposicionarPasta(pasta, posicaoAtual+1)
+}
