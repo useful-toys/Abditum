@@ -1334,14 +1334,13 @@ func (s *Segredo) validarDuplicacaoSegredo() error {
 // Per D-27: Uses "(N)" progression for name conflicts: "Name" → "Name (2)" → "Name (3)".
 // PRECONDITION: validarDuplicacaoSegredo must pass.
 func (p *Pasta) duplicarSegredo(original *Segredo) *Segredo {
-	// Generate unique name using "(N)" progression
+	// Generate unique name using "(N)" progression starting at (1)
+	// Per UAT: "X" → "X (1)" → "X (2)"
 	baseName := original.nome
 	newName := baseName
-	counter := 2
+	counter := 1
 
-	// Check if name already ends with "(N)" pattern
-	// If so, extract base and continue from that counter
-	// Otherwise start with "(2)"
+	// Check if name already exists, if so, try with "(N)" suffix
 	for p.contemSegredoComNome(newName) {
 		newName = fmt.Sprintf("%s (%d)", baseName, counter)
 		counter++
@@ -1400,7 +1399,7 @@ func (p *Pasta) duplicarSegredo(original *Segredo) *Segredo {
 func (c *Cofre) buscar(consulta string) []*Segredo {
 	// Normalize query for case-insensitive search
 	consultaLower := strings.ToLower(consulta)
-	
+
 	// Start DFS from root folder
 	return buscarRecursivo(c.pastaGeral, consultaLower)
 }
@@ -1410,28 +1409,28 @@ func buscarRecursivo(pasta *Pasta, consultaLower string) []*Segredo {
 	if pasta == nil {
 		return nil
 	}
-	
+
 	resultados := make([]*Segredo, 0)
-	
+
 	// Search secrets in this folder
 	for _, segredo := range pasta.segredos {
 		// Exclude deleted secrets
 		if segredo.estadoSessao == EstadoExcluido {
 			continue
 		}
-		
+
 		// Check if secret matches criteria
 		if segredo.atendeCriterio(consultaLower) {
 			resultados = append(resultados, segredo)
 		}
 	}
-	
+
 	// Recurse into subfolders
 	for _, subpasta := range pasta.subpastas {
 		subResultados := buscarRecursivo(subpasta, consultaLower)
 		resultados = append(resultados, subResultados...)
 	}
-	
+
 	return resultados
 }
 
@@ -1443,19 +1442,19 @@ func (s *Segredo) atendeCriterio(consultaLower string) bool {
 	if strings.Contains(strings.ToLower(s.nome), consultaLower) {
 		return true
 	}
-	
+
 	// Search in observacao value (always common type)
 	if strings.Contains(strings.ToLower(string(s.observacao.valor)), consultaLower) {
 		return true
 	}
-	
+
 	// Search in campos
 	for _, campo := range s.campos {
 		// Search in campo name (both common and sensitive names participate)
 		if strings.Contains(strings.ToLower(campo.nome), consultaLower) {
 			return true
 		}
-		
+
 		// Search in campo value ONLY if common type (QUERY-02)
 		if campo.tipo == TipoCampoComum {
 			if strings.Contains(strings.ToLower(string(campo.valor)), consultaLower) {
@@ -1464,7 +1463,7 @@ func (s *Segredo) atendeCriterio(consultaLower string) bool {
 		}
 		// Sensitive campo values do NOT participate in search per QUERY-02
 	}
-	
+
 	return false
 }
 
@@ -1480,15 +1479,15 @@ func listarFavoritosRecursivo(pasta *Pasta) []*Segredo {
 	if pasta == nil {
 		return nil
 	}
-	
+
 	favoritos := make([]*Segredo, 0)
-	
+
 	// First, collect favorites from subfolders (DFS: depth before breadth)
 	for _, subpasta := range pasta.subpastas {
 		subFavoritos := listarFavoritosRecursivo(subpasta)
 		favoritos = append(favoritos, subFavoritos...)
 	}
-	
+
 	// Then, collect favorites from this folder
 	for _, segredo := range pasta.segredos {
 		// Only include if favorito AND not deleted
@@ -1496,6 +1495,6 @@ func listarFavoritosRecursivo(pasta *Pasta) []*Segredo {
 			favoritos = append(favoritos, segredo)
 		}
 	}
-	
+
 	return favoritos
 }

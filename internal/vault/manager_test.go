@@ -513,10 +513,9 @@ func TestDuplication(t *testing.T) {
 		t.Fatalf("Failed to duplicate: %v", err)
 	}
 
-	// Verify name progression (Original → Original (2))
-	// Note: Counter starts at 2 to avoid ambiguity with "(1)" which could be confused with versioning
-	if duplicate.Nome() != "Original (2)" {
-		t.Errorf("Expected duplicate name 'Original (2)', got '%s'", duplicate.Nome())
+	// Verify name progression (Original → Original (1))
+	if duplicate.Nome() != "Original (1)" {
+		t.Errorf("Expected duplicate name 'Original (1)', got '%s'", duplicate.Nome())
 	}
 
 	// Verify independent state: duplicate NOT favorite (favorito state not copied)
@@ -547,13 +546,13 @@ func TestDuplication(t *testing.T) {
 		t.Error("Original should not be affected by duplicate modification")
 	}
 
-	// Duplicate a second time (test name progression: Original (2) → Original (3))
+	// Duplicate a second time (test name progression: Original (1) → Original (2))
 	duplicate2, err := manager.DuplicarSegredo(original)
 	if err != nil {
 		t.Fatalf("Failed to duplicate second time: %v", err)
 	}
 
-	if duplicate2.Nome() != "Original (3)" {
-		t.Errorf("Expected second duplicate name 'Original (3)', got '%s'", duplicate2.Nome())
+	if duplicate2.Nome() != "Original (2)" {
+		t.Errorf("Expected second duplicate name 'Original (2)', got '%s'", duplicate2.Nome())
 	}
 }
