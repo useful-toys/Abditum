@@ -985,3 +985,118 @@ func TestDuplicarSegredoNameConflict(t *testing.T) {
 		t.Errorf("Expected ErrSegredoJaExcluido for duplicating deleted secret, got %v", err)
 	}
 }
+
+// TestSecretLifecycleIntegration verifies all lifecycle operations work together correctly.
+// Tests: Create → Favorite → Duplicate → Delete → Restore → Delete → Verify final state.
+func TestSecretLifecycleIntegration(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, nil)
+
+	pastaGeral := cofre.PastaGeral()
+	modelos := cofre.Modelos()
+	var modeloLogin *ModeloSegredo
+	for _, m := range modelos {
+		if m.Nome() == "Login" {
+			modeloLogin = m
+			break
+		}
+	}
+
+	// 1. Create original secret
+	original, err := manager.CriarSegredo(pastaGeral, "MyAccount", modeloLogin)
+	if err != nil {
+		t.Fatalf("Failed to create original: %v", err)
+	}
+	if original.EstadoSessao() != EstadoModificado {
+		t.Errorf("Expected EstadoModificado after creation, got %v", original.EstadoSessao())
+	}
+
+	// 2. Toggle favorite (independent of estadoSessao per D-11)
+	err = manager.AlternarFavoritoSegredo(original)
+	if err != nil {
+		t.Fatalf("Failed to favorite: %v", err)
+	}
+	if !original.Favorito() {
+		t.Error("Expected favorito true after toggle")
+	}
+	if original.EstadoSessao() != EstadoModificado {
+		t.Error("Expected estadoSessao unchanged after favoriting")
+	}
+
+	// 3. Duplicate the favorite secret (favorito should reset to false)
+	duplicate, err := manager.DuplicarSegredo(original)
+	if err != nil {
+		t.Fatalf("Failed to duplicate: %v", err)
+	}
+	if duplicate.Nome() != "MyAccount (2)" {
+		t.Errorf("Expected 'MyAccount (2)', got '%s'", duplicate.Nome())
+	}
+	if duplicate.Favorito() {
+		t.Error("Expected duplicate favorito false (reset)")
+	}
+	if duplicate.EstadoSessao() != EstadoModificado {
+		t.Errorf("Expected EstadoModificado for duplicate, got %v", duplicate.EstadoSessao())
+	}
+
+	// 4. Delete original (soft delete)
+	err = manager.ExcluirSegredo(original)
+	if err != nil {
+		t.Fatalf("Failed to delete original: %v", err)
+	}
+	if original.EstadoSessao() != EstadoExcluido {
+		t.Errorf("Expected EstadoExcluido after deletion, got %v", original.EstadoSessao())
+	}
+
+	// 5. Restore original (should return to Modificado)
+	err = manager.RestaurarSegredo(original)
+	if err != nil {
+		t.Fatalf("Failed to restore original: %v", err)
+	}
+	if original.EstadoSessao() != EstadoModificado {
+		t.Errorf("Expected EstadoModificado after restore, got %v", original.EstadoSessao())
+	}
+	if !original.Favorito() {
+		t.Error("Expected favorito preserved after restore")
+	}
+
+	// 6. Delete duplicate permanently (for final state verification)
+	err = manager.ExcluirSegredo(duplicate)
+	if err != nil {
+		t.Fatalf("Failed to delete duplicate: %v", err)
+	}
+
+	// 7. Verify final state: original restored and favorited, duplicate deleted
+	secrets := pastaGeral.Segredos()
+	foundOriginal := false
+	foundDuplicate := false
+	for _, s := range secrets {
+		if s.Nome() == "MyAccount" {
+			foundOriginal = true
+			if s.EstadoSessao() != EstadoModificado {
+				t.Errorf("Expected original EstadoModificado, got %v", s.EstadoSessao())
+			}
+			if !s.Favorito() {
+				t.Error("Expected original favorito preserved")
+			}
+		}
+		if s.Nome() == "MyAccount (2)" {
+			foundDuplicate = true
+			if s.EstadoSessao() != EstadoExcluido {
+				t.Errorf("Expected duplicate EstadoExcluido, got %v", s.EstadoSessao())
+			}
+		}
+	}
+
+	if !foundOriginal {
+		t.Error("Original secret not found in final state")
+	}
+	if !foundDuplicate {
+		t.Error("Duplicate secret not found in final state (should be marked Excluido)")
+	}
+
+	// Verify vault modified
+	if !manager.IsModified() {
+		t.Error("Expected vault to be modified after lifecycle operations")
+	}
+}
