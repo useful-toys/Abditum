@@ -308,6 +308,42 @@ func (s *Segredo) renomear(novoNome string) (alterado bool, err error) {
 	return true, nil
 }
 
+// validarEditarCampo validates field editing parameters.
+// Checks: index within valid range [0, len(campos)-1].
+func (s *Segredo) validarEditarCampo(indice int, valor []byte) error {
+	// Validate index within bounds
+	if indice < 0 || indice >= len(s.campos) {
+		return ErrCampoInvalido
+	}
+
+	return nil
+}
+
+// editarCampo updates a field value and returns whether an actual change occurred.
+// Per D-11: marks estadoSessao = Modificado if currently Original.
+// Per D-12: returns (false, nil) if value unchanged (no-op).
+// PRECONDITION: validarEditarCampo must pass (cannot fail after validation per D-05).
+func (s *Segredo) editarCampo(indice int, novoValor []byte) (alterado bool, err error) {
+	// Check if value actually changed (D-12)
+	campoAtual := s.campos[indice].valor
+	if string(campoAtual) == string(novoValor) {
+		return false, nil // No-op
+	}
+
+	// Update field value (deep copy to ensure independence)
+	valorCopia := make([]byte, len(novoValor))
+	copy(valorCopia, novoValor)
+	s.campos[indice].valor = valorCopia
+
+	// Mark as modified if currently Original (D-11)
+	if s.estadoSessao == EstadoOriginal {
+		s.estadoSessao = EstadoModificado
+	}
+	// Note: EstadoIncluido and EstadoModificado remain unchanged
+
+	return true, nil
+}
+
 // Private entity methods for folder operations
 
 // contemSubpastaComNome checks if a subfolder with the given name exists.

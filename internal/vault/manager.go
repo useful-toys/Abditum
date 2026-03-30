@@ -768,3 +768,34 @@ func (m *Manager) RenomearSegredo(segredo *Segredo, novoNome string) error {
 
 	return nil
 }
+
+// EditarCampoSegredo edits a field value in a secret by index.
+// Per D-11: marks estadoSessao = Modificado if currently Original.
+// Per D-12: no-op if value unchanged (doesn't mark modified).
+// Validates: locked vault, index within valid range [0, len(campos)-1].
+func (m *Manager) EditarCampoSegredo(segredo *Segredo, indice int, novoValor []byte) error {
+	// Validate locked state
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Validate edit parameters
+	if err := segredo.validarEditarCampo(indice, novoValor); err != nil {
+		return err
+	}
+
+	// Perform edit
+	alterado, err := segredo.editarCampo(indice, novoValor)
+	if err != nil {
+		return err
+	}
+
+	// Only mark vault modified if actual change occurred (D-12)
+	if alterado {
+		segredo.dataUltimaModificacao = time.Now().UTC()
+		m.cofre.modificado = true
+		m.cofre.dataUltimaModificacao = time.Now().UTC()
+	}
+
+	return nil
+}
