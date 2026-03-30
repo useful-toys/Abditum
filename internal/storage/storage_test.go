@@ -353,3 +353,193 @@ func TestLoad_FileMetadata(t *testing.T) {
 		t.Error("FileMetadata.Hash should not be all zeros")
 	}
 }
+
+// ---------------------------------------------------------------------------
+// RecoverOrphans tests
+// ---------------------------------------------------------------------------
+
+// TestRecoverOrphans_RemovesStaleTmp verifies that a stale .tmp file is removed.
+func TestRecoverOrphans_RemovesStaleTmp(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+	tmpPath := path + ".tmp"
+
+	// Create a stale .tmp
+	if err := os.WriteFile(tmpPath, []byte("stale"), 0600); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
+
+	if err := storage.RecoverOrphans(path); err != nil {
+		t.Fatalf("RecoverOrphans() error: %v", err)
+	}
+
+	if _, err := os.Stat(tmpPath); !os.IsNotExist(err) {
+		t.Error("RecoverOrphans() did not remove stale .tmp file")
+	}
+}
+
+// TestRecoverOrphans_NoOpWhenClean verifies RecoverOrphans returns nil when there is no .tmp.
+func TestRecoverOrphans_NoOpWhenClean(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	if err := storage.RecoverOrphans(path); err != nil {
+		t.Errorf("RecoverOrphans() on clean state returned error: %v", err)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// DetectExternalChange and ComputeFileMetadata tests
+// ---------------------------------------------------------------------------
+
+// TestDetectExternalChange_NoChange verifies false is returned when file is unchanged.
+func TestDetectExternalChange_NoChange(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	if err := storage.SaveNew(path, newTestCofre(), testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	meta, err := storage.ComputeFileMetadata(path)
+	if err != nil {
+		t.Fatalf("ComputeFileMetadata() error: %v", err)
+	}
+
+	changed, err := storage.DetectExternalChange(path, meta)
+	if err != nil {
+		t.Fatalf("DetectExternalChange() error: %v", err)
+	}
+	if changed {
+		t.Error("DetectExternalChange() returned true for unchanged file")
+	}
+}
+
+// TestDetectExternalChange_SizeDiffers verifies true is returned when file size changes.
+func TestDetectExternalChange_SizeDiffers(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	if err := os.WriteFile(path, []byte("original"), 0600); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
+
+	meta, err := storage.ComputeFileMetadata(path)
+	if err != nil {
+		t.Fatalf("ComputeFileMetadata() error: %v", err)
+	}
+
+	// Append bytes to change size
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		t.Fatalf("OpenFile() error: %v", err)
+	}
+	if _, err := f.Write([]byte(" extra")); err != nil {
+		f.Close()
+		t.Fatalf("Write() error: %v", err)
+	}
+	f.Close()
+
+	changed, err := storage.DetectExternalChange(path, meta)
+	if err != nil {
+		t.Fatalf("DetectExternalChange() error: %v", err)
+	}
+	if !changed {
+		t.Error("DetectExternalChange() returned false after size change")
+	}
+}
+
+// TestDetectExternalChange_ContentDiffers verifies true is returned when content changes but size stays the same.
+func TestDetectExternalChange_ContentDiffers(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	content := []byte("ABCDEFGHIJ") // 10 bytes
+	if err := os.WriteFile(path, content, 0600); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
+
+	meta, err := storage.ComputeFileMetadata(path)
+	if err != nil {
+		t.Fatalf("ComputeFileMetadata() error: %v", err)
+	}
+
+	// Overwrite with same-size but different content
+	modified := []byte("ABCDEFGHIZ") // last byte changed
+	if err := os.WriteFile(path, modified, 0600); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
+
+	changed, err := storage.DetectExternalChange(path, meta)
+	if err != nil {
+		t.Fatalf("DetectExternalChange() error: %v", err)
+	}
+	if !changed {
+		t.Error("DetectExternalChange() returned false after content change (same size)")
+	}
+}
+
+// TestDetectExternalChange_FileNotFound verifies an error is returned for a missing file.
+func TestDetectExternalChange_FileNotFound(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "nonexistent.abditum")
+
+	var meta storage.FileMetadata
+	_, err := storage.DetectExternalChange(path, meta)
+	if err == nil {
+		t.Error("DetectExternalChange() should return error for missing file")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Migrate tests
+// ---------------------------------------------------------------------------
+
+// TestMigrate_SameVersion_NoOp verifies that v1->v1 returns data unchanged.
+func TestMigrate_SameVersion_NoOp(t *testing.T) {
+	data := []byte(`{"test":"data"}`)
+	result, err := storage.Migrate(data, 1, 1)
+	if err != nil {
+		t.Fatalf("Migrate(1,1) error: %v", err)
+	}
+	if string(result) != string(data) {
+		t.Errorf("Migrate(1,1) returned %q, want %q", result, data)
+	}
+}
+
+// TestMigrate_FutureVersion_Error verifies that v1->v2 returns error (no path registered).
+func TestMigrate_FutureVersion_Error(t *testing.T) {
+	data := []byte(`{"test":"data"}`)
+	_, err := storage.Migrate(data, 1, 2)
+	if err == nil {
+		t.Error("Migrate(1,2) should return error (no migration path)")
+	}
+}
+
+// TestMigrate_Downgrade_Error verifies that downgrade returns error.
+func TestMigrate_Downgrade_Error(t *testing.T) {
+	data := []byte(`{"test":"data"}`)
+	_, err := storage.Migrate(data, 2, 1)
+	if err == nil {
+		t.Error("Migrate(2,1) should return error (downgrade not supported)")
+	}
+}
+
+// TestMigrate_V1FixtureRoundtrip verifies the full SaveNew + Load pipeline for v1 format.
+func TestMigrate_V1FixtureRoundtrip(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "v1-fixture.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	loaded, _, err := storage.Load(path, testPassword)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	if loaded == nil {
+		t.Fatal("Load() returned nil Cofre")
+	}
+}
