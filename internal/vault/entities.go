@@ -1391,3 +1391,79 @@ func (p *Pasta) duplicarSegredo(original *Segredo) *Segredo {
 
 	return duplicate
 }
+
+// buscar performs recursive DFS search from this folder for secrets matching the query.
+// Per QUERY-02: searches nome, observacao, campo names (including sensitive), and
+// values of COMMON fields only (sensitive field values excluded).
+// Per D-19: case-insensitive matching using strings.ToLower.
+// Excludes secrets with estadoSessao == EstadoExcluido.
+func (c *Cofre) buscar(consulta string) []*Segredo {
+	// Normalize query for case-insensitive search
+	consultaLower := strings.ToLower(consulta)
+	
+	// Start DFS from root folder
+	return buscarRecursivo(c.pastaGeral, consultaLower)
+}
+
+// buscarRecursivo recursively searches a folder tree for matching secrets.
+func buscarRecursivo(pasta *Pasta, consultaLower string) []*Segredo {
+	if pasta == nil {
+		return nil
+	}
+	
+	resultados := make([]*Segredo, 0)
+	
+	// Search secrets in this folder
+	for _, segredo := range pasta.segredos {
+		// Exclude deleted secrets
+		if segredo.estadoSessao == EstadoExcluido {
+			continue
+		}
+		
+		// Check if secret matches criteria
+		if segredo.atendeCriterio(consultaLower) {
+			resultados = append(resultados, segredo)
+		}
+	}
+	
+	// Recurse into subfolders
+	for _, subpasta := range pasta.subpastas {
+		subResultados := buscarRecursivo(subpasta, consultaLower)
+		resultados = append(resultados, subResultados...)
+	}
+	
+	return resultados
+}
+
+// atendeCriterio checks if this secret matches the search criterion (already lowercased).
+// Per QUERY-02: searches nome, observacao, all campo names, and common campo values only.
+// Sensitive campo VALUES are excluded (but names are included).
+func (s *Segredo) atendeCriterio(consultaLower string) bool {
+	// Search in secret name
+	if strings.Contains(strings.ToLower(s.nome), consultaLower) {
+		return true
+	}
+	
+	// Search in observacao value (always common type)
+	if strings.Contains(strings.ToLower(string(s.observacao.valor)), consultaLower) {
+		return true
+	}
+	
+	// Search in campos
+	for _, campo := range s.campos {
+		// Search in campo name (both common and sensitive names participate)
+		if strings.Contains(strings.ToLower(campo.nome), consultaLower) {
+			return true
+		}
+		
+		// Search in campo value ONLY if common type (QUERY-02)
+		if campo.tipo == TipoCampoComum {
+			if strings.Contains(strings.ToLower(string(campo.valor)), consultaLower) {
+				return true
+			}
+		}
+		// Sensitive campo values do NOT participate in search per QUERY-02
+	}
+	
+	return false
+}

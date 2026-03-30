@@ -930,3 +930,16 @@ func (m *Manager) DescerSegredoNaPosicao(segredo *Segredo) error {
 	// Move to position + 1
 	return m.ReposicionarSegredo(segredo, posicaoAtual+1)
 }
+
+// Buscar searches for secrets matching the query string (case-insensitive).
+// Per QUERY-02: searches secret name, observacao, campo names (all), and common campo values only.
+// Sensitive campo VALUES are excluded from search (but names are included).
+// Returns only secrets where estadoSessao != Excluido.
+// Read-only operation, no state changes.
+func (m *Manager) Buscar(consulta string) []*Segredo {
+	if m.bloqueado {
+		return nil
+	}
+	
+	return m.cofre.buscar(consulta)
+}

@@ -1659,3 +1659,148 @@ func TestObservacaoSeparada(t *testing.T) {
 	// This is structural enforcement - Observação stored separately, not in campos slice
 	// (Per D-29: architectural separation prevents manipulation)
 }
+
+// TestBuscarSensitiveExclusao verifies search excludes sensitive field VALUES per QUERY-02.
+// Field NAMES participate, but values of TipoCampoSensivel do NOT.
+func TestBuscarSensitiveExclusao(t *testing.T) {
+	cofre := NovoCofre()
+	manager := NewManager(cofre, nil)
+
+	// Create template with sensitive field
+	modelo, err := manager.CriarModelo("Login", []CampoModelo{
+		{nome: "URL", tipo: TipoCampoComum},
+		{nome: "Usuario", tipo: TipoCampoComum},
+		{nome: "Senha", tipo: TipoCampoSensivel},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Create secret with sensitive value
+	pasta := cofre.PastaGeral()
+	segredo, err := manager.CriarSegredo(pasta, "TestSecret", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create secret: %v", err)
+	}
+
+	// Edit campo values
+	err = manager.EditarCampoSegredo(segredo, 0, []byte("https://example.com"))
+	if err != nil {
+		t.Fatalf("Failed to edit URL: %v", err)
+	}
+	err = manager.EditarCampoSegredo(segredo, 1, []byte("admin"))
+	if err != nil {
+		t.Fatalf("Failed to edit Usuario: %v", err)
+	}
+	err = manager.EditarCampoSegredo(segredo, 2, []byte("secretpassword123"))
+	if err != nil {
+		t.Fatalf("Failed to edit Senha: %v", err)
+	}
+
+	// Test 1: Search by common field value (URL) - SHOULD find
+	results := manager.Buscar("example")
+	if len(results) != 1 {
+		t.Errorf("Expected 1 result for 'example', got %d", len(results))
+	}
+
+	// Test 2: Search by sensitive field VALUE - MUST NOT find (QUERY-02)
+	results = manager.Buscar("secretpassword")
+	if len(results) != 0 {
+		t.Errorf("Expected 0 results for sensitive field value 'secretpassword', got %d", len(results))
+	}
+
+	// Test 3: Search by sensitive field NAME - SHOULD find (QUERY-02)
+	results = manager.Buscar("Senha")
+	if len(results) != 1 {
+		t.Errorf("Expected 1 result for field name 'Senha', got %d", len(results))
+	}
+}
+
+// TestBuscarCaseInsensitive verifies search is case-insensitive per D-19.
+func TestBuscarCaseInsensitive(t *testing.T) {
+	cofre := NovoCofre()
+	manager := NewManager(cofre, nil)
+
+	// Create simple model
+	modelo, err := manager.CriarModelo("Note", []CampoModelo{
+		{nome: "Title", tipo: TipoCampoComum},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Create secret
+	pasta := cofre.PastaGeral()
+	segredo, err := manager.CriarSegredo(pasta, "MySecretNote", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create secret: %v", err)
+	}
+
+	// Edit campo value
+	err = manager.EditarCampoSegredo(segredo, 0, []byte("Important Information"))
+	if err != nil {
+		t.Fatalf("Failed to edit Title: %v", err)
+	}
+
+	// Test case-insensitive matching
+	testCases := []string{"mysecret", "MYSECRET", "MySecret", "information", "IMPORTANT", "ImPoRtAnT"}
+	for _, query := range testCases {
+		results := manager.Buscar(query)
+		if len(results) != 1 {
+			t.Errorf("Expected 1 result for query '%s', got %d", query, len(results))
+		}
+	}
+}
+
+// TestBuscarExcluiExcluidos verifies search excludes deleted secrets.
+func TestBuscarExcluiExcluidos(t *testing.T) {
+	cofre := NovoCofre()
+	manager := NewManager(cofre, nil)
+
+	// Create model
+	modelo, err := manager.CriarModelo("Item", []CampoModelo{
+		{nome: "Name", tipo: TipoCampoComum},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Create two secrets
+	pasta := cofre.PastaGeral()
+	_, err = manager.CriarSegredo(pasta, "Active", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create secret1: %v", err)
+	}
+	segredo2, err := manager.CriarSegredo(pasta, "ToDelete", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create secret2: %v", err)
+	}
+
+	// Search before deletion - should find both
+	results := manager.Buscar("Active")
+	if len(results) != 1 {
+		t.Errorf("Expected 1 result for 'Active' before delete, got %d", len(results))
+	}
+	results = manager.Buscar("ToDelete")
+	if len(results) != 1 {
+		t.Errorf("Expected 1 result for 'ToDelete' before delete, got %d", len(results))
+	}
+
+	// Mark one for deletion
+	err = manager.ExcluirSegredo(segredo2)
+	if err != nil {
+		t.Fatalf("Failed to delete secret2: %v", err)
+	}
+
+	// Search after deletion - should NOT find deleted secret
+	results = manager.Buscar("ToDelete")
+	if len(results) != 0 {
+		t.Errorf("Expected 0 results for deleted secret, got %d", len(results))
+	}
+
+	// Active secret should still be found
+	results = manager.Buscar("Active")
+	if len(results) != 1 {
+		t.Errorf("Expected 1 result for 'Active' after delete, got %d", len(results))
+	}
+}
