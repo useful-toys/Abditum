@@ -1376,3 +1376,154 @@ func TestMoverSegredoSemEstadoMudanca(t *testing.T) {
 		t.Error("Expected vault to be modified after moving secret")
 	}
 }
+
+// TestReposicionarSegredoSemEstadoMudanca verifies repositioning a secret doesn't change estadoSessao.
+// Per D-16: Reposition is structural operation, not content mutation - doesn't change estadoSessao.
+// Only updates cofre.modificado.
+// Per D-23: Moving to current position is no-op.
+func TestReposicionarSegredoSemEstadoMudanca(t *testing.T) {
+	cofre := NovoCofre()
+	manager := NewManager(cofre, nil)
+
+	// Create template
+	modelo, err := manager.CriarModelo("TestModel", []CampoModelo{
+		{nome: "Field1", tipo: TipoCampoComum},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create template: %v", err)
+	}
+
+	// Create folder with 3 secrets
+	pastaGeral := cofre.PastaGeral()
+	pasta, err := manager.CriarPasta(pastaGeral, "TestFolder", 0)
+	if err != nil {
+		t.Fatalf("Failed to create folder: %v", err)
+	}
+
+	segredo1, err := manager.CriarSegredo(pasta, "Secret1", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create Secret1: %v", err)
+	}
+
+	segredo2, err := manager.CriarSegredo(pasta, "Secret2", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create Secret2: %v", err)
+	}
+
+	segredo3, err := manager.CriarSegredo(pasta, "Secret3", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create Secret3: %v", err)
+	}
+
+	// Force estadoSessao to Original for all secrets
+	segredo1.estadoSessao = EstadoOriginal
+	segredo2.estadoSessao = EstadoOriginal
+	segredo3.estadoSessao = EstadoOriginal
+
+	// Test 1: Reposition segredo3 to position 0 (should be first)
+	err = manager.ReposicionarSegredo(segredo3, 0)
+	if err != nil {
+		t.Errorf("Failed to reposition Secret3: %v", err)
+	}
+
+	// Verify estadoSessao DID NOT CHANGE (D-16)
+	if segredo3.EstadoSessao() != EstadoOriginal {
+		t.Errorf("Expected EstadoOriginal unchanged after reposition (D-16), got %v", segredo3.EstadoSessao())
+	}
+
+	// Verify order is now: Secret3, Secret1, Secret2
+	segredos := pasta.Segredos()
+	if len(segredos) != 3 {
+		t.Fatalf("Expected 3 secrets, got %d", len(segredos))
+	}
+	if segredos[0] != segredo3 {
+		t.Errorf("Expected Secret3 at position 0, got %s", segredos[0].Nome())
+	}
+	if segredos[1] != segredo1 {
+		t.Errorf("Expected Secret1 at position 1, got %s", segredos[1].Nome())
+	}
+	if segredos[2] != segredo2 {
+		t.Errorf("Expected Secret2 at position 2, got %s", segredos[2].Nome())
+	}
+
+	// Test 2: Reposition to current position (no-op per D-23)
+	err = manager.ReposicionarSegredo(segredo3, 0)
+	if err != nil {
+		t.Errorf("Failed to reposition to current position: %v", err)
+	}
+
+	// Verify order unchanged
+	segredos = pasta.Segredos()
+	if segredos[0] != segredo3 {
+		t.Error("Order should be unchanged after repositioning to current position")
+	}
+
+	// Test 3: SubirSegredoNaPosicao (move up by 1)
+	err = manager.SubirSegredoNaPosicao(segredo2)
+	if err != nil {
+		t.Errorf("Failed to move Secret2 up: %v", err)
+	}
+
+	// Verify estadoSessao DID NOT CHANGE
+	if segredo2.EstadoSessao() != EstadoOriginal {
+		t.Errorf("Expected EstadoOriginal unchanged after Subir (D-16), got %v", segredo2.EstadoSessao())
+	}
+
+	// Verify order is now: Secret3, Secret2, Secret1
+	segredos = pasta.Segredos()
+	if segredos[1] != segredo2 {
+		t.Errorf("Expected Secret2 at position 1 after Subir, got %s", segredos[1].Nome())
+	}
+
+	// Test 4: SubirSegredoNaPosicao at position 0 (no-op per D-23)
+	err = manager.SubirSegredoNaPosicao(segredo3)
+	if err != nil {
+		t.Errorf("Failed to call Subir at position 0 (should be no-op): %v", err)
+	}
+
+	// Verify order unchanged
+	segredos = pasta.Segredos()
+	if segredos[0] != segredo3 {
+		t.Error("Order should be unchanged after Subir at position 0 (D-23 no-op)")
+	}
+
+	// Test 5: DescerSegredoNaPosicao (move down by 1)
+	err = manager.DescerSegredoNaPosicao(segredo3)
+	if err != nil {
+		t.Errorf("Failed to move Secret3 down: %v", err)
+	}
+
+	// Verify estadoSessao DID NOT CHANGE
+	if segredo3.EstadoSessao() != EstadoOriginal {
+		t.Errorf("Expected EstadoOriginal unchanged after Descer (D-16), got %v", segredo3.EstadoSessao())
+	}
+
+	// Verify order is now: Secret2, Secret3, Secret1
+	segredos = pasta.Segredos()
+	if segredos[1] != segredo3 {
+		t.Errorf("Expected Secret3 at position 1 after Descer, got %s", segredos[1].Nome())
+	}
+
+	// Test 6: DescerSegredoNaPosicao at last position (no-op per D-23)
+	err = manager.DescerSegredoNaPosicao(segredo1)
+	if err != nil {
+		t.Errorf("Failed to call Descer at last position (should be no-op): %v", err)
+	}
+
+	// Verify order unchanged
+	segredos = pasta.Segredos()
+	if segredos[2] != segredo1 {
+		t.Error("Order should be unchanged after Descer at last position (D-23 no-op)")
+	}
+
+	// Test 7: Invalid position error
+	err = manager.ReposicionarSegredo(segredo1, 999)
+	if err != ErrPosicaoInvalida {
+		t.Errorf("Expected ErrPosicaoInvalida for invalid position, got: %v", err)
+	}
+
+	// Verify vault modified
+	if !manager.IsModified() {
+		t.Error("Expected vault to be modified after repositioning secrets")
+	}
+}
