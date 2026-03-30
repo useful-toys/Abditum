@@ -64,18 +64,21 @@ Todo `Segredo` carrega um `estado_sessao` transiente (não serializado no arquiv
 | `original`   | Carregado do arquivo sem alterações na sessão                    |
 | `incluido`   | Criado durante a sessão; não existe no arquivo ainda             |
 | `modificado` | Existia no arquivo; foi alterado durante a sessão                |
-| `excluido`   | Marcado para remoção; será suprimido ao salvar                   |
+| `excluido`   | Marcado para remoção; será suprimido do cofre após sucesso no salvamento |
+
 
 **Transições:**
 - Ao abrir ou descartar: todos os segredos iniciam como `original`
 - Criar segredo: → `incluido`
-- Alterar nome, campos ou favorito de segredo `original`: → `modificado`
+- Alterar nome ou campos de segredo `original`: → `modificado` (favoritar não altera o estado do segredo, apenas do cofre)
+
 - Alterar segredo `incluido`: permanece `incluido`
 - Marcar para exclusão (qualquer estado): → `excluido`; estado anterior memorizado para eventual restauração
 - Desmarcar exclusão: restaura o estado anterior à marcação
 
 **Efeitos sobre o domínio:**
-- `excluido`: excluído da busca; excluído da exportação; removido permanentemente ao salvar
+- `excluido`: excluído da busca; excluído da exportação; removido permanentemente da árvore em memória apenas após a confirmação de sucesso do salvamento (commit)
+
 - `incluido`, `modificado`, `excluido`: exibem indicador visual na UI
 - `original`: sem indicador
 

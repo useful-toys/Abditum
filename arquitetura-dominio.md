@@ -44,8 +44,10 @@ A TUI só pode **ler** via getters exportados:
 // internal/vault/segredo.go — getters exportados
 func (s *Segredo) Nome() string              { return s.nome }
 func (s *Segredo) Favorito() bool            { return s.favorito }
+func (s *Segredo) Pasta() *Pasta             { return s.pasta }
 func (s *Segredo) EstadoSessao() EstadoSessao { return s.estadoSessao }
 func (s *Segredo) DataCriacao() time.Time    { return s.dataCriacao }
+
 
 // Retorna cópia da slice para evitar mutação indireta da lista
 func (s *Segredo) Campos() []CampoSegredo {
@@ -184,7 +186,12 @@ O critério que determina onde um método vive:
 | Operação | Método público em | Lógica local em | Invariante cruzado? |
 |---|---|---|---|
 | Criar segredo | `Cofre` | `Pasta` (privado) | ❌ local à pasta |
+| Criar segredo de modelo | `Cofre` | `Pasta` (privado) | ❌ local à pasta |
+| Reordenar segredo | `Cofre` | `Pasta` (privado) | ❌ local à pasta |
+| Reordenar pasta | `Cofre` | `Pasta` (privado) | ❌ local à pasta |
+| Alterar configuração | `Cofre` | `Cofre` | ❌ global |
 | Renomear segredo | `Cofre` | `Segredo` (privado) | ❌ local à pasta pai |
+
 | Favoritar segredo | `Cofre` | `Segredo` (privado) | ❌ sem invariante |
 | Criar pasta | `Cofre` | `Pasta` (privado) | ❌ local à pasta pai |
 | Mover segredo | `Cofre` | `Cofre` | ✅ duas pastas |
@@ -211,7 +218,7 @@ func (c *Cofre) CriarSegredo(pasta *Pasta, nome string, campos []CampoSegredo) (
 }
 
 // internal/vault/pasta.go — método privado, lógica local
-func (p *Pasta) criarSegredo(nome string, campos []CampoSegredo) (*Segredo, error) {
+func (p *Pasta) criarSegredo(nome string, campos []CampoSegredo, posicao int) (*Segredo, error) {
     if p.contemSegredoComNome(nome) {           // invariante local à pasta
         return nil, ErrNameConflict
     }
@@ -223,9 +230,12 @@ func (p *Pasta) criarSegredo(nome string, campos []CampoSegredo) (*Segredo, erro
         dataCriacao:  time.Now(),
     }
     segredo.campos = append(segredo.campos, campoObservacao()) // Observação sempre última
-    p.segredos = append(p.segredos, segredo)
+    
+    // Insere na posição solicitada, empurrando os demais
+    p.segredos = insertAt(p.segredos, segredo, posicao)
     return segredo, nil
 }
+
 ```
 
 ### Por que o estado `modificado` fica no Cofre
@@ -287,12 +297,16 @@ TUI → Manager.RenomearSegredo(segredo, "novo nome")
 TUI → Manager.Salvar()
          ↓
       repositorio.Salvar(cofre)
-         ↓ serialização JSON
+         ↓ serialização JSON (filtra excluídos)
          ↓ criptografia AES-256-GCM
          ↓ escrita atômica no arquivo
-         ↓ cofre.modificado = false
+         ↓ se sucesso:
+         ↓    cofre.efetivarMutacoes() // remove excluídos e reseta estados
+         ↓    cofre.modificado = false
       retorna erro ou nil para a TUI
 ```
+
+A ordem é crítica: o cofre em memória só é limpo (remoção dos ponteiros de segredos excluídos e reset dos indicadores de modificação) **após** a confirmação de que o arquivo foi escrito com sucesso no disco. Se o salvamento falhar, o estado em memória permanece intacto, permitindo ao usuário tentar novamente ou corrigir o problema sem perder a marcação do que seria excluído.
 
 ### Operações que salvam automaticamente
 
@@ -441,16 +455,18 @@ func (c *Cofre) RenomearSegredo(segredo *Segredo, novoNome string) error {
     return nil
 }
 
-// Favoritar — muda cofre mas não estadoSessao do segredo
+// Favoritar — muda cofre mas não estadoSessao nem timestamp do segredo
 func (c *Cofre) FavoritarSegredo(segredo *Segredo, favorito bool) error {
     alterado := segredo.setFavorito(favorito)
     if alterado {
         c.modificado = true                // cofre tem alterações não salvas
         c.dataUltimaModificacao = time.Now()
         // estadoSessao não muda — favoritar não é edição de conteúdo
+        // segredo.dataUltimaModificacao não muda — data do segredo reflete apenas conteúdo
     }
     return nil
 }
+
 ```
 
 ### Transições de estadoSessao
@@ -474,7 +490,7 @@ A filtragem de excluídos acontece apenas em casos de uso específicos que a spe
 
 - **Busca** — excluídos não aparecem nos resultados
 - **Exportação** — excluídos não são incluídos no arquivo exportado
-- **Save** — excluídos são removidos permanentemente do JSON ao salvar
+- **Save** — segredos marcados como `excluido` são ignorados pela serialização. A remoção definitiva da árvore em memória só ocorre no passo de "Efetivação" (commit) após o sucesso da escrita em disco.
 
 Não há método separado "incluindo excluídos" — o getter já retorna tudo, e cada caso de uso que filtra implementa sua própria política internamente.
 
@@ -592,7 +608,3 @@ O modelo de ameaça relevante para zeragem é um atacante que lê memória do pr
 - **Responsabilidades separadas na busca**: a entidade sabe se seu conteúdo casa com um critério (`AtendeCriterio`); o Manager aplica a política de busca (filtragem de excluídos, percurso da árvore).
 - **Quem constrói popula**: a responsabilidade de popular referências (pai, pasta) pertence a quem cria a entidade — storage na deserialização, método privado da entidade na criação durante a sessão.
 - **Manager não valida, não conhece regras**: toda lógica de negócio vive no domínio. O Manager é um coordenador de fluxo — recebe intenção da TUI, invoca o `Cofre`, persiste via storage.
-
-
-
-TODO: Ao salvar, precisaremos garantir que, os segredos só serão excluidos do cofre se o salvar for realizado com sucesso. Se o salvar falhar, então o cofre precisará permanecer no seu estado exatamente anterior ao salvar
