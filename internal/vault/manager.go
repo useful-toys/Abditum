@@ -70,6 +70,38 @@ func (m *Manager) CriarSegredo(pasta *Pasta, nome string, modelo *ModeloSegredo)
 	return segredo, nil
 }
 
+// ExcluirSegredo marks a secret as deleted (soft delete).
+// Per D-14: Delete is reversible until Salvar.
+// State transitions: Original→Excluido, Incluido→removed, Modificado→Excluido.
+func (m *Manager) ExcluirSegredo(segredo *Segredo) error {
+	// Validate locked state
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Validate deletion parameters
+	if err := segredo.validarExclusaoSegredo(); err != nil {
+		return err
+	}
+
+	// Perform soft delete
+	segredo.excluirSegredo()
+
+	// Update vault state (only if still attached - EstadoIncluido removes from parent)
+	if segredo.estadoSessao == EstadoExcluido {
+		now := time.Now().UTC()
+		segredo.dataUltimaModificacao = now
+		m.cofre.modificado = true
+		m.cofre.dataUltimaModificacao = now
+	} else {
+		// EstadoIncluido was removed from parent - still mark vault as modified
+		m.cofre.modificado = true
+		m.cofre.dataUltimaModificacao = time.Now().UTC()
+	}
+
+	return nil
+}
+
 // IsLocked returns true if the vault is currently locked.
 func (m *Manager) IsLocked() bool {
 	return m.bloqueado

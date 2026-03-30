@@ -1086,3 +1086,37 @@ func (p *Pasta) criarSegredo(nome string, modelo *ModeloSegredo) *Segredo {
 
 	return segredo
 }
+
+// validarExclusaoSegredo validates secret deletion parameters.
+// Returns error if segredo is nil or already excluded.
+func (s *Segredo) validarExclusaoSegredo() error {
+	if s == nil {
+		return ErrSegredoInvalido
+	}
+	if s.estadoSessao == EstadoExcluido {
+		return ErrSegredoJaExcluido
+	}
+	return nil
+}
+
+// excluirSegredo marks secret as excluded (soft delete).
+// Per D-14: Delete is reversible until Salvar.
+// State transitions: Original→Excluido, Incluido→removed, Modificado→Excluido.
+// PRECONDITION: validarExclusaoSegredo must pass.
+func (s *Segredo) excluirSegredo() {
+	switch s.estadoSessao {
+	case EstadoIncluido:
+		// New secret never persisted - remove from parent's list
+		if s.pasta != nil {
+			for i, seg := range s.pasta.segredos {
+				if seg == s {
+					s.pasta.segredos = append(s.pasta.segredos[:i], s.pasta.segredos[i+1:]...)
+					break
+				}
+			}
+		}
+	case EstadoOriginal, EstadoModificado:
+		// Existing secret - mark as excluded (soft delete)
+		s.estadoSessao = EstadoExcluido
+	}
+}
