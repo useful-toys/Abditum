@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 03
 status: executing
-last_updated: "2026-03-30T03:28:07.800Z"
+last_updated: "2026-03-30T05:09:23.035Z"
 progress:
   total_phases: 11
   completed_phases: 2
   total_plans: 11
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State — Abditum
@@ -130,6 +130,7 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 03-01]: Pointer identity (no synthetic IDs) - D-01
 - [Phase 03-01]: Package-private encapsulation with defensive copies - D-08/D-09
 - [Phase 03-01]: Factory+bootstrap separation (NovoCofre/InicializarConteudoPadrao) - D-28
+- [Phase 03]: D-12 change detection: RenomearModelo only marks modified if name actually changes
 
 ### Phase 02 Decisions
 

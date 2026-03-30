@@ -80,10 +80,10 @@
 ### Gerenciamento de Modelos de Segredo
 
 - [x] **TPL-01**: Usuário pode criar modelo de segredo com campos personalizados (nome + tipo: comum ou sensível)
-- [ ] **TPL-02**: Usuário pode renomear modelo; nome único entre modelos
-- [ ] **TPL-03**: Usuário pode alterar estrutura do modelo: adicionar campo, renomear campo, alterar tipo de campo, reordenar campos, excluir campo; não é permitido adicionar ou renomear campo para o nome 'Observação'; alterações não afetam segredos já criados
-- [ ] **TPL-04**: Usuário pode excluir modelo
-- [ ] **TPL-05**: Usuário pode criar modelo a partir de segredo existente; todos os campos com nome 'Observação' são excluídos — tanto a Observação automática quanto qualquer campo de usuário com esse nome; o campo 'Observação' não pode existir em modelo
+- [x] **TPL-02**: Usuário pode renomear modelo; nome único entre modelos
+- [x] **TPL-03**: Usuário pode alterar estrutura do modelo: adicionar campo, renomear campo, alterar tipo de campo, reordenar campos, excluir campo; não é permitido adicionar ou renomear campo para o nome 'Observação'; alterações não afetam segredos já criados
+- [x] **TPL-04**: Usuário pode excluir modelo
+- [x] **TPL-05**: Usuário pode criar modelo a partir de segredo existente; todos os campos com nome 'Observação' são excluídos — tanto a Observação automática quanto qualquer campo de usuário com esse nome; o campo 'Observação' não pode existir em modelo
 - [x] **TPL-06**: Modelos de segredo são sempre exibidos em ordem alfabética — não são reordenáveis pelo usuário
 
 ### Força de Senha
@@ -167,10 +167,10 @@
 | FOLDER-04 | 3 | Pending |
 | FOLDER-05 | 3 | Pending |
 | TPL-01 | 3 | Complete |
-| TPL-02 | 3 | Pending |
-| TPL-03 | 3 | Pending |
-| TPL-04 | 3 | Pending |
-| TPL-05 | 3 | Pending |
+| TPL-02 | 3 | Complete |
+| TPL-03 | 3 | Complete |
+| TPL-04 | 3 | Complete |
+| TPL-05 | 3 | Complete |
 | TPL-06 | 3 | Complete |
 | ATOMIC-01 | 4 | Pending |
 | ATOMIC-02 | 4 | Pending |
