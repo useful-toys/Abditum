@@ -1467,3 +1467,35 @@ func (s *Segredo) atendeCriterio(consultaLower string) bool {
 	
 	return false
 }
+
+// listarFavoritos performs recursive DFS traversal from root to collect favorite secrets.
+// Per D-20: uses depth-first search (not BFS).
+// Collects secrets where favorito == true AND estadoSessao != Excluido.
+func (c *Cofre) listarFavoritos() []*Segredo {
+	return listarFavoritosRecursivo(c.pastaGeral)
+}
+
+// listarFavoritosRecursivo recursively collects favorites using DFS.
+func listarFavoritosRecursivo(pasta *Pasta) []*Segredo {
+	if pasta == nil {
+		return nil
+	}
+	
+	favoritos := make([]*Segredo, 0)
+	
+	// First, collect favorites from subfolders (DFS: depth before breadth)
+	for _, subpasta := range pasta.subpastas {
+		subFavoritos := listarFavoritosRecursivo(subpasta)
+		favoritos = append(favoritos, subFavoritos...)
+	}
+	
+	// Then, collect favorites from this folder
+	for _, segredo := range pasta.segredos {
+		// Only include if favorito AND not deleted
+		if segredo.favorito && segredo.estadoSessao != EstadoExcluido {
+			favoritos = append(favoritos, segredo)
+		}
+	}
+	
+	return favoritos
+}

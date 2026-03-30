@@ -943,3 +943,15 @@ func (m *Manager) Buscar(consulta string) []*Segredo {
 	
 	return m.cofre.buscar(consulta)
 }
+
+// ListarFavoritos returns all secrets marked as favorite using DFS traversal.
+// Per D-20: depth-first search starting from PastaGeral.
+// Excludes secrets where estadoSessao == Excluido.
+// Read-only operation, no state changes.
+func (m *Manager) ListarFavoritos() []*Segredo {
+	if m.bloqueado {
+		return nil
+	}
+	
+	return m.cofre.listarFavoritos()
+}

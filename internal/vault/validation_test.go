@@ -1804,3 +1804,134 @@ func TestBuscarExcluiExcluidos(t *testing.T) {
 		t.Errorf("Expected 1 result for 'Active' after delete, got %d", len(results))
 	}
 }
+
+// TestListarFavoritosOrdem verifies favorites use DFS traversal order per D-20.
+func TestListarFavoritosOrdem(t *testing.T) {
+	cofre := NovoCofre()
+	manager := NewManager(cofre, nil)
+
+	// Create model
+	modelo, err := manager.CriarModelo("Item", []CampoModelo{
+		{nome: "Value", tipo: TipoCampoComum},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Build folder structure:
+	// Pasta Geral
+	//   ├─ Folder A
+	//   │    ├─ Secret A1 (favorite)
+	//   │    └─ Secret A2
+	//   └─ Folder B
+	//        ├─ Secret B1
+	//        └─ Secret B2 (favorite)
+	pastaGeral := cofre.PastaGeral()
+	
+	folderA, err := manager.CriarPasta(pastaGeral, "Folder A", 0)
+	if err != nil {
+		t.Fatalf("Failed to create Folder A: %v", err)
+	}
+	folderB, err := manager.CriarPasta(pastaGeral, "Folder B", 1)
+	if err != nil {
+		t.Fatalf("Failed to create Folder B: %v", err)
+	}
+
+	secretA1, err := manager.CriarSegredo(folderA, "Secret A1", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create Secret A1: %v", err)
+	}
+	_, err = manager.CriarSegredo(folderA, "Secret A2", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create Secret A2: %v", err)
+	}
+
+	_, err = manager.CriarSegredo(folderB, "Secret B1", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create Secret B1: %v", err)
+	}
+	secretB2, err := manager.CriarSegredo(folderB, "Secret B2", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create Secret B2: %v", err)
+	}
+
+	// Mark as favorites
+	err = manager.AlternarFavoritoSegredo(secretA1)
+	if err != nil {
+		t.Fatalf("Failed to favorite A1: %v", err)
+	}
+	err = manager.AlternarFavoritoSegredo(secretB2)
+	if err != nil {
+		t.Fatalf("Failed to favorite B2: %v", err)
+	}
+
+	// List favorites - should be in DFS order (A1, then B2)
+	favoritos := manager.ListarFavoritos()
+	if len(favoritos) != 2 {
+		t.Fatalf("Expected 2 favorites, got %d", len(favoritos))
+	}
+
+	// Verify DFS order (depth-first: all of A before B)
+	if favoritos[0].Nome() != "Secret A1" {
+		t.Errorf("Expected first favorite 'Secret A1', got '%s'", favoritos[0].Nome())
+	}
+	if favoritos[1].Nome() != "Secret B2" {
+		t.Errorf("Expected second favorite 'Secret B2', got '%s'", favoritos[1].Nome())
+	}
+}
+
+// TestListarFavoritosExcluiExcluidos verifies favorites excludes deleted secrets.
+func TestListarFavoritosExcluiExcluidos(t *testing.T) {
+	cofre := NovoCofre()
+	manager := NewManager(cofre, nil)
+
+	// Create model
+	modelo, err := manager.CriarModelo("Item", []CampoModelo{
+		{nome: "Value", tipo: TipoCampoComum},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Create secrets
+	pasta := cofre.PastaGeral()
+	secret1, err := manager.CriarSegredo(pasta, "Favorite 1", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create secret1: %v", err)
+	}
+	secret2, err := manager.CriarSegredo(pasta, "Favorite 2", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create secret2: %v", err)
+	}
+
+	// Mark both as favorites
+	err = manager.AlternarFavoritoSegredo(secret1)
+	if err != nil {
+		t.Fatalf("Failed to favorite secret1: %v", err)
+	}
+	err = manager.AlternarFavoritoSegredo(secret2)
+	if err != nil {
+		t.Fatalf("Failed to favorite secret2: %v", err)
+	}
+
+	// List favorites before deletion
+	favoritos := manager.ListarFavoritos()
+	if len(favoritos) != 2 {
+		t.Fatalf("Expected 2 favorites before delete, got %d", len(favoritos))
+	}
+
+	// Delete one favorite
+	err = manager.ExcluirSegredo(secret1)
+	if err != nil {
+		t.Fatalf("Failed to delete secret1: %v", err)
+	}
+
+	// List favorites after deletion - should only show non-deleted
+	favoritos = manager.ListarFavoritos()
+	if len(favoritos) != 1 {
+		t.Fatalf("Expected 1 favorite after delete, got %d", len(favoritos))
+	}
+	if favoritos[0].Nome() != "Favorite 2" {
+		t.Errorf("Expected 'Favorite 2', got '%s'", favoritos[0].Nome())
+	}
+}
