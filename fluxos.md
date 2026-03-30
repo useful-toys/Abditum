@@ -21,131 +21,142 @@ Por isso, o vocabulário é cuidadosamente neutro. Palavras como "exibe", "mostr
 
 ### Fluxos como especificação
 
-Os fluxos são **especificação do comportamento esperado**, não documentação posterior. Foram escritos e validados antes da implementação para que a IA implementadora não precise presumir comportamentos — cada decisão de UX já está registrada aqui.
+Os fluxos são **especificação do comportamento esperado**, não documentação posterior. São escritos e validados antes da implementação, para que cada decisão de UX seja explícita e não deixe margem para presunções durante a codificação.
+
+## Relação com Outros Documentos
+
+Este documento descreve **fluxos**, que diferem de outros tipos de especificação usados no projeto:
+
+### Casos de Uso vs. Fluxos
+
+**Casos de uso** descrevem o que o sistema faz do ponto de vista de um ator. São orientados a objetivo — exemplos: "Abrir cofre", "Criar segredo". Não descrevem como, sequência de passos, ou erros em detalhe. São um inventário de capacidades.
+
+**Fluxos** descrevem como o usuário realiza uma tarefa do início ao fim, incluindo decisões, ramificações e resultados. São orientados à experiência — cobrem caminho feliz e caminhos alternativos numa narrativa unificada.
+
+### Cenários de BDD vs. Fluxos
+
+**Cenários de BDD** (Given/When/Then) descrevem exemplos concretos e verificáveis de um comportamento específico. São orientados a teste — cada cenário é uma afirmação que passa ou falha. Exemplo: "Dado que o cofre está aberto e o segredo está em foco, quando o usuário marca para exclusão, então o segredo mostra indicador de excluído."
+
+**Fluxos** são mais amplos. Um único fluxo desdobra-se em múltiplos cenários de BDD, cada um cobrindo uma ramificação ou condição específica. O fluxo é a narrativa; cenários são testes dessa narrativa.
+
+### Relação de Granularidade
+
+Os três documentos descrevem o mesmo sistema com propósitos diferentes, produzindo uma relação hierárquica:
+
+- **Casos de uso → Fluxos**: o fluxo expande o caso de uso. Onde o caso de uso diz "o sistema abre o cofre", o fluxo detalha passo por passo, incluindo decisões e ramificações.
+
+- **Fluxos → Cenários BDD**: cada caminho do fluxo é um cenário candidato. Um fluxo com três saídas possíveis gera ao menos 3 cenários BDD.
+
+- **Cenários BDD ← Fluxos**: cenários extraem fatias singulares e verificáveis da narrativa mais ampla do fluxo.
+
+Em termos de granularidade: **casos de uso ⊂ fluxos ⊂ cenários BDD**. Cada um é uma lente diferente — *inventário de capacidades*, *experiência completa*, *verificação automática*.
 
 ---
 
 ## Conceitos de contexto
 
-Para descrever com precisão quando um fluxo pode ser iniciado, usamos o conceito de **contexto**: o conjunto de condições que são verdadeiras no momento em que o fluxo começa. O contexto descreve *o estado do mundo*, não o caminho percorrido para chegar lá. Um mesmo estado pode ser alcançado por múltiplos caminhos diferentes, e o fluxo se comporta da mesma forma independentemente de qual foi o caminho.
+Para descrever com precisão quando um fluxo pode ser iniciado, usamos o conceito de **contexto**: o conjunto de condições verdadeiras no momento em que o fluxo começa. O contexto descreve *o estado do mundo*, não o caminho percorrido. Um mesmo estado pode ser alcançado por múltiplos caminhos, e o fluxo comporta-se identicamente.
 
 O contexto é composto por cinco dimensões: **foco**, **entorno**, **modo**, **estado da aplicação** e **estado das entidades**. As três primeiras são conceitos abstratos de navegação; as duas últimas são o estado concreto dos dados.
 
 ### Foco
 
-O **foco** é o elemento que é o *assunto do momento* — aquilo com o qual o usuário está trabalhando. Exemplos: um cofre, uma pasta, um segredo, um campo dentro de um segredo.
+O **foco** é o elemento que é o *assunto do momento* — aquilo com o qual o usuário está trabalhando no instante em que o fluxo é iniciado. O foco deve ser compreendido de forma completamente independente de como o usuário chegou até ele: dois caminhos diferentes podem levar ao mesmo foco, e uma vez lá, o fluxo se comporta de forma idêntica.
 
-O foco é independente de como o usuário chegou até ele. Dois caminhos diferentes podem levar ao mesmo foco, e uma vez lá, o comportamento é idêntico.
+**Nota importante:** pode não haver um foco no momento. A interface pode estar visível (exibindo o entorno, opcões, elementos auxiliares) mas o usuário ainda não interagiu com nenhum elemento específico. Nesse caso, o contexto é descrito como "sem foco". Apenas quando o usuário realizar uma ação que coloca um elemento em foco é que esse elemento se torna parte do contexto.
 
-#### Foco implícito
+#### Contexto implícito ao foco
 
-Uma vez que um elemento está em foco, outros elementos relacionados estão implicitamente em foco também:
+Quando um elemento está em foco, outros elementos podem estar implicitamente em contexto também. São elementos fortemente relacionados — tão fortemente que um não se separa do outro. O contexto implícito não é uma decisão do designer; é uma consequência lógica da estrutura do sistema.
 
-- Se um **segredo está em foco**, as **pastas que o contêm** estão implicitamente em foco
-- Se uma **pasta está em foco**, o **cofre** está implicitamente em foco
+No caso mais concreto que temos — elementos em **hierarquia de árvore** — quando um elemento está em foco, seus ancestrais estão implicitamente em contexto também, porque um elemento não pode existir sem seu contentor. O pai é parte indissolúvel do contexto do filho.
 
-O foco implícito nunca é alterado explicitamente — é determinado pela hierarquia da aplicação. Você não "coloca a pasta em foco"; ela fica implicitamente em foco porque o segredo que contém é o foco explícito.
+O contexto implícito nunca é alterado explicitamente; é determinado automaticamente pela estrutura. Você não "coloca um ancestral em foco" — ele fica implicitamente em contexto porque seu descendente é o foco explícito.
+
+**Nota importante:** o contexto implícito existe no nível lógico da especificação mas não necessariamente está visível para o usuário. Um ancestral pode estar em contexto sem que a UI o destaque visualmente. O que importa para os fluxos é que o contexto implícito existe logicamente, afetando quais ações são aplicáveis.
 
 ### Entorno
 
-O **entorno** é tudo aquilo que está indiretamente em atenção porque o foco existe. É o contexto visual ou lógico do foco — aquilo que o contém ou o rodeia.
+O **entorno** é o conjunto de elementos adicionais presentes no contexto — elementos de dados ou lógicos que facilitam as tarefas do usuário.
 
-**Exemplo:** quando um segredo está em foco, o entorno inclui a pasta que o contém, a estrutura de pastas acima dela, e o cofre em geral.
+O entorno não é inerente ao sistema; é uma escolha do designer. É composto por elementos que não são o foco (o assunto principal) mas que estão presentes porque o foco existe. Podem ser: dados relacionados, opções disponíveis em função do foco, listas de candidatos, contexto histórico, condições de disponibilidade — toda informação que o designer escolhe tornar relevante.
 
-O entorno é **completamente independente de UI**. Uma lista de segredos pode ser apresentada como:
-- Uma tela inteira
-- Uma aba dentro de janelaprincipal
-- Um painel lateral
-- Uma árvore expandida com nós
+**Importante:** o entorno é composto por elementos de dados e lógica, não elementos de UX. Como apresentar o entorno (qual tela, painel, menu) é decisão separada de design, feita posteriormente. O entorno descreve *o que está contextualmente relevante*, não *como é apresentado*.
 
-Em todos os casos, o entorno é o mesmo: "lista de segredos dentro de uma pasta". A forma de apresentação é decidida durante o design da UI e não afeta a descrição do fluxo.
-
-**Nota importante:** o contexto necessário de um fluxo não declara explicitamente qual é o entorno, porque o entorno é determinado pela UI. O que importa para o fluxo é apenas o que está em foco.
+Um mesmo foco pode ter unterschiedliche entornos conforme as decisões de design. O que importa para os fluxos é que o entorno influencia quais ações estão disponíveis — por isso faz parte do "contexto" — mas os fluxos permanecem válidos independentemente de como o entorno é implementado.
 
 ### Modo
 
-O **modo** descreve o comportamento do entorno em relação ao foco — o que é possível fazer com o que está em foco.
+O **modo** é um aspecto particular do entorno — tão relevante que merece menção separada.
 
-Exemplos de modos:
+Enquanto o entorno engloba todos os elementos contextuais adicionais (dados relacionados, opções, informações auxiliares), o modo descreve especificamente *como o entorno se comporta e que ações permite*. É o estado comportamental do entorno em relação ao foco: quais tipos de ações estão disponíveis, o que é possível fazer, como o entorno restringe ou habilita interações.
 
-- **Visualização**: o usuário pode navegar e visualizar, mas não alterar dados
-- **Edição de valores**: o usuário pode revisar e modificar os valores dos campos
-- **Alteração de estrutura**: o usuário pode adicionar, remover ou reordenar elementos
-- **Busca**: o usuário está filtrando elementos por critério
-- **Confirmação**: o usuário está sendo pedido para confirmar uma ação irreversível
+Exemplos de modos genéricos:
 
-O modo influencia diretamente quais fluxos estão disponíveis. Por exemplo, um fluxo para "editar valores do segredo" só é aplicável se o segredo está em modo de edição, não em modo de visualização.
+- **Visualização**: navegação e leitura, sem alteração de dados
+- **Edição**: revisão e modificação de dados
+- **Busca**: filtragem ou localização de elementos
+- **Revisão**: análise de conteúdo antes de confirmar ou publicar
+
+O modo é o aspecto do entorno mais diretamente relevante para determinar quais fluxos são aplicáveis. Um fluxo cujo contexto inclua um modo específico só pode ser iniciado quando esse modo está ativo — é por isso que merece destaque separado da dimensão geral "entorno".
 
 ### Contexto necessário
 
-Cada fluxo declare qual contexto é necessário para que ele possa ser iniciado. Isso inclui:
+Cada fluxo declara qual contexto é necessário para ser iniciado. O contexto necessário é a soma das condições sobre:
 
-- Qual é o **foco** (p.ex.: "um segredo está em foco")
-- Qual é o **modo** (p.ex.: "segredo em modo de edição")
-- Qual é o **estado da aplicação** (p.ex.: "cofre carregado")
-- Qual é o **estado das entidades** (p.ex.: "o segredo não foi excluído")
+- **Foco**: qual elemento (ou tipo) é o assunto
+- **Modo**: qual comportamento está ativo
+- **Estado da aplicação**: condições globais (documento carregado, aplicação conectada, etc.)
+- **Estado das entidades**: condições sobre os dados (entidade marcada para exclusão, propriedade com valor específico, etc.)
 
-Se o contexto necessário não for atendido, o fluxo não pode ser iniciado. As ações que iniciam o fluxo (botões, atalhos, menus) só são visíveis/habilitadas quando o contexto é atendido.
+Se o contexto necessário não for integralmente atendido, o fluxo não pode ser iniciado. Os controles que iniciam fluxos aparecem habilitados apenas quando o contexto necessário é atendido.
 
 ### Contexto resultante
 
-Ao final de um fluxo, o contexto muda. O **contexto resultante** descreve quais condições serão verdadeiras depois que o fluxo terminar.
+O **contexto resultante** descreve quais condições serão verdadeiras após o fluxo terminar.
 
-Um fluxo pode ter múltiplas saídas (sucesso, cancelamento, erro), e cada saída pode ter um contexto resultante diferente. Por exemplo:
+Um fluxo pode ter múltiplas saídas (sucesso, cancelamento, erro), cada com um contexto resultante diferente:
 
-- Se o usuário salva o cofre com sucesso → foco permanece igual, mas estado do cofre muda para "inalterado"
-- Se o usuário cancela a operação → contexto permanece intacto, foco volta ao que era antes
-- Se ocorre um erro → uma mensagem é apresentada, foco permanece no local do erro
+- **Sucesso** altera o estado da aplicação, das entidades, ou o foco
+- **Cancelamento** geralmente restaura o contexto anterior
+- **Erro** deixa o foco no local onde ocorreu, permitindo revisão
 
 ### Fluxo aplicável
 
-Um fluxo é **aplicável** no contexto atual se seu contexto necessário é atendido. Isso significa que o usuário pode iniciar esse fluxo agora.
+Um fluxo é **aplicável** quando seu contexto necessário é integralmente atendido — significa que o usuário pode iniciá-lo agora.
 
-Os controles de UI que iniciam fluxos (botões, menus, atalhos) só aparecem habilitados para fluxos aplicáveis, criando uma experiência onde "o que eu posso fazer agora está visível".
+Os controles que iniciam fluxos aparecem habilitados apenas para fluxos aplicáveis, criando uma experiência donde apenas ações viáveis são visíveis.
 
+### Aplicação no Abditum
 
-## Relação com Outros Documentos
+Neste documento, interpretamos esses conceitos abstratos concretamente:
 
-Este documento descreve **fluxos**, que são diferentes de outros conceitos usados no projeto:
+- **Foco**: um cofre, pasta, segredo, ou campo dentro de segredo
+- **Modo**: visualização, edição de valores, alteração de estrutura, busca
+- **Contexto implícito**: a estrutura que contém o foco (pastas, cofre)
+- **Estado da aplicação**: se há um cofre carregado, se foi alterado
+- **Estado das entidades**: estado do segredo (original, incluído, modificado, excluído)
 
-### Casos de Uso vs. Fluxos
-
-**Casos de uso** descrevem o que o sistema faz do ponto de vista de um ator. São orientados a objetivo — "Abrir cofre", "Criar segredo". Não descrevem como, não descrevem a sequência de passos, não descrevem erros em detalhe. São um inventário de capacidades do sistema.
-
-**Fluxos** descrevem como o usuário realiza uma tarefa do início ao fim, incluindo decisões, ramificações e resultados. São orientados à experiência — cobrem o caminho feliz e os caminhos alternativos num único documento narrativo.
-
-### Cenários de BDD vs. Fluxos
-
-**Cenários de BDD** (Given/When/Then) descrevem exemplos concretos e verificáveis de um comportamento específico. São orientados a teste — cada cenário é uma afirmação que pode passar ou falhar. Exemplo: "Dado que o cofre está aberto e o segredo está em foco, quando o usuário marca para exclusão, então o segredo aparece com indicador de excluído."
-
-**Fluxos** são mais amplos. Um único fluxo pode ser desdobrado em múltiplos cenários de BDD, cada um cobrindo uma ramificação ou condição específica mencionada no fluxo. O fluxo é a narrativa; os cenários são testes dessa narrativa.
-
-### Onde se Sobrepõem
-
-Os três documentos falam sobre o mesmo sistema, então há sobreposição de assunto — mas não de propósito. A relação é hierárquica:
-
-- **Um caso de uso vira um fluxo detalhado**: o fluxo é a expansão do caso de uso. O caso de uso diz "o sistema abre o cofre"; o fluxo diz exatamente como, passo por passo, incluindo decisões, erros e ramificações.
-
-- **Um fluxo com ramificações vira vários cenários BDD**: cada caminho do fluxo é um cenário candidato. O fluxo "Abrir Cofre" tem três saídas possíveis (sucesso, senhaincorreta/tentativa novamente, arquivo corrompido), então gera ao menos 3 cenários BDD.
-
-- **Um cenário BDD verifica um passo específico do fluxo**: os cenários são testes — fatias singulares e verificáveis extraídas da narrativa mais ampla do fluxo.
-
-Em termos de granularidade: **casos de uso ⊂ fluxos ⊂ cenários BDD**. Cada um é uma lente diferente sobre o mesmo comportamento — a lente do *inventário de capacidades* (casos de uso), a lente da *experiência completa* (fluxos), e a lente da *verificação automática* (cenários).
+Todos os fluxos abaixo usam essa interpretação em seus contextos necessários e resultantes.
 
 ## Estados na aplicação
 
-### Estado do cofre
+Esta seção especifica os estados concretos do Abditum, fundamentados nos conceitos de contexto descritos acima. Todos esses estados constituem o contexto no qual os fluxos acontecem.
 
-Só existe quando há um cofre carregado. Quando não há cofre carregado, essa dimensão simplesmente não existe.
+### Estados das entidades
+
+#### Estado do cofre
+
+Só existe quando há um cofre carregado. Descreve a sincronização entre memória e disco.
 
 | Estado | Descrição |
 |--------|-----------|
 | `inalterado` | Conteúdo em memória coincide com o arquivo em disco |
-| `alterado` | Há mudanças não salvas  na memória desde a última gravação ou criação do arquivo |
+| `alterado` | Há mudanças não salvas na memória desde a última gravação ou criação |
 
-### Estado do segredo
+#### Estado do segredo
 
-Conforme definido em `modelo-dominio.md`. Relevante como contexto quando um segredo está em foco.
+Conforme definido em `modelo-dominio.md`. Relevante quando um segredo está em foco.
 
 | Estado | Descrição |
 |--------|-----------|
@@ -154,31 +165,35 @@ Conforme definido em `modelo-dominio.md`. Relevante como contexto quando um segr
 | `modificado` | Existia no arquivo e foi alterado na sessão |
 | `excluido` | Marcado para remoção ao salvar |
 
-### Foco
+### Estados de navegação
 
+#### Foco
 
-
-Só existe quando há um cofre carregado. O foco indica o elemento que é o **assunto do momento** — independente de como o usuário chegou até ele. Há uma hierarquia de foco: cada nível implica os anteriores.
+Só existe quando há um cofre carregado. Descreve o elemento que é o assunto do momento, com uma hierarquia onde cada nível implica os anteriores.
 
 | Nível | Descrição |
 |-------|-----------|
-| **pasta em foco** | Uma pasta é o assunto do momento. Sempre existe — no mínimo a Pasta Geral está em foco |
-| **segredo em foco** | Um ou mais segredos são o assunto do momento. Ou nenhum |
-| **segredo aberto** | O conteúdo de um segredo está sendo apresentado. Implica que o segredo também está em foco |
-| **campo em foco** | Um campo específico dentro de um segredo aberto é o assunto do momento. Implica segredo aberto |
+| **pasta em foco** | Uma pasta é o assunto. Sempre existe — no mínimo a Pasta Geral está em foco |
+| **segredo em foco** | Um ou mais segredos são o assunto. Pode não haver nenhum |
+| **segredo aberto** | O conteúdo de um segredo está sendo apresentado. Implica segredo em foco |
+| **campo em foco** | Um campo específico dentro de um segredo aberto é o assunto. Implica segredo aberto |
 
-### Modo do segredo
+### Comportamentos do entorno
 
-Caso um segredo esteja no entorno, então esse entorno poderá estar:
-- visualização
-- edição de valores
-- alteração de estrutura
+#### Modo do segredo
 
-### Modo do cofre
+Define as ações possíveis quando um segredo está no entorno.
 
-Caso o cofre esteja no entorno, então esse entorno poderá ser
- - visualização/navegação
- - em busca
+- **Visualização**: leitura do conteúdo; sem alteração de dados
+- **Edição de valores**: revisão e modificação dos campos
+- **Alteração de estrutura**: adição, remoção ou reordenação de campos
+
+#### Modo do cofre
+
+Define as ações possíveis ao trabalhar com o cofre como um todo.
+
+- **Visualização/navegação**: navegar entre pastas e segredos
+- **Busca**: filtragem de segredos por critério
 
 ---
 
