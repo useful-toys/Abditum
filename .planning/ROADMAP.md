@@ -1,4 +1,4 @@
-# Roadmap: Abditum
+﻿# Roadmap: Abditum
 
 **Milestone:** v1.0
 **Goal:** Ship a security-auditable, offline, single-binary Go TUI password manager with AES-256-GCM encryption, atomic persistence, and a keyboard-driven Bubble Tea interface.
@@ -112,14 +112,13 @@ Plans:
 
 **Requirements:** ATOMIC-01, ATOMIC-02, ATOMIC-03, ATOMIC-04, COMPAT-03
 
-**Plans:**
-1. Define binary format spec as a package-level comment in `format.go` and struct constants: magic bytes `ABDITUM\x00` (8 bytes), format version `uint16` little-endian, plaintext header (after magic+version): Argon2id params struct (`t uint32`, `m uint32`, `p uint8`, `keyLen uint32`, `argonVersion uint32`), salt (32 bytes), nonce (12 bytes); ciphertext: AES-256-GCM-encrypted UTF-8 JSON payload appended after nonce; write `ErrInvalidMagic`, `ErrVersionTooNew`, `ErrAuthFailed`, `ErrCorrupted` sentinel errors
-2. Implement `Save(vaultPath string, v *vault.Vault, password []byte, params crypto.ArgonParams) error` — derive key, marshal JSON, encrypt; atomic protocol for existing file: if `.bak` exists → rename to `.bak2`; rename current file → `.bak`; write payload to `.abditum.tmp` in `filepath.Dir(vaultPath)` (NOT `os.TempDir()`); atomic rename `.tmp` → target using platform function; delete `.bak2` on success; on any failure → delete `.tmp` immediately (ATOMIC-01, ATOMIC-02)
-3. Implement `SaveNew(destPath string, v *vault.Vault, password []byte, params crypto.ArgonParams) error` for creating a new vault file at an empty path — write directly to `destPath` without `.tmp` intermediary (ATOMIC-03)
-4. Implement `Load(vaultPath string, password []byte) (*vault.Vault, FileMetadata, error)` — read and validate magic (→ `ErrInvalidMagic`), validate version (→ `ErrVersionTooNew`), derive key, decrypt (→ `ErrAuthFailed` on GCM tag failure), unmarshal JSON, run `Migrate()`, validate Pasta Geral exists (→ `ErrCorrupted`); `FileMetadata` carries `mtime` and `size` for change detection; return `(nil, zero, err)` on any failure
-5. Implement platform-specific atomic rename: `atomic_rename_unix.go` (build tag `!windows`) using `os.Rename`; `atomic_rename_windows.go` (build tag `windows`) using `windows.MoveFileEx(src, dst, windows.MOVEFILE_REPLACE_EXISTING)` via `golang.org/x/sys/windows` — NOT `os.Rename` on Windows (ATOMIC-04)
-6. Implement `RecoverOrphans(vaultPath string) error` — called at startup before `Load`: if `.tmp` exists, delete it (stale from failed save); if target is unreadable AND `.bak2` exists, attempt restore `.bak2` → `.bak`; log recovery steps generically (NO file paths, NO secret data in log)
-7. Implement `Migrate(payload []byte, fromVersion, toVersion uint16) ([]byte, error)` — chain of `MigrationFunc` from version N to N+1; current version 0 → 1 is a no-op scaffold; write migration test harness: embed a v0 fixture file in `testdata/`, load it, assert it deserializes cleanly at v1 (COMPAT-03); unit tests: full roundtrip, invalid magic, version too new, wrong password → `ErrAuthFailed`, missing Pasta Geral → `ErrCorrupted`, `.bak`/`.bak2` rename sequence simulation, `RecoverOrphans` with stale `.tmp`, external change detection with modified mtime
+**Plans:** 4 plans in 3 waves
+
+Plans:
+- [ ] 04-01-PLAN.md — Foundation: AAD-aware crypto, vault JSON serialization, storage format constants
+- [ ] 04-02-PLAN.md — Core I/O: Save/SaveNew/Load with atomic .tmp protocol, platform-specific rename
+- [ ] 04-03-PLAN.md — Recovery & Migration: RecoverOrphans, DetectExternalChange, migration scaffold
+- [ ] 04-04-PLAN.md — Integration: FileRepository adapter implementing RepositorioCofre, end-to-end tests
 
 **UAT:**
 - [ ] `SaveNew` + `Load` roundtrip returns an identical `*vault.Vault` (deep equality on all fields)
