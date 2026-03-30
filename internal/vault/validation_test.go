@@ -1527,3 +1527,135 @@ func TestReposicionarSegredoSemEstadoMudanca(t *testing.T) {
 		t.Error("Expected vault to be modified after repositioning secrets")
 	}
 }
+
+// TestRenomearSegredoEstado verifies that renaming a secret marks estadoSessao = Modificado.
+// Covers UAT SEC-03: Rename secret marks content as modified.
+func TestRenomearSegredoEstado(t *testing.T) {
+	cofre := NovoCofre()
+	manager := NewManager(cofre, nil)
+
+	// Create template
+	modelo, err := manager.CriarModelo("TestModel", []CampoModelo{
+		{nome: "Username", tipo: TipoCampoComum},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create template: %v", err)
+	}
+
+	// Create secret
+	pastaGeral := cofre.PastaGeral()
+	segredo, err := manager.CriarSegredo(pastaGeral, "OriginalName", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create secret: %v", err)
+	}
+
+	// Force estadoSessao to Original (simulating loaded from file)
+	segredo.estadoSessao = EstadoOriginal
+
+	// Verify initial state
+	if segredo.EstadoSessao() != EstadoOriginal {
+		t.Fatalf("Expected EstadoOriginal initially, got %v", segredo.EstadoSessao())
+	}
+
+	// Test 1: Rename secret (should mark Modificado per D-11)
+	err = manager.RenomearSegredo(segredo, "NewName")
+	if err != nil {
+		t.Errorf("Failed to rename secret: %v", err)
+	}
+
+	// Verify estadoSessao changed to Modificado
+	if segredo.EstadoSessao() != EstadoModificado {
+		t.Errorf("Expected EstadoModificado after rename, got %v", segredo.EstadoSessao())
+	}
+
+	// Verify name actually changed
+	if segredo.Nome() != "NewName" {
+		t.Errorf("Expected name 'NewName', got '%s'", segredo.Nome())
+	}
+
+	// Test 2: Rename with same name (no-op per D-12)
+	err = manager.RenomearSegredo(segredo, "NewName")
+	if err != nil {
+		t.Errorf("Failed to rename with same name: %v", err)
+	}
+
+	// Verify estadoSessao still Modificado (no further change)
+	if segredo.EstadoSessao() != EstadoModificado {
+		t.Errorf("Expected EstadoModificado unchanged after no-op rename, got %v", segredo.EstadoSessao())
+	}
+
+	// Verify vault modified
+	if !manager.IsModified() {
+		t.Error("Expected vault to be modified after renaming secret")
+	}
+}
+
+// TestObservacaoSeparada verifies that Observação is a separate field, not in campos slice.
+// Covers UAT SEC-05: Observação structural enforcement per D-29.
+func TestObservacaoSeparada(t *testing.T) {
+	cofre := NovoCofre()
+	manager := NewManager(cofre, nil)
+
+	// Create template with multiple fields
+	modelo, err := manager.CriarModelo("TestModel", []CampoModelo{
+		{nome: "Username", tipo: TipoCampoComum},
+		{nome: "Password", tipo: TipoCampoSensivel},
+		{nome: "URL", tipo: TipoCampoComum},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create template: %v", err)
+	}
+
+	// Create secret
+	pastaGeral := cofre.PastaGeral()
+	segredo, err := manager.CriarSegredo(pastaGeral, "TestSecret", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create secret: %v", err)
+	}
+
+	// Test 1: Verify Observação is NOT in campos slice
+	campos := segredo.Campos()
+	if len(campos) != 3 {
+		t.Errorf("Expected 3 campos (from template), got %d", len(campos))
+	}
+
+	for _, campo := range campos {
+		if campo.Nome() == "Observação" {
+			t.Error("FAIL: Observação found in campos slice (violates D-29)")
+		}
+	}
+
+	// Test 2: Verify Observação is accessible as separate field
+	observacao := segredo.Observacao()
+	if observacao == "" {
+		// Initial value is empty, this is expected
+	}
+
+	// Test 3: Edit Observação and verify it remains separate
+	err = manager.EditarObservacao(segredo, "This is a note about the secret")
+	if err != nil {
+		t.Errorf("Failed to edit observação: %v", err)
+	}
+
+	// Verify Observação updated
+	observacao = segredo.Observacao()
+	if observacao != "This is a note about the secret" {
+		t.Errorf("Expected observação to be updated, got '%s'", observacao)
+	}
+
+	// Verify campos count unchanged (Observação still not in campos)
+	campos = segredo.Campos()
+	if len(campos) != 3 {
+		t.Errorf("Expected 3 campos after observação edit, got %d", len(campos))
+	}
+
+	for _, campo := range campos {
+		if campo.Nome() == "Observação" {
+			t.Error("FAIL: Observação found in campos slice after edit (violates D-29)")
+		}
+	}
+
+	// Test 4: Verify Campos() getter excludes Observação by design
+	// This is structural enforcement - Observação stored separately, not in campos slice
+	// (Per D-29: architectural separation prevents manipulation)
+}
