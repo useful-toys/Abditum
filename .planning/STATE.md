@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 04
-status: executing
-last_updated: "2026-03-30T16:11:06.295Z"
+current_phase: 05
+status: pending
+last_updated: "2026-03-30T16:30:00.000Z"
 progress:
   total_phases: 11
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 15
-  completed_plans: 11
+  completed_plans: 15
 ---
 
 # Project State — Abditum
 
-**Last updated:** 2026-03-30T12:17:17Z
-**Current phase:** 04
+**Last updated:** 2026-03-30T16:30:00Z
+**Current phase:** 05
 **Milestone:** v1.0
 
 ## Status
@@ -30,33 +30,56 @@ progress:
 | modelo-dominio.md | ✓ Revisado — ordem corrigida (subpastas antes de segredos) |
 | arquitetura.md | ✓ Revisado — versões Bubble Tea v2 explicitadas |
 | formato-arquivo-abditum.md | ✓ Revisado — Argon2id m=256 MiB incorporado ao REQUIREMENTS |
-| descricao.md | ✓ Revisado — ordem corrigida em fluxo \"Visualizar hierarquia\" |
+| descricao.md | ✓ Revisado — ordem corrigida em fluxo "Visualizar hierarquia" |
 
 ## Current Phase
 
-**Phase 03: Vault Domain + Manager** — Complete ✅
+**Phase 04: Storage Package** — Complete ✅
 
-All 7 plans executed successfully:
+All 4 plans executed successfully:
 
-- ✓ 03-01: Domain Entities + Factory
-- ✓ 03-02: Manager + Cofre Lifecycle
-- ✓ 03-03: Folder Management
-- ✓ 03-04: Template Management
-- ✓ 03-05: Secret Lifecycle + State Machine
-- ✓ 03-06: Secret CRUD + Structure
-- ✓ 03-07: Search + Favorites + Comprehensive Validation
+- ✓ 04-01: Foundation (AAD-aware crypto, vault serialization, format constants)
+- ✓ 04-02: Core I/O (SaveNew, Save, Load, atomic rename, backup chain)
+- ✓ 04-03: Recovery & Migration (RecoverOrphans, DetectExternalChange, Migrate scaffold)
+- ✓ 04-04: Integration (FileRepository adapter, end-to-end tests)
 
 **Package Status:**
 
-- 111 tests, 84.8% coverage
-- All Manager API methods implemented
-- All UAT criteria validated
-- Complete package documentation
-- Ready for Phase 4 (Storage Package)
+- 27 tests in `internal/storage`, all passing
+- Full binary `.abditum` format with 49-byte AAD header
+- Atomic writes via `.tmp` → rename, `.bak`/`.bak2` backup chain
+- Windows-specific `MoveFileEx` via build tag
+- `FileRepository` implements `vault.RepositorioCofre`
+- Ready for Phase 5 (TUI Scaffold + Root Model)
 
-**Next:** Phase 04 - Storage Package
+**Next:** Phase 05 - TUI Scaffold + Root Model
 
 ## Phase History
+
+### Phase 04: Storage Package (Completed 2026-03-30)
+
+**Status:** Complete ✅
+
+**Key Deliverables:**
+
+- `internal/storage` package: binary `.abditum` format, atomic saves, backup chain
+- 49-byte file header as GCM AAD: magic(4) + version(1) + salt(32) + nonce(12)
+- `SaveNew`, `Save`, `Load` with `.tmp` → rename atomic protocol
+- Windows: `MoveFileEx` with `MOVEFILE_REPLACE_EXISTING` (build-tagged)
+- `RecoverOrphans`: cleans stale `.tmp` files on startup
+- `DetectExternalChange`: compares mtime+size to detect external mutations
+- `Migrate` scaffold with `MigrationFunc` registry for future format versions
+- `FileRepository` implementing `vault.RepositorioCofre` — bridge to vault domain
+- 27 tests total, all passing
+
+**Commits:**
+
+- a191024 — feat(04-01): storage foundation (format constants, errors)
+- 781481f — feat(04-01): SerializarCofre / DeserializarCofre roundtrip
+- 49ca52d — feat(04-01): EncryptWithAAD / DecryptWithAAD
+- fca0253 — feat(04-02): SaveNew, Save, Load, atomic rename, backup rotation
+- 08a3e93 — feat(04-03): RecoverOrphans, DetectExternalChange, Migrate scaffold
+- 8b0644b — feat(04-04): FileRepository adapter with integration tests
 
 ### Phase 03: Vault Domain + Manager (Context Complete 2026-03-29)
 

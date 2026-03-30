@@ -8,10 +8,14 @@
 
 ## Phases
 
-- [ ] **Phase 1: Project Scaffold + CI Foundation** — Go module, directory tree, static binary build, GitHub Actions CI green on Linux
-- [x] **Phase 2: Crypto Package** — Argon2id key derivation, AES-256-GCM AEAD, memory wipe primitives, mlock, password strength evaluator (completed 2026-03-29)
-- [ ] **Phase 3: Vault Domain + Manager** — All entity types, full Manager API, business rules, invariant enforcement — verified by unit tests
-- [ ] **Phase 4: Storage Package** — Binary `.abditum` format, atomic save with `.bak`/`.bak2` chain, Windows MoveFileEx, migration scaffold, startup recovery
+- [x] **Phase 1: Project Scaffold + CI Foundation** — Go module, directory tree, static binary build, GitHub Actions CI green on Linux
+ (completed 2026-03-29)
+- [x] **Phase 2: Crypto Package** — Argon2id key derivation, AES-256-GCM AEAD, memory wipe primitives, mlock, password strength evaluator
+ (completed 2026-03-29)
+- [x] **Phase 3: Vault Domain + Manager** — All entity types, full Manager API, business rules, invariant enforcement — verified by unit tests
+ (completed 2026-03-29)
+- [x] **Phase 4: Storage Package** — Binary `.abditum` format, atomic save with `.bak`/`.bak2` chain, Windows MoveFileEx, migration scaffold, startup recovery
+ (completed 2026-03-30)
 - [ ] **Phase 5: TUI Scaffold + Root Model** — Session state machine, root model, global tick, timer fields, modal overlay — no screens yet
 - [ ] **Phase 6: Welcome Screen + Vault Create/Open** — First end-to-end flow: create vault, open vault, error classification, master password strength UI
 - [ ] **Phase 7: Vault Tree + Search** — Custom nested tree renderer, keyboard navigation, fold/expand, search overlay scoped to non-sensitive fields
@@ -115,10 +119,10 @@ Plans:
 **Plans:** 4 plans in 3 waves
 
 Plans:
-- [ ] 04-01-PLAN.md — Foundation: AAD-aware crypto, vault JSON serialization, storage format constants
-- [ ] 04-02-PLAN.md — Core I/O: Save/SaveNew/Load with atomic .tmp protocol, platform-specific rename
-- [ ] 04-03-PLAN.md — Recovery & Migration: RecoverOrphans, DetectExternalChange, migration scaffold
-- [ ] 04-04-PLAN.md — Integration: FileRepository adapter implementing RepositorioCofre, end-to-end tests
+- [x] 04-01-PLAN.md — Foundation: AAD-aware crypto, vault JSON serialization, storage format constants
+- [x] 04-02-PLAN.md — Core I/O: Save/SaveNew/Load with atomic .tmp protocol, platform-specific rename
+- [x] 04-03-PLAN.md — Recovery & Migration: RecoverOrphans, DetectExternalChange, migration scaffold
+- [x] 04-04-PLAN.md — Integration: FileRepository adapter implementing RepositorioCofre, end-to-end tests
 
 **UAT:**
 - [ ] `SaveNew` + `Load` roundtrip returns an identical `*vault.Vault` (deep equality on all fields)
