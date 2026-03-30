@@ -4,6 +4,7 @@
 package vault
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -1158,4 +1159,78 @@ func (s *Segredo) validarAlternarFavorito() error {
 // PRECONDITION: validarAlternarFavorito must pass.
 func (s *Segredo) alternarFavorito() {
 	s.favorito = !s.favorito
+}
+
+// validarDuplicacaoSegredo validates secret duplication parameters.
+// Returns error if segredo is nil or excluded.
+func (s *Segredo) validarDuplicacaoSegredo() error {
+	if s == nil {
+		return ErrSegredoInvalido
+	}
+	if s.estadoSessao == EstadoExcluido {
+		return ErrSegredoJaExcluido
+	}
+	return nil
+}
+
+// duplicarSegredo creates a copy of the secret with name conflict resolution.
+// Per D-27: Uses "(N)" progression for name conflicts: "Name" → "Name (2)" → "Name (3)".
+// PRECONDITION: validarDuplicacaoSegredo must pass.
+func (p *Pasta) duplicarSegredo(original *Segredo) *Segredo {
+	// Generate unique name using "(N)" progression
+	baseName := original.nome
+	newName := baseName
+	counter := 2
+
+	// Check if name already ends with "(N)" pattern
+	// If so, extract base and continue from that counter
+	// Otherwise start with "(2)"
+	for p.contemSegredoComNome(newName) {
+		newName = fmt.Sprintf("%s (%d)", baseName, counter)
+		counter++
+		// Safety limit to prevent infinite loops
+		if counter > 9999 {
+			break
+		}
+	}
+
+	// Create duplicate with deep copy of campos
+	agora := time.Now().UTC()
+	campos := make([]CampoSegredo, len(original.campos))
+	for i, campo := range original.campos {
+		// Deep copy the valor slice
+		valorCopy := make([]byte, len(campo.valor))
+		copy(valorCopy, campo.valor)
+
+		campos[i] = CampoSegredo{
+			nome:  campo.nome,
+			tipo:  campo.tipo,
+			valor: valorCopy,
+		}
+	}
+
+	// Copy observacao (always exists as value, not pointer)
+	valorCopy := make([]byte, len(original.observacao.valor))
+	copy(valorCopy, original.observacao.valor)
+	observacao := CampoSegredo{
+		nome:  "Observação",
+		tipo:  TipoCampoComum,
+		valor: valorCopy,
+	}
+
+	duplicate := &Segredo{
+		nome:                  newName,
+		campos:                campos,
+		observacao:            observacao,
+		pasta:                 p,
+		favorito:              false,          // Reset favorite flag
+		estadoSessao:          EstadoOriginal, // Manager will set to Modificado
+		dataCriacao:           agora,
+		dataUltimaModificacao: agora,
+	}
+
+	// Add to pasta's secrets list
+	p.segredos = append(p.segredos, duplicate)
+
+	return duplicate
 }

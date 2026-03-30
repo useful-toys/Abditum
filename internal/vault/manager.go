@@ -152,6 +152,40 @@ func (m *Manager) AlternarFavoritoSegredo(segredo *Segredo) error {
 	return nil
 }
 
+// DuplicarSegredo creates a copy of a secret with automatic name conflict resolution.
+// Per D-27: Uses "(N)" progression for name conflicts: "Name" → "Name (2)" → "Name (3)".
+func (m *Manager) DuplicarSegredo(segredo *Segredo) (*Segredo, error) {
+	// Validate locked state
+	if m.bloqueado {
+		return nil, ErrCofreBloqueado
+	}
+
+	// Validate duplication parameters
+	if err := segredo.validarDuplicacaoSegredo(); err != nil {
+		return nil, err
+	}
+
+	// Get parent pasta
+	pasta := segredo.pasta
+	if pasta == nil {
+		return nil, ErrPastaInvalida
+	}
+
+	// Create duplicate with name conflict resolution
+	duplicate := pasta.duplicarSegredo(segredo)
+
+	// Set estadoSessao to Modificado (new content)
+	duplicate.estadoSessao = EstadoModificado
+
+	// Update vault state
+	now := time.Now().UTC()
+	duplicate.dataUltimaModificacao = now
+	m.cofre.modificado = true
+	m.cofre.dataUltimaModificacao = now
+
+	return duplicate, nil
+}
+
 // IsLocked returns true if the vault is currently locked.
 func (m *Manager) IsLocked() bool {
 	return m.bloqueado
