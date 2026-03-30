@@ -14,7 +14,7 @@ progress:
 
 # Project State — Abditum
 
-**Last updated:** 2026-03-29T12:04:01Z
+**Last updated:** 2026-03-29T14:22:00Z
 **Current phase:** 3
 **Milestone:** v1.0
 
@@ -34,19 +34,49 @@ progress:
 
 ## Current Phase
 
-**Phase 02: Crypto Package** — COMPLETE
+**Phase 03: Vault Domain + Manager** — Context Complete
 
-Completed plan 02-01: Cryptographic primitives package with Argon2id KDF, AES-256-GCM AEAD, platform-specific memory locking, and password strength evaluation.
+Context discussion completed with 30 implementation decisions captured:
 
-- ✓ All 7 tasks completed following TDD methodology
-- ✓ 28 tests passing (100% of planned test coverage)
-- ✓ All requirements satisfied: CRYPTO-01 through CRYPTO-06, PWD-01
-- ✓ Duration: 10 minutes
-- ✓ Summary: `.planning/phases/02-crypto-package/02-01-SUMMARY.md`
+- ✓ 03-CONTEXT.md created with architectural decisions (D-01 through D-30)
+- ✓ 03-DISCUSSION-LOG.md created with full audit trail
+- ✓ 4 major gray areas resolved (identity, invariants, snapshots, state tracking)
+- ✓ All decisions validated by user
+- ✓ Files: `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` and `03-DISCUSSION-LOG.md`
 
-**Next:** Phase 03 - Vault Domain + Manager
+**Key Decisions:**
+- No synthetic IDs needed (Go pointers sufficient)
+- Package-level encapsulation with exported getters
+- Two independent state flags (cofre.modificado vs segredo.estadoSessao)
+- Manager as thin orchestrator (entities own validation logic)
+- Atomic save with two-phase commit pattern
+- Timestamps only on structural changes
+
+**Next:** Research phase or proceed directly to planning
 
 ## Phase History
+
+### Phase 03: Vault Domain + Manager (Context Complete 2026-03-29)
+
+**Status:** Context discussion complete, ready for research/planning
+
+**Context Artifacts:**
+
+- ✓ 03-CONTEXT.md — 30 implementation decisions across 4 gray areas
+- ✓ 03-DISCUSSION-LOG.md — Full audit trail of architectural discussions
+
+**Key Architectural Decisions:**
+
+- D-01: No synthetic IDs (Go pointers as identifiers)
+- D-08/D-09: Package-level encapsulation with exported getters
+- D-11: Two independent state flags (cofre.modificado vs segredo.estadoSessao)
+- D-04/D-25: Manager as thin orchestrator, entities own validation
+- D-17: Atomic save with two-phase commit pattern
+- D-24: Timestamps only on structural changes
+- D-27: Segredo soft delete, Pasta hard delete
+- D-28: Factory + Initializer separation
+
+**Requirements Mapped:** VAULT-02, SEC-05, FOLDER-01 through FOLDER-05, TPL-01 through TPL-06
 
 ### Phase 02: Crypto Package (Completed 2026-03-29)
 
@@ -82,6 +112,21 @@ Completed plan 02-01: Cryptographic primitives package with Argon2id KDF, AES-25
 - ✓ 01-03-PLAN.md — golangci-lint security configuration
 
 ## Decisions Made
+
+### Phase 03 Context Decisions
+
+1. **D-01:** No synthetic IDs — Go pointers sufficient for in-memory identity
+2. **D-08:** Package-level encapsulation — all entity fields private to `internal/vault`
+3. **D-09:** Safe pointer sharing — `Manager.Vault()` returns live `*Cofre` pointer, getters return defensive copies
+4. **D-11:** Two independent state flags — `cofre.modificado` (any mutation) vs `segredo.estadoSessao` (content only)
+5. **D-17:** Atomic save with two-phase commit — prepare snapshot, persist, finalize deletions only on success
+6. **D-24:** Timestamps on structural changes only — favoriting doesn't update `segredo.dataUltimaModificacao`
+7. **D-27:** Deletion semantics differ — Segredo soft delete, Pasta hard delete
+8. **D-28:** Factory vs Initializer — `NovoCofre()` creates structure, `InicializarConteudoPadrao()` bootstraps content
+
+See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list of 30 decisions.
+
+### Phase 02 Decisions
 
 1. **Phase 02-01:** Memory locking failures are non-fatal (D-03) — `SecureAllocate()` returns usable buffer even if mlock fails
 2. **Phase 02-01:** Nonce generation is internal to `Encrypt()` function (D-19) — callers never handle nonces directly
