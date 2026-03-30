@@ -1,4 +1,4 @@
-﻿package crypto
+package crypto
 
 import (
 	"crypto/aes"
@@ -145,6 +145,50 @@ func Decrypt(key, ciphertext []byte) ([]byte, error) {
 	}
 
 	return plaintext, nil
+}
+
+// SealWithAAD encrypts plaintext using AES-256-GCM with a caller-provided nonce and AAD.
+//
+// Unlike EncryptWithAAD, this function accepts the nonce externally. This is required
+// when the nonce must be embedded in authenticated data (AAD) before encryption —
+// specifically for the .abditum file format where the full 49-byte header (including
+// the nonce at bytes 37-48) is the AAD. The storage layer generates the nonce, writes
+// it into the header, then passes the complete header as AAD to this function.
+//
+// Parameters:
+//   - key: A 32-byte AES-256 key (must be exactly 32 bytes)
+//   - plaintext: The data to encrypt (any length, including empty)
+//   - nonce: A 12-byte GCM nonce. Must be unique for each (key, nonce) pair.
+//   - aad: Additional authenticated data (the file header bytes, including nonce)
+//
+// Returns:
+//   - []byte: Ciphertext + 16-byte GCM tag (does NOT include nonce prefix)
+//   - error: ErrInvalidParams if key is not 32 bytes or nonce is not 12 bytes
+//     ErrAuthFailed if GCM seal fails (should not happen with valid params)
+//
+// CRITICAL: The caller is responsible for nonce uniqueness. Never reuse a
+// (key, nonce) pair. Use crypto/rand to generate the nonce before calling.
+func SealWithAAD(key, plaintext, nonce, aad []byte) ([]byte, error) {
+	if len(key) != 32 {
+		return nil, ErrInvalidParams
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(nonce) != gcm.NonceSize() {
+		return nil, ErrInvalidParams
+	}
+
+	sealed := gcm.Seal(nil, nonce, plaintext, aad)
+	return sealed, nil
 }
 
 // EncryptWithAAD encrypts plaintext using AES-256-GCM with additional authenticated data (AAD).
