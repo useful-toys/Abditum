@@ -60,15 +60,16 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - Se a Pasta Geral não existir no arquivo, rejeitar com mensagem de erro (arquivo inválido ou corrompido) — não tentar recriar
   - Se a senha for incorreta, exibir mensagem de erro e permitir nova tentativa
 - Salvar cofre no arquivo atual
-  - Segredos marcados para exclusão são removidos permanentemente
+  - Segredos marcados para exclusão são ignorados pela serialização (não gravados no arquivo) e, após sucesso do salvamento, são removidos permanentemente da árvore em memória. Se o salvamento falhar, o estado em memória é preservado
   - Usar a senha ativa na sessão — não solicitar novamente
   - Se o arquivo foi modificado externamente desde a última leitura ou salvamento, avisar o usuário e oferecer as opções: Sobrescrever / Salvar como novo arquivo / Cancelar
 - Salvar cofre em outro arquivo
   - O arquivo de destino não pode ser o mesmo arquivo atual do cofre. *Nota: Esta restrição é uma medida de segurança para evitar a complexidade de sobrescrever um arquivo em uso e eliminar riscos de corrupção. Para gravar no arquivo atual, a função "Salvar" deve ser utilizada.*
-  - Segredos marcados para exclusão são removidos permanentemente
+  - Segredos marcados para exclusão são ignorados pela serialização (não gravados no arquivo) e, após sucesso do salvamento, são removidos permanentemente da árvore em memória. Se o salvamento falhar, o estado em memória é preservado
   - Após a operação, o arquivo de trabalho atual passa a ser o novo arquivo
   - Próximas modificações e salvamentos ocorrem sobre o novo arquivo, não o original
   - Usar a senha ativa na sessão — não solicitar novamente
+
 - Descartar alterações não salvas e recarregar o cofre
   - Descarta todas as alterações realizadas desde o último salvamento (se houver) ou desde a abertura do cofre (se nunca foi salvo)
   - O cofre é recarregado ao seu estado anterior
@@ -120,8 +121,9 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Exibir um segredo com nome, seus campos e a observação
 - Exibir indicadores de estado de sessão na listagem de segredos
   - Indicador "adicionado" para segredos criados na sessão atual
-  - Indicador "modificado" para segredos alterados na sessão atual (nome, campos ou favorito)
+  - Indicador "modificado" para segredos cujo conteúdo foi alterado na sessão atual (nome ou campos)
   - Indicador "excluído" para segredos marcados para exclusão
+
   - Segredos sem alterações desde o carregamento não exibem indicador
 - Exibir temporariamente o valor de um campo sensível
   - Ocultar o valor automaticamente após tempo configurável, com valor padrão de 15 segundos
@@ -148,8 +150,9 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Marcar segredo para exclusão
   - O segredo permanece na lista da pasta, visualmente sinalizado como excluído
   - Não aparece em resultados de busca enquanto marcado
-  - Ao salvar, é removido permanentemente do cofre
+  - Ao salvar com sucesso, é removido permanentemente da árvore em memória (não consta no arquivo gravado)
   - Se a pasta do segredo for excluída antes de salvar, o segredo marcado é movido junto para a pasta pai (mantendo o estado de exclusão; com renomeação automática por colisão se necessário)
+
 - Desmarcar exclusão de segredo
   - Restaura o segredo ao estado que tinha antes de ser marcado para exclusão
 - Mover segredo para outra pasta
