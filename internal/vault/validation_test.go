@@ -913,3 +913,75 @@ func TestFavoritarSegredoIndependencia(t *testing.T) {
 		t.Errorf("Expected ErrSegredoJaExcluido for favoriting deleted secret, got %v", err)
 	}
 }
+
+// TestDuplicarSegredoNameConflict verifies duplication handles name conflicts with "(N)" progression.
+// Per D-27: "Name" → "Name (2)" → "Name (3)".
+func TestDuplicarSegredoNameConflict(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, nil)
+
+	pastaGeral := cofre.PastaGeral()
+	modelos := cofre.Modelos()
+	var modeloLogin *ModeloSegredo
+	for _, m := range modelos {
+		if m.Nome() == "Login" {
+			modeloLogin = m
+			break
+		}
+	}
+
+	// Create original secret
+	original, err := manager.CriarSegredo(pastaGeral, "GitHub", modeloLogin)
+	if err != nil {
+		t.Fatalf("Failed to create original secret: %v", err)
+	}
+
+	// Duplicate - should use "GitHub (2)"
+	dup1, err := manager.DuplicarSegredo(original)
+	if err != nil {
+		t.Fatalf("Failed to duplicate secret: %v", err)
+	}
+
+	if dup1.Nome() != "GitHub (2)" {
+		t.Errorf("Expected duplicate name 'GitHub (2)', got '%s'", dup1.Nome())
+	}
+
+	// Verify estadoSessao = Modificado (new content)
+	if dup1.EstadoSessao() != EstadoModificado {
+		t.Errorf("Expected EstadoModificado for duplicate, got %v", dup1.EstadoSessao())
+	}
+
+	// Verify campos copied from original
+	originalCampos := original.Campos()
+	dupCampos := dup1.Campos()
+	if len(dupCampos) != len(originalCampos) {
+		t.Errorf("Expected %d campos in duplicate, got %d", len(originalCampos), len(dupCampos))
+	}
+
+	// Duplicate again - should use "GitHub (3)"
+	dup2, err := manager.DuplicarSegredo(original)
+	if err != nil {
+		t.Fatalf("Failed to duplicate secret again: %v", err)
+	}
+
+	if dup2.Nome() != "GitHub (3)" {
+		t.Errorf("Expected duplicate name 'GitHub (3)', got '%s'", dup2.Nome())
+	}
+
+	// Verify cofre.modificado = true
+	if !manager.IsModified() {
+		t.Error("Expected cofre to be modified after duplicating secret")
+	}
+
+	// Verify duplicating deleted secret fails with ErrSegredoJaExcluido
+	err = manager.ExcluirSegredo(original)
+	if err != nil {
+		t.Fatalf("Failed to delete secret: %v", err)
+	}
+
+	_, err = manager.DuplicarSegredo(original)
+	if err != ErrSegredoJaExcluido {
+		t.Errorf("Expected ErrSegredoJaExcluido for duplicating deleted secret, got %v", err)
+	}
+}
