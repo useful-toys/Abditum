@@ -1,0 +1,20 @@
+// Package vault implements the domain layer for Abditum password manager.
+package vault
+
+import "errors"
+
+// Sentinel errors for validation failures.
+// TUI can use errors.Is() for type checking.
+var (
+	ErrNomeVazio            = errors.New("nome não pode ser vazio")
+	ErrNomeMuitoLongo       = errors.New("nome excede 255 caracteres")
+	ErrNameConflict         = errors.New("já existe item com este nome")
+	ErrPastaGeralProtected  = errors.New("Pasta Geral não pode ser modificada")
+	ErrCycleDetected        = errors.New("operação criaria ciclo na hierarquia")
+	ErrObservacaoReserved   = errors.New("nome 'Observação' é reservado")
+	ErrConfigInvalida       = errors.New("configuração inválida")
+	ErrPosicaoInvalida      = errors.New("posição inválida")
+	ErrSegredoNaoEncontrado = errors.New("segredo não encontrado")
+	ErrCofreBloqueado       = errors.New("cofre está bloqueado")
+	ErrDestinoInvalido      = errors.New("destino inválido para operação")
+)
