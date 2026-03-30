@@ -543,3 +543,245 @@ func TestMigrate_V1FixtureRoundtrip(t *testing.T) {
 		t.Fatal("Load() returned nil Cofre")
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Integration tests (Plan 04-04)
+// ---------------------------------------------------------------------------
+
+// TestIntegration_FullPipelineRoundtrip validates the full create→save→load pipeline
+// via FileRepository, verifying data integrity of the deserialized vault.
+func TestIntegration_FullPipelineRoundtrip(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	// Create a vault with default content
+	cofre := vault.NovoCofre()
+	if err := cofre.InicializarConteudoPadrao(); err != nil {
+		t.Fatalf("InicializarConteudoPadrao() error: %v", err)
+	}
+
+	// Save via NewFileRepositoryForCreate
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+	if err := repo.Salvar(cofre); err != nil {
+		t.Fatalf("Salvar() error: %v", err)
+	}
+
+	// Load via a fresh repository
+	// Salt is read from the file header inside Carregar, so nil is fine here.
+	repo2 := storage.NewFileRepository(path, testPassword, nil, repo.Metadata())
+	loaded, err := repo2.Carregar()
+	if err != nil {
+		t.Fatalf("Carregar() error: %v", err)
+	}
+
+	// Verify PastaGeral
+	pg := loaded.PastaGeral()
+	if pg == nil {
+		t.Fatal("PastaGeral() is nil")
+	}
+
+	// Verify default subfolders
+	subs := pg.Subpastas()
+	if len(subs) != 2 {
+		t.Errorf("expected 2 default subfolders, got %d", len(subs))
+	} else {
+		names := map[string]bool{subs[0].Nome(): true, subs[1].Nome(): true}
+		if !names["Sites e Apps"] {
+			t.Error("missing default folder 'Sites e Apps'")
+		}
+		if !names["Financeiro"] {
+			t.Error("missing default folder 'Financeiro'")
+		}
+	}
+
+	// Verify default templates
+	modelos := loaded.Modelos()
+	if len(modelos) != 3 {
+		t.Errorf("expected 3 default templates, got %d", len(modelos))
+	}
+	modeloNomes := make(map[string]bool, len(modelos))
+	for _, m := range modelos {
+		modeloNomes[m.Nome()] = true
+	}
+	for _, nome := range []string{"Login", "Cartão de Crédito", "Chave de API"} {
+		if !modeloNomes[nome] {
+			t.Errorf("missing default template %q", nome)
+		}
+	}
+}
+
+// TestIntegration_BackupChainRotation verifies .bak and .bak2 are created across 3 saves.
+func TestIntegration_BackupChainRotation(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+	bakPath := path + ".bak"
+	bak2Path := path + ".bak2"
+
+	cofre := newTestCofre()
+
+	// First save: SaveNew (no .bak yet)
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+	if err := repo.Salvar(cofre); err != nil {
+		t.Fatalf("first Salvar() error: %v", err)
+	}
+	if _, err := os.Stat(bakPath); !os.IsNotExist(err) {
+		t.Error("unexpected .bak after first (SaveNew) save")
+	}
+
+	// Second save: Save → creates .bak
+	if err := repo.Salvar(cofre); err != nil {
+		t.Fatalf("second Salvar() error: %v", err)
+	}
+	if _, err := os.Stat(bakPath); os.IsNotExist(err) {
+		t.Error(".bak not created after second save")
+	}
+
+	// Third save: Save → rotates .bak → .bak2, creates new .bak
+	if err := repo.Salvar(cofre); err != nil {
+		t.Fatalf("third Salvar() error: %v", err)
+	}
+	if _, err := os.Stat(bak2Path); os.IsNotExist(err) {
+		t.Error(".bak2 not created after third save")
+	}
+	if _, err := os.Stat(bakPath); os.IsNotExist(err) {
+		t.Error(".bak not present after third save")
+	}
+}
+
+// TestIntegration_ExternalChangeDetection verifies DetectExternalChange works after a save.
+func TestIntegration_ExternalChangeDetection(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+	if err := repo.Salvar(newTestCofre()); err != nil {
+		t.Fatalf("Salvar() error: %v", err)
+	}
+
+	meta := repo.Metadata()
+
+	// No change yet
+	changed, err := storage.DetectExternalChange(path, meta)
+	if err != nil {
+		t.Fatalf("DetectExternalChange() error: %v", err)
+	}
+	if changed {
+		t.Error("DetectExternalChange() returned true before any external modification")
+	}
+
+	// Modify the file externally
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		t.Fatalf("OpenFile() error: %v", err)
+	}
+	if _, err := f.Write([]byte{0xFF}); err != nil {
+		f.Close()
+		t.Fatalf("Write() error: %v", err)
+	}
+	f.Close()
+
+	changed, err = storage.DetectExternalChange(path, meta)
+	if err != nil {
+		t.Fatalf("DetectExternalChange() error after modification: %v", err)
+	}
+	if !changed {
+		t.Error("DetectExternalChange() returned false after external modification")
+	}
+}
+
+// TestIntegration_ErrorClassification verifies all sentinel errors through the full pipeline.
+func TestIntegration_ErrorClassification(t *testing.T) {
+	dir := t.TempDir()
+
+	t.Run("WrongMagic", func(t *testing.T) {
+		path := filepath.Join(dir, "wrong-magic.abditum")
+		data := make([]byte, storage.HeaderSize+32)
+		data[0], data[1], data[2], data[3] = 'X', 'Y', 'Z', 'W'
+		os.WriteFile(path, data, 0600)
+		_, _, err := storage.Load(path, testPassword)
+		if !errors.Is(err, storage.ErrInvalidMagic) {
+			t.Errorf("expected ErrInvalidMagic, got %v", err)
+		}
+	})
+
+	t.Run("VersionTooNew", func(t *testing.T) {
+		path := filepath.Join(dir, "future-version.abditum")
+		data := make([]byte, storage.HeaderSize+32)
+		copy(data[0:4], storage.Magic[:])
+		data[4] = 255
+		os.WriteFile(path, data, 0600)
+		_, _, err := storage.Load(path, testPassword)
+		if !errors.Is(err, storage.ErrVersionTooNew) {
+			t.Errorf("expected ErrVersionTooNew, got %v", err)
+		}
+	})
+
+	t.Run("WrongPassword", func(t *testing.T) {
+		path := filepath.Join(dir, "wrong-password.abditum")
+		if err := storage.SaveNew(path, newTestCofre(), testPassword); err != nil {
+			t.Fatalf("SaveNew() error: %v", err)
+		}
+		_, _, err := storage.Load(path, []byte("wrong"))
+		if !errors.Is(err, crypto.ErrAuthFailed) {
+			t.Errorf("expected crypto.ErrAuthFailed, got %v", err)
+		}
+	})
+
+	t.Run("TamperedHeader", func(t *testing.T) {
+		path := filepath.Join(dir, "tampered-header.abditum")
+		if err := storage.SaveNew(path, newTestCofre(), testPassword); err != nil {
+			t.Fatalf("SaveNew() error: %v", err)
+		}
+		data, _ := os.ReadFile(path)
+		data[10] ^= 0xFF // flip a salt byte (in AAD)
+		os.WriteFile(path, data, 0600)
+		_, _, err := storage.Load(path, testPassword)
+		if !errors.Is(err, crypto.ErrAuthFailed) {
+			t.Errorf("expected crypto.ErrAuthFailed on tampered header, got %v", err)
+		}
+	})
+}
+
+// TestIntegration_ManagerWithFileRepository verifies that Manager.Salvar works via FileRepository.
+func TestIntegration_ManagerWithFileRepository(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := vault.NovoCofre()
+	if err := cofre.InicializarConteudoPadrao(); err != nil {
+		t.Fatalf("InicializarConteudoPadrao() error: %v", err)
+	}
+
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+	manager := vault.NewManager(cofre, repo)
+
+	// Create a secret via Manager
+	modelo := cofre.Modelos()[0] // "Login" template
+	pg := cofre.PastaGeral()
+	segredo, err := manager.CriarSegredo(pg, "Meu GitHub", modelo)
+	if err != nil {
+		t.Fatalf("CriarSegredo() error: %v", err)
+	}
+	if segredo == nil {
+		t.Fatal("CriarSegredo() returned nil")
+	}
+
+	// Save via Manager
+	if err := manager.Salvar(); err != nil {
+		t.Fatalf("Manager.Salvar() error: %v", err)
+	}
+
+	// Load directly and verify secret present
+	loaded, _, err := storage.Load(path, testPassword)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+
+	segredos := loaded.PastaGeral().Segredos()
+	if len(segredos) != 1 {
+		t.Fatalf("expected 1 secret in PastaGeral, got %d", len(segredos))
+	}
+	if segredos[0].Nome() != "Meu GitHub" {
+		t.Errorf("secret name = %q, want %q", segredos[0].Nome(), "Meu GitHub")
+	}
+}
