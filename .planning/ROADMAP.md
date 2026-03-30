@@ -77,7 +77,7 @@ Plans:
 
 **Requirements:** VAULT-02, SEC-05, FOLDER-01, FOLDER-02, FOLDER-03, FOLDER-04, FOLDER-05, TPL-01, TPL-02, TPL-03, TPL-04, TPL-05, TPL-06
 
-**Plans:** 7 plans
+**Plans:** 7/7 plans complete
 
 Plans:
 - [x] 03-01-PLAN.md — Domain Entities + Factory: Define Cofre, Pasta, Segredo, Modelo, Campo types, EstadoSessao enum, factory functions, error types, comprehensive entity tests
@@ -85,8 +85,8 @@ Plans:
 - [x] 03-03-PLAN.md — Folder Management: CriarPasta, RenomearPasta, MoverPasta with cycle detection, ExcluirPasta with promotion and conflict resolution, Pasta Geral protection
 - [x] 03-04-PLAN.md — Template Management: CriarModelo, RenomearModelo, ExcluirModelo with in-use check, field operations (add/remove/reorder), alphabetical ordering, "Observação" prohibition
 - [x] 03-05-PLAN.md — Secret Lifecycle + State Machine: CriarSegredo, ExcluirSegredo, RestaurarSegredo, FavoritarSegredo, DuplicarSegredo with name progression, estadoSessao transitions
-- [ ] 03-06-PLAN.md — Secret CRUD + Structure: RenomearSegredo, EditarCampoSegredo, EditarObservacao (separate field), MoverSegredo, ReposicionarSegredo with estadoSessao tracking
-- [ ] 03-07-PLAN.md — Search + Favorites + Comprehensive Validation: Buscar with sensitive field exclusion (QUERY-02), ListarFavoritos with DFS, integration tests, UAT validation, final package documentation
+- [x] 03-06-PLAN.md — Secret CRUD + Structure: RenomearSegredo, EditarCampoSegredo, EditarObservacao (separate field), MoverSegredo, ReposicionarSegredo with estadoSessao tracking
+- [x] 03-07-PLAN.md — Search + Favorites + Comprehensive Validation: Buscar with sensitive field exclusion (QUERY-02), ListarFavoritos with DFS, integration tests, UAT validation, final package documentation
 
 **UAT:**
 - [ ] `Manager.Create` initializes vault with Pasta Geral + "Sites e Apps" + "Financeiro" subfolders + 3 default templates (Login, Cartão de Crédito, Chave de API)
