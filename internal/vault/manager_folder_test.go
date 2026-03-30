@@ -315,3 +315,201 @@ func TestRenomearPasta_WhenLocked(t *testing.T) {
 		t.Errorf("Expected ErrCofreBloqueado, got %v", err)
 	}
 }
+
+// Task 3 Tests: MoverPasta
+
+func TestMoverPasta_Success(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao() // Creates "Sites e Apps" and "Financeiro"
+	manager := NewManager(cofre, &mockRepository{})
+
+	// Create a subfolder in Sites e Apps
+	sitesEApps := cofre.PastaGeral().Subpastas()[0]
+	subpasta, _ := manager.CriarPasta(sitesEApps, "Subfolder", 0)
+
+	// Move subfolder to Financeiro
+	financeiro := cofre.PastaGeral().Subpastas()[1]
+	err := manager.MoverPasta(subpasta, financeiro)
+	if err != nil {
+		t.Fatalf("MoverPasta failed: %v", err)
+	}
+
+	// Verify parent changed
+	if subpasta.Pai() != financeiro {
+		t.Error("Pasta pai should be Financeiro after move")
+	}
+
+	// Verify removed from old parent
+	if len(sitesEApps.Subpastas()) != 0 {
+		t.Error("Sites e Apps should have no subfolders after move")
+	}
+
+	// Verify added to new parent
+	financeiroSubs := financeiro.Subpastas()
+	if len(financeiroSubs) != 1 {
+		t.Fatalf("Financeiro should have 1 subfolder, got %d", len(financeiroSubs))
+	}
+	if financeiroSubs[0] != subpasta {
+		t.Error("Moved subfolder not found in Financeiro")
+	}
+
+	if !manager.IsModified() {
+		t.Error("Vault should be marked modified after move")
+	}
+}
+
+func TestMoverPasta_PastaGeralProtection(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+
+	destino := cofre.PastaGeral().Subpastas()[0]
+	err := manager.MoverPasta(cofre.PastaGeral(), destino)
+	if !errors.Is(err, ErrPastaGeralProtected) {
+		t.Errorf("Expected ErrPastaGeralProtected, got %v", err)
+	}
+
+	if manager.IsModified() {
+		t.Error("Vault should not be modified after failed move")
+	}
+}
+
+func TestMoverPasta_MoveToSelf(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+
+	pasta := cofre.PastaGeral().Subpastas()[0]
+	err := manager.MoverPasta(pasta, pasta)
+	if !errors.Is(err, ErrDestinoInvalido) {
+		t.Errorf("Expected ErrDestinoInvalido, got %v", err)
+	}
+
+	if manager.IsModified() {
+		t.Error("Vault should not be modified after failed move")
+	}
+}
+
+func TestMoverPasta_CycleDetectionDirectChild(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+
+	// Create hierarchy: Sites e Apps -> SubA
+	sitesEApps := cofre.PastaGeral().Subpastas()[0]
+	subA, _ := manager.CriarPasta(sitesEApps, "SubA", 0)
+
+	// Save to clear modified flag
+	cofre.modificado = false
+
+	// Try to move Sites e Apps into its own child SubA (creates cycle)
+	err := manager.MoverPasta(sitesEApps, subA)
+	if !errors.Is(err, ErrCycleDetected) {
+		t.Errorf("Expected ErrCycleDetected, got %v", err)
+	}
+
+	if manager.IsModified() {
+		t.Error("Vault should not be modified after cycle detection")
+	}
+
+	// Verify hierarchy unchanged
+	if subA.Pai() != sitesEApps {
+		t.Error("SubA parent should still be Sites e Apps")
+	}
+	if sitesEApps.Pai() != cofre.PastaGeral() {
+		t.Error("Sites e Apps parent should still be Pasta Geral")
+	}
+}
+
+func TestMoverPasta_CycleDetectionGrandchild(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+
+	// Create hierarchy: Sites e Apps -> SubA -> SubB
+	sitesEApps := cofre.PastaGeral().Subpastas()[0]
+	subA, _ := manager.CriarPasta(sitesEApps, "SubA", 0)
+	subB, _ := manager.CriarPasta(subA, "SubB", 0)
+
+	// Save to clear modified flag
+	cofre.modificado = false
+
+	// Try to move Sites e Apps into grandchild SubB (creates cycle)
+	err := manager.MoverPasta(sitesEApps, subB)
+	if !errors.Is(err, ErrCycleDetected) {
+		t.Errorf("Expected ErrCycleDetected, got %v", err)
+	}
+
+	if manager.IsModified() {
+		t.Error("Vault should not be modified after cycle detection")
+	}
+}
+
+func TestMoverPasta_NameConflict(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+
+	// Create "X" in Sites e Apps and "X" in Financeiro
+	sitesEApps := cofre.PastaGeral().Subpastas()[0]
+	financeiro := cofre.PastaGeral().Subpastas()[1]
+
+	pastaX1, _ := manager.CriarPasta(sitesEApps, "X", 0)
+	manager.CriarPasta(financeiro, "X", 0)
+
+	// Save to clear modified flag
+	cofre.modificado = false
+
+	// Try to move X from Sites e Apps to Financeiro (name conflict)
+	err := manager.MoverPasta(pastaX1, financeiro)
+	if !errors.Is(err, ErrNameConflict) {
+		t.Errorf("Expected ErrNameConflict, got %v", err)
+	}
+
+	if manager.IsModified() {
+		t.Error("Vault should not be modified after failed move")
+	}
+
+	// Verify pastaX1 still in Sites e Apps
+	if pastaX1.Pai() != sitesEApps {
+		t.Error("Pasta should still be in Sites e Apps after failed move")
+	}
+}
+
+func TestMoverPasta_MoveToSibling(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+
+	// Move Sites e Apps to Financeiro (siblings, no cycle)
+	sitesEApps := cofre.PastaGeral().Subpastas()[0]
+	financeiro := cofre.PastaGeral().Subpastas()[1]
+
+	err := manager.MoverPasta(sitesEApps, financeiro)
+	if err != nil {
+		t.Fatalf("MoverPasta to sibling should succeed: %v", err)
+	}
+
+	if sitesEApps.Pai() != financeiro {
+		t.Error("Sites e Apps should be child of Financeiro")
+	}
+
+	if !manager.IsModified() {
+		t.Error("Vault should be marked modified")
+	}
+}
+
+func TestMoverPasta_WhenLocked(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+
+	sitesEApps := cofre.PastaGeral().Subpastas()[0]
+	financeiro := cofre.PastaGeral().Subpastas()[1]
+	manager.Lock()
+
+	err := manager.MoverPasta(sitesEApps, financeiro)
+	if !errors.Is(err, ErrCofreBloqueado) {
+		t.Errorf("Expected ErrCofreBloqueado, got %v", err)
+	}
+}
