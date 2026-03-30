@@ -464,3 +464,32 @@ func (m *Manager) RenomearPasta(pasta *Pasta, novoNome string) error {
 
 	return nil
 }
+
+// MoverPasta moves a folder to a new parent with cycle detection.
+// Performs full ancestor walk to detect cycles (ROADMAP pitfall).
+// Returns ErrCycleDetected if destino is a descendant of pasta.
+// Validates: not Pasta Geral, not moving to self, no cycle, name unique in destination.
+func (m *Manager) MoverPasta(pasta *Pasta, destino *Pasta) error {
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Check Pasta Geral protection (additional Manager-level check)
+	if pasta == m.cofre.pastaGeral {
+		return ErrPastaGeralProtected
+	}
+
+	// Phase 1: Validate (can fail)
+	if err := pasta.validarMover(destino); err != nil {
+		return err
+	}
+
+	// Phase 2: Mutate (cannot fail after validation per D-05)
+	pasta.mover(destino)
+
+	// Update global state
+	m.cofre.modificado = true
+	m.cofre.dataUltimaModificacao = time.Now().UTC()
+
+	return nil
+}

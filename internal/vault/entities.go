@@ -353,6 +353,73 @@ func (p *Pasta) renomear(novoNome string) (alterado bool, err error) {
 	return true, nil
 }
 
+// detectarCiclo performs full ancestor walk from destino to check if pasta is an ancestor.
+// Returns true if moving pasta to destino would create a cycle.
+func (p *Pasta) detectarCiclo(destino *Pasta) bool {
+	atual := destino
+	for atual != nil {
+		if atual == p {
+			return true // Cycle detected: destino is descendant of pasta
+		}
+		atual = atual.pai
+	}
+	return false
+}
+
+// removerDePai removes this pasta from its parent's subpastas list.
+func (p *Pasta) removerDePai() {
+	if p.pai == nil {
+		return // Pasta Geral has no parent
+	}
+
+	// Find and remove from parent's subpastas
+	for i, sub := range p.pai.subpastas {
+		if sub == p {
+			p.pai.subpastas = append(p.pai.subpastas[:i], p.pai.subpastas[i+1:]...)
+			break
+		}
+	}
+}
+
+// adicionarAoPai adds this pasta to a new parent at the end of subpastas list.
+func (p *Pasta) adicionarAoPai(novoPai *Pasta) {
+	p.pai = novoPai
+	novoPai.subpastas = append(novoPai.subpastas, p)
+}
+
+// validarMover validates folder move parameters.
+// Checks: not Pasta Geral, not moving to self, no cycle would be created, name unique in destination.
+func (p *Pasta) validarMover(destino *Pasta) error {
+	// Check not Pasta Geral
+	if p.pai == nil {
+		return ErrPastaGeralProtected
+	}
+
+	// Check not moving to self
+	if p == destino {
+		return ErrDestinoInvalido
+	}
+
+	// Check cycle: would moving to destino create a cycle?
+	if p.detectarCiclo(destino) {
+		return ErrCycleDetected
+	}
+
+	// Check name uniqueness in destination
+	if destino.contemSubpastaComNome(p.nome) {
+		return ErrNameConflict
+	}
+
+	return nil
+}
+
+// mover moves this pasta to a new parent folder.
+// PRECONDITION: validarMover must pass (cannot fail after validation per D-05).
+func (p *Pasta) mover(destino *Pasta) {
+	p.removerDePai()
+	p.adicionarAoPai(destino)
+}
+
 // Factory methods
 
 // NovoCofre creates a new empty vault with Pasta Geral and default configurations.
