@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 03
 status: executing
-last_updated: "2026-03-30T05:09:23.035Z"
+last_updated: "2026-03-30T07:02:39.743Z"
 progress:
   total_phases: 11
   completed_phases: 2
   total_plans: 11
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State — Abditum
@@ -131,6 +131,9 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 03-01]: Package-private encapsulation with defensive copies - D-08/D-09
 - [Phase 03-01]: Factory+bootstrap separation (NovoCofre/InicializarConteudoPadrao) - D-28
 - [Phase 03]: D-12 change detection: RenomearModelo only marks modified if name actually changes
+- [Phase 03-vault-domain-manager]: Moving folder into itself returns ErrDestinoInvalido before cycle check
+- [Phase 03-vault-domain-manager]: Repositioning no-ops: to current position, Subir at 0, Descer at last (D-23)
+- [Phase 03-vault-domain-manager]: Folder deletion: hard delete with promotion, recursive merge for subfolders, numeric suffix for secrets
 
 ### Phase 02 Decisions
 
