@@ -856,3 +856,77 @@ func (m *Manager) MoverSegredo(segredo *Segredo, destino *Pasta, posicao int) er
 
 	return nil
 }
+
+// ReposicionarSegredo moves a secret to a new position within its current folder.
+// Per D-16: Reposition is structural operation - does NOT change estadoSessao.
+// Only updates cofre.modificado if position actually changes.
+// Per D-12, D-23: Moving to current position is a no-op (returns nil without marking modified).
+// Validates: locked vault, position in valid range [0, len-1].
+func (m *Manager) ReposicionarSegredo(segredo *Segredo, novaPosicao int) error {
+	// Validate locked state
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Validate reposition parameters
+	if err := segredo.validarReposicionarSegredo(novaPosicao); err != nil {
+		return err
+	}
+
+	// Perform reposition (returns true if position actually changed)
+	alterado, err := segredo.reposicionarSegredo(novaPosicao)
+	if err != nil {
+		return err // Should never happen after validation per D-05
+	}
+
+	// Only update vault state if position changed (D-12, D-23)
+	if alterado {
+		m.cofre.modificado = true
+		m.cofre.dataUltimaModificacao = time.Now().UTC()
+	}
+
+	return nil
+}
+
+// SubirSegredoNaPosicao moves a secret one position up (position - 1) within its folder.
+// Per D-16: Structural operation - does NOT change estadoSessao.
+// Edge case (D-23): If already at position 0, this is a no-op (returns nil without marking modified).
+func (m *Manager) SubirSegredoNaPosicao(segredo *Segredo) error {
+	// Validate locked state
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Get current position
+	posicaoAtual := segredo.obterPosicaoAtualSegredo()
+
+	// Edge case: already at top (D-23 no-op)
+	if posicaoAtual == 0 {
+		return nil // No-op, don't mark modified
+	}
+
+	// Move to position - 1
+	return m.ReposicionarSegredo(segredo, posicaoAtual-1)
+}
+
+// DescerSegredoNaPosicao moves a secret one position down (position + 1) within its folder.
+// Per D-16: Structural operation - does NOT change estadoSessao.
+// Edge case (D-23): If already at last position, this is a no-op (returns nil without marking modified).
+func (m *Manager) DescerSegredoNaPosicao(segredo *Segredo) error {
+	// Validate locked state
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Get current position and max position
+	posicaoAtual := segredo.obterPosicaoAtualSegredo()
+	maxPosicao := len(segredo.pasta.segredos) - 1
+
+	// Edge case: already at bottom (D-23 no-op)
+	if posicaoAtual == maxPosicao {
+		return nil // No-op, don't mark modified
+	}
+
+	// Move to position + 1
+	return m.ReposicionarSegredo(segredo, posicaoAtual+1)
+}

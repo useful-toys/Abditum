@@ -413,6 +413,58 @@ func (s *Segredo) mover(destino *Pasta, posicao int) {
 	s.pasta = destino
 }
 
+// obterPosicaoAtualSegredo returns the current position of this secret in its parent folder.
+// Returns -1 if secret has no parent.
+func (s *Segredo) obterPosicaoAtualSegredo() int {
+	if s.pasta == nil {
+		return -1
+	}
+
+	for i, seg := range s.pasta.segredos {
+		if seg == s {
+			return i
+		}
+	}
+
+	return -1 // Should never happen if tree is consistent
+}
+
+// validarReposicionarSegredo validates secret repositioning parameters.
+// Checks: position in valid range [0, len-1] (0-indexed).
+func (s *Segredo) validarReposicionarSegredo(novaPosicao int) error {
+	if s.pasta == nil {
+		return ErrPastaInvalida
+	}
+
+	// Validate position in valid range [0, len-1]
+	if novaPosicao < 0 || novaPosicao >= len(s.pasta.segredos) {
+		return ErrPosicaoInvalida
+	}
+
+	return nil
+}
+
+// reposicionarSegredo moves this secret to a new position within its parent folder.
+// Returns (true, nil) if position changed, (false, nil) if no change (D-12, D-23 no-op).
+// Per D-16: Reposition is structural operation - does NOT change estadoSessao.
+// PRECONDITION: validarReposicionarSegredo must pass (cannot fail after validation per D-05).
+func (s *Segredo) reposicionarSegredo(novaPosicao int) (alterado bool, err error) {
+	posicaoAtual := s.obterPosicaoAtualSegredo()
+
+	// No-op if already at target position (D-12, D-23)
+	if posicaoAtual == novaPosicao {
+		return false, nil
+	}
+
+	// Remove from current position
+	s.pasta.segredos = append(s.pasta.segredos[:posicaoAtual], s.pasta.segredos[posicaoAtual+1:]...)
+
+	// Insert at new position
+	s.pasta.segredos = append(s.pasta.segredos[:novaPosicao], append([]*Segredo{s}, s.pasta.segredos[novaPosicao:]...)...)
+
+	return true, nil
+}
+
 // Private entity methods for folder operations
 
 // contemSubpastaComNome checks if a subfolder with the given name exists.
