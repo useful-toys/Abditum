@@ -102,6 +102,31 @@ func (m *Manager) ExcluirSegredo(segredo *Segredo) error {
 	return nil
 }
 
+// RestaurarSegredo restores a soft-deleted secret.
+// Per D-14: Restore reverses deletion (Excluido → Modificado).
+func (m *Manager) RestaurarSegredo(segredo *Segredo) error {
+	// Validate locked state
+	if m.bloqueado {
+		return ErrCofreBloqueado
+	}
+
+	// Validate restoration parameters
+	if err := segredo.validarRestauracaoSegredo(); err != nil {
+		return err
+	}
+
+	// Perform restoration
+	segredo.restaurarSegredo()
+
+	// Update vault state
+	now := time.Now().UTC()
+	segredo.dataUltimaModificacao = now
+	m.cofre.modificado = true
+	m.cofre.dataUltimaModificacao = now
+
+	return nil
+}
+
 // IsLocked returns true if the vault is currently locked.
 func (m *Manager) IsLocked() bool {
 	return m.bloqueado

@@ -1120,3 +1120,23 @@ func (s *Segredo) excluirSegredo() {
 		s.estadoSessao = EstadoExcluido
 	}
 }
+
+// validarRestauracaoSegredo validates secret restoration parameters.
+// Returns error if segredo is nil or not excluded.
+func (s *Segredo) validarRestauracaoSegredo() error {
+	if s == nil {
+		return ErrSegredoInvalido
+	}
+	if s.estadoSessao != EstadoExcluido {
+		return ErrSegredoNaoExcluido
+	}
+	return nil
+}
+
+// restaurarSegredo restores a soft-deleted secret.
+// Per D-14: Restore reverses deletion (Excluido → Original or Modificado).
+// PRECONDITION: validarRestauracaoSegredo must pass.
+func (s *Segredo) restaurarSegredo() {
+	// Restore to Modificado (content was marked as deleted, now restored)
+	s.estadoSessao = EstadoModificado
+}
