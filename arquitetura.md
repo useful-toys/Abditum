@@ -163,7 +163,7 @@ Regras de implementação para manter essa garantia:
 
 ## 7. Concorrência e Acesso Externo
 
-Não é usado arquivo de lock. Modificações externas ao arquivo do cofre são detectadas comparando timestamp e tamanho no momento do salvamento. Se divergência for detectada, o usuário é avisado e tem as opções: sobrescrever / salvar como novo arquivo / cancelar. Esta abordagem preserva portabilidade e privacidade total (sem rastros no sistema de arquivos além do próprio cofre e seus artefatos previstos).
+Não é usado arquivo de lock. Modificações externas ao arquivo do cofre são detectadas comparando tamanho e hash SHA-256 do arquivo no momento do salvamento — `mtime` não é usado por ser frágil (resolução variável entre filesystems, truncamento em cópias cross-device, comportamento inconsistente com sincronização em nuvem). O tamanho serve como fast-path: se diferir, a mudança é certa sem necessidade de reler o arquivo. Se o tamanho for igual, o hash é calculado para confirmar. O arquivo do cofre tende a ser pequeno (poucos KB), tornando o custo do hash desprezível. Se divergência for detectada, o usuário é avisado e tem as opções: sobrescrever / salvar como novo arquivo / cancelar. Esta abordagem preserva portabilidade e privacidade total (sem rastros no sistema de arquivos além do próprio cofre e seus artefatos previstos).
 
 ---
 

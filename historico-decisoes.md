@@ -279,7 +279,7 @@
 
 ## 17. Acesso concorrente: detecção sem lock file ✓
 
-**Decisão:** Não usamos arquivo de lock (.lock) para sincronização. Detectamos modificações externas comparando timestamp e tamanho do arquivo no momento do salvamento.
+**Decisão:** Não usamos arquivo de lock (.lock) para sincronização. Detectamos modificações externas comparando tamanho e hash SHA-256 do arquivo no momento do salvamento. `mtime` foi descartado por ser frágil (resolução variável entre FAT32/NTFS/ext4, truncamento em cópias cross-device, comportamento inconsistente com Dropbox/OneDrive). O tamanho serve como fast-path barato; o hash confirma quando o tamanho é idêntico. O arquivo do cofre é pequeno (poucos KB), então o custo do hash é desprezível.
 
 **Contexto:**
 - Lock files deixariam rastro no SO, violando privacidade/portabilidade

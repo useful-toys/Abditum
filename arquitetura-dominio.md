@@ -142,7 +142,7 @@ O JSON do cofre é uma estrutura hierárquica aninhada que reflete diretamente a
 Após o JSON ser deserializado, uma única passagem recursiva popula todas as referências pai-filho:
 
 ```go
-// internal/storage — chamado uma vez após deserializar
+// internal/vault/serialization.go — chamado uma vez após deserializar
 func popularReferencias(pasta *Pasta, pai *Pasta) {
     pasta.pai = pai  // nil para Pasta Geral
     for _, subpasta := range pasta.pastas {
@@ -533,7 +533,8 @@ A TUI pode chamar `segredo.AtendeCriterio(query)` diretamente para verificar um 
 | `internal/vault/Manager` | API pública do domínio: único ponto de entrada para toda mutação; delega ao Cofre; controla quando persistir |
 | `internal/vault/Cofre` | Coordenador: atualiza estado global (`modificado`, `dataUltimaModificacao`); delega lógica local às entidades |
 | `internal/vault/entidades` | Lógica local privada (validação de invariantes locais, construção); leitura pública via getters |
-| `internal/storage` | Serialização JSON, criptografia, escrita atômica, reconstituição de referências |
+| `internal/vault/serialization.go` | Serialização e deserialização JSON do Cofre; reconstituição de referências pai-filho |
+| `internal/storage` | Formato binário `.abditum`, criptografia do payload, escrita atômica, backup chain, detecção de mudança externa |
 | `internal/crypto` | Derivação de chave (Argon2id), criptografia/descriptografia (AES-256-GCM) |
 
 ### O Manager como API do domínio
@@ -555,7 +556,79 @@ Consequências práticas desse contrato:
 
 ---
 
-## 9. Limitação Inerente: Zeragem de Memória em Go
+## 9. Serialização JSON — Consequência do Encapsulamento
+
+### O problema
+
+A serialização do `Cofre` para JSON e a deserialização de volta para o grafo de domínio precisam acessar os campos privados das entidades (`nome`, `campos`, `pai`, `estadoSessao`, etc.). Em Go, campos em minúscula são privados ao **pacote** — qualquer código fora de `internal/vault` não os enxerga.
+
+Isso significa que a lógica de serialização **não pode viver em `internal/storage`**. O `storage` não tem visibilidade dos atributos internos das entidades.
+
+Essa restrição é consequência direta da decisão arquitetural central do Abditum: campos privados para impedir que a TUI mute o estado do domínio (seção 1). O mesmo mecanismo que protege as entidades contra mutação externa também impede que pacotes externos as serializem.
+
+### A solução: funções dedicadas em `vault/serialization.go`
+
+A serialização vive em um arquivo separado dentro do pacote `vault` — `serialization.go`. Duas funções package-level concentram toda a lógica:
+
+```go
+// internal/vault/serialization.go
+
+// SerializarCofre converte o Cofre para JSON (UTF-8).
+// Acessa campos privados das entidades diretamente.
+// Segredos com estadoSessao == excluido são omitidos.
+func SerializarCofre(cofre *Cofre) ([]byte, error)
+
+// DeserializarCofre reconstrói o grafo de domínio a partir de JSON.
+// Popula campos privados e reconstitui referências pai-filho.
+// Todos os segredos recebem estadoSessao = original.
+func DeserializarCofre(data []byte) (*Cofre, error)
+```
+
+O `internal/storage` chama essas funções como parte do fluxo de persistência:
+
+```
+Save:  Manager → vault.SerializarCofre(cofre) → []byte JSON → crypto.Encrypt → storage.Write
+Load:  storage.Read → crypto.Decrypt → []byte JSON → vault.DeserializarCofre(data) → *Cofre
+```
+
+### Por que não DTOs intermediários
+
+A abordagem alternativa — criar structs DTO (Data Transfer Object) com campos exportados e tags `json:` — foi descartada por três motivos:
+
+1. **Duplicação estrutural**: cada entidade do domínio precisaria de uma struct espelho com os mesmos campos em maiúscula. São 6 entidades (`Cofre`, `Pasta`, `Segredo`, `ModeloSegredo`, `CampoSegredo`, `Configuracoes`) × 2 structs = 12 tipos a manter sincronizados.
+
+2. **Conversão bidirecional**: além das structs, seriam necessárias funções `toDTO` e `fromDTO` para cada entidade — código mecânico que apenas copia campo a campo e é fonte de bugs silenciosos quando um campo novo é adicionado à entidade mas esquecido no DTO.
+
+3. **Sem benefício real**: DTOs fazem sentido quando há uma fronteira de transporte (rede, API pública) onde o formato externo diverge do modelo interno. No Abditum, o JSON é um formato de arquivo privado — não há consumidor externo. O formato JSON pode acompanhar o modelo de domínio sem fricção.
+
+### Por que não `MarshalJSON` / `UnmarshalJSON` nas entidades
+
+Implementar a interface `json.Marshaler` nas entidades acopla a lógica de serialização ao ciclo de vida da entidade. A entidade passaria a ter responsabilidade dupla: lógica de domínio + formato de persistência. Além disso, `encoding/json` invoca esses métodos automaticamente em qualquer `json.Marshal`, o que pode provocar serialização acidental em contextos de debug ou logging.
+
+Funções package-level separadas mantêm a serialização **explícita e auditável** — ela só acontece quando alguém deliberadamente chama `SerializarCofre` ou `DeserializarCofre`.
+
+### Reconstituição de referências
+
+A deserialização reconstrói o JSON em structs com campos privados populados, mas as referências pai-filho (`pasta.pai`, `segredo.pasta`) não existem no JSON — a hierarquia é implícita pelo aninhamento. Uma passagem recursiva O(n) reconstitui todas as referências:
+
+```go
+// internal/vault/serialization.go — chamado dentro de DeserializarCofre
+func popularReferencias(pasta *Pasta, pai *Pasta) {
+    pasta.pai = pai
+    for _, subpasta := range pasta.subpastas {
+        popularReferencias(subpasta, pasta)
+    }
+    for _, segredo := range pasta.segredos {
+        segredo.pasta = pasta
+    }
+}
+```
+
+Essa função vive em `serialization.go` porque precisa acessar `pasta.pai` e `segredo.pasta` — campos privados ao pacote.
+
+---
+
+## 10. Limitação Inerente: Zeragem de Memória em Go
 
 Go não oferece tipos com semântica de zeragem garantida. Em Rust, `Drop` garante zeragem ao sair do escopo. Em Go, zeragem é imperativa, manual e não-garantida pelo runtime — é uma limitação estrutural da plataforma.
 
@@ -597,7 +670,7 @@ O modelo de ameaça relevante para zeragem é um atacante que lê memória do pr
 
 ---
 
-## 10. Princípios que Guiam as Decisões
+## 11. Princípios que Guiam as Decisões
 
 - **Manager é a única API de mutação**: toda alteração no domínio passa por um método público do Manager — sem exceção. A TUI nunca acessa `Cofre` ou entidades diretamente para mutar. Adicionar uma nova operação significa sempre: método no Manager + método no Cofre + método privado na entidade.
 - **Invariantes impossíveis > invariantes verificados**: prefira modelar o domínio de forma que a violação seja impossível pela estrutura, não apenas detectada por validação.
@@ -606,5 +679,6 @@ O modelo de ameaça relevante para zeragem é um atacante que lê memória do pr
 - **Cofre como coordenador, não objeto deus**: lógica de negócio local vive na entidade (método privado); estado global e operações que cruzam fronteiras vivem no `Cofre` (método público). O critério é: a entidade mais próxima que consegue validar todos os invariantes da operação sozinha.
 - **Mudança real, não chamada de método**: flags de estado (`cofre.modificado`, `segredo.estadoSessao`) só mudam se o valor resultante for realmente diferente do atual. Métodos privados de mutação retornam `bool` para viabilizar essa política.
 - **Responsabilidades separadas na busca**: a entidade sabe se seu conteúdo casa com um critério (`AtendeCriterio`); o Manager aplica a política de busca (filtragem de excluídos, percurso da árvore).
-- **Quem constrói popula**: a responsabilidade de popular referências (pai, pasta) pertence a quem cria a entidade — storage na deserialização, método privado da entidade na criação durante a sessão.
+- **Serialização no pacote do domínio**: a lógica de serialização/deserialização JSON vive em `vault/serialization.go` — consequência direta do encapsulamento por campos privados. Sem DTOs intermediários, sem `MarshalJSON` nas entidades.
+- **Quem constrói popula**: a responsabilidade de popular referências (pai, pasta) pertence a quem cria a entidade — `DeserializarCofre` na carga do arquivo, método privado da entidade na criação durante a sessão.
 - **Manager não valida, não conhece regras**: toda lógica de negócio vive no domínio. O Manager é um coordenador de fluxo — recebe intenção da TUI, invoca o `Cofre`, persiste via storage.
