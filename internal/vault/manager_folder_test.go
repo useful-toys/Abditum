@@ -182,3 +182,136 @@ func TestCriarPasta_WhenLocked(t *testing.T) {
 		t.Errorf("Expected ErrCofreBloqueado, got %v", err)
 	}
 }
+
+// Task 2 Tests: RenomearPasta
+
+func TestRenomearPasta_Success(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+
+	pasta := cofre.PastaGeral().Subpastas()[0] // "Sites e Apps"
+	err := manager.RenomearPasta(pasta, "Novo Nome")
+	if err != nil {
+		t.Fatalf("RenomearPasta failed: %v", err)
+	}
+
+	if pasta.Nome() != "Novo Nome" {
+		t.Errorf("Expected nome='Novo Nome', got %q", pasta.Nome())
+	}
+
+	if !manager.IsModified() {
+		t.Error("Vault should be marked modified after renaming folder")
+	}
+}
+
+func TestRenomearPasta_PastaGeralProtection(t *testing.T) {
+	cofre := NovoCofre()
+	manager := NewManager(cofre, &mockRepository{})
+
+	err := manager.RenomearPasta(cofre.PastaGeral(), "Tentativa")
+	if !errors.Is(err, ErrPastaGeralProtected) {
+		t.Errorf("Expected ErrPastaGeralProtected, got %v", err)
+	}
+
+	if manager.IsModified() {
+		t.Error("Vault should not be modified after failed rename")
+	}
+
+	if cofre.PastaGeral().Nome() != "Pasta Geral" {
+		t.Error("Pasta Geral name should remain unchanged")
+	}
+}
+
+func TestRenomearPasta_NoOpSameName(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+
+	pasta := cofre.PastaGeral().Subpastas()[0] // "Sites e Apps"
+	nomeOriginal := pasta.Nome()
+
+	// Rename to same name (no-op per D-12)
+	err := manager.RenomearPasta(pasta, nomeOriginal)
+	if err != nil {
+		t.Fatalf("RenomearPasta with same name should not fail: %v", err)
+	}
+
+	// Should NOT mark vault as modified (D-12 change detection)
+	if manager.IsModified() {
+		t.Error("Vault should not be modified when renaming to same name (D-12)")
+	}
+}
+
+func TestRenomearPasta_NameConflict(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao() // Creates "Sites e Apps" and "Financeiro"
+	manager := NewManager(cofre, &mockRepository{})
+
+	subpastas := cofre.PastaGeral().Subpastas()
+	pasta1 := subpastas[0] // "Sites e Apps"
+
+	// Try to rename to existing sibling name
+	err := manager.RenomearPasta(pasta1, "Financeiro")
+	if !errors.Is(err, ErrNameConflict) {
+		t.Errorf("Expected ErrNameConflict, got %v", err)
+	}
+
+	if manager.IsModified() {
+		t.Error("Vault should not be modified after failed rename")
+	}
+
+	if pasta1.Nome() != "Sites e Apps" {
+		t.Error("Pasta name should remain unchanged after conflict")
+	}
+}
+
+func TestRenomearPasta_NomeVazio(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+
+	pasta := cofre.PastaGeral().Subpastas()[0]
+	err := manager.RenomearPasta(pasta, "")
+	if !errors.Is(err, ErrNomeVazio) {
+		t.Errorf("Expected ErrNomeVazio, got %v", err)
+	}
+
+	if manager.IsModified() {
+		t.Error("Vault should not be modified after validation failure")
+	}
+}
+
+func TestRenomearPasta_NomeMuitoLongo(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+
+	pasta := cofre.PastaGeral().Subpastas()[0]
+	nomeLongo := string(make([]byte, 256))
+	for i := range nomeLongo {
+		nomeLongo = nomeLongo[:i] + "a"
+	}
+
+	err := manager.RenomearPasta(pasta, nomeLongo)
+	if !errors.Is(err, ErrNomeMuitoLongo) {
+		t.Errorf("Expected ErrNomeMuitoLongo, got %v", err)
+	}
+
+	if manager.IsModified() {
+		t.Error("Vault should not be modified after validation failure")
+	}
+}
+
+func TestRenomearPasta_WhenLocked(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, &mockRepository{})
+	pasta := cofre.PastaGeral().Subpastas()[0]
+	manager.Lock()
+
+	err := manager.RenomearPasta(pasta, "Test")
+	if !errors.Is(err, ErrCofreBloqueado) {
+		t.Errorf("Expected ErrCofreBloqueado, got %v", err)
+	}
+}
