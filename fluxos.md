@@ -6,7 +6,7 @@ Detalhes de implementação de UI são intencionalmente omitidos.
 
 ---
 
-## Conceitos de Interface e Navegação
+## Conceitos de Navegação
 
 Para entender os fluxos de usuário, é importante contextualizar como a interação ocorre na interface TUI do Abditum. A aplicação sempre opera dentro de um **Contexto de Navegação**, que é definido por um **Container**, e foca em **Elementos em Foco** específicos.
 
@@ -84,11 +84,10 @@ Conforme definido em `modelo-dominio.md`. Relevante como pré-condição quando 
 
 ---
 
-**Convenções dos diagramas:**
-- Retângulos → momentos da interação
-- Losangos → decisões ou ramificações
-- Retângulos arredondados → término do fluxo
-- Texto nas setas → ação do usuário ou condição do sistema
+**Convenções:**
+- Os fluxos são descritos como uma sequência de passos lógicos.
+- Condicionais são indicadas por **"Se... então..."**.
+- Referências a outros fluxos estão em **negrito**.
 
 ---
 
@@ -96,26 +95,14 @@ Conforme definido em `modelo-dominio.md`. Relevante como pré-condição quando 
 
 **Pré-condição:** aplicação em estado `inicial`.
 
-Ao executar o binário, o comportamento depende de como ele foi invocado.
-
-```mermaid
-flowchart TD
-    A([Usuário executa o binário]) --> B{Argumento de\narquivo fornecido?}
-    B -- Não --> C[Boas-vindas\nOpções: Criar novo cofre / Abrir cofre existente]
-    B -- Sim --> D{Arquivo\nexiste?}
-    D -- Não --> E([Mensagem de erro\nAplicação encerra])
-    D -- Sim --> F[Fluxo 2: Abrir Cofre]
-    C -- Criar novo cofre --> G[Fluxo 3: Criar Cofre]
-    C -- Abrir cofre existente --> H[Usuário informa o caminho do arquivo]
-    H --> F
-```
-
-**O que o usuário vê e faz:**
-
-- Se não informou arquivo: vê uma tela de boas-vindas com duas opções — criar um cofre novo ou abrir um existente.
-- Se escolhe abrir: informa o caminho do arquivo `.abditum` que deseja abrir.
-- Se informou o arquivo diretamente ao executar: a aplicação já vai direto para a autenticação, sem passar pela tela de boas-vindas.
-- Se o arquivo informado não existe: recebe uma mensagem de erro e a aplicação encerra.
+1. O usuário executa o binário.
+2. **Se** um argumento de arquivo foi fornecido:
+    - **Se** o arquivo existe: prossegue para o **Fluxo 2 — Abrir Cofre**.
+    - **Se** o arquivo não existe: exibe mensagem de erro e a aplicação encerra.
+3. **Se** nenhum argumento foi fornecido:
+    - Exibe tela de boas-vindas com opções "Criar novo cofre" e "Abrir cofre existente".
+    - **Se** o usuário escolhe criar: prossegue para o **Fluxo 3 — Criar Novo Cofre**.
+    - **Se** o usuário escolhe abrir: solicita o caminho do arquivo e prossegue para o **Fluxo 2 — Abrir Cofre**.
 
 ---
 
