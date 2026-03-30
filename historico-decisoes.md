@@ -340,7 +340,32 @@
 
 
 
-# DESIGN & RESTRIÇÕES
+## 26. Identidade por ponteiro e obsolescência de IDs sintéticos ✓
+
+**Decisão:** O domínio utiliza exclusivamente ponteiros Go como identificadores de entidades (`*Pasta`, `*Segredo`, `*ModeloSegredo`) durante a sessão. O uso de UUIDs, NanoIDs ou qualquer ID sintético gerado é proibido.
+
+**Contexto:**
+- O cofre vive inteiramente em memória como um grafo de objetos durante a sessão.
+- Endereços de memória são identificadores naturais, estáveis e garantidamente únicos dentro do processo.
+- Identificadores persistidos são as chaves compostas (Nomes dentro de caminhos de pastas).
+
+**Justificativa:** Elimina overhead de geração de IDs e sincronização entre memória e persistência. Simplifica a lógica de "lookup" (que passa a ser O(1) direto pelo hardware).
+
+**Consequências:** OROADMAP anterior mencionando "NanoID must use crypto/rand" torna-se obsoleto e deve ser ignorado.
+
+## 27. Datas de controle restritas a Segredo e Cofre ✓
+
+**Decisão:** Apenas o agregado `Cofre` e a entidade `Segredo` possuem os campos `dataCriacao` e `dataUltimaModificacao`. A entidade `Pasta` não possui datas de controle.
+
+**Contexto:**
+- Pastas são containers estruturais.
+- Mudanças na hierarquia (criar pasta, renomear pasta) são refletidas na `dataUltimaModificacao` do `Cofre`.
+- Mudanças no conteúdo são refletidas no `Segredo`.
+
+**Justificativa:** Evita a complexidade de "borbulhamento" de datas (ter que atualizar a data da pasta pai e de todos os ancestrais sempre que um segredo for modificado). Simplifica o modelo sem perda de utilidade para o usuário, que foca na auditoria do dado real (o segredo).
+
+**Consequências:** Auditoria de alteração da hierarquia via pastas não é suportada.
+
 
 ## 21. Sem limites técnicos arbitrários ✓
 
