@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 03
 status: executing
-last_updated: "2026-03-30T07:02:39.743Z"
+last_updated: "2026-03-30T08:57:28.037Z"
 progress:
   total_phases: 11
   completed_phases: 2
   total_plans: 11
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State — Abditum
@@ -134,6 +134,9 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 03-vault-domain-manager]: Moving folder into itself returns ErrDestinoInvalido before cycle check
 - [Phase 03-vault-domain-manager]: Repositioning no-ops: to current position, Subir at 0, Descer at last (D-23)
 - [Phase 03-vault-domain-manager]: Folder deletion: hard delete with promotion, recursive merge for subfolders, numeric suffix for secrets
+- [Phase 03-05]: Favorito flag independent of estadoSessao (only updates cofre.modificado per D-11)
+- [Phase 03-05]: Soft-delete: EstadoIncluido secrets removed from parent list, others marked Excluido
+- [Phase 03-05]: Name conflict uses fmt.Sprintf for (N) progression with 9999 safety limit
 
 ### Phase 02 Decisions
 

@@ -59,13 +59,13 @@
 
 ### Gerenciamento de Segredos
 
-- [ ] **SEC-01**: Usuário pode criar segredo a partir de modelo existente ou sem modelo (apenas Observação); escolhe a pasta no momento da criação
-- [ ] **SEC-02**: Usuário pode duplicar segredo (cópia na mesma pasta imediatamente após original; nome ajustado automaticamente: "Segredo (1)", "Segredo (2)"; histórico de modelo preservado)
+- [x] **SEC-01**: Usuário pode criar segredo a partir de modelo existente ou sem modelo (apenas Observação); escolhe a pasta no momento da criação
+- [x] **SEC-02**: Usuário pode duplicar segredo (cópia na mesma pasta imediatamente após original; nome ajustado automaticamente: "Segredo (1)", "Segredo (2)"; histórico de modelo preservado)
 - [ ] **SEC-03**: Usuário pode editar segredo: nome, valores de campos e observação (sem alterar estrutura)
 - [ ] **SEC-04**: Usuário pode alterar estrutura do segredo: adicionar campo (nome + tipo), renomear campo, reordenar campos, excluir campo; tipo de campo não pode ser alterado; Observação não participa de reordenação, não pode ser renomeada/excluída/movida
 - [x] **SEC-05**: Observação existe automaticamente em todo segredo na última posição; campo comum; não pode ser renomeada, excluída ou movida
-- [ ] **SEC-06**: Usuário pode favoritar/desfavoritar segredo
-- [ ] **SEC-07**: Usuário pode marcar/desmarcar segredo para exclusão; segredo permanece visível sinalizado; removido permanentemente ao salvar
+- [x] **SEC-06**: Usuário pode favoritar/desfavoritar segredo
+- [x] **SEC-07**: Usuário pode marcar/desmarcar segredo para exclusão; segredo permanece visível sinalizado; removido permanentemente ao salvar
 - [ ] **SEC-08**: Usuário pode mover segredo para outra pasta
 - [ ] **SEC-09**: Usuário pode reordenar segredo dentro da mesma pasta; ordem persistida ao salvar
 
@@ -185,12 +185,12 @@
 | QUERY-02 | 7 | Pending |
 | QUERY-06 | 7 | Pending |
 | QUERY-07 | 7 | Pending |
-| SEC-01 | 8 | Pending |
-| SEC-02 | 8 | Pending |
+| SEC-01 | 8 | Complete |
+| SEC-02 | 8 | Complete |
 | SEC-03 | 8 | Pending |
 | SEC-04 | 8 | Pending |
-| SEC-06 | 8 | Pending |
-| SEC-07 | 8 | Pending |
+| SEC-06 | 8 | Complete |
+| SEC-07 | 8 | Complete |
 | SEC-08 | 8 | Pending |
 | SEC-09 | 8 | Pending |
 | QUERY-03 | 8 | Pending |
