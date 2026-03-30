@@ -785,3 +785,58 @@ func TestExcluirSegredoSoftDelete(t *testing.T) {
 		t.Errorf("Expected ErrSegredoJaExcluido for double-delete, got %v", err)
 	}
 }
+
+// TestRestaurarSegredoReversao verifies secret restoration reverses soft-delete.
+// Per D-14: Restore transitions Excluido back to previous state (Original or Modificado).
+func TestRestaurarSegredoReversao(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, nil)
+
+	pastaGeral := cofre.PastaGeral()
+	modelos := cofre.Modelos()
+	var modeloLogin *ModeloSegredo
+	for _, m := range modelos {
+		if m.Nome() == "Login" {
+			modeloLogin = m
+			break
+		}
+	}
+
+	// Create and delete a secret (EstadoModificado → EstadoExcluido)
+	segredo, err := manager.CriarSegredo(pastaGeral, "TestSecret", modeloLogin)
+	if err != nil {
+		t.Fatalf("Failed to create secret: %v", err)
+	}
+
+	err = manager.ExcluirSegredo(segredo)
+	if err != nil {
+		t.Fatalf("Failed to delete secret: %v", err)
+	}
+
+	if segredo.EstadoSessao() != EstadoExcluido {
+		t.Fatalf("Expected EstadoExcluido after deletion, got %v", segredo.EstadoSessao())
+	}
+
+	// Restore the secret (should return to EstadoModificado)
+	err = manager.RestaurarSegredo(segredo)
+	if err != nil {
+		t.Fatalf("Failed to restore secret: %v", err)
+	}
+
+	// Verify estadoSessao restored to Modificado
+	if segredo.EstadoSessao() != EstadoModificado {
+		t.Errorf("Expected EstadoModificado after restore, got %v", segredo.EstadoSessao())
+	}
+
+	// Verify cofre.modificado = true
+	if !manager.IsModified() {
+		t.Error("Expected cofre to be modified after restoring secret")
+	}
+
+	// Verify restoring non-deleted secret fails with ErrSegredoNaoExcluido
+	err = manager.RestaurarSegredo(segredo)
+	if err != ErrSegredoNaoExcluido {
+		t.Errorf("Expected ErrSegredoNaoExcluido for restoring non-deleted secret, got %v", err)
+	}
+}
