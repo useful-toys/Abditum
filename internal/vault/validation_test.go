@@ -1265,3 +1265,114 @@ func TestEditarObservacaoEstado(t *testing.T) {
 		t.Error("Expected vault to be modified after observação edits")
 	}
 }
+
+// TestMoverSegredoSemEstadoMudanca verifies moving a secret doesn't change estadoSessao.
+// Per D-16: Move is structural operation, not content mutation - doesn't change estadoSessao.
+// Only updates cofre.modificado.
+func TestMoverSegredoSemEstadoMudanca(t *testing.T) {
+	cofre := NovoCofre()
+	manager := NewManager(cofre, nil)
+
+	// Create template
+	modelo, err := manager.CriarModelo("TestModel", []CampoModelo{
+		{nome: "Field1", tipo: TipoCampoComum},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create template: %v", err)
+	}
+
+	// Create two folders
+	pastaGeral := cofre.PastaGeral()
+	pasta1, err := manager.CriarPasta(pastaGeral, "Folder1", 0)
+	if err != nil {
+		t.Fatalf("Failed to create Folder1: %v", err)
+	}
+
+	pasta2, err := manager.CriarPasta(pastaGeral, "Folder2", 1)
+	if err != nil {
+		t.Fatalf("Failed to create Folder2: %v", err)
+	}
+
+	// Create secret in Folder1
+	segredo, err := manager.CriarSegredo(pasta1, "TestSecret", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create secret: %v", err)
+	}
+
+	// Force estadoSessao to Original (simulating loaded from file)
+	segredo.estadoSessao = EstadoOriginal
+
+	// Verify initial state
+	if segredo.EstadoSessao() != EstadoOriginal {
+		t.Fatalf("Expected EstadoOriginal initially, got %v", segredo.EstadoSessao())
+	}
+
+	if segredo.Pasta() != pasta1 {
+		t.Fatal("Secret should initially be in Folder1")
+	}
+
+	// Move secret to Folder2
+	err = manager.MoverSegredo(segredo, pasta2, 0)
+	if err != nil {
+		t.Errorf("Failed to move secret: %v", err)
+	}
+
+	// Verify estadoSessao DID NOT CHANGE (D-16: structural, not content)
+	if segredo.EstadoSessao() != EstadoOriginal {
+		t.Errorf("Expected EstadoOriginal unchanged after move (D-16), got %v", segredo.EstadoSessao())
+	}
+
+	// Verify secret is now in Folder2
+	if segredo.Pasta() != pasta2 {
+		t.Error("Secret should now be in Folder2")
+	}
+
+	// Verify secret removed from Folder1
+	segredosPasta1 := pasta1.Segredos()
+	for _, s := range segredosPasta1 {
+		if s == segredo {
+			t.Error("Secret should no longer be in Folder1")
+		}
+	}
+
+	// Verify secret added to Folder2
+	segredosPasta2 := pasta2.Segredos()
+	found := false
+	for _, s := range segredosPasta2 {
+		if s == segredo {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Secret should be in Folder2")
+	}
+
+	// Test error: name conflict in destination
+	segredo2, err := manager.CriarSegredo(pasta1, "Conflict", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create second secret: %v", err)
+	}
+
+	_, err = manager.CriarSegredo(pasta2, "Conflict", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create third secret: %v", err)
+	}
+
+	// Try to move segredo2 to pasta2 (should fail - name conflict)
+	err = manager.MoverSegredo(segredo2, pasta2, 0)
+	if err != ErrNameConflict {
+		t.Errorf("Expected ErrNameConflict for name conflict, got: %v", err)
+	}
+
+	// Test error: invalid destination (nil)
+	err = manager.MoverSegredo(segredo, nil, 0)
+	if err != ErrPastaInvalida {
+		t.Errorf("Expected ErrPastaInvalida for nil destination, got: %v", err)
+	}
+
+	// Verify vault modified
+	if !manager.IsModified() {
+		t.Error("Expected vault to be modified after moving secret")
+	}
+}
