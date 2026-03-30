@@ -249,3 +249,89 @@ func (c *CampoModelo) Nome() string {
 func (c *CampoModelo) Tipo() TipoCampo {
 	return c.tipo
 }
+
+// Factory methods
+
+// NovoCofre creates a new empty vault with Pasta Geral and default configurations.
+// Initial content (folders/templates) must be added via InicializarConteudoPadrao().
+// Per D-28a.
+func NovoCofre() *Cofre {
+	agora := time.Now().UTC()
+
+	pastaGeral := &Pasta{
+		nome:      "Pasta Geral",
+		pai:       nil,
+		subpastas: make([]*Pasta, 0),
+		segredos:  make([]*Segredo, 0),
+	}
+
+	return &Cofre{
+		pastaGeral:            pastaGeral,
+		modelos:               make([]*ModeloSegredo, 0),
+		modificado:            false,
+		dataCriacao:           agora,
+		dataUltimaModificacao: agora,
+		configuracoes: Configuracoes{
+			tempoBloqueioInatividadeMinutos:      5,
+			tempoOcultarSegredoSegundos:          15,
+			tempoLimparAreaTransferenciaSegundos: 30,
+		},
+	}
+}
+
+// InicializarConteudoPadrao populates a new vault with default folders and templates.
+// Creates "Sites e Apps" and "Financeiro" folders, and Login, Cartão de Crédito, and Chave de API templates.
+// Must be called once after NovoCofre() for new user vaults.
+// Does NOT mark cofre.modificado=true (initial content is part of base state per D-28b).
+// NOT a user operation via Manager (system bootstrap, not domain operation).
+func (c *Cofre) InicializarConteudoPadrao() error {
+	// Create default folders
+	sitesEApps := &Pasta{
+		nome:      "Sites e Apps",
+		pai:       c.pastaGeral,
+		subpastas: make([]*Pasta, 0),
+		segredos:  make([]*Segredo, 0),
+	}
+
+	financeiro := &Pasta{
+		nome:      "Financeiro",
+		pai:       c.pastaGeral,
+		subpastas: make([]*Pasta, 0),
+		segredos:  make([]*Segredo, 0),
+	}
+
+	c.pastaGeral.subpastas = append(c.pastaGeral.subpastas, sitesEApps, financeiro)
+
+	// Create default templates (VAULT-02)
+	login := &ModeloSegredo{
+		nome: "Login",
+		campos: []CampoModelo{
+			{nome: "URL", tipo: TipoCampoComum},
+			{nome: "Usuário", tipo: TipoCampoComum},
+			{nome: "Senha", tipo: TipoCampoSensivel},
+		},
+	}
+
+	cartao := &ModeloSegredo{
+		nome: "Cartão de Crédito",
+		campos: []CampoModelo{
+			{nome: "Titular", tipo: TipoCampoComum},
+			{nome: "Número", tipo: TipoCampoSensivel},
+			{nome: "Validade", tipo: TipoCampoComum},
+			{nome: "CVV", tipo: TipoCampoSensivel},
+		},
+	}
+
+	chaveAPI := &ModeloSegredo{
+		nome: "Chave de API",
+		campos: []CampoModelo{
+			{nome: "Serviço", tipo: TipoCampoComum},
+			{nome: "Chave", tipo: TipoCampoSensivel},
+		},
+	}
+
+	c.modelos = append(c.modelos, login, cartao, chaveAPI)
+
+	// Note: Does NOT set c.modificado = true (D-28b)
+	return nil
+}
