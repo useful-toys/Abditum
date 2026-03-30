@@ -671,3 +671,66 @@ func TestLockedVaultPreventsFolderOperations(t *testing.T) {
 		t.Errorf("Expected ErrCofreBloqueado for ExcluirPasta, got: %v", err)
 	}
 }
+
+// TestCriarSegredoEstadoInicial verifies secret creation initializes state correctly.
+// Per D-11, D-13: new secret has estadoSessao = Modificado (new content), favorito = false.
+func TestCriarSegredoEstadoInicial(t *testing.T) {
+	cofre := NovoCofre()
+	cofre.InicializarConteudoPadrao()
+	manager := NewManager(cofre, nil)
+
+	pastaGeral := cofre.PastaGeral()
+	modelos := cofre.Modelos()
+	var modeloLogin *ModeloSegredo
+	for _, m := range modelos {
+		if m.Nome() == "Login" {
+			modeloLogin = m
+			break
+		}
+	}
+
+	if modeloLogin == nil {
+		t.Fatal("Login model not found")
+	}
+
+	// Create secret from template
+	segredo, err := manager.CriarSegredo(pastaGeral, "GitHub", modeloLogin)
+	if err != nil {
+		t.Fatalf("Failed to create secret: %v", err)
+	}
+
+	// Verify initial state: estadoSessao = Modificado (new content per D-11)
+	if segredo.EstadoSessao() != EstadoModificado {
+		t.Errorf("Expected estadoSessao Modificado for new secret, got %v", segredo.EstadoSessao())
+	}
+
+	// Verify favorito = false
+	if segredo.Favorito() {
+		t.Error("Expected favorito false for new secret")
+	}
+
+	// Verify campos initialized from template structure with empty values
+	campos := segredo.Campos()
+	templateCampos := modeloLogin.Campos()
+	if len(campos) != len(templateCampos) {
+		t.Errorf("Expected %d campos from template, got %d", len(templateCampos), len(campos))
+	}
+
+	for i, campo := range campos {
+		if campo.Nome() != templateCampos[i].Nome() {
+			t.Errorf("Campo %d: expected name %s, got %s", i, templateCampos[i].Nome(), campo.Nome())
+		}
+		if campo.Tipo() != templateCampos[i].Tipo() {
+			t.Errorf("Campo %d: expected type %v, got %v", i, templateCampos[i].Tipo(), campo.Tipo())
+		}
+		// Values should be empty (initialized with empty []byte)
+		if len(campo.ValorComoString()) != 0 {
+			t.Errorf("Campo %d: expected empty value, got %s", i, campo.ValorComoString())
+		}
+	}
+
+	// Verify cofre.modificado = true
+	if !manager.IsModified() {
+		t.Error("Expected cofre to be modified after creating secret")
+	}
+}

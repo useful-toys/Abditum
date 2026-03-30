@@ -21,4 +21,8 @@ var (
 	ErrCampoInvalido          = errors.New("índice de campo inválido")
 	ErrModeloEmUso            = errors.New("modelo está em uso por segredos")
 	ErrNomeReservado          = errors.New("nome é reservado e não pode ser usado")
+	ErrPastaInvalida          = errors.New("pasta inválida ou nula")
+	ErrModeloInvalido         = errors.New("modelo inválido ou nulo")
+	ErrSegredoJaExcluido      = errors.New("segredo já está marcado como excluído")
+	ErrSegredoNaoExcluido     = errors.New("segredo não está marcado como excluído")
 )
