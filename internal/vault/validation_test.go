@@ -1178,3 +1178,90 @@ func TestEditarCampoSegredoEstado(t *testing.T) {
 		t.Error("Expected vault to be modified after field edits")
 	}
 }
+
+// TestEditarObservacaoEstado verifies editing observação marks estadoSessao = Modificado.
+// Per D-11: Content mutations (observação edits) mark estadoSessao = Modificado.
+// Per D-12: No-op edits (same value) don't mark modified.
+// Per D-29: Observação is separate field, not in campos slice.
+func TestEditarObservacaoEstado(t *testing.T) {
+	cofre := NovoCofre()
+	manager := NewManager(cofre, nil)
+
+	// Create template
+	modelo, err := manager.CriarModelo("TestModel", []CampoModelo{
+		{nome: "Username", tipo: TipoCampoComum},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create template: %v", err)
+	}
+
+	// Create secret
+	pastaGeral := cofre.PastaGeral()
+	segredo, err := manager.CriarSegredo(pastaGeral, "TestSecret", modelo)
+	if err != nil {
+		t.Fatalf("Failed to create secret: %v", err)
+	}
+
+	// Force estadoSessao to Original (simulating loaded from file)
+	segredo.estadoSessao = EstadoOriginal
+
+	// Verify initial state
+	if segredo.EstadoSessao() != EstadoOriginal {
+		t.Fatalf("Expected EstadoOriginal initially, got %v", segredo.EstadoSessao())
+	}
+
+	// Verify observação is initially empty
+	if segredo.Observacao() != "" {
+		t.Errorf("Expected empty observação initially, got '%s'", segredo.Observacao())
+	}
+
+	// Test 1: Edit observação value (should mark Modificado)
+	err = manager.EditarObservacao(segredo, "This is a note")
+	if err != nil {
+		t.Errorf("Failed to edit observação: %v", err)
+	}
+
+	// Verify estadoSessao changed to Modificado
+	if segredo.EstadoSessao() != EstadoModificado {
+		t.Errorf("Expected EstadoModificado after edit, got %v", segredo.EstadoSessao())
+	}
+
+	// Verify observação value changed
+	if segredo.Observacao() != "This is a note" {
+		t.Errorf("Expected observação 'This is a note', got '%s'", segredo.Observacao())
+	}
+
+	// Test 2: Edit with same value (no-op, per D-12)
+	err = manager.EditarObservacao(segredo, "This is a note")
+	if err != nil {
+		t.Errorf("Failed to edit observação with same value: %v", err)
+	}
+
+	// Verify estadoSessao still Modificado (no change in state)
+	if segredo.EstadoSessao() != EstadoModificado {
+		t.Errorf("Expected EstadoModificado unchanged after no-op edit, got %v", segredo.EstadoSessao())
+	}
+
+	// Test 3: Verify observação is NOT in campos slice (D-29)
+	campos := segredo.Campos()
+	for _, campo := range campos {
+		if campo.Nome() == "Observação" {
+			t.Error("Observação should NOT be in campos slice (D-29)")
+		}
+	}
+
+	// Test 4: Edit with very long text (validation should reject if > 1000 chars)
+	longText := ""
+	for i := 0; i < 1001; i++ {
+		longText += "x"
+	}
+	err = manager.EditarObservacao(segredo, longText)
+	if err == nil {
+		t.Error("Expected error for observação > 1000 chars, got nil")
+	}
+
+	// Verify vault modified
+	if !manager.IsModified() {
+		t.Error("Expected vault to be modified after observação edits")
+	}
+}
