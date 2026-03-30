@@ -34,22 +34,30 @@ A interação com o modelo de domínio é controlada por uma camada de serviço 
 
 1.  **Contrato Central e Ponto de Entrada Único**: Toda mutação no estado do cofre (criar, editar, excluir segredos/pastas) é realizada exclusivamente por métodos explícitos no `Manager`. As entidades do domínio (`Cofre`, `Pasta`, `Segredo`) expõem seus dados de forma navegável e somente leitura para o exterior, mas suas funções de mutação são privadas ao pacote, podendo ser chamadas apenas pelo `Manager` ou pelo agregado `Cofre`.
 
-2.  **Orquestração, não Lógica**: O `Manager` não contém lógica de negócio. Sua responsabilidade é **orquestrar** o fluxo de um caso de uso. Ele recebe a solicitação, utiliza um Repositório para carregar o estado, invoca o método de negócio apropriado no agregado `Cofre`, e então utiliza o Repositório novamente para persistir o novo estado. A lógica de negócio real (validações, regras, invariantes) reside inteiramente dentro do modelo de domínio (no agregado `Cofre` e suas entidades).
+2.  **Orquestração e Atomicidade em Memória**: O `Manager` garante que cada operação seja atômica: ou ela tem sucesso completo, ou o estado em memória permanece exatamente como estava antes da chamada. Para isso, o sistema adota o padrão **Validar antes de Mutar**: todas as premissas, regras de unicidade e invariantes estruturais são verificados antes de qualquer campo ou ponteiro ser alterado. Se uma validação falhar, o método retorna o erro e nenhuma entidade é modificada.
 
-3.  **Barreira Transacional**: Cada método público no `Manager` representa uma transação completa e atômica. Uma operação só é considerada bem-sucedida se a lógica de negócio for validada **e** a persistência for concluída com sucesso. Isso garante que o cofre nunca seja deixado em um estado inconsistente.
+3.  **Consistência em Memória e Persistência Explícita**: O `Manager` garante a integridade do agregado `Cofre` em memória após cada operação. No entanto, a persistência no disco **não é automática** para a maioria das operações (exceto casos específicos como a alteração da Senha Mestra). O usuário decide quando consolidar as alterações da sessão através de um comando explícito de "Salvar". Isso permite operações de "Descartar Alterações" e evita acessos desnecessários ao disco e riscos de corrupção frequente.
 
-### Fluxo de uma Operação Típica (Ex: Renomear um Segredo)
 
-1.  A **TUI** captura a intenção do usuário (o ID do segredo e o novo nome) e chama um único método no `Manager`, ex: `manager.RenomearSegredo(secretID, "novo nome")`.
-2.  O **Manager** recebe a chamada. Ele não valida nada. Sua primeira ação é invocar o método correspondente no agregado `Cofre` que está em memória: `cofre.RenomearSegredo(secretID, "novo nome")`.
-3.  O agregado **Cofre** executa a lógica de negócio:
-    *   Encontra o segredo e sua pasta pai.
-    *   Verifica se o novo nome já está em uso na mesma pasta (regra de unicidade).
-    *   Se a regra for violada, retorna um erro, e o Manager o repassa para a TUI. A operação é abortada.
-    *   Se a regra for válida, ele comanda a entidade `Segredo` a alterar seu estado interno, atualiza o `estado_sessao` para `modificado` e atualiza a data de modificação do cofre.
-4.  Se o método no `Cofre` retornar sem erros, o **Manager** prossegue para a próxima etapa: ele chama o Repositório (camada de `storage`) para salvar o estado modificado do agregado `Cofre`: `repositorio.Salvar(cofre)`.
-5.  A camada de **storage** executa a serialização para JSON, criptografia e escrita atômica no arquivo `.abditum`.
-6.  O resultado final (sucesso ou erro de IO) é retornado ao longo da cadeia até a TUI, que atualiza a tela para o usuário.
+### Fluxo de uma Operação de Mutação (Ex: Renomear um Segredo)
+
+1.  A **TUI** captura a intenção do usuário e chama o método no `Manager`, ex: `manager.RenomearSegredo(segredo, "novo nome")`.
+2.  O **Manager** invoca o método correspondente no agregado **Cofre** que está em memória.
+3.  O agregado **Cofre** e suas entidades executam a lógica de negócio e validação de invariantes.
+4.  Se válido, o estado interno é alterado em memória, e o segredo/cofre são marcados como modificados (`estadoSessao` e flag `modificado`).
+5.  O controle retorna para a TUI, que reflete a mudança visualmente (incluindo indicadores de modificação). **O arquivo em disco não é tocado.**
+
+### Fluxo de Persistência (Operação Salvar)
+
+1.  A **TUI** invoca `manager.Salvar()`.
+2.  O **Manager** chama o Repositório (`storage`): `repositorio.Salvar(cofre)`.
+3.  A camada de **storage** realiza a serialização (filtrando segredos marcados para exclusão), criptografia e escrita atômica.
+4.  Se a persistência for bem-sucedida, o **Manager** comanda o `Cofre` a efetivar as mutações:
+    *   Remoção definitiva dos ponteiros de segredos excluídos da árvore.
+    *   Reset dos estados de sessão (`modificado` → `original`).
+    *   Limpeza da flag `cofre.modificado`.
+5.  Se a persistência falhar, o estado em memória permanece intacto (permitindo nova tentativa ou correção).
+
 
 ### Benefícios Deste Padrão
 
