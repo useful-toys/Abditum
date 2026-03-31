@@ -224,6 +224,7 @@ func (m *rootModel) liveModels() []childModel {
 - `ascii.go` — `AsciiArt` constant, `RenderLogo()`
 - `actions.go` — `ActionManager` (see D-16)
 - `messages.go` — `MessageManager` (see D-17)
+- `dialogs.go` — dialog factory functions (see D-18)
 - `prevault.go` — `preVaultModel` stub (ASCII art welcome background; no sub-states)
 - `vaulttree.go` — `vaultTreeModel` stub
 - `secretdetail.go` — `secretDetailModel` stub
@@ -255,6 +256,7 @@ func (m *rootModel) liveModels() []childModel {
 - `ActionManager` registration API shape (method names, `Action` struct fields, context scoping mechanism)
 - `ActionManager` grouping and priority logic for `Visible()` — Phase 5 stub may return a flat list
 - `MessageManager` API shape (e.g., whether it supports message severity/type, auto-clear after timeout, etc.)
+- `dialogs` factory: exact function signatures, whether callbacks use `tea.Cmd` or typed messages, additional pre-defined dialog types beyond message/confirm
 
 ### Message Manager
 
@@ -266,6 +268,19 @@ func (m *rootModel) liveModels() []childModel {
 - Children must NOT read from `MessageManager` — it is write-only from their perspective.
 - `rootModel` may also write to `MessageManager` directly for global-level hints (e.g., "vault locked").
 - **API shape** (e.g., severity levels, auto-clear after N seconds, message queue vs. single slot) is left to researcher/planner.
+
+### Dialog Factory
+
+**D-18: `dialogs` package — factory functions for pre-defined modal dialogs**
+- **Different from D-16/D-17:** dialogs are not shared mutable state — they are event-driven. Creating a dialog means returning a `tea.Cmd` that emits a `pushModalMsg{}`, which `rootModel` intercepts and pushes onto the modal stack.
+- **Pre-defined dialog types (stubs in Phase 5):**
+  - `dialogs.Message(title, text string) tea.Cmd` — informational, dismissed via ESC or Enter
+  - `dialogs.Confirm(question string, onYes, onNo tea.Cmd) tea.Cmd` — yes/no prompt; fires the appropriate Cmd on selection
+  - Additional types (e.g., multi-option selection) are left to researcher/planner
+- **Usage by children:** a child's `Update()` returns `dialogs.Confirm(...)` as its Cmd. No direct access to `rootModel`'s modal stack.
+- `dialogs` functions are stateless — they produce a `tea.Cmd` and nothing else. No shared object to pass at construction time.
+- `rootModel.Update()` handles `pushModalMsg{}` and appends to `modals` stack (consistent with D-10).
+- **Exact function signatures and callback mechanism** are left to researcher/planner.
 
 </decisions>
 
