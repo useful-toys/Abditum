@@ -96,6 +96,9 @@ type rootModel struct {
 
     // Modal stack — LIFO, last element = topmost/active
     modals         []*modalModel
+
+    // Shared services — passed to every child at construction
+    actions        *ActionManager
 }
 ```
 - When transitioning to a new state: allocate new child via constructor, set old child field to `nil`. Go GC reclaims the old model.
@@ -150,7 +153,7 @@ func (m *rootModel) liveModels() []childModel {
 │ Work area                       │  ← changes by state (see D-09)
 │                                 │
 ├─────────────────────────────────┤
-│ Command bar                     │  ← global commands always visible
+│ Command bar                     │  ← reads ActionManager.Visible() (see D-16)
 └─────────────────────────────────┘
 ```
 - Frame zones are composed with lipgloss; header and bars have fixed heights, work area gets remaining height.
@@ -193,7 +196,8 @@ func (m *rootModel) liveModels() []childModel {
 
 **D-12: Global keyboard shortcuts wired in `rootModel`**
 - `ctrl+Q` — global quit. Intercepted before routing to any child or modal. Behavior follows `fluxos.md`: confirmation modal if unsaved changes, direct quit if no changes. `ctrl+C` is NOT quit. `q` is NOT a global quit.
-- `?` — global help. Pushes `helpModal` onto the modal stack regardless of current work area or modal depth. Dismissed via ESC.
+- `?` — global help. Pushes `helpModal` onto the modal stack regardless of current work area or modal depth. `helpModal` reads `ActionManager.All()` to show the full action list. Dismissed via ESC.
+- `rootModel` registers its own global shortcuts into `ActionManager` at startup.
 
 ### Vault Path Ownership
 
@@ -217,13 +221,26 @@ func (m *rootModel) liveModels() []childModel {
 - `modal.go` — `modalModel`, push/pop helpers
 - `state.go` — timer helpers, tick handler, domain message types
 - `ascii.go` — `AsciiArt` constant, `RenderLogo()`
+- `actions.go` — `ActionManager` (see D-16)
 - `prevault.go` — `preVaultModel` stub (ASCII art welcome background; no sub-states)
 - `vaulttree.go` — `vaultTreeModel` stub
 - `secretdetail.go` — `secretDetailModel` stub
 - `templatelist.go` — `templateListModel` stub
 - `templatedetail.go` — `templateDetailModel` stub
 - `settings.go` — `settingsModel` stub
-- `help.go` — `helpModal` stub (lists global keyboard shortcuts)
+- `help.go` — `helpModal` stub (reads `ActionManager.All()` to list all registered actions)
+
+### Action Manager
+
+**D-16: `ActionManager` — centralized action registry shared by all children**
+- `ActionManager` is a **shared mutable object** (concrete pointer) instantiated in `main.go` and passed to `rootModel`, which in turn passes it to every child at construction time.
+- Responsibility: maintain the pool of currently registered actions (keybinding + label + description); decide which subset to surface in the command bar and in what order/grouping.
+- **Registration**: each child calls methods on `ActionManager` to register the actions it owns when it becomes active (or when its context changes). On deactivation/nil, the child's actions are cleared from the registry.
+- **Command bar** reads `ActionManager.Visible()` — a prioritized, display-width-aware subset of registered actions.
+- **Help modal** reads `ActionManager.All()` — the full list of all registered actions, grouped.
+- **`rootModel`** registers global shortcuts (e.g., `ctrl+Q`, `?`) into `ActionManager` at startup; these are always present.
+- `ActionManager` does NOT know about Bubble Tea internals — it is a plain Go struct with no `tea.Cmd` or messaging. It is queried synchronously from `View()` only.
+- **Grouping, priority logic, and registration API shape** are left to researcher/planner — do not over-specify in Phase 5 stub.
 
 ### Agent's Discretion
 - Whether `childModel` interface includes `Init() tea.Cmd` — needs Bubble Tea v2 research
@@ -232,6 +249,8 @@ func (m *rootModel) liveModels() []childModel {
 - Constructor signatures for each child stub
 - Exact domain message type names and fields
 - `main.go` error handling details (generic fatal message format)
+- `ActionManager` registration API shape (method names, `Action` struct fields, context scoping mechanism)
+- `ActionManager` grouping and priority logic for `Visible()` — Phase 5 stub may return a flat list
 
 </decisions>
 
