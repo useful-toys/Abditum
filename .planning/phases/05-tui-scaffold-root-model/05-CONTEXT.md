@@ -99,6 +99,7 @@ type rootModel struct {
 
     // Shared services — passed to every child at construction
     actions        *ActionManager
+    messages       *MessageManager
 }
 ```
 - When transitioning to a new state: allocate new child via constructor, set old child field to `nil`. Go GC reclaims the old model.
@@ -147,7 +148,7 @@ func (m *rootModel) liveModels() []childModel {
 ┌─────────────────────────────────┐
 │ Header                          │  ← app name, vault name, unsaved indicator
 ├─────────────────────────────────┤
-│ Message bar                     │  ← contextual hint: what user should do now
+│ Message bar                     │  ← reads MessageManager.Current() (see D-17)
 ├─────────────────────────────────┤
 │                                 │
 │ Work area                       │  ← changes by state (see D-09)
@@ -222,6 +223,7 @@ func (m *rootModel) liveModels() []childModel {
 - `state.go` — timer helpers, tick handler, domain message types
 - `ascii.go` — `AsciiArt` constant, `RenderLogo()`
 - `actions.go` — `ActionManager` (see D-16)
+- `messages.go` — `MessageManager` (see D-17)
 - `prevault.go` — `preVaultModel` stub (ASCII art welcome background; no sub-states)
 - `vaulttree.go` — `vaultTreeModel` stub
 - `secretdetail.go` — `secretDetailModel` stub
@@ -252,6 +254,18 @@ func (m *rootModel) liveModels() []childModel {
 - `main.go` error handling details (generic fatal message format)
 - `ActionManager` registration API shape (method names, `Action` struct fields, context scoping mechanism)
 - `ActionManager` grouping and priority logic for `Visible()` — Phase 5 stub may return a flat list
+- `MessageManager` API shape (e.g., whether it supports message severity/type, auto-clear after timeout, etc.)
+
+### Message Manager
+
+**D-17: `MessageManager` — centralized API for setting the message bar content**
+- **Guiding analogy:** just as `ActionManager` is the API for defining available actions, `MessageManager` is the API for setting what message/hint is shown in the message bar at any moment.
+- `MessageManager` is a **shared mutable object** (concrete pointer), instantiated in `main.go`, passed to `rootModel` and to every child at construction time.
+- **Writing:** any child calls `messages.Set(text)` (or a typed variant) during its own `Update()` — no `tea.Cmd` or message needed. The call is synchronous and mutates the manager's internal state.
+- **Reading:** `rootModel.View()` calls `messages.Current()` when composing the message bar zone. Since Bubble Tea re-renders after every `Update()`, the view is always fresh — no notification or broadcast mechanism is needed.
+- Children must NOT read from `MessageManager` — it is write-only from their perspective.
+- `rootModel` may also write to `MessageManager` directly for global-level hints (e.g., "vault locked").
+- **API shape** (e.g., severity levels, auto-clear after N seconds, message queue vs. single slot) is left to researcher/planner.
 
 </decisions>
 
