@@ -43,7 +43,7 @@ type childModel interface {
 - `Update()` muta o próprio estado via pointer receiver — sem retornar `(Model, Cmd)`.
 - `rootModel` calcula o tamanho de cada filho e chama `SetSize()` ao receber `tea.WindowSizeMsg`.
 - `Context()` preenche os campos de navegação/seleção do `FlowContext`; `rootModel` enriquece com campos de nível vault antes de consultar os candidatos.
-- `ChildFlows()` retorna fluxos internos ao filho que não fazem sentido no registro global. Os descritores seguem o mesmo contrato `IsApplicable(FlowContext)` — sem closures. São verificados **antes** dos fluxos globais no despacho por tecla.
+- `ChildFlows()` é o **escape hatch para casos raros** em que um fluxo não pode ser completamente parametrizado a partir do `FlowContext` — quando `IsApplicable` ou `New` precisariam de estado interno do filho que o `FlowContext` não carrega e não deve carregar. Em todos os outros casos, o fluxo pertence ao `FlowRegistry` global. Os descritores seguem o mesmo contrato `IsApplicable(FlowContext)` — sem closures. São verificados **antes** dos fluxos globais no despacho por tecla.
 
 ### `FlowContext`
 
@@ -69,9 +69,8 @@ type FlowContext struct {
 ctx := m.activeChild.Context()           // filho preenche campos de navegação
 ctx.VaultOpen = m.mgr.IsOpen()           // rootModel adiciona estado do cofre
 ctx.VaultDirty = m.mgr.HasUnsavedChanges()
-// ctx está completo — duas fontes de candidatos de fluxo:
-//   1. activeChild.ChildFlows() — fluxos específicos do filho (prioridade)
-//   2. flows.ForKey(key, ctx)   — registro global
+// ctx está completo — única fonte de verdade para fluxos globais
+// Despacho: activeChild.ChildFlows() (escape hatch) → flows.ForKey(key, ctx) (regra geral)
 ```
 
 ### `flowHandler`

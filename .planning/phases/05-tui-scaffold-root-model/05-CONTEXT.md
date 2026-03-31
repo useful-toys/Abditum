@@ -76,7 +76,7 @@ type childModel interface {
 - `View()` returns `string`. Only `rootModel.View()` returns `tea.View` (satisfying `tea.Model`).
 - `Update` uses pointer receivers and mutates in place — no self-replacement return.
 - `Context()` returns a `FlowContext` value (defined in D-20). The child fills navigation/selection fields; `rootModel` enriches with vault-level fields before querying `FlowRegistry`.
-- `ChildFlows()` returns flow descriptors that are too child-specific to register globally (e.g., flows depending on internal tree state or cursor mode). Descriptors follow the same `IsApplicable(FlowContext)` contract as global flows — no closures, no captured state. Children with no child-specific flows return `nil`.
+- `ChildFlows()` is the **escape hatch for rare cases** where a flow cannot be fully described from `FlowContext` alone — i.e., when either `IsApplicable` or `New` would require child-internal state that `FlowContext` does not and should not carry. In all other cases, flows belong in the global `FlowRegistry`. Descriptors returned by `ChildFlows()` follow the same `IsApplicable(FlowContext)` contract as global flows — no closures, no captured state. Children with no such flows return `nil`.
 - Whether child interface includes `Init() tea.Cmd` is **left to researcher/planner** — needs investigation of Bubble Tea v2 initialization patterns.
 - `SetSize(w, h int)` receives the child's **allocated** size (not terminal size). `rootModel` computes each child's share on `tea.WindowSizeMsg` and calls `SetSize` on all live children.
 - **Children and modals are position-unaware:** they render their content filling exactly the size given by `SetSize()`. They have no knowledge of where they will be placed on the terminal. Positioning and overlay are exclusively `rootModel`'s responsibility.
@@ -364,9 +364,10 @@ type flowDescriptor interface {
 }
 ```
 - **Two sources of flow candidates** — `rootModel` builds the candidate list from both before dispatching:
-  1. **`activeChild.ChildFlows()`** (checked first — more specific) — descriptors defined by the active child for flows too internal or specific to register globally. Same `IsApplicable(FlowContext)` contract; no closures. Children with no child-specific flows return `nil`.
-  2. **`FlowRegistry`** (global flows, checked second) — flows registered by `rootModel` at startup that apply across multiple areas.
-- The split criterion: could `IsApplicable(FlowContext)` cover this flow's applicability using only the fields already in `FlowContext`? If yes → global registry. If the flow requires internal child state that `FlowContext` doesn’t capture (and adding it would over-specialize the struct) → `ChildFlows()`.
+  1. **`activeChild.ChildFlows()`** (checked first — escape hatch) — for the rare cases where a flow cannot be fully parametrized from `FlowContext` alone. Children with no such flows return `nil`.
+  2. **`FlowRegistry`** (global flows, checked second) — all flows that are **completely** parametrizable from `FlowContext` (both `IsApplicable(ctx)` and `New(ctx)` require nothing beyond what `FlowContext` carries). Registered by `rootModel` at startup.
+- **Invariant for global flows:** `FlowContext` must be the single, complete source of truth for every global flow descriptor. If implementing `IsApplicable` or `New` for a flow would require reaching into child-internal state not present in `FlowContext`, that flow belongs in `ChildFlows()` instead.
+- The default is global registry. `ChildFlows()` is the exception, not the rule.
 - **Integration with `ActionManager`:** command bar candidates come from `activeChild.ChildFlows()` filtered by `IsApplicable(ctx)` + `flows.Applicable(ctx)` from registry — merged into a single list.
 - **Registration API shape** (bulk unregister, grouping) is left to researcher/planner.
 
