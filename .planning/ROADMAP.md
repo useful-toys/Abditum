@@ -138,6 +138,16 @@ Plans:
 
 ---
 
+### Phase 04.1: Refinamento da camada de dominio - encapsulamento e versioning (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 4
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 04.1 to break down)
+
 ### Phase 5: TUI Scaffold + Root Model
 
 **Goal:** The application launches, shows a placeholder, and the entire root model architecture — session state machine, flat child-model composition, global tick, timer field declarations, and modal overlay plumbing — is in place and race-condition-free before any screen is implemented.

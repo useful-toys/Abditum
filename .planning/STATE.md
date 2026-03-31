@@ -54,6 +54,22 @@ All 4 plans executed successfully:
 
 **Next:** Phase 05 - TUI Scaffold + Root Model
 
+## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 04.1 inserted after Phase 04: Refinamento da camada de domínio — encapsulamento e versioning (INSERTED)
+
+### Phase 04.1 — Itens identificados em revisão de código (2026-03-31)
+
+1. **`DeserializarCofre` receber `version uint8`** — passar versão do formato para o deserializador; substituir cadeia de migração JSON→JSON (`migrate.go`) por compat fields nas structs de serialização
+2. **`segredo.marcarModificacao()`** — método privado que seta `dataUltimaModificacao`; elimina acesso direto a campo interno espalhado em 5 métodos do Manager
+3. **`cofre.marcarModificado()`** — método privado que seta `modificado = true` e `dataUltimaModificacao`; elimina acesso direto a campos internos do Cofre no Manager
+4. **Factory define `estadoSessao` inicial** — `pasta.criarSegredo` e `pasta.duplicarSegredo` devem retornar segredo já com estado correto; Manager não deve setar `estadoSessao` após factory
+5. **`AlternarFavoritoSegredo` não deve atualizar `segredo.dataUltimaModificacao`** — favoritar não é edição de conteúdo; bug atual identificado
+
+---
+
 ## Phase History
 
 ### Phase 04: Storage Package (Completed 2026-03-30)
