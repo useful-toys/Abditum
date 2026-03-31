@@ -179,12 +179,35 @@ Modais são gerenciados como uma pilha LIFO em `rootModel.modals []*modalModel`:
 
 Fluxos encapsulam orquestração multi-passo que seria verbosa inline no `rootModel`. Exemplos: abrir cofre, criar cofre, salvar como, trocar senha, bloquear, sair com confirmação.
 
-**Como um fluxo funciona:**
+### Dois níveis de operações
+
+O critério de divisão é simples: **a operação precisa de modal ou goroutine assíncrona?**
+
+| Nível | Mecanismo | Exemplos |
+|---|---|---|
+| **Operação simples** (sem modal, sem async) | **Cmd factory** em `mutations.go` | favoritar, marcar exclusão, reordenar, renomear pasta |
+| **Fluxo orquestrado** (modal e/ou async) | `flowHandler` no `FlowRegistry` | abrir cofre, salvar como, alterar senha, sair com confirmação |
+
+**Cmd factory — padrão para operações simples:**
+```go
+// mutations.go
+func cmdMarkSecretDeleted(mgr *vault.Manager, id string) tea.Cmd {
+    return func() tea.Msg {
+        if err := mgr.MarkDeleted(id); err != nil {
+            return operationFailedMsg{err}
+        }
+        return secretDeletedMsg{id: id}
+    }
+}
+```
+O child chama `return cmdMarkSecretDeleted(m.mgr, id)` no seu `Update()`. Nunca chama Manager e fabrica Cmd manualmente — a factory é o contrato que **amarra mutacão → mensagem**.
+
+**Como um fluxo orquestrado funciona:**
 
 ```
-filho emite startOpenVaultFlowMsg{}
-        ↓
-rootModel: activeFlow = newOpenVaultFlow(...)
+tecla acionada → FlowRegistry.ForKey(key) → descriptor.IsApplicable()?
+        ↓ sim
+rootModel: activeFlow = descriptor.New()
         ↓
 rootModel.Update() delega input → activeFlow.Update()
         ↓

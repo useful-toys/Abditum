@@ -166,6 +166,10 @@ func (m *rootModel) liveModels() []childModel {
 
 Children that don’t care about a specific message type simply ignore it.
 
+**Two tiers of user-initiated operations:**
+- **Simple operations** (no modal, no async) — handled entirely by the child's `Update()` via a **Cmd factory**. The factory calls `vault.Manager` and returns the appropriate domain message. Children never call Manager + fabricate a Cmd separately — always use the factory. Factories live in `mutations.go` alongside the message type definitions. Examples: favorite, mark for deletion, reorder, rename folder.
+- **Orchestrated flows** (requires modals and/or async work) — handled by a `flowHandler` registered in `FlowRegistry`. Examples: open vault, create vault, save-as, change password, lock, quit with confirmation. The criterion: **does the operation need a modal or an async goroutine?** If yes → `flowHandler`. If no → Cmd factory.
+
 ### Frame Layout
 
 **D-08: Constant frame with pluggable work area**
@@ -250,6 +254,7 @@ Children that don’t care about a specific message type simply ignore it.
 - `root.go` — `rootModel`, `workArea` enum, `Init`/`Update`/`View`, `liveModels()`, dispatch logic
 - `modal.go` — `modalModel`, push/pop helpers
 - `state.go` — timer helpers, tick handler, domain message types
+- `mutations.go` — Cmd factories for simple operations (see D-07); one factory per vault mutation
 - `ascii.go` — `AsciiArt` constant, `RenderLogo()`
 - `actions.go` — `ActionManager` (see D-16)
 - `messages.go` — `MessageManager` (see D-17)
@@ -339,6 +344,7 @@ type flowDescriptor interface {
 - **`FlowRegistry`** is a shared mutable object (concrete pointer) — instantiated in `main.go`, stored on `rootModel`, passed to every child at construction time.
 - **Global flows** (open vault, save, lock, quit…) — registered by `rootModel` at startup. Always present in the registry.
 - **Child-scoped flows** (edit secret, delete folder…) — registered by the child when allocated; unregistered when the child is deactivated (`nil`). The child tags its registrations with an owner key for bulk removal.
+- **`FlowRegistry` is exclusively for orchestrated flows** — operations that require modals and/or async goroutines. Simple atomic operations (no modal, no async) are handled directly by the child via Cmd factories in `mutations.go` (see D-07). If an operation needs a modal or async work → `flowHandler`. Otherwise → Cmd factory.
 - **`IsApplicable()` uses closures** — each descriptor closes over its owner's state (e.g., `func() bool { return m.focusedSecret != nil }`). No global selection state needed. Context-specific state (focused secret, selected folder) lives inside the child that owns it and is naturally unavailable when that child is `nil`.
 - **Dispatch** (step 4 in D-06): `flows.ForKey(key)` returns the first applicable descriptor; `rootModel` calls `New()` and sets `activeFlow`.
 - **Integration with `ActionManager`:** `rootModel` (or `ActionManager`) calls `flows.Applicable()` to populate the command bar with flow actions alongside child-registered non-flow actions.
