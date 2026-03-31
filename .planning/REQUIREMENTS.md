@@ -132,6 +132,12 @@
 
 - **ORPHAN-01**: DetecÃ§Ã£o e oferta de recuperaÃ§Ã£o de `.abditum.tmp`/`.abditum.bak2` ao abrir cofre
 
+
+### Qualidade Arquitetural — Fase 04.1
+
+- [ ] **ARCH-01**: Cofre e Segredo gerenciam seus próprios estados via métodos privados (marcarModificado, marcarModificacao); Manager não acessa campos internos diretamente; deep copy (copiarProfundo, Segredo.copiar, CampoSegredo.copiar) e zeragem de campos sensíveis (zerarValoresSensiveis) delegados a entidades; factory (criarSegredo, duplicarSegredo) define estadoSessao = EstadoIncluido inicial
+- [ ] **ARCH-02**: DeserializarCofre recebe parâmetro ersion uint8; compat fields nas structs *JSON substituem cadeia de transformação JSON?JSON; migrate.go e seus testes removidos
+- [ ] **BUG-01**: AlternarFavoritoSegredo não atualiza segredo.dataUltimaModificacao (favoritar é preferência de navegação, não edição de conteúdo; teste de regressão adicionado em manager_test.go)
 ## Out of Scope
 
 | Feature | Reason |
@@ -211,7 +217,10 @@
 | CI-02 | 11 | Pending |
 | COMPAT-02 | 11 | Pending |
 
+| ARCH-01 | 04.1 | Pending |
+| ARCH-02 | 04.1 | Pending |
+| BUG-01 | 04.1 | Pending |
 **Coverage:**
-- v1 requirements: 60 total
-- Mapped to phases: 60
+- v1 requirements: 63 total
+- Mapped to phases: 63
 - Unmapped: 0 âœ“
