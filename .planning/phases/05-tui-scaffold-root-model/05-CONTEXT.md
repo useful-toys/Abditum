@@ -128,11 +128,13 @@ func (m *rootModel) liveModels() []childModel {
 
 ### Inter-Model Communication Pattern
 
-**D-07: All mutations via Manager + Cmd messages**
-- Child calls `vault.Manager` method → on success, returns `tea.Cmd` emitting a domain message (e.g., `vaultChangedMsg{}`).
-- `rootModel.Update()` receives domain message → broadcasts to all live models.
-- No direct method calls between children. No shared flags or shared fields between models.
-- `rootModel` passes `*vault.Manager` to each child at construction time (via constructor argument).
+**D-07: Events via Msg; data access depends on case**
+- **Event/mutation notifications**: always via `tea.Cmd` returning a domain message. No child calls another child's methods. No shared mutable state between siblings.
+- **Data retrieval**: depends on the child's needs — not restricted to `vault.Manager` alone:
+  - Domain data (vault tree, secrets) → `vault.Manager` (the primary source).
+  - App-level state (e.g., current vault path, active area) → may access `rootModel` fields directly if `rootModel` exposes them via a read-only interface. **Whether a shared read accessor on `rootModel` is introduced is left to researcher/planner** — evaluate cost vs. passing individual values via constructor or message.
+  - Specialized concerns (e.g., clipboard, OS integration) → may warrant a dedicated helper/manager; decided per-phase.
+- `rootModel` passes `*vault.Manager` to each child at construction time. Additional dependencies passed via constructor or injected on transition.
 
 ### Frame Layout
 
@@ -179,11 +181,13 @@ func (m *rootModel) liveModels() []childModel {
 
 ### Timers
 
-**D-11: Timers zero until vault opens; tick starts on vault open**
-- `lockTimer`, `clipboardTimer` initialized to `0` in `rootModel`.
-- On vault open (`workAreaVault` transition), `rootModel` reads `mgr.Vault().Configuracoes()` and sets timer values.
-- Global 1-second tick (`tickMsg`) is NOT started by `rootModel.Init()`. It is started as a `tea.Cmd` returned from the state transition handler when entering `workAreaVault`.
-- Before vault is open, no tick fires — `preVaultModel` screens are tick-free.
+**D-11: `rootModel` owns all timeout decisions; children receive typed timeout messages**
+- `rootModel` tracks `lastActionAt time.Time` — updated on every meaningful user input.
+- On each `tickMsg`, `rootModel` evaluates whether `lockTimer` or `clipboardTimer` has elapsed since `lastActionAt`.
+- When a timeout fires, `rootModel` dispatches a **specific typed message** to all live models (e.g., `lockTimeoutMsg{}`, `clipboardTimeoutMsg{}`). Children never inspect the ticker to decide a timeout themselves.
+- Children receive `tickMsg` only for **periodic UI updates** — e.g., refreshing a clock displayed in the header. They must not use tick to implement timeout logic.
+- `lockTimer` and `clipboardTimer` values are read from `mgr.Vault().Configuracoes()` on `workAreaVault` transition; both are `0` (disabled) before vault opens.
+- The global 1-second tick (`tickMsg`) is started as a `tea.Cmd` when transitioning into `workAreaVault`. It does NOT start in `rootModel.Init()`.
 
 ### Quit Shortcut
 
