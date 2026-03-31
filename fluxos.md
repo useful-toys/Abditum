@@ -221,33 +221,52 @@ flowchart TD
 **Passos:**
 
 1. O usuário informa onde salvar o arquivo do cofre (caminho e nome). A extensão `.abditum` é adicionada automaticamente se omitida. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se o arquivo de destino já existir → o sistema comunica que o arquivo já existe e solicita uma decisão: sobrescrever ou informar outro caminho.
+     - Se o usuário escolhe informar outro caminho → volta ao passo 1.
+     - Se o usuário escolhe sobrescrever → continua para o passo 2.
 2. O sistema solicita a senha mestra. O usuário a informa duas vezes para confirmação. O usuário pode desistir e voltar ao passo 1.
-   - Se as duas entradas não coincidem → o sistema comunica o erro. O usuário tenta novamente. Volta ao passo 2.
+   - Se as duas entradas não coincidem → o sistema comunica o erro. Volta ao passo 2.
 3. O sistema avalia a força da senha.
    - Se a senha for considerada fraca → o sistema comunica os critérios não atendidos e solicita uma decisão: prosseguir mesmo assim ou revisar a senha.
      - Se o usuário escolhe revisar → volta ao passo 2.
      - Se o usuário escolhe prosseguir → continua para o passo 4.
 4. O cofre atual, se houver, é fechado. O novo cofre é criado com a estrutura inicial e gravado em disco.
+   - Se o destino for um arquivo novo: a gravação ocorre diretamente no destino final.
+     - Se falhar → o sistema comunica o erro. O fluxo é encerrado sem cofre carregado.
+   - Se o destino for um arquivo existente (sobrescrita): é utilizado o protocolo de salvamento atômico.
+     - Se falhar sem ter gerado backup → o sistema comunica o erro. O arquivo original permanece intacto. O fluxo é encerrado sem cofre carregado.
+     - Se falhar após ter gerado backup → o sistema comunica o erro e informa que existe um backup disponível para intervenção manual. O fluxo é encerrado sem cofre carregado.
 
 **Contexto resultante:**
 - Fluxo abandonado → contexto inalterado.
-- Sucesso → cofre `inalterado`, pasta Geral em foco. 
+- Sucesso → cofre `inalterado`, pasta Geral em foco.
+- Falha na gravação → sem cofre carregado.
 
 ```mermaid
 flowchart TD
-    A([Contexto: qualquer]) --> B[Usuário informa caminho do arquivo]
+    A([Contexto: qualquer]) --> B[Usuário informa caminho e nome do arquivo]
     B -- Desiste --> Z([Contexto inalterado])
-    B --> C[Sistema solicita senha mestra\nduas vezes]
-    C -- Volta --> B
-    C --> D(Senhas\ncoincidem?)
-    D -- Não --> E[Comunica erro]
-    E --> C
-    D -- Sim --> F(Senha\nforte?)
-    F -- Sim --> G
-    F -- Não --> H[Comunica critérios não atendidos\nUsuário decide]
-    H -- Revisar --> C
-    H -- Prosseguir --> G
-    G([Cofre criado e gravado\nEstado: inalterado])
+    B --> C(Arquivo de\ndestino existe?)
+    C -- Não --> P2
+    C -- Sim --> D[Comunica que arquivo já existe\nSobrescrever ou outro caminho?]
+    D -- Outro caminho --> B
+    D -- Sobrescrever --> P2
+    P2[Sistema solicita senha mestra\nduas vezes para confirmação] -- Volta --> B
+    P2 -- Desiste --> Z
+    P2 --> E(Entradas\ncoincidem?)
+    E -- Não --> F[Comunica erro] --> P2
+    E -- Sim --> G(Senha\nforte?)
+    G -- Sim --> P4
+    G -- Não --> H[Comunica critérios não atendidos\nProsseguir ou revisar?]
+    H -- Revisar --> P2
+    H -- Prosseguir --> P4
+    P4(Destino é\narquivo novo?) -- Sim --> W1[Grava diretamente no destino]
+    W1 --> OK([Cofre inalterado\nPasta Geral em foco])
+    W1 -- Falha --> ERR([Sem cofre carregado\nErro comunicado])
+    P4 -- Não --> W2[Protocolo de salvamento atômico]
+    W2 --> OK
+    W2 -- Falha sem backup --> ERR
+    W2 -- Falha após backup --> ERR2([Sem cofre carregado\nBackup disponível])
 ```
 
 ---
@@ -294,16 +313,39 @@ flowchart TD
 
 1. O usuário solicita sair.
 2. O sistema comunica que há alterações não salvas e solicita uma decisão: salvar e sair, descartar e sair, ou voltar.
-   - Se o usuário escolhe salvar e sair → o cofre é salvo e a aplicação encerra.
-     - Se o salvamento falhar → o sistema comunica o erro. O cofre permanece carregado e o fluxo é encerrado.
    - Se o usuário escolhe descartar e sair → a aplicação encerra sem salvar.
    - Se o usuário escolhe voltar → o fluxo é interrompido e nada muda.
+   - Se o usuário escolhe salvar e sair → continua para o passo 3.
+3. O sistema verifica se o arquivo foi modificado externamente desde a última leitura ou salvamento.
+   - Se foi modificado externamente → o sistema comunica o conflito e solicita uma decisão: sobrescrever e sair, ou voltar.
+     - Se o usuário escolhe voltar → o fluxo é interrompido e nada muda.
+     - Se o usuário escolhe sobrescrever e sair → continua para o passo 4.
+4. O cofre é gravado no arquivo atual usando o protocolo de salvamento atômico. Segredos marcados para exclusão não são gravados.
+   - Se o salvamento falhar sem ter gerado backup → o sistema comunica o erro. O cofre permanece carregado e `alterado`.
+   - Se o salvamento falhar após ter gerado backup → o sistema comunica o erro e informa que existe um backup disponível para intervenção manual. O cofre permanece carregado e `alterado`.
+5. A aplicação encerra.
 
 **Contexto resultante:**
 - Salvar e sair (sucesso) → aplicação encerrada.
-- Salvar e sair (falha) → cofre carregado e `alterado`, contexto inalterado.
+- Salvar e sair (falha) → cofre carregado e `alterado`; arquivo original intacto.
 - Descartar e sair → aplicação encerrada.
 - Voltou → contexto inalterado.
+
+```mermaid
+flowchart TD
+    A([Cofre alterado]) --> B[Usuário solicita sair]
+    B --> C[Comunica alterações não salvas\nSalvar e sair / Descartar e sair / Voltar?]
+    C -- Voltar --> Z([Contexto inalterado])
+    C -- Descartar e sair --> ZZ([Aplicação encerrada\nsem salvar])
+    C -- Salvar e sair --> D(Arquivo modificado\nexternamente?)
+    D -- Não --> W
+    D -- Sim --> E[Comunica conflito\nSobrescrever e sair / Voltar?]
+    E -- Voltar --> Z
+    E -- Sobrescrever e sair --> W
+    W[Protocolo de salvamento atômico] --> OK([Aplicação encerrada])
+    W -- Falha sem backup --> ERR([Cofre alterado\nErro comunicado])
+    W -- Falha após backup --> ERR2([Cofre alterado\nBackup disponível])
+```
 
 ---
 
@@ -337,3 +379,633 @@ flowchart TD
 - Aviso exibido → contexto inalterado.
 
 **Nota:** este fluxo não tem dependência com o Fluxo 6 (Bloquear cofre). Qualquer atividade do usuário após o aviso reinicia o temporizador de inatividade, mas isso não é parte deste fluxo — é comportamento contínuo do sistema de temporização.
+
+---
+
+## Fluxo 8 — Salvar cofre no arquivo atual
+
+**Contexto necessário:** cofre carregado no entorno global; cofre `alterado`.
+
+**Passos:**
+
+1. O usuário solicita salvar.
+2. O sistema verifica se o arquivo foi modificado externamente desde a última leitura ou salvamento.
+   - Se foi modificado externamente → o sistema comunica o conflito e solicita uma decisão: sobrescrever, salvar como novo arquivo, ou voltar.
+     - Se o usuário escolhe sobrescrever → continua para o passo 3.
+     - Se o usuário escolhe salvar como novo arquivo → o fluxo é interrompido e o Fluxo 9 (Salvar cofre em outro arquivo) é iniciado.
+     - Se o usuário escolhe voltar → o fluxo é interrompido e nada muda.
+3. O cofre é gravado no arquivo atual usando o protocolo de salvamento atômico. Segredos marcados para exclusão não são gravados; após o salvamento bem-sucedido, são removidos da memória.
+   - Se o salvamento falhar sem ter gerado backup → o sistema comunica o erro. O arquivo original permanece intacto e o estado em memória é preservado.
+   - Se o salvamento falhar após ter gerado backup → o sistema comunica o erro e informa que existe um backup disponível para intervenção manual. O estado em memória é preservado.
+
+**Contexto resultante:**
+- Sucesso → cofre `inalterado`.
+- Falha → cofre `alterado`; arquivo original intacto.
+- Voltou → contexto inalterado.
+
+```mermaid
+flowchart TD
+    A([Cofre alterado]) --> B[Usuário solicita salvar]
+    B --> C(Arquivo modificado\nexternamente?)
+    C -- Não --> W
+    C -- Sim --> D[Comunica conflito\nSobrescrever / Salvar como novo arquivo / Voltar?]
+    D -- Voltar --> Z([Contexto inalterado])
+    D -- Salvar como novo arquivo --> F9([Inicia Fluxo 9])
+    D -- Sobrescrever --> W
+    W[Protocolo de salvamento atômico] --> OK([Cofre inalterado])
+    W -- Falha sem backup --> ERR([Cofre alterado\nArquivo intacto\nErro comunicado])
+    W -- Falha após backup --> ERR2([Cofre alterado\nBackup disponível])
+```
+
+---
+
+## Fluxo 9 — Salvar cofre em outro arquivo
+
+**Contexto necessário:** cofre carregado no entorno global.
+
+**Nota:** este fluxo é elegível independentemente do estado do cofre — pode ser iniciado com cofre `inalterado` ou `alterado`.
+
+**Passos:**
+
+1. O usuário informa o caminho do novo arquivo de destino. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se o caminho informado for o mesmo do arquivo atual do cofre → o sistema comunica que o destino não pode ser o arquivo atual e solicita outro caminho. Volta ao passo 1.
+   - Se o arquivo de destino já existir → o sistema comunica que o arquivo já existe e solicita uma decisão: sobrescrever ou informar outro caminho.
+     - Se o usuário escolhe informar outro caminho → volta ao passo 1.
+     - Se o usuário escolhe sobrescrever → continua para o passo 2.
+2. O cofre é gravado no arquivo de destino. Segredos marcados para exclusão não são gravados; após o salvamento bem-sucedido, são removidos da memória.
+   - Se o destino for um arquivo novo (não existia): a gravação ocorre diretamente no destino final.
+     - Se falhar → o sistema comunica o erro. O estado em memória é preservado e o arquivo de trabalho permanece o original.
+   - Se o destino for um arquivo existente (sobrescrita): é utilizado o protocolo de salvamento atômico.
+     - Se falhar sem ter gerado backup → o sistema comunica o erro. O arquivo de destino permanece intacto e o arquivo de trabalho permanece o original.
+     - Se falhar após ter gerado backup → o sistema comunica o erro e informa que existe um backup disponível para intervenção manual. O arquivo de trabalho permanece o original.
+3. O arquivo de trabalho passa a ser o novo arquivo. Próximas modificações e salvamentos ocorrem sobre ele.
+
+**Contexto resultante:**
+- Fluxo abandonado → contexto inalterado.
+- Sucesso → cofre `inalterado`; arquivo de trabalho atualizado para o novo caminho.
+- Falha → cofre no estado anterior; arquivo de trabalho inalterado.
+
+```mermaid
+flowchart TD
+    A([Cofre carregado]) --> B[Usuário informa caminho do arquivo de destino]
+    B -- Desiste --> Z([Contexto inalterado])
+    B --> C(Destino é o\narquivo atual?)
+    C -- Sim --> D[Comunica restrição] --> B
+    C -- Não --> E(Arquivo de\ndestino existe?)
+    E -- Não --> W
+    E -- Sim --> F[Comunica que arquivo já existe\nSobrescrever ou outro caminho?]
+    F -- Outro caminho --> B
+    F -- Sobrescrever --> W
+    W(Destino é\narquivo novo?) -- Sim --> W1[Grava diretamente no destino]
+    W -- Não --> W2[Protocolo de salvamento atômico]
+    W1 --> OK([Cofre inalterado\nArquivo de trabalho atualizado])
+    W1 -- Falha --> ERR([Estado anterior preservado\nErro comunicado])
+    W2 --> OK
+    W2 -- Falha sem backup --> ERR2([Estado anterior preservado\nArquivo de destino intacto])
+    W2 -- Falha após backup --> ERR3([Estado anterior preservado\nBackup disponível])
+```
+
+---
+
+## Fluxo 10 — Descartar alterações e recarregar cofre
+
+**Contexto necessário:** cofre carregado no entorno global; cofre `alterado`.
+
+**Passos:**
+
+1. O usuário solicita descartar alterações e recarregar.
+2. O sistema verifica se o arquivo foi modificado externamente desde a última leitura ou salvamento.
+   - Se foi modificado externamente → o sistema comunica o fato e solicita confirmação para prosseguir com o recarregamento.
+     - Se o usuário volta → o fluxo é interrompido e nada muda.
+3. O sistema solicita confirmação do descarte.
+   - Se o usuário volta → o fluxo é interrompido e nada muda.
+4. O cofre é recarregado do arquivo usando a senha ativa na sessão, descartando todas as alterações em memória desde o último salvamento ou desde a abertura.
+   - Se o arquivo estiver inacessível ou corrompido → o sistema comunica o erro. O cofre permanece no estado em memória anterior ao descarte (ainda `alterado`).
+
+**Contexto resultante:**
+- Sucesso → cofre `inalterado`, no estado persistido no arquivo.
+- Falha no recarregamento → cofre `alterado`, estado em memória preservado.
+- Voltou → contexto inalterado.
+
+```mermaid
+flowchart TD
+    A([Cofre alterado]) --> B[Usuário solicita descartar e recarregar]
+    B --> C(Arquivo modificado\nexternamente?)
+    C -- Não --> D
+    C -- Sim --> CS[Comunica modificação externa\nProsseguir ou voltar?]
+    CS -- Voltar --> Z([Contexto inalterado])
+    CS -- Prosseguir --> D
+    D[Sistema solicita confirmação do descarte] -- Voltar --> Z
+    D -- Confirma --> W[Recarrega do arquivo com senha ativa]
+    W --> OK([Cofre inalterado\nEstado do arquivo])
+    W -- Arquivo inacessível\nou corrompido --> ERR([Cofre alterado\nEstado em memória preservado\nErro comunicado])
+```
+
+---
+
+## Fluxo 11 — Alterar senha mestra
+
+**Contexto necessário:** cofre carregado no entorno global.
+
+**Passos:**
+
+1. O usuário solicita alterar a senha mestra.
+2. O sistema solicita a nova senha mestra. O usuário a informa duas vezes para confirmação. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se as duas entradas não coincidem → o sistema comunica o erro.  Volta ao passo 2.
+3. O sistema avalia a força da nova senha.
+   - Se a senha for considerada fraca → o sistema comunica os critérios não atendidos e solicita uma decisão: prosseguir mesmo assim ou revisar.
+     - Se o usuário escolhe revisar → volta ao passo 2.
+     - Se o usuário escolhe prosseguir → continua para o passo 4.
+4. O sistema verifica se o arquivo foi modificado externamente desde a última leitura ou salvamento.
+   - Se foi modificado externamente → o sistema comunica o conflito e solicita uma decisão: sobrescrever ou voltar.
+     - Se o usuário escolhe voltar → o fluxo é interrompido e nada muda; a senha mestra não é alterada.
+     - Se o usuário escolhe sobrescrever → continua para o passo 5.
+5. O cofre é salvo imediatamente com a nova senha, incluindo todas as alterações pendentes da sessão, usando o protocolo de salvamento atômico. A operação é irrevogável — não é possível desfazê-la após a conclusão.
+   - Se o salvamento falhar sem ter gerado backup → o sistema comunica o erro. O arquivo original permanece intacto; a senha mestra não é alterada na sessão.
+   - Se o salvamento falhar após ter gerado backup → o sistema comunica o erro e informa que existe um backup disponível para intervenção manual. A senha mestra não é alterada na sessão.
+
+**Contexto resultante:**
+- Fluxo abandonado → contexto inalterado; senha mestra não alterada.
+- Sucesso → cofre `inalterado`; nova senha mestra ativa na sessão.
+
+**Nota:** após a alteração, o cofre foi regravado com a nova senha e todas as alterações pendentes foram persistidas — o Fluxo 10 (Descartar alterações) deixa de ser elegível.
+
+```mermaid
+flowchart TD
+    A([Cofre carregado]) --> B[Usuário solicita alterar senha mestra]
+    B --> P2[Sistema solicita nova senha duas vezes\npara confirmação]
+    P2 -- Desiste --> Z([Contexto inalterado\nSenha não alterada])
+    P2 --> C(Entradas\ncoincidem?)
+    C -- Não --> D[Comunica erro] --> P2
+    C -- Sim --> E(Senha\nforte?)
+    E -- Sim --> CHK
+    E -- Não --> F[Comunica critérios não atendidos\nProsseguir ou revisar?]
+    F -- Revisar --> P2
+    F -- Prosseguir --> CHK
+    CHK(Arquivo modificado\nexternamente?) -- Não --> W
+    CHK -- Sim --> G[Comunica conflito\nSobrescrever ou voltar?]
+    G -- Voltar --> Z
+    G -- Sobrescrever --> W
+    W[Protocolo de salvamento atômico\ncom nova senha] --> OK([Cofre inalterado\nNova senha ativa])
+    W -- Falha sem backup --> ERR([Arquivo intacto\nSenha não alterada\nErro comunicado])
+    W -- Falha após backup --> ERR2([Senha não alterada\nBackup disponível])
+```
+
+---
+
+## Fluxo 12 — Exportar cofre
+
+**Contexto necessário:** cofre carregado no entorno global.
+
+**Passos:**
+
+1. O usuário solicita exportar o cofre.
+2. O sistema comunica os riscos de segurança da exportação (arquivo não criptografado) e solicita confirmação.
+   - Se o usuário volta → o fluxo é interrompido e nada muda.
+3. O usuário informa o caminho do arquivo de exportação. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se o arquivo de destino já existir → o sistema comunica que o arquivo já existe e solicita uma decisão: sobrescrever ou informar outro caminho.
+     - Se o usuário escolhe informar outro caminho → volta ao passo 3.
+     - Se o usuário escolhe sobrescrever → continua para o passo 4.
+4. O cofre é exportado para o arquivo informado. O arquivo contém toda a estrutura do cofre — pastas, segredos ativos e modelos — sem criptografia. Segredos marcados para exclusão não são incluídos. Configurações de timers não são exportadas.
+   - Se a exportação falhar → o sistema comunica o erro.
+
+**Contexto resultante:**
+- Fluxo abandonado → contexto inalterado.
+- Sucesso → arquivo de intercâmbio criado; cofre e sessão inalterados.
+- Falha → contexto inalterado.
+
+---
+
+## Fluxo 13 — Importar cofre
+
+**Contexto necessário:** cofre carregado no entorno global.
+
+**Passos:**
+
+1. O usuário solicita importar um cofre.
+2. O usuário informa o caminho do arquivo de intercâmbio. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se o arquivo for inválido em estrutura ou não contiver a Pasta Geral → o sistema comunica o erro. Volta ao passo 2.
+3. O sistema comunica a política de mesclagem (pastas mescladas; segredos e modelos com nome conflitante substituídos) e solicita confirmação.
+   - Se o usuário volta → o fluxo é interrompido e nada muda.
+4. O conteúdo é importado e mesclado ao cofre: pastas mescladas, segredos com nomes únicos adicionados, segredos com nomes conflitantes substituídos, modelos com nomes conflitantes substituídos.
+   - Se a mesclagem falhar → o sistema comunica o erro. O cofre permanece no estado anterior à importação.
+
+**Contexto resultante:**
+- Fluxo abandonado → contexto inalterado.
+- Sucesso → cofre `alterado`, data de update do cofre atualizada, pasta Geral em foco.
+- Falha na mesclagem → contexto inalterado.
+
+---
+
+## Fluxo 14 — Configurar o cofre
+
+**Contexto necessário:** cofre carregado no entorno global.
+
+**Passos:**
+
+1. O usuário solicita editar as configurações do cofre.
+2. O sistema apresenta as configurações atuais e permite alterá-las: tempo de bloqueio automático por inatividade, tempo de ocultação automática de campo sensível e tempo de limpeza automática da área de transferência. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+3. O usuário confirma as alterações.
+4. As novas configurações passam a valer para o comportamento da sessão corrente.
+
+**Contexto resultante:**
+- Fluxo abandonado → configurações inalteradas.
+- Sucesso → cofre `alterado`; novas configurações ativas na sessão.
+
+---
+
+## Consulta dos Segredos
+
+## Fluxo 15 — Buscar segredos
+
+**Contexto necessário:** cofre carregado no entorno global; modo busca ativo.
+
+**Nota sobre o modo busca:** o modo busca é uma variante do modo de visualização/navegação do cofre. A ativação e o encerramento do modo busca são gestos de navegação, não fluxos — não há contexto necessário adicional para ativá-lo. Este fluxo descreve o que acontece dentro do modo busca.
+
+**Passos:**
+
+1. O usuário informa o termo de busca.
+2. O sistema filtra os segredos cujo nome, nome de campo, valor de campo comum ou observação contenham o termo, ignorando acentuação e capitalização. Segredos marcados para exclusão não aparecem nos resultados. Valores de campos sensíveis não participam da busca; nomes de campos sensíveis participam normalmente.
+3. O sistema exibe os resultados. O usuário pode refinar o termo a qualquer momento, voltando ao passo 2.
+
+**Contexto resultante:**
+- Busca ativa → lista de segredos filtrada pelos resultados; modo busca permanece ativo.
+
+---
+
+## Fluxo 16 — Exibir valor de campo sensível temporariamente
+
+**Contexto necessário:** cofre carregado no entorno global; campo sensível em foco.
+
+**Passos:**
+
+1. O usuário solicita revelar o valor do campo sensível.
+2. O sistema exibe o valor do campo em texto claro.
+3. Após o tempo configurado de ocultação automática, o sistema oculta o valor novamente.
+   - O usuário pode ocultar manualmente antes do tempo expirar.
+
+**Contexto resultante:**
+- Sucesso → valor exibido temporariamente; campo retorna ao estado oculto após expiração ou ação manual.
+
+---
+
+## Fluxo 17 — Copiar valor de campo para área de transferência
+
+**Contexto necessário:** cofre carregado no entorno global; campo em foco (comum ou sensível).
+
+**Passos:**
+
+1. O usuário solicita copiar o valor do campo.
+2. O sistema copia o valor para a área de transferência.
+3. Após o tempo configurado de limpeza automática, o sistema remove o valor da área de transferência — se o suporte do sistema operacional permitir. O valor também é removido ao bloquear ou encerrar a aplicação.
+
+**Contexto resultante:**
+- Sucesso → valor copiado para a área de transferência; limpeza automática agendada.
+
+**Nota:** a limpeza da área de transferência depende do suporte do sistema operacional. Se não for possível limpar, o sistema não comunica o fato — a operação de cópia é sempre realizada.
+
+---
+
+## Gerenciamento de Segredos
+
+## Fluxo 18 — Criar segredo
+
+**Contexto necessário:** cofre carregado no entorno global; pasta em foco.
+
+**Passos:**
+
+1. O usuário solicita criar um novo segredo.
+2. O sistema apresenta os modelos disponíveis e a opção de criar segredo sem modelo (apenas com a Observação). O usuário escolhe entre eles. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+3. O usuário informa o nome do segredo e a pasta à qual pertencerá. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se já existir um segredo com o mesmo nome na pasta escolhida → o sistema comunica o conflito. O usuário pode corrigir o nome ou escolher outra pasta. Volta ao passo 3.
+4. O segredo é criado na pasta escolhida, com os campos do modelo selecionado (ou somente com a Observação, se sem modelo). O segredo fica em estado `incluido`.
+
+**Contexto resultante:**
+- Fluxo abandonado → contexto inalterado.
+- Sucesso → cofre `alterado`; novo segredo em estado `incluido` na pasta escolhida.
+
+```mermaid
+flowchart TD
+    A([Pasta em foco]) --> B[Usuário solicita criar segredo]
+    B --> C[Sistema apresenta modelos disponíveis\ne opção sem modelo]
+    C -- Desiste --> Z([Contexto inalterado])
+    C --> D[Usuário escolhe modelo ou sem modelo\ne informa nome e pasta]
+    D -- Desiste --> Z
+    D --> E(Nome único\nna pasta?)
+    E -- Não --> F[Comunica conflito] --> D
+    E -- Sim --> OK([Cofre alterado\nSegredo incluido na pasta])
+```
+
+---
+
+## Fluxo 19 — Duplicar segredo
+
+**Contexto necessário:** cofre carregado no entorno global; segredo em foco.
+
+**Passos:**
+
+1. O usuário solicita duplicar o segredo em foco.
+2. O sistema cria um novo segredo com o mesmo conteúdo do original — incluindo campos, valores e histórico de modelo. O novo segredo recebe automaticamente um nome único na mesma pasta (ex: "Gmail (1)" se "Gmail" já existe) e é posicionado imediatamente após o original na lista. O novo segredo fica em estado `incluido`.
+
+**Contexto resultante:**
+- Sucesso → cofre `alterado`; novo segredo em estado `incluido`, posicionado após o original.
+
+---
+
+## Fluxo 20 — Editar segredo
+
+**Contexto necessário:** cofre carregado no entorno global; segredo aberto; modo edição de valores ativo.
+
+**Passos:**
+
+1. O usuário altera o nome do segredo, os valores dos campos e/ou a observação. O usuário pode desistir e abandonar o fluxo a qualquer momento, descartando as alterações em andamento.
+   - Se o usuário alterar o nome para um nome já utilizado por outro segredo na mesma pasta → o sistema comunica o conflito. O usuário deve corrigir o nome para prosseguir.
+2. O usuário confirma as alterações.
+3. As alterações são aplicadas ao segredo em memória. O segredo passa ao estado `modificado` (ou permanece `incluido`, se já estava nesse estado).
+
+**Contexto resultante:**
+- Fluxo abandonado → segredo inalterado.
+- Sucesso → cofre `alterado`; segredo em estado `modificado` (ou `incluido`).
+
+---
+
+## Fluxo 21 — Alterar estrutura do segredo
+
+**Contexto necessário:** cofre carregado no entorno global; segredo aberto; modo alteração de estrutura ativo.
+
+**Nota:** este fluxo cobre adição, renomeação, reordenação e exclusão de campos. A Observação não pode ser movida, renomeada ou excluída; o tipo de um campo não pode ser alterado.
+
+**Passos:**
+
+1. O usuário realiza as alterações de estrutura desejadas: adiciona campos (informando nome e tipo), renomeia campos, reordena campos ou exclui campos. O usuário pode desistir e abandonar o fluxo a qualquer momento, descartando as alterações em andamento.
+2. O usuário confirma as alterações.
+3. As alterações de estrutura são aplicadas ao segredo em memória. O segredo passa ao estado `modificado` (ou permanece `incluido`, se já estava nesse estado).
+
+**Contexto resultante:**
+- Fluxo abandonado → estrutura do segredo inalterada.
+- Sucesso → cofre `alterado`; segredo em estado `modificado` (ou `incluido`).
+
+---
+
+## Fluxo 22 — Favoritar e desfavoritar segredo
+
+**Contexto necessário:** cofre carregado no entorno global; segredo em foco.
+
+**Passos:**
+
+1. O usuário solicita favoritar ou desfavoritar o segredo em foco.
+2. O estado de favorito do segredo é alternado em memória. O segredo passa ao estado `modificado` (ou permanece `incluido`, se já estava nesse estado).
+
+**Contexto resultante:**
+- Sucesso → cofre `alterado`; estado de favorito do segredo alternado.
+
+---
+
+## Fluxo 23 — Marcar segredo para exclusão
+
+**Contexto necessário:** cofre carregado no entorno global; segredo em foco; segredo não está em estado `excluido`.
+
+**Passos:**
+
+1. O usuário solicita marcar o segredo para exclusão.
+2. O segredo é marcado como `excluido` em memória. O segredo permanece visível na lista da pasta, sinalizando visualmente o estado de exclusão. O segredo não aparece em resultados de busca enquanto marcado.
+
+**Contexto resultante:**
+- Sucesso → cofre `alterado`; segredo em estado `excluido`.
+
+---
+
+## Fluxo 24 — Desmarcar exclusão de segredo
+
+**Contexto necessário:** cofre carregado no entorno global; segredo em foco; segredo em estado `excluido`.
+
+**Passos:**
+
+1. O usuário solicita desmarcar a exclusão do segredo.
+2. O segredo é restaurado ao estado que tinha antes de ser marcado para exclusão (`original`, `incluido` ou `modificado`).
+
+**Contexto resultante:**
+- Sucesso → cofre `alterado`; segredo restaurado ao estado anterior à marcação para exclusão.
+
+---
+
+## Fluxo 25 — Mover segredo para outra pasta
+
+**Contexto necessário:** cofre carregado no entorno global; segredo em foco.
+
+**Passos:**
+
+1. O usuário solicita mover o segredo.
+2. O usuário escolhe a pasta de destino. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se já existir um segredo com o mesmo nome na pasta de destino → o sistema comunica o conflito. O usuário pode escolher outra pasta de destino. Volta ao passo 2.
+3. O segredo é movido para a pasta de destino em memória. O segredo passa ao estado `modificado` (ou permanece `incluido`, se já estava nesse estado).
+
+**Contexto resultante:**
+- Fluxo abandonado → segredo permanece na pasta original.
+- Sucesso → cofre `alterado`; segredo na pasta de destino.
+
+---
+
+## Fluxo 26 — Reordenar segredo dentro da mesma pasta
+
+**Contexto necessário:** cofre carregado no entorno global; segredo em foco.
+
+**Passos:**
+
+1. O usuário reordena o segredo dentro da pasta, movendo-o para a posição desejada.
+2. A nova posição é aplicada em memória. Múltiplas reordenações antes de salvar resultam apenas no estado final — o histórico de movimentos é descartado.
+
+**Contexto resultante:**
+- Sucesso → cofre `alterado`; segredo na nova posição dentro da pasta.
+
+---
+
+## Gerenciamento de Pastas
+
+## Fluxo 27 — Criar pasta
+
+**Contexto necessário:** cofre carregado no entorno global; pasta em foco (será a pasta pai da nova pasta).
+
+**Passos:**
+
+1. O usuário solicita criar uma nova pasta.
+2. O usuário informa o nome da nova pasta. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se já existir uma subpasta com o mesmo nome na pasta pai → o sistema comunica o conflito. O usuário pode corrigir o nome. Volta ao passo 2.
+3. A nova pasta é criada dentro da pasta pai em foco.
+
+**Contexto resultante:**
+- Fluxo abandonado → contexto inalterado.
+- Sucesso → cofre `alterado`; nova pasta criada dentro da pasta pai em foco.
+
+---
+
+## Fluxo 28 — Renomear pasta
+
+**Contexto necessário:** cofre carregado no entorno global; pasta em foco; pasta não é a Pasta Geral.
+
+**Passos:**
+
+1. O usuário solicita renomear a pasta em foco.
+2. O usuário informa o novo nome. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se já existir uma subpasta com o mesmo nome na mesma pasta pai → o sistema comunica o conflito. O usuário pode corrigir o nome. Volta ao passo 2.
+3. O nome da pasta é atualizado em memória.
+
+**Contexto resultante:**
+- Fluxo abandonado → pasta inalterada.
+- Sucesso → cofre `alterado`; pasta renomeada.
+
+---
+
+## Fluxo 29 — Mover pasta para outra pasta
+
+**Contexto necessário:** cofre carregado no entorno global; pasta em foco; pasta não é a Pasta Geral.
+
+**Passos:**
+
+1. O usuário solicita mover a pasta em foco.
+2. O usuário escolhe a pasta de destino. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se o destino for um descendente da pasta em foco (movimento que criaria ciclo) → o sistema comunica que o movimento não é permitido. O usuário pode escolher outro destino. Volta ao passo 2.
+   - Se a pasta de destino já contiver uma subpasta com o mesmo nome → o sistema comunica o conflito. O usuário pode escolher outro destino. Volta ao passo 2.
+3. A pasta é movida para dentro da pasta de destino em memória.
+
+**Contexto resultante:**
+- Fluxo abandonado → pasta permanece na posição original.
+- Sucesso → cofre `alterado`; pasta na nova posição hierárquica.
+
+---
+
+## Fluxo 30 — Reordenar pasta dentro da mesma pasta pai
+
+**Contexto necessário:** cofre carregado no entorno global; pasta em foco; pasta não é a Pasta Geral.
+
+**Passos:**
+
+1. O usuário reordena a pasta dentro da pasta pai, movendo-a para a posição desejada.
+2. A nova posição é aplicada em memória. Múltiplas reordenações antes de salvar resultam apenas no estado final — o histórico de movimentos é descartado.
+
+**Contexto resultante:**
+- Sucesso → cofre `alterado`; pasta na nova posição dentro da pasta pai.
+
+---
+
+## Fluxo 31 — Excluir pasta
+
+**Contexto necessário:** cofre carregado no entorno global; pasta em foco; pasta não é a Pasta Geral.
+
+**Passos:**
+
+1. O usuário solicita excluir a pasta em foco.
+2. O sistema solicita confirmação. O usuário pode voltar e nada muda.
+3. A pasta é excluída: seus segredos e subpastas são movidos para a pasta pai imediata da pasta excluída.
+   - Segredos movidos são adicionados ao final da lista de segredos da pasta pai; segredos marcados para exclusão mantêm seu estado.
+   - Subpastas movidas são adicionadas ao final da lista de subpastas da pasta pai; se uma subpasta com o mesmo nome já existir na pasta pai, seu conteúdo é mesclado.
+   - Se algum segredo promovido tiver o mesmo nome de um segredo já existente na pasta pai, ele é renomeado automaticamente com sufixo numérico (ex: "Gmail (1)").
+   - Se houver renomeações, o sistema comunica as renomeações ocorridas.
+
+**Contexto resultante:**
+- Voltou → contexto inalterado.
+- Sucesso → cofre `alterado`; pasta excluída; conteúdo promovido para a pasta pai.
+
+```mermaid
+flowchart TD
+    A([Pasta em foco\nnão é Pasta Geral]) --> B[Usuário solicita excluir pasta]
+    B --> C[Sistema solicita confirmação]
+    C -- Volta --> Z([Contexto inalterado])
+    C -- Confirma --> D[Segredos e subpastas movidos para pasta pai]
+    D --> E(Algum segredo\npromovido tem nome\nduplcado na pasta pai?)
+    E -- Não --> G
+    E -- Sim --> F[Renomeia com sufixo numérico] --> G
+    G(Houve\nrenomeações?) -- Sim --> H[Sistema comunica renomeações ocorridas] --> OK
+    G -- Não --> OK([Cofre alterado\nPasta excluída\nConteúdo promovido])
+```
+
+---
+
+## Gerenciamento de Modelos de Segredo
+
+## Fluxo 32 — Criar modelo de segredo
+
+**Contexto necessário:** cofre carregado no entorno global.
+
+**Passos:**
+
+1. O usuário solicita criar um novo modelo.
+2. O usuário informa o nome do modelo e define seus campos (nome e tipo de cada campo). O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se já existir um modelo com o mesmo nome → o sistema comunica o conflito. O usuário pode corrigir o nome. Volta ao passo 2.
+3. O modelo é criado em memória.
+
+**Contexto resultante:**
+- Fluxo abandonado → contexto inalterado.
+- Sucesso → cofre `alterado`; novo modelo disponível.
+
+---
+
+## Fluxo 33 — Renomear modelo de segredo
+
+**Contexto necessário:** cofre carregado no entorno global; modelo em foco.
+
+**Passos:**
+
+1. O usuário solicita renomear o modelo em foco.
+2. O usuário informa o novo nome. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se já existir um modelo com o mesmo nome → o sistema comunica o conflito. O usuário pode corrigir o nome. Volta ao passo 2.
+3. O nome do modelo é atualizado em memória.
+
+**Contexto resultante:**
+- Fluxo abandonado → modelo inalterado.
+- Sucesso → cofre `alterado`; modelo renomeado.
+
+---
+
+## Fluxo 34 — Alterar estrutura do modelo de segredo
+
+**Contexto necessário:** cofre carregado no entorno global; modelo em foco.
+
+**Nota:** este fluxo cobre adição, renomeação, alteração de tipo, reordenação e exclusão de campos do modelo. Campos do modelo permitem nomes duplicados entre si. Alterações afetam apenas criações futuras de segredos a partir do modelo — segredos já criados não são afetados. O campo "Observação" não pode ser adicionado a um modelo.
+
+**Passos:**
+
+1. O usuário realiza as alterações de estrutura desejadas: adiciona campos (informando nome e tipo), renomeia campos, altera o tipo de campos, reordena campos ou exclui campos. O usuário pode desistir e abandonar o fluxo a qualquer momento, descartando as alterações em andamento.
+   - Se o usuário tentar adicionar ou renomear um campo para "Observação" → o sistema comunica que esse nome não é permitido em modelos. O usuário pode corrigir o nome.
+2. O usuário confirma as alterações.
+3. As alterações de estrutura são aplicadas ao modelo em memória.
+
+**Contexto resultante:**
+- Fluxo abandonado → estrutura do modelo inalterada.
+- Sucesso → cofre `alterado`; estrutura do modelo atualizada; segredos existentes não afetados.
+
+---
+
+## Fluxo 35 — Excluir modelo de segredo
+
+**Contexto necessário:** cofre carregado no entorno global; modelo em foco.
+
+**Passos:**
+
+1. O usuário solicita excluir o modelo em foco.
+2. O sistema solicita confirmação. O usuário pode voltar e nada muda.
+3. O modelo é excluído em memória. Segredos previamente criados a partir do modelo não são afetados — mantêm seus campos e o nome do modelo no histórico.
+
+**Contexto resultante:**
+- Voltou → contexto inalterado.
+- Sucesso → cofre `alterado`; modelo excluído; segredos existentes não afetados.
+
+---
+
+## Fluxo 36 — Criar modelo a partir de segredo existente
+
+**Contexto necessário:** cofre carregado no entorno global; segredo em foco.
+
+**Nota:** a Observação automática do segredo não é copiada para o modelo. O campo "Observação" não pode existir em modelos.
+
+**Passos:**
+
+1. O usuário solicita criar um modelo a partir do segredo em foco.
+2. O usuário informa o nome do novo modelo. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se já existir um modelo com o mesmo nome → o sistema comunica o conflito. O usuário pode corrigir o nome. Volta ao passo 2.
+3. O modelo é criado em memória com a estrutura de campos do segredo (sem a Observação).
+
+**Contexto resultante:**
+- Fluxo abandonado → contexto inalterado.
+- Sucesso → cofre `alterado`; novo modelo disponível com a estrutura do segredo.
+
