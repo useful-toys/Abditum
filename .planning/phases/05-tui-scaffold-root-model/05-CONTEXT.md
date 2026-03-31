@@ -218,7 +218,8 @@ Children that don’t care about a specific message type simply ignore it.
 - Topmost modal receives keyboard input; all modals receive domain messages.
 - Background models remain live during modal display; they do not receive keyboard/mouse input.
 - On pop to empty stack, keyboard/mouse returns to active base child.
-- Known modal types (stubs in Phase 5): file picker, password entry, password creation, help, confirmation.
+- Known modal types (stubs in Phase 5): password entry, password creation, help, confirmation.
+- **File picker modal is deferred** — implemented in the phase that introduces its first use case (open/create vault flow). Phase 5 does not stub it.
 
 ### Timers
 
@@ -241,7 +242,7 @@ Children that don’t care about a specific message type simply ignore it.
 
 **D-13: `rootModel` owns vault path**
 - `rootModel.vaultPath string` is the single source of truth.
-- The file picker modal communicates the chosen path to `rootModel` via a `Cmd` returning a domain message (e.g., `vaultPathSelectedMsg{path: "..."}`) — never via direct field access.
+- When a file picker modal exists (future phase), it will communicate the chosen path to `rootModel` via a `Cmd` returning a domain message (e.g., `vaultPathSelectedMsg{path: "..."}`) — never via direct field access.
 - `main.go` may also provide an initial path via constructor arg (`newRootModel(mgr, initialPath)`).
 
 ### ASCII Art Logo
@@ -438,7 +439,7 @@ type flowDescriptor interface {
 
 - ASCII art logo: exact implementation from `c:\git\Abditum2\internal\tui\ascii.go` — 5-line wordmark with violet→cyan gradient, `RenderLogo()` returns colored string via lipgloss.
 - Reference project at `c:\git\Abditum2` may contain additional TUI patterns worth reviewing during research.
-- Modal stack (not single pointer) enables modals opening modals — confirmed use case in the app (e.g., file picker opening a confirmation overlay).
+- Modal stack (not single pointer) enables modals opening modals — confirmed use case in the app (e.g., a modal opening a confirmation overlay).
 - Work area layout for `stateVaultOpen` and template editor is structurally identical (left list/tree + right detail panel) — the compositor logic can be shared.
 
 </specifics>
@@ -450,6 +451,7 @@ type flowDescriptor interface {
 - Real visual design of header, message bar, command bar — Phase 6 onwards when content exists
 - Settings screen layout — Phase 9
 - Template editor UI layout — Phase 8
+- **File picker modal** — implemented in the phase that introduces its first use case (open/create vault flow). Architecture: stateful `filePickerModal` pushed via `pushModalMsg{}`; communicates result via `vaultPathSelectedMsg{}` domain message.
 
 </deferred>
 

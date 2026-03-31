@@ -201,9 +201,10 @@ Modais são gerenciados como uma pilha LIFO em `rootModel.modals []*modalModel`:
 - **Pop:** `modals = modals[:len(modals)-1]`
 - O modal do topo recebe input de teclado/mouse.
 - Modais abaixo continuam vivos e recebem mensagens de domínio.
-- Modais podem abrir outros modais (ex: file picker abrindo confirmação).
+- Modais podem abrir outros modais (ex: confirmação abrindo outro modal de confirmação).
 
-**Tipos de modal conhecidos:** file picker, entrada de senha, criação de senha, confirmação (sim/não), help, progresso/spinner.
+**Tipos de modal (stubs no Phase 5):** entrada de senha, criação de senha, confirmação (sim/não), help, progresso/spinner.
+**File picker modal:** adiado — implementado na fase que introduz seu primeiro caso de uso (fluxo abrir/criar cofre).
 
 ---
 
@@ -245,7 +246,7 @@ rootModel: activeFlow = descriptor.New(ctx)
         ↓
 rootModel.Update() delega input → activeFlow.Update()
         ↓
-flow empurra modais via pushModalMsg{}  (file picker → progress → password → progress)
+flow empurra modais via pushModalMsg{}  (progress → password → progress)
         ↓
 operação assíncrona conclui → flow emite vaultOpenedMsg{} (+ chainFlowMsg se encadeamento)
         ↓
