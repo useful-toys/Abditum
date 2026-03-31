@@ -333,6 +333,7 @@ A ser especificado em v2.
 ## Fora de Escopo
 
 Funcionalidades deliberadamente excluídas desta versão:
+- TRatamento especial do cofre quando o arquivo é somente leitura (read-only) — a aplicação pode abrir um cofre em modo somente leitura, mas não há tratamento especial para esse estado além de falhar ao tentar salvar, com mensagem de erro informativa
 - **Senha Falsa de Coação (Duress Password)**: Uma senha alternativa que abre uma versão restrita do cofre para proteger os dados reais em situações de ameaça. Embora valiosa, a complexidade de implementação para garantir a segurança e a usabilidade corretas a coloca fora do escopo da versão inicial.
 - **TOTP (Two-Factor Authentication)**: Geração de código de autenticação de dois fatores — excluído permanentemente, sem previsão para nenhuma versão futura
 - **Backup**: A aplicação não cria, gerencia nem armazena cópias de segurança do cofre. Manter cópias de segurança é responsabilidade exclusiva do usuário
