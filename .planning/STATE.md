@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 05
-status: pending
-last_updated: "2026-03-30T16:30:00.000Z"
+status: ready
+last_updated: "2026-03-31T22:00:00Z"
 progress:
-  total_phases: 11
-  completed_phases: 4
-  total_plans: 15
-  completed_plans: 15
+  total_phases: 12
+  completed_phases: 5
+  total_plans: 21
+  completed_plans: 18
 ---
 
 # Project State — Abditum
 
-**Last updated:** 2026-03-30T16:30:00Z
+**Last updated:** 2026-03-31T22:00:00Z
 **Current phase:** 05
 **Milestone:** v1.0
 
@@ -34,23 +34,13 @@ progress:
 
 ## Current Phase
 
-**Phase 04: Storage Package** — Complete ✅
+**Phase 04.1: Refinamento da Camada de Domínio** — Complete ✅
 
-All 4 plans executed successfully:
+All 3 plans executed successfully:
 
-- ✓ 04-01: Foundation (AAD-aware crypto, vault serialization, format constants)
-- ✓ 04-02: Core I/O (SaveNew, Save, Load, atomic rename, backup chain)
-- ✓ 04-03: Recovery & Migration (RecoverOrphans, DetectExternalChange, Migrate scaffold)
-- ✓ 04-04: Integration (FileRepository adapter, end-to-end tests)
-
-**Package Status:**
-
-- 27 tests in `internal/storage`, all passing
-- Full binary `.abditum` format with 49-byte AAD header
-- Atomic writes via `.tmp` → rename, `.bak`/`.bak2` backup chain
-- Windows-specific `MoveFileEx` via build tag
-- `FileRepository` implements `vault.RepositorioCofre`
-- Ready for Phase 5 (TUI Scaffold + Root Model)
+- ✓ 04.1-01: Private entity methods + factory estadoSessao fixes
+- ✓ 04.1-02: Versioned DeserializarCofre + migrate.go removed
+- ✓ 04.1-03: Manager fully refactored + AlternarFavorito bug fixed + 3 regression tests
 
 **Next:** Phase 05 - TUI Scaffold + Root Model
 
@@ -72,9 +62,35 @@ All 4 plans executed successfully:
 
 ## Phase History
 
-### Phase 04: Storage Package (Completed 2026-03-30)
+### Phase 04.1: Refinamento da Camada de Domínio (Completed 2026-03-31)
 
 **Status:** Complete ✅
+
+**Key Deliverables:**
+
+- `segredo.marcarModificacao()`, `cofre.marcarModificado()` — encapsulated state mutation
+- `Pasta.copiarProfundo()`, `Segredo.copiar()`, `CampoSegredo.copiar()` — entity-owned deep copy
+- `segredo.zerarValoresSensiveis()` — encapsulated crypto.Wipe
+- Factory `criarSegredo`/`duplicarSegredo` correctly set `EstadoIncluido` from birth
+- `DeserializarCofre(data, version uint8)` — versioned deserializer ready for compat fields
+- `migrate.go` deleted — compatibility via compat fields in JSON structs
+- Manager fully refactored: 20+ direct field mutations replaced with entity method calls
+- `AlternarFavoritoSegredo` bug fixed: does NOT update secret timestamp (favoriting ≠ content edit)
+- Removed `copiarPastaRecursivamente`, `copiarSegredo`, `copiarCampo` from Manager
+- 3 regression tests: D-08, D-05 (create), D-05 (duplicate)
+
+**Commits:**
+
+- 6856183 — feat(vault): add private entity methods for encapsulation (04.1-01)
+- 10bdac2 — docs(04.1-01): add execution summary
+- a9477b2 — feat(storage): versioned DeserializarCofre, remove migrate.go (04.1-02)
+- c022fe3 — docs(04.1-02): add execution summary
+- b864754 — refactor(vault): manager uses entity methods, fix AlternarFavorito bug (04.1-03)
+- db3c511 — docs(04.1-03): add execution summary
+
+### Phase 04: Storage Package (Completed 2026-03-30)
+
+**Status:** Executing Phase 04.1
 
 **Key Deliverables:**
 
