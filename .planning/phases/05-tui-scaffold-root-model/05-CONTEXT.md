@@ -181,12 +181,12 @@ func (m *rootModel) liveModels() []childModel {
 
 ### Timers
 
-**D-11: `rootModel` owns all timeout decisions; children receive typed timeout messages**
+**D-11: `rootModel` owns all timeout decisions; timeout logic delegated to Manager**
 - `rootModel` tracks `lastActionAt time.Time` — updated on every meaningful user input.
-- On each `tickMsg`, `rootModel` evaluates whether `lockTimer` or `clipboardTimer` has elapsed since `lastActionAt`.
-- When a timeout fires, `rootModel` dispatches a **specific typed message** to all live models (e.g., `lockTimeoutMsg{}`, `clipboardTimeoutMsg{}`). Children never inspect the ticker to decide a timeout themselves.
+- On each `tickMsg`, `rootModel` asks `vault.Manager` whether each timeout has fired (e.g., `mgr.IsLockExpired(lastActionAt)`, `mgr.IsClipboardExpired(lastActionAt)`). Timer configuration (durations, enabled/disabled) stays encapsulated in the Manager/domain layer — `rootModel` never reads raw config values.
+- When a timeout fires, `rootModel` dispatches a **specific typed message** to all live models (e.g., `lockTimeoutMsg{}`, `clipboardTimeoutMsg{}`). Children never inspect the ticker or query the Manager to decide a timeout themselves.
 - Children receive `tickMsg` only for **periodic UI updates** — e.g., refreshing a clock displayed in the header. They must not use tick to implement timeout logic.
-- `lockTimer` and `clipboardTimer` values are read from `mgr.Vault().Configuracoes()` on `workAreaVault` transition; both are `0` (disabled) before vault opens.
+- Before vault opens there is no active vault, so timeout methods must handle that case gracefully (return `false`). No tick fires before `workAreaVault` is entered.
 - The global 1-second tick (`tickMsg`) is started as a `tea.Cmd` when transitioning into `workAreaVault`. It does NOT start in `rootModel.Init()`.
 
 ### Quit Shortcut
