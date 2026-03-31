@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/useful-toys/abditum/internal/crypto"
 )
 
 // TipoCampo represents the visibility type of a secret field.
@@ -144,6 +146,13 @@ func (c *Cofre) DataUltimaModificacao() time.Time {
 	return c.dataUltimaModificacao
 }
 
+// marcarModificado marks the vault as having unsaved changes and updates its modification timestamp.
+// Called by Manager after any successful mutation that must be persisted.
+func (c *Cofre) marcarModificado() {
+	c.modificado = true
+	c.dataUltimaModificacao = time.Now().UTC()
+}
+
 // Exported getters for Pasta
 
 // Nome returns the folder name.
@@ -213,6 +222,55 @@ func (s *Segredo) DataCriacao() time.Time {
 // DataUltimaModificacao returns when the secret was last modified.
 func (s *Segredo) DataUltimaModificacao() time.Time {
 	return s.dataUltimaModificacao
+}
+
+// marcarModificacao updates the last-modification timestamp of the secret.
+// Called by Manager after confirmed content mutations (rename, field edit, delete, restore, duplicate).
+// NOT called for favorite toggling (per D-08: favoritar is navigation preference, not content edit).
+func (s *Segredo) marcarModificacao() {
+	s.dataUltimaModificacao = time.Now().UTC()
+}
+
+// zerarValoresSensiveis wipes all sensitive field byte values in memory.
+// Called by Manager.Lock via limparCamposSensiveis. Per CRYPTO-04.
+// Uses crypto.Wipe for secure zeroing before nil-ing references.
+func (s *Segredo) zerarValoresSensiveis() {
+	for i := range s.campos {
+		if s.campos[i].tipo == TipoCampoSensivel {
+			crypto.Wipe(s.campos[i].valor)
+			s.campos[i].valor = nil
+		}
+	}
+	crypto.Wipe(s.observacao.valor)
+	s.observacao.valor = nil
+}
+
+// copiar creates a deep copy of the field with an independent []byte valor slice.
+// Returns a value copy (not pointer) — safe for use in slices.
+func (c CampoSegredo) copiar() CampoSegredo {
+	v := make([]byte, len(c.valor))
+	copy(v, c.valor)
+	return CampoSegredo{nome: c.nome, tipo: c.tipo, valor: v}
+}
+
+// copiar creates a deep copy of the secret with independent []byte slices.
+// The pasta back-reference is set to nil — the caller (copiarProfundo) must set it.
+// estadoSessao, favorito, timestamps are all copied as-is.
+func (s *Segredo) copiar() *Segredo {
+	campos := make([]CampoSegredo, len(s.campos))
+	for i, c := range s.campos {
+		campos[i] = c.copiar()
+	}
+	return &Segredo{
+		nome:                  s.nome,
+		favorito:              s.favorito,
+		estadoSessao:          s.estadoSessao,
+		dataCriacao:           s.dataCriacao,
+		dataUltimaModificacao: s.dataUltimaModificacao,
+		campos:                campos,
+		observacao:            s.observacao.copiar(),
+		pasta:                 nil, // caller sets: sCopia.pasta = copia
+	}
 }
 
 // Exported getters for CampoSegredo
@@ -466,6 +524,37 @@ func (s *Segredo) reposicionarSegredo(novaPosicao int) (alterado bool, err error
 }
 
 // Private entity methods for folder operations
+
+// copiarProfundo creates a deep copy of the folder subtree.
+// If filtrarExcluidos is true, secrets with EstadoExcluido are omitted from the copy.
+// Repopulates pai and pasta back-references on all copies so the cloned subtree
+// is self-consistent — same invariant as popularReferencias in deserialization.
+// The returned root's pai is nil; callers of the root do not need to set it.
+func (p *Pasta) copiarProfundo(filtrarExcluidos bool) *Pasta {
+	copia := &Pasta{
+		nome:      p.nome,
+		pai:       nil, // root of this clone — pai is set by recursive call for children
+		subpastas: make([]*Pasta, 0, len(p.subpastas)),
+		segredos:  make([]*Segredo, 0, len(p.segredos)),
+	}
+
+	for _, sub := range p.subpastas {
+		subCopia := sub.copiarProfundo(filtrarExcluidos)
+		subCopia.pai = copia
+		copia.subpastas = append(copia.subpastas, subCopia)
+	}
+
+	for _, s := range p.segredos {
+		if filtrarExcluidos && s.estadoSessao == EstadoExcluido {
+			continue
+		}
+		sCopia := s.copiar()
+		sCopia.pasta = copia
+		copia.segredos = append(copia.segredos, sCopia)
+	}
+
+	return copia
+}
 
 // contemSubpastaComNome checks if a subfolder with the given name exists.
 func (p *Pasta) contemSubpastaComNome(nome string) bool {
@@ -1234,7 +1323,7 @@ func (p *Pasta) criarSegredo(nome string, modelo *ModeloSegredo) *Segredo {
 		observacao:            observacao,
 		pasta:                 p,
 		favorito:              false,
-		estadoSessao:          EstadoOriginal, // Will be changed to Modificado by Manager
+		estadoSessao:          EstadoIncluido, // New secret not yet persisted — Incluido per D-05
 		dataCriacao:           agora,
 		dataUltimaModificacao: agora,
 	}
@@ -1380,7 +1469,7 @@ func (p *Pasta) duplicarSegredo(original *Segredo) *Segredo {
 		observacao:            observacao,
 		pasta:                 p,
 		favorito:              false,          // Reset favorite flag
-		estadoSessao:          EstadoOriginal, // Manager will set to Modificado
+		estadoSessao:          EstadoIncluido, // Duplicate not yet persisted — Incluido per D-05
 		dataCriacao:           agora,
 		dataUltimaModificacao: agora,
 	}
