@@ -97,6 +97,9 @@ type rootModel struct {
     // Modal stack — LIFO, last element = topmost/active
     modals         []*modalModel
 
+    // Active flow — nil = no flow in progress (see D-19)
+    activeFlow     flowHandler
+
     // Shared services — passed to every child at construction
     actions        *ActionManager
     messages       *MessageManager
@@ -125,9 +128,11 @@ func (m *rootModel) liveModels() []childModel {
 
 **D-06: Domain messages broadcast, input messages focused**
 - **Domain messages** (vault changed, timer tick, etc.) → `rootModel` dispatches to ALL live models via `liveModels()` + all modals in stack.
-- **Keyboard/mouse events** (`tea.KeyPressMsg`, `tea.MouseMsg`) → only the focused model. Focus rules:
-  - If modal stack non-empty → topmost modal (`modals[len(modals)-1]`) has focus.
-  - Else → currently active base child model.
+- **Keyboard/mouse events** (`tea.KeyPressMsg`, `tea.MouseMsg`) → dispatch priority order:
+  1. Global shortcuts in `rootModel` (`ctrl+Q`, `?`) — always intercepted first.
+  2. If `activeFlow != nil` → delegate to `activeFlow.Update(msg)` — flow manages its own modals and async Cmds.
+  3. Else if modal stack non-empty → topmost modal (`modals[len(modals)-1]`) has focus.
+  4. Else → currently active base child model.
 - No child model ever calls another child model's methods or reads another child model's fields. All state changes flow through `vault.Manager` → domain message → `rootModel` broadcast.
 
 ### Inter-Model Communication Pattern
@@ -225,6 +230,8 @@ func (m *rootModel) liveModels() []childModel {
 - `actions.go` — `ActionManager` (see D-16)
 - `messages.go` — `MessageManager` (see D-17)
 - `dialogs.go` — dialog factory functions (see D-18)
+- `flow_open_vault.go` — `openVaultFlow` stub (see D-19)
+- `flow_create_vault.go` — `createVaultFlow` stub (see D-19)
 - `prevault.go` — `preVaultModel` stub (ASCII art welcome background; no sub-states)
 - `vaulttree.go` — `vaultTreeModel` stub
 - `secretdetail.go` — `secretDetailModel` stub
@@ -257,6 +264,7 @@ func (m *rootModel) liveModels() []childModel {
 - `ActionManager` grouping and priority logic for `Visible()` — Phase 5 stub may return a flat list
 - `MessageManager` API shape (e.g., whether it supports message severity/type, auto-clear after timeout, etc.)
 - `dialogs` factory: exact function signatures, whether callbacks use `tea.Cmd` or typed messages, additional pre-defined dialog types beyond message/confirm
+- `flowHandler` interface exact shape; whether flows receive domain messages or only input messages; how a flow signals completion to `rootModel`
 
 ### Message Manager
 
@@ -268,6 +276,26 @@ func (m *rootModel) liveModels() []childModel {
 - Children must NOT read from `MessageManager` — it is write-only from their perspective.
 - `rootModel` may also write to `MessageManager` directly for global-level hints (e.g., "vault locked").
 - **API shape** (e.g., severity levels, auto-clear after N seconds, message queue vs. single slot) is left to researcher/planner.
+
+### Flow Handlers
+
+**D-19: `flowHandler` interface — encapsulates multi-step modal orchestration**
+- **Problem solved:** multi-step flows (open vault, create vault, save-as, change password, lock, quit-with-confirmation) would make `rootModel.Update()` enormous if inlined. Each flow is instead a dedicated object.
+- **Interface:**
+```go
+type flowHandler interface {
+    Update(tea.Msg) tea.Cmd  // mutates flow state, returns Cmds (push modals, async work, domain msgs)
+}
+```
+  - No `View()` — flows have no visual representation of their own; they push modals onto `rootModel`'s stack to show UI.
+  - No `SetSize()` — not needed.
+- **`rootModel` field:** `activeFlow flowHandler` — `nil` when no flow is running.
+- **Starting a flow:** a child emits a domain message (e.g., `startOpenVaultFlowMsg{}`); `rootModel` allocates the appropriate flow and sets `activeFlow`.
+- **Dispatch during active flow:** `rootModel` delegates input events to `activeFlow.Update()` (priority 2 in D-06). The flow pushes/pops modals and returns async Cmds directly.
+- **Completing a flow:** the flow emits a completion message (e.g., `vaultOpenedMsg{}`, `flowCancelledMsg{}`); `rootModel` handles the transition and sets `activeFlow = nil`.
+- **Flow files in Phase 5:** stubs only — no real logic. Concrete flows implemented in Phase 6+.
+- **Known flows:** `openVaultFlow`, `createVaultFlow`. Additional flows (save-as, change password, lock, quit confirmation) identified in later phases.
+- **Whether flows receive domain messages** (tick, vault changed, etc.) is left to researcher/planner.
 
 ### Dialog Factory
 
