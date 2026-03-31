@@ -10,7 +10,7 @@ This phase delivers the foundational TUI infrastructure: the `rootModel` (the on
 
 This phase implements:
 - All charm.land v2 dependencies added to `go.mod`
-- `sessionState` enum: `stateWelcome`, `stateOpenVault`, `stateCreateVault`, `stateVaultOpen`
+- `workArea` enum: `workAreaPreVault`, `workAreaVault`, `workAreaTemplates`, `workAreaSettings`
 - `childModel` custom interface (NOT `tea.Model`)
 - `rootModel` struct: concrete child pointer fields, modal stack, vault path, terminal size, `*vault.Manager`
 - Frame compositor in `rootModel.View()`: constant layout zones, placeholder content
@@ -43,20 +43,22 @@ This phase does NOT implement:
 - Pin exact latest versions: `go get charm.land/bubbletea/v2@latest` etc.
 - **CRITICAL:** No v1 packages. `View()` returns `tea.View` (not `string`), key events are `tea.KeyPressMsg` (not `tea.KeyMsg`), space key is `"space"` (not `" "`).
 
-### Session State Machine
+### Work Area State Machine
 
-**D-02: Four session states, no `stateLocked`**
+**D-02: `workArea` enum — describes what is mounted in the work area**
 ```go
-type sessionState int
+type workArea int
 const (
-    stateWelcome    sessionState = iota // pick vault path, show ASCII art
-    stateOpenVault                      // enter password to open existing vault
-    stateCreateVault                    // enter password to create new vault
-    stateVaultOpen                      // vault open — tree + detail side by side
+    workAreaPreVault  workArea = iota // before vault is open (welcome/open/create)
+    workAreaVault                     // vault open — tree + detail side by side
+    workAreaTemplates                 // template editor — list + detail side by side
+    workAreaSettings                  // settings screen
 )
 ```
-- Lock operation = wipe sensitive memory + transition to `stateOpenVault` (re-enter password for same path). There is no `stateLocked` state.
-- `rootModel` stores `vaultPath string` — populated from child via domain message, persists across lock/unlock cycles.
+- `rootModel` tracks `area workArea` (not a screen/state machine — describes work area content).
+- Welcome → open-vault → create-vault flows are **sub-states internal to `preVaultModel`**, not rootModel states. `rootModel` only knows `workAreaPreVault`.
+- Lock operation = wipe sensitive memory + set `area = workAreaPreVault` (preVaultModel re-initializes to its open-vault sub-state, same path). No `stateLocked`.
+- `rootModel` stores `vaultPath string` — populated from `preVaultModel` via domain message, persists across lock/unlock cycles.
 
 ### Child Model Interface
 
@@ -78,22 +80,21 @@ type childModel interface {
 **D-04: Concrete pointer fields — nil = inactive/dead**
 ```go
 type rootModel struct {
-    state        sessionState
-    mgr          *vault.Manager
-    vaultPath    string
+    area          workArea
+    mgr           *vault.Manager
+    vaultPath     string
     width, height int
 
     // Child models — nil means inactive (dead, no memory held)
-    welcome      *welcomeModel
-    openVault    *openVaultModel
-    createVault  *createVaultModel
-    vaultTree    *vaultTreeModel
-    secretDetail *secretDetailModel
-    templateList *templateListModel
-    templateDetail *templateDetailModel
+    preVault       *preVaultModel      // active during workAreaPreVault
+    vaultTree      *vaultTreeModel     // active during workAreaVault
+    secretDetail   *secretDetailModel  // active during workAreaVault
+    templateList   *templateListModel  // active during workAreaTemplates
+    templateDetail *templateDetailModel // active during workAreaTemplates
+    settings       *settingsModel      // active during workAreaSettings
 
     // Modal stack — LIFO, last element = topmost/active
-    modals       []*modalModel
+    modals         []*modalModel
 }
 ```
 - When transitioning to a new state: allocate new child via constructor, set old child field to `nil`. Go GC reclaims the old model.
@@ -104,9 +105,12 @@ type rootModel struct {
 ```go
 func (m *rootModel) liveModels() []childModel {
     var live []childModel
-    if m.welcome != nil       { live = append(live, m.welcome) }
-    if m.openVault != nil     { live = append(live, m.openVault) }
-    // ... all child fields
+    if m.preVault != nil        { live = append(live, m.preVault) }
+    if m.vaultTree != nil       { live = append(live, m.vaultTree) }
+    if m.secretDetail != nil    { live = append(live, m.secretDetail) }
+    if m.templateList != nil    { live = append(live, m.templateList) }
+    if m.templateDetail != nil  { live = append(live, m.templateDetail) }
+    if m.settings != nil        { live = append(live, m.settings) }
     for _, modal := range m.modals { live = append(live, modal) }
     return live
 }
@@ -149,16 +153,15 @@ func (m *rootModel) liveModels() []childModel {
 - Frame zones are composed with lipgloss; header and bars have fixed heights, work area gets remaining height.
 - Frame structure **may grow** in later phases — not fully locked. Planner should not over-engineer zone count.
 
-**D-09: Work area content by state**
-| State | Work area content |
-|-------|------------------|
-| `stateWelcome` | ASCII art logo (`RenderLogo()`) centered + placeholder stub |
-| `stateOpenVault` | ASCII art logo + open-vault form stub |
-| `stateCreateVault` | ASCII art logo + create-vault form stub |
-| `stateVaultOpen` | `vaultTreeModel` (left) + `secretDetailModel` (right) side by side |
+**D-09: Work area content by `workArea` value**
+| `workArea` | Work area content |
+|------------|------------------|
+| `workAreaPreVault` | `preVaultModel` fills full work area — internally handles welcome/open/create sub-states; shows ASCII art + relevant form |
+| `workAreaVault` | `vaultTreeModel` (left) + `secretDetailModel` (right) side by side |
+| `workAreaTemplates` | `templateListModel` (left) + `templateDetailModel` (right) side by side |
+| `workAreaSettings` | `settingsModel` fills full work area |
 
-- Template editor (later phase): left = `templateListModel`, right = `templateDetailModel` — same split layout as vault tree/detail.
-- Settings (later phase): fills work area.
+- `preVaultModel` manages its own internal sub-state machine (welcome → pick path → open-vault → create-vault). `rootModel` is unaware of these sub-states.
 - All list/tree/detail child models **must support vertical scroll** — exact mechanism left to researcher.
 
 **D-10: Modal stack as overlay layer**
@@ -174,9 +177,9 @@ func (m *rootModel) liveModels() []childModel {
 
 **D-11: Timers zero until vault opens; tick starts on vault open**
 - `lockTimer`, `clipboardTimer` initialized to `0` in `rootModel`.
-- On vault open (`stateVaultOpen` transition), `rootModel` reads `mgr.Vault().Configuracoes()` and sets timer values.
-- Global 1-second tick (`tickMsg`) is NOT started by `rootModel.Init()`. It is started as a `tea.Cmd` returned from the state transition handler when entering `stateVaultOpen`.
-- Before vault is open, no tick fires — welcome/open/create screens are tick-free.
+- On vault open (`workAreaVault` transition), `rootModel` reads `mgr.Vault().Configuracoes()` and sets timer values.
+- Global 1-second tick (`tickMsg`) is NOT started by `rootModel.Init()`. It is started as a `tea.Cmd` returned from the state transition handler when entering `workAreaVault`.
+- Before vault is open, no tick fires — `preVaultModel` screens are tick-free.
 
 ### Quit Shortcut
 
@@ -189,7 +192,7 @@ func (m *rootModel) liveModels() []childModel {
 
 **D-13: `rootModel` owns vault path**
 - `rootModel.vaultPath string` is the single source of truth.
-- Child models (welcome, openVault) communicate the path back to `rootModel` via a `Cmd` returning a domain message (e.g., `vaultPathSelectedMsg{path: "..."}`) — never via direct field access.
+- `preVaultModel` communicates the chosen path to `rootModel` via a `Cmd` returning a domain message (e.g., `vaultPathSelectedMsg{path: "..."}`) — never via direct field access.
 - `main.go` may also provide an initial path via constructor arg (`newRootModel(mgr, initialPath)`).
 
 ### ASCII Art Logo
@@ -203,17 +206,16 @@ func (m *rootModel) liveModels() []childModel {
 ### File Layout
 
 **D-15: Separate files per concern in `internal/tui/`**
-- `root.go` — `rootModel`, `sessionState`, `Init`/`Update`/`View`, `liveModels()`, dispatch logic
+- `root.go` — `rootModel`, `workArea` enum, `Init`/`Update`/`View`, `liveModels()`, dispatch logic
 - `modal.go` — `modalModel`, push/pop helpers
 - `state.go` — timer helpers, tick handler, domain message types
 - `ascii.go` — `AsciiArt` constant, `RenderLogo()`
-- `welcome.go` — `welcomeModel` stub
-- `openvault.go` — `openVaultModel` stub
-- `createvault.go` — `createVaultModel` stub
+- `prevault.go` — `preVaultModel` stub (manages welcome/open/create sub-states internally)
 - `vaulttree.go` — `vaultTreeModel` stub
 - `secretdetail.go` — `secretDetailModel` stub
 - `templatelist.go` — `templateListModel` stub
 - `templatedetail.go` — `templateDetailModel` stub
+- `settings.go` — `settingsModel` stub
 
 ### Agent's Discretion
 - Whether `childModel` interface includes `Init() tea.Cmd` — needs Bubble Tea v2 research
