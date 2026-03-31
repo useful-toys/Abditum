@@ -263,7 +263,7 @@ Children that don’t care about a specific message type simply ignore it.
 - `dialogs.go` — dialog factory functions (see D-18)
 - `flow_open_vault.go` — `openVaultFlow` + `openVaultDescriptor` stubs (see D-19, D-20)
 - `flow_create_vault.go` — `createVaultFlow` + `createVaultDescriptor` stubs (see D-19, D-20)
-- `flows.go` — `FlowRegistry`, `flowDescriptor` interface, `FlowContext` struct (see D-20)
+- `flows.go` — `FlowRegistry`, `flowDescriptor` interface, `FlowContext` struct, `chainFlowMsg` (see D-19, D-20)
 - `prevault.go` — `preVaultModel` stub (ASCII art welcome background; no sub-states)
 - `vaulttree.go` — `vaultTreeModel` stub
 - `secretdetail.go` — `secretDetailModel` stub
@@ -326,6 +326,7 @@ type flowHandler interface {
 - **Starting a flow:** via `FlowRegistry` (see D-20) — `rootModel` no longer allocates flows directly or handles `startXxxFlowMsg{}`.
 - **Dispatch during active flow:** `rootModel` delegates input events to `activeFlow.Update()` (priority 2 in D-06). The flow pushes/pops modals and returns async Cmds directly.
 - **Completing a flow:** the flow emits a completion message (e.g., `vaultOpenedMsg{}`, `flowCancelledMsg{}`); `rootModel` handles the transition and sets `activeFlow = nil`.
+- **Flow chaining (rare):** in exceptional cases a completing flow may request the immediate start of another flow. The completing flow returns `tea.Batch` with both the domain Cmd and `func() tea.Msg { return chainFlowMsg{key: "..."} }`. Bubble Tea processes one message per `Update()` call, so the domain message is fully handled first (state fully transitioned) before `chainFlowMsg` arrives in the next `Update()`. `rootModel` handles `chainFlowMsg` by rebuilding a fresh `FlowContext` from the now-current state and dispatching through `FlowRegistry.ForKey(key, ctx)`. If the target flow is not found or `IsApplicable(ctx)` returns `false`, the chain request is silently ignored.
 - **Flow files in Phase 5:** stubs only — no real logic. Concrete flows implemented in Phase 6+.
 - **Known flows:** `openVaultFlow`, `createVaultFlow`. Additional flows (save-as, change password, lock, quit confirmation) identified in later phases.
 - **Whether flows receive domain messages** (tick, vault changed, etc.) is left to researcher/planner.

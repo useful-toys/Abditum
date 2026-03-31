@@ -243,12 +243,28 @@ rootModel.Update() delega input → activeFlow.Update()
         ↓
 flow empurra modais via pushModalMsg{}  (file picker → progress → password → progress)
         ↓
-operação assíncrona conclui → flow emite vaultOpenedMsg{}
+operação assíncrona conclui → flow emite vaultOpenedMsg{} (+ chainFlowMsg se encadeamento)
         ↓
-rootModel: activeFlow = nil  |  area = workAreaVault
+rootModel: activeFlow = nil  |  transição de estado
+        ↓ (se chainFlowMsg presente — processado no Update() seguinte)
+rootModel: ctx reconstruído → ForKey(key, ctx) → novo activeFlow (ou ignorado se inaplicável)
 ```
 
 Cada fluxo vive em arquivo próprio (`flow_open_vault.go`, `flow_create_vault.go`, etc.). O `rootModel` não conhece os passos internos de nenhum fluxo.
+
+### Encadeamento de fluxos (`chainFlowMsg`)
+
+Em casos excepcionais, um fluxo que conclui pode solicitar a execução imediata de outro:
+
+```go
+// Dentro do flowHandler, ao concluir:
+return tea.Batch(
+    func() tea.Msg { return vaultOpenedMsg{} },            // transição de estado
+    func() tea.Msg { return chainFlowMsg{key: "..."} },    // solicita próximo flow
+)
+```
+
+O Bubble Tea processa **uma mensagem por `Update()`**. A mensagem de domínio chega primeiro — estado completamente atualizado — e só então `chainFlowMsg` é processado. `rootModel` reconstrói o `FlowContext` do estado atual e despacha via `FlowRegistry.ForKey(key, ctx)`. Se o flow alvo não for encontrado ou `IsApplicable(ctx)` retornar `false`, a requisição é ignorada silenciosamente.
 
 ---
 
