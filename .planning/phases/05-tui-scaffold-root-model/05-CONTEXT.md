@@ -75,6 +75,7 @@ type childModel interface {
 - `Update` uses pointer receivers and mutates in place — no self-replacement return.
 - Whether child interface includes `Init() tea.Cmd` is **left to researcher/planner** — needs investigation of Bubble Tea v2 initialization patterns.
 - `SetSize(w, h int)` receives the child's **allocated** size (not terminal size). `rootModel` computes each child's share on `tea.WindowSizeMsg` and calls `SetSize` on all live children.
+- **Children and modals are position-unaware:** they render their content filling exactly the size given by `SetSize()`. They have no knowledge of where they will be placed on the terminal. Positioning and overlay are exclusively `rootModel`'s responsibility.
 
 ### Model Lifecycle
 
@@ -151,7 +152,7 @@ func (m *rootModel) liveModels() []childModel {
 `rootModel.View()` always renders:
 ```
 ┌─────────────────────────────────┐
-│ Header                          │  ← app name, vault name, unsaved indicator
+│ Header                          │  ← nome do app, nome do cofre, indicador de alterações
 ├─────────────────────────────────┤
 │ Message bar                     │  ← reads MessageManager.Current() (see D-17)
 ├─────────────────────────────────┤
@@ -164,6 +165,9 @@ func (m *rootModel) liveModels() []childModel {
 ```
 - Frame zones are composed with lipgloss; header and bars have fixed heights, work area gets remaining height.
 - Frame structure **may grow** in later phases — not fully locked. Planner should not over-engineer zone count.
+- **`rootModel.View()` delegates frame composition to a dedicated method** (e.g., `renderFrame() string`) rather than inlining all rendering logic. This keeps `View()` as a thin dispatcher.
+- **Modal overlay:** after composing the base frame, `rootModel.View()` checks the modal stack. If non-empty, the topmost modal's `View()` output is overlaid on top of the full frame using `lipgloss.Place()`. Modal renders its own content only — it has no knowledge of its screen position.
+- **Compositor principle:** only `rootModel` knows the terminal dimensions and the position of each zone. Children and modals receive their allocated size via `SetSize()` and render content that fills that size. No child or modal uses absolute terminal coordinates.
 
 **D-09: Work area content by `workArea` value**
 | `workArea` | Work area content |
