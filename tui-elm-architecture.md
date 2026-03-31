@@ -31,17 +31,19 @@ Interface implementada por todos os modelos filhos de área de trabalho e pelos 
 
 ```go
 type childModel interface {
-    Update(tea.Msg) tea.Cmd  // muta in-place; retorna apenas Cmd
-    View() string             // retorna string, NÃO tea.View
-    SetSize(w, h int)         // recebe o tamanho alocado pelo compositor
-    Context() FlowContext     // expõe estado de navegação/seleção para despacho de fluxos
+    Update(tea.Msg) tea.Cmd       // muta in-place; retorna apenas Cmd
+    View() string                  // retorna string, NÃO tea.View
+    SetSize(w, h int)              // recebe o tamanho alocado pelo compositor
+    Context() FlowContext          // expõe estado de navegação/seleção para despacho de fluxos
+    ChildFlows() []flowDescriptor  // descritores de fluxos específicos do filho (nil se nenhum)
 }
 ```
 
 - `View()` retorna `string` (não `tea.View`). Somente `rootModel.View()` retorna `tea.View`.
 - `Update()` muta o próprio estado via pointer receiver — sem retornar `(Model, Cmd)`.
 - `rootModel` calcula o tamanho de cada filho e chama `SetSize()` ao receber `tea.WindowSizeMsg`.
-- `Context()` preenche os campos de navegação/seleção do `FlowContext`; `rootModel` enriquece com campos de nível vault antes de consultar o `FlowRegistry`.
+- `Context()` preenche os campos de navegação/seleção do `FlowContext`; `rootModel` enriquece com campos de nível vault antes de consultar os candidatos.
+- `ChildFlows()` retorna fluxos internos ao filho que não fazem sentido no registro global. Os descritores seguem o mesmo contrato `IsApplicable(FlowContext)` — sem closures. São verificados **antes** dos fluxos globais no despacho por tecla.
 
 ### `FlowContext`
 
@@ -67,7 +69,9 @@ type FlowContext struct {
 ctx := m.activeChild.Context()           // filho preenche campos de navegação
 ctx.VaultOpen = m.mgr.IsOpen()           // rootModel adiciona estado do cofre
 ctx.VaultDirty = m.mgr.HasUnsavedChanges()
-// ctx está completo — pronto para FlowRegistry.ForKey(key, ctx)
+// ctx está completo — duas fontes de candidatos de fluxo:
+//   1. activeChild.ChildFlows() — fluxos específicos do filho (prioridade)
+//   2. flows.ForKey(key, ctx)   — registro global
 ```
 
 ### `flowHandler`
@@ -235,7 +239,8 @@ O child chama `return cmdMarkSecretDeleted(m.mgr, id)` no seu `Update()`. Nunca 
 
 ```
 tecla acionada → ctx = activeChild.Context() + rootModel enriches vault state
-        → FlowRegistry.ForKey(key, ctx) → descriptor.IsApplicable(ctx)?
+        → candidatos: activeChild.ChildFlows() DEPOIS flows.ForKey(key, ctx)
+        → primeiro IsApplicable(ctx) que passa?
         ↓ sim
 rootModel: activeFlow = descriptor.New(ctx)
         ↓

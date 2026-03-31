@@ -66,15 +66,17 @@ const (
 **D-03: Custom `childModel` interface — does NOT implement `tea.Model`**
 ```go
 type childModel interface {
-    Update(tea.Msg) tea.Cmd    // mutates in place, returns only Cmd (no self-replacement)
-    View() string               // returns string, NOT tea.View
-    SetSize(w, h int)           // receives allocated size from rootModel compositor
-    Context() FlowContext       // exposes navigation/selection state for flow dispatch (see D-20)
+    Update(tea.Msg) tea.Cmd       // mutates in place, returns only Cmd (no self-replacement)
+    View() string                  // returns string, NOT tea.View
+    SetSize(w, h int)              // receives allocated size from rootModel compositor
+    Context() FlowContext          // exposes navigation/selection state for flow dispatch (see D-20)
+    ChildFlows() []flowDescriptor  // child-specific flows not registered globally (see D-20)
 }
 ```
 - `View()` returns `string`. Only `rootModel.View()` returns `tea.View` (satisfying `tea.Model`).
 - `Update` uses pointer receivers and mutates in place — no self-replacement return.
 - `Context()` returns a `FlowContext` value (defined in D-20). The child fills navigation/selection fields; `rootModel` enriches with vault-level fields before querying `FlowRegistry`.
+- `ChildFlows()` returns flow descriptors that are too child-specific to register globally (e.g., flows depending on internal tree state or cursor mode). Descriptors follow the same `IsApplicable(FlowContext)` contract as global flows — no closures, no captured state. Children with no child-specific flows return `nil`.
 - Whether child interface includes `Init() tea.Cmd` is **left to researcher/planner** — needs investigation of Bubble Tea v2 initialization patterns.
 - `SetSize(w, h int)` receives the child's **allocated** size (not terminal size). `rootModel` computes each child's share on `tea.WindowSizeMsg` and calls `SetSize` on all live children.
 - **Children and modals are position-unaware:** they render their content filling exactly the size given by `SetSize()`. They have no knowledge of where they will be placed on the terminal. Positioning and overlay are exclusively `rootModel`'s responsibility.
@@ -136,7 +138,7 @@ func (m *rootModel) liveModels() []childModel {
   1. Global shortcuts in `rootModel` (`ctrl+Q`, `?`) — always intercepted first.
   2. If `activeFlow != nil` → delegate to `activeFlow.Update(msg)` — flow manages its own modals and async Cmds.
   3. Else if modal stack non-empty → topmost modal (`modals[len(modals)-1]`) has focus.
-  4. Else → call `ctx := m.activeChild.Context()`, enrich with vault-level state (`ctx.VaultOpen = m.mgr.IsOpen()`, `ctx.VaultDirty = m.mgr.HasUnsavedChanges()`), then check `flows.ForKey(key, ctx)` — if a descriptor is found → allocate flow via `New(ctx)`, set `activeFlow` (see D-20).
+  4. Else → call `ctx := m.activeChild.Context()`, enrich with vault-level state (`ctx.VaultOpen = m.mgr.IsOpen()`, `ctx.VaultDirty = m.mgr.HasUnsavedChanges()`), then build the candidate list from **two sources**: (a) `m.activeChild.ChildFlows()` — child-specific descriptors, checked first; (b) `flows.ForKey(key, ctx)` from `FlowRegistry` — global flows. First matching and applicable descriptor wins; `rootModel` calls `New(ctx)`, sets `activeFlow` (see D-20).
   5. Else → currently active base child model.
 - No child model ever calls another child model's methods or reads another child model's fields. All state changes flow through `vault.Manager` → domain message → `rootModel` broadcast.
 
@@ -361,12 +363,11 @@ type flowDescriptor interface {
     New(FlowContext)           flowHandler  // factory — creates a fresh handler from current context
 }
 ```
-- **`FlowRegistry`** is a shared mutable object (concrete pointer) — instantiated in `main.go`, stored on `rootModel`. **Not passed to children** — children no longer register flows.
-- **All flows registered globally by `rootModel` at startup** — both global flows (open vault, save, lock, quit…) and child-scoped flows (edit secret, delete folder…). `IsApplicable(ctx)` handles availability: a flow for "edit secret" simply returns `false` when `ctx.FocusedSecret == nil` or `ctx.VaultOpen == false`.
-- **`FlowRegistry` is exclusively for orchestrated flows** — operations that require modals and/or async goroutines. Simple atomic operations (no modal, no async) are handled directly by the child via Cmd factories in `mutations.go` (see D-07). If an operation needs a modal or async work → `flowHandler`. Otherwise → Cmd factory.
-- **`IsApplicable(ctx FlowContext)` is a pure function** — evaluated against the complete `FlowContext` assembled by `rootModel` just before dispatch. No closures, no child-held state. Highly testable: call `IsApplicable(FlowContext{VaultOpen: true, FocusedSecret: &s})` without spinning up any model.
-- **Dispatch** (step 4 in D-06): `flows.ForKey(key, ctx)` returns the first applicable descriptor; `rootModel` calls `New(ctx)` and sets `activeFlow`. The `ctx` passed to `New()` carries all the state the flow needs to start (e.g., the focused secret entity pointer).
-- **Integration with `ActionManager`:** `rootModel` (or `ActionManager`) calls `flows.Applicable(ctx)` to populate the command bar with flow actions alongside child-registered non-flow actions.
+- **Two sources of flow candidates** — `rootModel` builds the candidate list from both before dispatching:
+  1. **`activeChild.ChildFlows()`** (checked first — more specific) — descriptors defined by the active child for flows too internal or specific to register globally. Same `IsApplicable(FlowContext)` contract; no closures. Children with no child-specific flows return `nil`.
+  2. **`FlowRegistry`** (global flows, checked second) — flows registered by `rootModel` at startup that apply across multiple areas.
+- The split criterion: could `IsApplicable(FlowContext)` cover this flow's applicability using only the fields already in `FlowContext`? If yes → global registry. If the flow requires internal child state that `FlowContext` doesn’t capture (and adding it would over-specialize the struct) → `ChildFlows()`.
+- **Integration with `ActionManager`:** command bar candidates come from `activeChild.ChildFlows()` filtered by `IsApplicable(ctx)` + `flows.Applicable(ctx)` from registry — merged into a single list.
 - **Registration API shape** (bulk unregister, grouping) is left to researcher/planner.
 
 ### Dialog Factory
