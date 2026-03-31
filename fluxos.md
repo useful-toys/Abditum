@@ -318,18 +318,16 @@ flowchart TD
 **Passos:**
 
 1. O cofre é bloqueado: buffers sensíveis são limpos, a área de transferência é limpa e a tela é apagada.
-2. O sistema retorna ao estado sem cofre carregado, com o caminho do cofre recém-bloqueado pré-preenchido para facilitar a reabertura.
+2. O sistema inicia o Fluxo 1 — Abrir Cofre Existente — a partir do passo 2: o caminho do cofre recém-bloqueado está preenchido e o arquivo já reconhecido, de modo que o sistema solicita diretamente a senha mestra.
 
 **Contexto resultante:**
-- Cofre bloqueado → sem cofre carregado; caminho do cofre pré-preenchido para o Fluxo 1 (Abrir Cofre Existente).
+- Cofre bloqueado → Fluxo 1 iniciado no passo 2, com o caminho do cofre preenchido.
 
 ---
 
 ## Fluxo 7 — Aviso de bloqueio iminente por inatividade
 
-**Contexto necessário:** cofre carregado no entorno global.
-
-**Nota sobre o acionamento:** este fluxo é iniciado exclusivamente pelo sistema, quando o temporizador de inatividade atinge 75% do tempo configurado. Não é iniciado pelo usuário.
+**Contexto necessário:** cofre carregado no entorno global; temporizador de inatividade em 75% do tempo configurado.
 
 **Passos:**
 
@@ -338,20 +336,4 @@ flowchart TD
 **Contexto resultante:**
 - Aviso exibido → contexto inalterado.
 
-**Nota:** este fluxo não tem dependência com o Fluxo 8 (Bloqueio automático por inatividade). Qualquer atividade do usuário após o aviso reinicia o temporizador de inatividade, mas isso não é parte deste fluxo — é comportamento contínuo do sistema de temporização.
-
----
-
-## Fluxo 8 — Bloqueio automático por inatividade
-
-**Contexto necessário:** cofre carregado no entorno global.
-
-**Nota sobre o acionamento:** este fluxo é iniciado exclusivamente pelo sistema, quando o temporizador de inatividade atinge 100% do tempo configurado. Não é iniciado pelo usuário. Não depende de o Fluxo 7 ter ocorrido.
-
-**Passos:**
-
-1. O cofre é bloqueado: buffers sensíveis são limpos, a área de transferência é limpa e a tela é apagada.
-2. O sistema retorna ao estado sem cofre carregado, com o caminho do cofre recém-bloqueado pré-preenchido para facilitar a reabertura.
-
-**Contexto resultante:**
-- Cofre bloqueado → sem cofre carregado; caminho do cofre pré-preenchido para o Fluxo 1 (Abrir Cofre Existente).
+**Nota:** este fluxo não tem dependência com o Fluxo 6 (Bloquear cofre). Qualquer atividade do usuário após o aviso reinicia o temporizador de inatividade, mas isso não é parte deste fluxo — é comportamento contínuo do sistema de temporização.
