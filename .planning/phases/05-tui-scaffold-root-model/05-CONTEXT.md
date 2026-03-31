@@ -66,13 +66,15 @@ const (
 **D-03: Custom `childModel` interface — does NOT implement `tea.Model`**
 ```go
 type childModel interface {
-    Update(tea.Msg) tea.Cmd   // mutates in place, returns only Cmd (no self-replacement)
-    View() string              // returns string, NOT tea.View
-    SetSize(w, h int)          // receives allocated size from rootModel compositor
+    Update(tea.Msg) tea.Cmd    // mutates in place, returns only Cmd (no self-replacement)
+    View() string               // returns string, NOT tea.View
+    SetSize(w, h int)           // receives allocated size from rootModel compositor
+    Context() FlowContext       // exposes navigation/selection state for flow dispatch (see D-20)
 }
 ```
 - `View()` returns `string`. Only `rootModel.View()` returns `tea.View` (satisfying `tea.Model`).
 - `Update` uses pointer receivers and mutates in place — no self-replacement return.
+- `Context()` returns a `FlowContext` value (defined in D-20). The child fills navigation/selection fields; `rootModel` enriches with vault-level fields before querying `FlowRegistry`.
 - Whether child interface includes `Init() tea.Cmd` is **left to researcher/planner** — needs investigation of Bubble Tea v2 initialization patterns.
 - `SetSize(w, h int)` receives the child's **allocated** size (not terminal size). `rootModel` computes each child's share on `tea.WindowSizeMsg` and calls `SetSize` on all live children.
 - **Children and modals are position-unaware:** they render their content filling exactly the size given by `SetSize()`. They have no knowledge of where they will be placed on the terminal. Positioning and overlay are exclusively `rootModel`'s responsibility.
@@ -134,7 +136,7 @@ func (m *rootModel) liveModels() []childModel {
   1. Global shortcuts in `rootModel` (`ctrl+Q`, `?`) — always intercepted first.
   2. If `activeFlow != nil` → delegate to `activeFlow.Update(msg)` — flow manages its own modals and async Cmds.
   3. Else if modal stack non-empty → topmost modal (`modals[len(modals)-1]`) has focus.
-  4. Else → check `flows.ForKey(key)` — if a descriptor is found and `IsApplicable()` → allocate flow via `New()`, set `activeFlow` (see D-20).
+  4. Else → call `ctx := m.activeChild.Context()`, enrich with vault-level state (`ctx.VaultOpen = m.mgr.IsOpen()`, `ctx.VaultDirty = m.mgr.HasUnsavedChanges()`), then check `flows.ForKey(key, ctx)` — if a descriptor is found → allocate flow via `New(ctx)`, set `activeFlow` (see D-20).
   5. Else → currently active base child model.
 - No child model ever calls another child model's methods or reads another child model's fields. All state changes flow through `vault.Manager` → domain message → `rootModel` broadcast.
 
@@ -261,7 +263,7 @@ Children that don’t care about a specific message type simply ignore it.
 - `dialogs.go` — dialog factory functions (see D-18)
 - `flow_open_vault.go` — `openVaultFlow` + `openVaultDescriptor` stubs (see D-19, D-20)
 - `flow_create_vault.go` — `createVaultFlow` + `createVaultDescriptor` stubs (see D-19, D-20)
-- `flows.go` — `FlowRegistry`, `flowDescriptor` interface (see D-20)
+- `flows.go` — `FlowRegistry`, `flowDescriptor` interface, `FlowContext` struct (see D-20)
 - `prevault.go` — `preVaultModel` stub (ASCII art welcome background; no sub-states)
 - `vaulttree.go` — `vaultTreeModel` stub
 - `secretdetail.go` — `secretDetailModel` stub
@@ -330,25 +332,41 @@ type flowHandler interface {
 
 ### Flow Registry
 
-**D-20: `FlowRegistry` + `flowDescriptor` — repository of all available flows**
-- **Problem solved:** `rootModel` should not contain a dispatch table of key → flow. Each flow self-describes its trigger and availability.
+**D-20: `FlowRegistry` + `flowDescriptor` + `FlowContext` — repository of all available flows**
+- **Problem solved:** `rootModel` should not contain a dispatch table of key → flow. Each flow self-describes its trigger and availability. `FlowContext` captures the complete context needed to evaluate applicability — no closures, no per-child registration.
+- **`FlowContext` struct:**
+```go
+// FlowContext captures the complete navigation/vault state at the moment of dispatch.
+// The active child fills navigation fields via Context(); rootModel adds vault-level fields.
+type FlowContext struct {
+    // Filled by rootModel from vault.Manager
+    VaultOpen  bool
+    VaultDirty bool
+    // Filled by the active child's Context() method
+    FocusedFolder   *vault.Pasta
+    FocusedSecret   *vault.Segredo
+    SecretOpen      bool
+    FocusedField    *vault.Campo
+    FocusedTemplate *vault.ModeloSegredo
+    Mode            int  // child-defined: e.g., view vs edit, left vs right pane focus
+}
+```
 - **`flowDescriptor` interface:**
 ```go
 type flowDescriptor interface {
-    Key()          string       // keyboard shortcut that triggers this flow
-    Label()        string       // display label for ActionManager / help
-    IsApplicable() bool         // can this flow be started right now?
-    New()          flowHandler  // factory — creates a fresh handler instance
+    Key()                     string       // keyboard shortcut that triggers this flow
+    Label()                   string       // display label for ActionManager / help
+    IsApplicable(FlowContext) bool         // pure function — can this flow start given current context?
+    New(FlowContext)           flowHandler  // factory — creates a fresh handler from current context
 }
 ```
-- **`FlowRegistry`** is a shared mutable object (concrete pointer) — instantiated in `main.go`, stored on `rootModel`, passed to every child at construction time.
-- **Global flows** (open vault, save, lock, quit…) — registered by `rootModel` at startup. Always present in the registry.
-- **Child-scoped flows** (edit secret, delete folder…) — registered by the child when allocated; unregistered when the child is deactivated (`nil`). The child tags its registrations with an owner key for bulk removal.
+- **`FlowRegistry`** is a shared mutable object (concrete pointer) — instantiated in `main.go`, stored on `rootModel`. **Not passed to children** — children no longer register flows.
+- **All flows registered globally by `rootModel` at startup** — both global flows (open vault, save, lock, quit…) and child-scoped flows (edit secret, delete folder…). `IsApplicable(ctx)` handles availability: a flow for "edit secret" simply returns `false` when `ctx.FocusedSecret == nil` or `ctx.VaultOpen == false`.
 - **`FlowRegistry` is exclusively for orchestrated flows** — operations that require modals and/or async goroutines. Simple atomic operations (no modal, no async) are handled directly by the child via Cmd factories in `mutations.go` (see D-07). If an operation needs a modal or async work → `flowHandler`. Otherwise → Cmd factory.
-- **`IsApplicable()` uses closures** — each descriptor closes over its owner's state (e.g., `func() bool { return m.focusedSecret != nil }`). No global selection state needed. Context-specific state (focused secret, selected folder) lives inside the child that owns it and is naturally unavailable when that child is `nil`.
-- **Dispatch** (step 4 in D-06): `flows.ForKey(key)` returns the first applicable descriptor; `rootModel` calls `New()` and sets `activeFlow`.
-- **Integration with `ActionManager`:** `rootModel` (or `ActionManager`) calls `flows.Applicable()` to populate the command bar with flow actions alongside child-registered non-flow actions.
-- **Exact registration API shape** (owner tagging, bulk unregister method) is left to researcher/planner.
+- **`IsApplicable(ctx FlowContext)` is a pure function** — evaluated against the complete `FlowContext` assembled by `rootModel` just before dispatch. No closures, no child-held state. Highly testable: call `IsApplicable(FlowContext{VaultOpen: true, FocusedSecret: &s})` without spinning up any model.
+- **Dispatch** (step 4 in D-06): `flows.ForKey(key, ctx)` returns the first applicable descriptor; `rootModel` calls `New(ctx)` and sets `activeFlow`. The `ctx` passed to `New()` carries all the state the flow needs to start (e.g., the focused secret entity pointer).
+- **Integration with `ActionManager`:** `rootModel` (or `ActionManager`) calls `flows.Applicable(ctx)` to populate the command bar with flow actions alongside child-registered non-flow actions.
+- **Registration API shape** (bulk unregister, grouping) is left to researcher/planner.
 
 ### Dialog Factory
 

@@ -34,12 +34,41 @@ type childModel interface {
     Update(tea.Msg) tea.Cmd  // muta in-place; retorna apenas Cmd
     View() string             // retorna string, NÃO tea.View
     SetSize(w, h int)         // recebe o tamanho alocado pelo compositor
+    Context() FlowContext     // expõe estado de navegação/seleção para despacho de fluxos
 }
 ```
 
 - `View()` retorna `string` (não `tea.View`). Somente `rootModel.View()` retorna `tea.View`.
 - `Update()` muta o próprio estado via pointer receiver — sem retornar `(Model, Cmd)`.
 - `rootModel` calcula o tamanho de cada filho e chama `SetSize()` ao receber `tea.WindowSizeMsg`.
+- `Context()` preenche os campos de navegação/seleção do `FlowContext`; `rootModel` enriquece com campos de nível vault antes de consultar o `FlowRegistry`.
+
+### `FlowContext`
+
+Estado completo de contexto montado por `rootModel` no momento do despacho. Alimentado de duas fontes:
+
+```go
+type FlowContext struct {
+    // Preenchido por rootModel a partir de vault.Manager
+    VaultOpen  bool
+    VaultDirty bool
+    // Preenchido pelo filho ativo via Context()
+    FocusedFolder   *vault.Pasta
+    FocusedSecret   *vault.Segredo
+    SecretOpen      bool
+    FocusedField    *vault.Campo
+    FocusedTemplate *vault.ModeloSegredo
+    Mode            int  // filho define: ex. modo view vs edit, painel esquerdo vs direito
+}
+```
+
+`rootModel` monta o `FlowContext` final assim:
+```go
+ctx := m.activeChild.Context()           // filho preenche campos de navegação
+ctx.VaultOpen = m.mgr.IsOpen()           // rootModel adiciona estado do cofre
+ctx.VaultDirty = m.mgr.HasUnsavedChanges()
+// ctx está completo — pronto para FlowRegistry.ForKey(key, ctx)
+```
 
 ### `flowHandler`
 
@@ -205,9 +234,10 @@ O child chama `return cmdMarkSecretDeleted(m.mgr, id)` no seu `Update()`. Nunca 
 **Como um fluxo orquestrado funciona:**
 
 ```
-tecla acionada → FlowRegistry.ForKey(key) → descriptor.IsApplicable()?
+tecla acionada → ctx = activeChild.Context() + rootModel enriches vault state
+        → FlowRegistry.ForKey(key, ctx) → descriptor.IsApplicable(ctx)?
         ↓ sim
-rootModel: activeFlow = descriptor.New()
+rootModel: activeFlow = descriptor.New(ctx)
         ↓
 rootModel.Update() delega input → activeFlow.Update()
         ↓
@@ -291,7 +321,7 @@ O Cmd emitido é um `pushModalMsg{}`. `rootModel.Update()` intercepta essa mensa
 | Filho registra ações disponíveis | Chama `ActionManager.Register(...)` |
 | Filho define mensagem da barra | Chama `MessageManager.Set(text)` |
 | Filho abre diálogo | Retorna `dialogs.Confirm(...)` como Cmd |
-| Filho inicia fluxo multi-passo | Via `FlowRegistry` — tecla de atalho aciona o descriptor elegível |
+| Filho inicia fluxo multi-passo | Via tecla de atalho — `rootModel` consulta `FlowRegistry.ForKey(key, ctx)` e inicia o flow |
 | Fluxo empurra modal | Retorna Cmd emitindo `pushModalMsg{}` |
 | Fluxo conclui | Retorna Cmd emitindo mensagem de conclusão (ex: `vaultOpenedMsg{}`) |
 
