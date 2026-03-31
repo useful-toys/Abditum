@@ -49,16 +49,17 @@ This phase does NOT implement:
 ```go
 type workArea int
 const (
-    workAreaPreVault  workArea = iota // before vault is open (welcome/open/create)
+    workAreaPreVault  workArea = iota // welcome screen (ASCII art background)
     workAreaVault                     // vault open — tree + detail side by side
     workAreaTemplates                 // template editor — list + detail side by side
     workAreaSettings                  // settings screen
 )
 ```
-- `rootModel` tracks `area workArea` (not a screen/state machine — describes work area content).
-- Welcome → open-vault → create-vault flows are **sub-states internal to `preVaultModel`**, not rootModel states. `rootModel` only knows `workAreaPreVault`.
-- Lock operation = wipe sensitive memory + set `area = workAreaPreVault` (preVaultModel re-initializes to its open-vault sub-state, same path). No `stateLocked`.
-- `rootModel` stores `vaultPath string` — populated from `preVaultModel` via domain message, persists across lock/unlock cycles.
+- `rootModel` tracks `area workArea` — describes what is currently mounted in the work area.
+- `workAreaPreVault` renders only the ASCII art welcome background. It has no sub-states and manages no open/create flow.
+- **Open vault, create vault, save vault, change password** — these are **modal orchestration flows**: sequences of modals pushed onto the modal stack (e.g., file picker modal → password modal). The work area stays unchanged while modals are active. The work area only transitions *after* a flow completes successfully.
+- Lock operation = wipe sensitive memory + set `area = workAreaPreVault` (shows welcome/ASCII art). To re-open the vault, the user starts the open-vault modal flow from the welcome screen. No `stateLocked`.
+- `rootModel` stores `vaultPath string` — populated via domain message when a modal flow completes, persists across lock cycles.
 
 ### Child Model Interface
 
@@ -156,12 +157,14 @@ func (m *rootModel) liveModels() []childModel {
 **D-09: Work area content by `workArea` value**
 | `workArea` | Work area content |
 |------------|------------------|
-| `workAreaPreVault` | `preVaultModel` fills full work area — internally handles welcome/open/create sub-states; shows ASCII art + relevant form |
+| `workAreaPreVault` | `preVaultModel` — renders ASCII art welcome background and initial action hints only |
 | `workAreaVault` | `vaultTreeModel` (left) + `secretDetailModel` (right) side by side |
 | `workAreaTemplates` | `templateListModel` (left) + `templateDetailModel` (right) side by side |
 | `workAreaSettings` | `settingsModel` fills full work area |
 
-- `preVaultModel` manages its own internal sub-state machine (welcome → pick path → open-vault → create-vault). `rootModel` is unaware of these sub-states.
+- `preVaultModel` is a simple background model. It does NOT manage open/create sub-states.
+- Open vault / create vault / save vault / change password are **modal orchestration flows** — sequences of modals pushed onto the modal stack. The work area remains visible behind the modal stack during these flows.
+- When a modal flow succeeds, it emits a domain message that causes `rootModel` to transition the work area (e.g., `vaultOpenedMsg{}` → `area = workAreaVault`).
 - All list/tree/detail child models **must support vertical scroll** — exact mechanism left to researcher.
 
 **D-10: Modal stack as overlay layer**
@@ -172,6 +175,7 @@ func (m *rootModel) liveModels() []childModel {
 - Topmost modal receives keyboard input; all modals receive domain messages.
 - Background models remain live during modal display; they do not receive keyboard/mouse input.
 - On pop to empty stack, keyboard/mouse returns to active base child.
+- Known modal types (stubs in Phase 5): file picker, password entry, password creation, help, confirmation.
 
 ### Timers
 
@@ -183,16 +187,15 @@ func (m *rootModel) liveModels() []childModel {
 
 ### Quit Shortcut
 
-**D-12: `ctrl+Q` global quit**
-- `rootModel.Update()` intercepts `ctrl+Q` in all states before routing to child or modal.
-- Quit behavior follows `fluxos.md`: confirmation modal if unsaved changes, direct quit if no changes.
-- `ctrl+C` is NOT used as quit. `q` is NOT a global quit.
+**D-12: Global keyboard shortcuts wired in `rootModel`**
+- `ctrl+Q` — global quit. Intercepted before routing to any child or modal. Behavior follows `fluxos.md`: confirmation modal if unsaved changes, direct quit if no changes. `ctrl+C` is NOT quit. `q` is NOT a global quit.
+- `?` — global help. Pushes `helpModal` onto the modal stack regardless of current work area or modal depth. Dismissed via ESC.
 
 ### Vault Path Ownership
 
 **D-13: `rootModel` owns vault path**
 - `rootModel.vaultPath string` is the single source of truth.
-- `preVaultModel` communicates the chosen path to `rootModel` via a `Cmd` returning a domain message (e.g., `vaultPathSelectedMsg{path: "..."}`) — never via direct field access.
+- The file picker modal communicates the chosen path to `rootModel` via a `Cmd` returning a domain message (e.g., `vaultPathSelectedMsg{path: "..."}`) — never via direct field access.
 - `main.go` may also provide an initial path via constructor arg (`newRootModel(mgr, initialPath)`).
 
 ### ASCII Art Logo
@@ -210,12 +213,13 @@ func (m *rootModel) liveModels() []childModel {
 - `modal.go` — `modalModel`, push/pop helpers
 - `state.go` — timer helpers, tick handler, domain message types
 - `ascii.go` — `AsciiArt` constant, `RenderLogo()`
-- `prevault.go` — `preVaultModel` stub (manages welcome/open/create sub-states internally)
+- `prevault.go` — `preVaultModel` stub (ASCII art welcome background; no sub-states)
 - `vaulttree.go` — `vaultTreeModel` stub
 - `secretdetail.go` — `secretDetailModel` stub
 - `templatelist.go` — `templateListModel` stub
 - `templatedetail.go` — `templateDetailModel` stub
 - `settings.go` — `settingsModel` stub
+- `help.go` — `helpModal` stub (lists global keyboard shortcuts)
 
 ### Agent's Discretion
 - Whether `childModel` interface includes `Init() tea.Cmd` — needs Bubble Tea v2 research
