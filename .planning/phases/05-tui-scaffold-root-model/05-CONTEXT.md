@@ -148,6 +148,24 @@ func (m *rootModel) liveModels() []childModel {
   - Specialized concerns (e.g., clipboard, OS integration) → may warrant a dedicated helper/manager; decided per-phase.
 - `rootModel` passes `*vault.Manager` to each child at construction time. Additional dependencies passed via constructor or injected on transition.
 
+**Domain message taxonomy — granularity rationale:** Bubble Tea re-renders the full screen after every `Update()` regardless, so granular messages don’t reduce rendering work. Their value is letting children make precise local decisions (e.g., `secretDetailModel` ignores `secretReorderedMsg` without touching Manager). Avoid per-operation messages for every vault mutation — use the set below:
+
+| Message | Meaning |
+|---|---|
+| `secretAddedMsg{id}` | Secret created or duplicated |
+| `secretDeletedMsg{id}` | Secret marked for deletion |
+| `secretRestoredMsg{id}` | Deletion mark removed |
+| `secretModifiedMsg{id}` | Secret values or structure changed |
+| `secretMovedMsg{id, fromFolder, toFolder}` | Secret moved between folders |
+| `secretReorderedMsg{}` | Secret reordered within a folder |
+| `folderStructureChangedMsg{}` | Any folder create/rename/move/reorder/delete |
+| `vaultSavedMsg{}` | Vault written to disk (deleted secrets removed from memory) |
+| `vaultReloadedMsg{}` | Full reload from disk (Fluxo 10 — all children reset state) |
+| `vaultClosedMsg{}` | Vault locked or closed (all children wipe sensitive memory) |
+| `vaultChangedMsg{}` | Generic fallback — used by flows when the specific mutation type is not relevant to broadcast |
+
+Children that don’t care about a specific message type simply ignore it.
+
 ### Frame Layout
 
 **D-08: Constant frame with pluggable work area**

@@ -262,17 +262,37 @@ O Cmd emitido é um `pushModalMsg{}`. `rootModel.Update()` intercepta essa mensa
 
 | Situação | Mecanismo |
 |---|---|
-| Filho notifica mudança de estado | Retorna `tea.Cmd` emitindo mensagem de domínio |
+| Filho notifica mutação de domínio | Retorna `tea.Cmd` emitindo mensagem de domínio tipada (ver tabela abaixo) |
 | Filho lê dados do cofre | Chama `vault.Manager` diretamente |
 | Filho lê estado do app | A definir (accessor read-only no `rootModel` ou valores passados no construtor) |
 | Filho registra ações disponíveis | Chama `ActionManager.Register(...)` |
 | Filho define mensagem da barra | Chama `MessageManager.Set(text)` |
 | Filho abre diálogo | Retorna `dialogs.Confirm(...)` como Cmd |
-| Filho inicia fluxo multi-passo | Retorna Cmd emitindo `startXxxFlowMsg{}` |
+| Filho inicia fluxo multi-passo | Via `FlowRegistry` — tecla de atalho aciona o descriptor elegível |
 | Fluxo empurra modal | Retorna Cmd emitindo `pushModalMsg{}` |
 | Fluxo conclui | Retorna Cmd emitindo mensagem de conclusão (ex: `vaultOpenedMsg{}`) |
 
 **Regra absoluta:** nenhum filho acessa campos de outro filho. Toda comunicação passa pelo `rootModel` via mensagens de domínio.
+
+### Taxonomia de mensagens de domínio
+
+O Bubble Tea re-renderiza a tela inteira após todo `Update()`, então mensagens granulares não reduzem trabalho de renderização. Seu valor é permitir que children tomem decisões locais precisas — `secretDetailModel` ignora `secretReorderedMsg` sem consultar o Manager.
+
+| Mensagem | Signficado |
+|---|---|
+| `secretAddedMsg{id}` | Segredo criado ou duplicado |
+| `secretDeletedMsg{id}` | Segredo marcado para exclusão |
+| `secretRestoredMsg{id}` | Marcação de exclusão removida |
+| `secretModifiedMsg{id}` | Valores ou estrutura do segredo alterados |
+| `secretMovedMsg{id, fromFolder, toFolder}` | Segredo movido entre pastas |
+| `secretReorderedMsg{}` | Segredo reordenado dentro de uma pasta |
+| `folderStructureChangedMsg{}` | Qualquer create/rename/move/reorder/delete de pasta |
+| `vaultSavedMsg{}` | Cofre gravado em disco (segredos excluídos removidos da memória) |
+| `vaultReloadedMsg{}` | Recarga completa do disco — todos os children resetam estado |
+| `vaultClosedMsg{}` | Cofre bloqueado ou fechado — todos os children limpam memória sensível |
+| `vaultChangedMsg{}` | Fallback genérico — usado por fluxos quando o tipo de mutação não é relevante para broadcast |
+
+Children que não necessitam de uma mensagem simplesmente a ignoram.
 
 ---
 
