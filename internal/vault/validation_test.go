@@ -699,9 +699,9 @@ func TestCriarSegredoEstadoInicial(t *testing.T) {
 		t.Fatalf("Failed to create secret: %v", err)
 	}
 
-	// Verify initial state: estadoSessao = Modificado (new content per D-11)
-	if segredo.EstadoSessao() != EstadoModificado {
-		t.Errorf("Expected estadoSessao Modificado for new secret, got %v", segredo.EstadoSessao())
+	// Verify initial state: estadoSessao = Incluido (new secret not yet persisted per D-05)
+	if segredo.EstadoSessao() != EstadoIncluido {
+		t.Errorf("Expected estadoSessao Incluido for new secret, got %v", segredo.EstadoSessao())
 	}
 
 	// Verify favorito = false
@@ -758,12 +758,15 @@ func TestExcluirSegredoSoftDelete(t *testing.T) {
 		t.Fatalf("Failed to create secret: %v", err)
 	}
 
-	// Verify initial state
-	if segredo.EstadoSessao() != EstadoModificado {
-		t.Errorf("Expected EstadoModificado after creation, got %v", segredo.EstadoSessao())
+	// Verify initial state (EstadoIncluido per D-05)
+	if segredo.EstadoSessao() != EstadoIncluido {
+		t.Errorf("Expected EstadoIncluido after creation, got %v", segredo.EstadoSessao())
 	}
 
-	// Delete the secret
+	// Simulate secret having been persisted (EstadoOriginal) so we can test soft-delete
+	segredo.estadoSessao = EstadoOriginal
+
+	// Delete the secret (soft delete since EstadoOriginal)
 	err = manager.ExcluirSegredo(segredo)
 	if err != nil {
 		t.Fatalf("Failed to delete secret: %v", err)
@@ -803,11 +806,14 @@ func TestRestaurarSegredoReversao(t *testing.T) {
 		}
 	}
 
-	// Create and delete a secret (EstadoModificado → EstadoExcluido)
+	// Create and delete a secret (EstadoOriginal → EstadoExcluido)
 	segredo, err := manager.CriarSegredo(pastaGeral, "TestSecret", modeloLogin)
 	if err != nil {
 		t.Fatalf("Failed to create secret: %v", err)
 	}
+
+	// Simulate secret having been persisted so soft-delete path is used
+	segredo.estadoSessao = EstadoOriginal
 
 	err = manager.ExcluirSegredo(segredo)
 	if err != nil {
@@ -903,6 +909,8 @@ func TestFavoritarSegredoIndependencia(t *testing.T) {
 	}
 
 	// Verify toggling deleted secret fails with ErrSegredoJaExcluido
+	// First set to EstadoOriginal so deletion marks it as EstadoExcluido (soft delete)
+	segredo.estadoSessao = EstadoOriginal
 	err = manager.ExcluirSegredo(segredo)
 	if err != nil {
 		t.Fatalf("Failed to delete secret: %v", err)
@@ -947,9 +955,9 @@ func TestDuplicarSegredoNameConflict(t *testing.T) {
 		t.Errorf("Expected duplicate name 'GitHub (1)', got '%s'", dup1.Nome())
 	}
 
-	// Verify estadoSessao = Modificado (new content)
-	if dup1.EstadoSessao() != EstadoModificado {
-		t.Errorf("Expected EstadoModificado for duplicate, got %v", dup1.EstadoSessao())
+	// Verify estadoSessao = Incluido (duplicate not yet persisted per D-05)
+	if dup1.EstadoSessao() != EstadoIncluido {
+		t.Errorf("Expected EstadoIncluido for duplicate, got %v", dup1.EstadoSessao())
 	}
 
 	// Verify campos copied from original
@@ -975,6 +983,8 @@ func TestDuplicarSegredoNameConflict(t *testing.T) {
 	}
 
 	// Verify duplicating deleted secret fails with ErrSegredoJaExcluido
+	// Set original to EstadoOriginal so deletion marks it EstadoExcluido (soft delete)
+	original.estadoSessao = EstadoOriginal
 	err = manager.ExcluirSegredo(original)
 	if err != nil {
 		t.Fatalf("Failed to delete secret: %v", err)
@@ -1008,8 +1018,8 @@ func TestSecretLifecycleIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create original: %v", err)
 	}
-	if original.EstadoSessao() != EstadoModificado {
-		t.Errorf("Expected EstadoModificado after creation, got %v", original.EstadoSessao())
+	if original.EstadoSessao() != EstadoIncluido {
+		t.Errorf("Expected EstadoIncluido after creation, got %v", original.EstadoSessao())
 	}
 
 	// 2. Toggle favorite (independent of estadoSessao per D-11)
@@ -1020,7 +1030,7 @@ func TestSecretLifecycleIntegration(t *testing.T) {
 	if !original.Favorito() {
 		t.Error("Expected favorito true after toggle")
 	}
-	if original.EstadoSessao() != EstadoModificado {
+	if original.EstadoSessao() != EstadoIncluido {
 		t.Error("Expected estadoSessao unchanged after favoriting")
 	}
 
@@ -1035,11 +1045,15 @@ func TestSecretLifecycleIntegration(t *testing.T) {
 	if duplicate.Favorito() {
 		t.Error("Expected duplicate favorito false (reset)")
 	}
-	if duplicate.EstadoSessao() != EstadoModificado {
-		t.Errorf("Expected EstadoModificado for duplicate, got %v", duplicate.EstadoSessao())
+	if duplicate.EstadoSessao() != EstadoIncluido {
+		t.Errorf("Expected EstadoIncluido for duplicate, got %v", duplicate.EstadoSessao())
 	}
 
-	// 4. Delete original (soft delete)
+	// 4. Simulate original and duplicate having been persisted (EstadoOriginal) so soft-delete works
+	original.estadoSessao = EstadoOriginal
+	duplicate.estadoSessao = EstadoOriginal
+
+	// 5. Delete original (soft delete — EstadoOriginal → EstadoExcluido)
 	err = manager.ExcluirSegredo(original)
 	if err != nil {
 		t.Fatalf("Failed to delete original: %v", err)
@@ -1048,7 +1062,7 @@ func TestSecretLifecycleIntegration(t *testing.T) {
 		t.Errorf("Expected EstadoExcluido after deletion, got %v", original.EstadoSessao())
 	}
 
-	// 5. Restore original (should return to Modificado)
+	// 6. Restore original (should return to EstadoModificado)
 	err = manager.RestaurarSegredo(original)
 	if err != nil {
 		t.Fatalf("Failed to restore original: %v", err)
@@ -1060,7 +1074,7 @@ func TestSecretLifecycleIntegration(t *testing.T) {
 		t.Error("Expected favorito preserved after restore")
 	}
 
-	// 6. Delete duplicate permanently (for final state verification)
+	// 7. Delete duplicate (soft delete — EstadoOriginal → EstadoExcluido)
 	err = manager.ExcluirSegredo(duplicate)
 	if err != nil {
 		t.Fatalf("Failed to delete duplicate: %v", err)
@@ -1991,14 +2005,14 @@ func TestUAT_EstadoSessaoTransitions(t *testing.T) {
 	modelo := cofre.Modelos()[0]
 	pasta := cofre.PastaGeral()
 
-	// Test 1: CreateSecret produces StateIncluded (Modificado in our implementation)
+	// Test 1: CreateSecret produces EstadoIncluido (new secret not yet persisted per D-05)
 	secret1, err := manager.CriarSegredo(pasta, "New Secret", modelo)
 	if err != nil {
 		t.Fatalf("Failed to create secret: %v", err)
 	}
 
-	if secret1.estadoSessao != EstadoModificado {
-		t.Errorf("New secret should have estadoSessao=Modificado, got %v", secret1.estadoSessao)
+	if secret1.estadoSessao != EstadoIncluido {
+		t.Errorf("New secret should have estadoSessao=Incluido, got %v", secret1.estadoSessao)
 	}
 
 	// Test 2: Simulate StateOriginal (as if loaded from file)
@@ -2014,15 +2028,15 @@ func TestUAT_EstadoSessaoTransitions(t *testing.T) {
 		t.Errorf("After update, StateOriginal secret should have estadoSessao=Modificado, got %v", secret1.estadoSessao)
 	}
 
-	// Test 3: Create new secret (StateModificado), update it → remains StateModificado
+	// Test 3: Create new secret (EstadoIncluido), update it → EstadoIncluido preserved
 	secret2, err := manager.CriarSegredo(pasta, "Another Secret", modelo)
 	if err != nil {
 		t.Fatalf("Failed to create secret2: %v", err)
 	}
 
 	initialState := secret2.estadoSessao
-	if initialState != EstadoModificado {
-		t.Fatalf("Expected StateModificado initially, got %v", initialState)
+	if initialState != EstadoIncluido {
+		t.Fatalf("Expected EstadoIncluido initially, got %v", initialState)
 	}
 
 	// Update it
@@ -2031,8 +2045,8 @@ func TestUAT_EstadoSessaoTransitions(t *testing.T) {
 		t.Fatalf("Failed to rename secret2: %v", err)
 	}
 
-	if secret2.estadoSessao != EstadoModificado {
-		t.Errorf("After update, StateModificado secret should remain StateModificado, got %v", secret2.estadoSessao)
+	if secret2.estadoSessao != EstadoIncluido {
+		t.Errorf("After update, EstadoIncluido secret should remain EstadoIncluido (D-11), got %v", secret2.estadoSessao)
 	}
 
 	// Test 4: SoftDeleteSecret → StateDeleted (Excluido)

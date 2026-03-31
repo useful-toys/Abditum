@@ -319,7 +319,10 @@ func TestAtomicSave(t *testing.T) {
 		t.Fatalf("Failed to create secret: %v", err)
 	}
 
-	// Mark for deletion
+	// Simulate secret having been persisted (EstadoOriginal) so soft-delete path is used
+	secret1.estadoSessao = EstadoOriginal
+
+	// Mark for deletion (soft delete — EstadoOriginal → EstadoExcluido)
 	err = manager.ExcluirSegredo(secret1)
 	if err != nil {
 		t.Fatalf("Failed to delete secret: %v", err)
@@ -554,5 +557,96 @@ func TestDuplication(t *testing.T) {
 
 	if duplicate2.Nome() != "Original (2)" {
 		t.Errorf("Expected second duplicate name 'Original (2)', got '%s'", duplicate2.Nome())
+	}
+}
+
+// TestAlternarFavorito_NaoAlteraDataUltimaModificacao verifies that favoriting a secret
+// does NOT update the secret's dataUltimaModificacao (D-08, BUG-01).
+// The vault IS marked modified (cofre.modificado = true) but the secret timestamp stays.
+func TestAlternarFavorito_NaoAlteraDataUltimaModificacao(t *testing.T) {
+	cofre := NovoCofre()
+	if err := cofre.InicializarConteudoPadrao(); err != nil {
+		t.Fatal(err)
+	}
+	manager := NewManager(cofre, &mockRepository{})
+
+	pasta := cofre.PastaGeral()
+	modelo := cofre.Modelos()[0]
+	seg, err := manager.CriarSegredo(pasta, "Test Secret", modelo)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Capture modification time after creation
+	dataBefore := seg.DataUltimaModificacao()
+
+	// Toggle favorite
+	if err := manager.AlternarFavoritoSegredo(seg); err != nil {
+		t.Fatalf("AlternarFavoritoSegredo() error: %v", err)
+	}
+
+	// Secret modification time MUST NOT change (D-08)
+	if !seg.DataUltimaModificacao().Equal(dataBefore) {
+		t.Errorf("AlternarFavoritoSegredo changed dataUltimaModificacao: got %v, want %v (unchanged)",
+			seg.DataUltimaModificacao(), dataBefore)
+	}
+
+	// Vault MUST be marked modified (cofre.marcarModificado was called)
+	if !manager.IsModified() {
+		t.Error("Vault should be marked modified after favoriting")
+	}
+
+	// Secret MUST be toggled
+	if !seg.Favorito() {
+		t.Error("Secret should be marked as favorite after toggle")
+	}
+}
+
+// TestCriarSegredo_EstadoIncluido verifies that CriarSegredo returns a secret
+// with estadoSessao == EstadoIncluido, not EstadoModificado (D-05).
+func TestCriarSegredo_EstadoIncluido(t *testing.T) {
+	cofre := NovoCofre()
+	if err := cofre.InicializarConteudoPadrao(); err != nil {
+		t.Fatal(err)
+	}
+	manager := NewManager(cofre, &mockRepository{})
+
+	pasta := cofre.PastaGeral()
+	modelo := cofre.Modelos()[0]
+	seg, err := manager.CriarSegredo(pasta, "New Secret", modelo)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if seg.EstadoSessao() != EstadoIncluido {
+		t.Errorf("CriarSegredo estadoSessao = %v, want EstadoIncluido (%v)",
+			seg.EstadoSessao(), EstadoIncluido)
+	}
+}
+
+// TestDuplicarSegredo_EstadoIncluido verifies that DuplicarSegredo returns a duplicate
+// with estadoSessao == EstadoIncluido, not EstadoModificado (D-05).
+func TestDuplicarSegredo_EstadoIncluido(t *testing.T) {
+	cofre := NovoCofre()
+	if err := cofre.InicializarConteudoPadrao(); err != nil {
+		t.Fatal(err)
+	}
+	manager := NewManager(cofre, &mockRepository{})
+
+	pasta := cofre.PastaGeral()
+	modelo := cofre.Modelos()[0]
+	original, err := manager.CriarSegredo(pasta, "Original Secret", modelo)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dup, err := manager.DuplicarSegredo(original)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if dup.EstadoSessao() != EstadoIncluido {
+		t.Errorf("DuplicarSegredo estadoSessao = %v, want EstadoIncluido (%v)",
+			dup.EstadoSessao(), EstadoIncluido)
 	}
 }

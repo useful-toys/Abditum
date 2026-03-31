@@ -1,8 +1,6 @@
 package vault
 
 import (
-	"time"
-
 	"github.com/useful-toys/abditum/internal/crypto"
 )
 
@@ -58,14 +56,9 @@ func (m *Manager) CriarSegredo(pasta *Pasta, nome string, modelo *ModeloSegredo)
 	// Create secret with campos from template
 	segredo := pasta.criarSegredo(nome, modelo)
 
-	// Set estadoSessao to Modificado (new secret is a modification)
-	segredo.estadoSessao = EstadoModificado
-
 	// Update vault state
-	now := time.Now().UTC()
-	segredo.dataUltimaModificacao = now
-	m.cofre.modificado = true
-	m.cofre.dataUltimaModificacao = now
+	segredo.marcarModificacao()
+	m.cofre.marcarModificado()
 
 	return segredo, nil
 }
@@ -89,14 +82,11 @@ func (m *Manager) ExcluirSegredo(segredo *Segredo) error {
 
 	// Update vault state (only if still attached - EstadoIncluido removes from parent)
 	if segredo.estadoSessao == EstadoExcluido {
-		now := time.Now().UTC()
-		segredo.dataUltimaModificacao = now
-		m.cofre.modificado = true
-		m.cofre.dataUltimaModificacao = now
+		segredo.marcarModificacao()
+		m.cofre.marcarModificado()
 	} else {
 		// EstadoIncluido was removed from parent - still mark vault as modified
-		m.cofre.modificado = true
-		m.cofre.dataUltimaModificacao = time.Now().UTC()
+		m.cofre.marcarModificado()
 	}
 
 	return nil
@@ -119,10 +109,8 @@ func (m *Manager) RestaurarSegredo(segredo *Segredo) error {
 	segredo.restaurarSegredo()
 
 	// Update vault state
-	now := time.Now().UTC()
-	segredo.dataUltimaModificacao = now
-	m.cofre.modificado = true
-	m.cofre.dataUltimaModificacao = now
+	segredo.marcarModificacao()
+	m.cofre.marcarModificado()
 
 	return nil
 }
@@ -143,11 +131,8 @@ func (m *Manager) AlternarFavoritoSegredo(segredo *Segredo) error {
 	// Toggle favorite flag
 	segredo.alternarFavorito()
 
-	// Update vault state (cofre.modificado = true, but estadoSessao unchanged per D-11)
-	now := time.Now().UTC()
-	segredo.dataUltimaModificacao = now
-	m.cofre.modificado = true
-	m.cofre.dataUltimaModificacao = now
+	// Per D-08: favoritar is navigation preference — only cofre.modificado updated, NOT segredo.dataUltimaModificacao
+	m.cofre.marcarModificado()
 
 	return nil
 }
@@ -174,14 +159,9 @@ func (m *Manager) DuplicarSegredo(segredo *Segredo) (*Segredo, error) {
 	// Create duplicate with name conflict resolution
 	duplicate := pasta.duplicarSegredo(segredo)
 
-	// Set estadoSessao to Modificado (new content)
-	duplicate.estadoSessao = EstadoModificado
-
 	// Update vault state
-	now := time.Now().UTC()
-	duplicate.dataUltimaModificacao = now
-	m.cofre.modificado = true
-	m.cofre.dataUltimaModificacao = now
+	duplicate.marcarModificacao()
+	m.cofre.marcarModificado()
 
 	return duplicate, nil
 }
@@ -221,8 +201,7 @@ func (m *Manager) AlterarConfiguracoes(novasConfig Configuracoes) error {
 
 	// Update configuration
 	m.cofre.configuracoes = novasConfig
-	m.cofre.modificado = true
-	m.cofre.dataUltimaModificacao = time.Now().UTC()
+	m.cofre.marcarModificado()
 
 	return nil
 }
@@ -259,15 +238,7 @@ func (m *Manager) limparCamposSensiveis(pasta *Pasta) {
 
 	// Wipe sensitive fields in all secrets
 	for _, segredo := range pasta.segredos {
-		for i := range segredo.campos {
-			if segredo.campos[i].tipo == TipoCampoSensivel {
-				crypto.Wipe(segredo.campos[i].valor)
-				segredo.campos[i].valor = nil
-			}
-		}
-		// Wipe observation (always common type but still sensitive content)
-		crypto.Wipe(segredo.observacao.valor)
-		segredo.observacao.valor = nil
+		segredo.zerarValoresSensiveis()
 	}
 
 	// Recurse into subfolders
@@ -318,69 +289,9 @@ func (m *Manager) prepararSnapshot() *Cofre {
 	}
 
 	// Deep copy pasta hierarchy (filters excluido)
-	snapshot.pastaGeral = m.copiarPastaRecursivamente(m.cofre.pastaGeral, true)
+	snapshot.pastaGeral = m.cofre.pastaGeral.copiarProfundo(true)
 
 	return snapshot
-}
-
-// copiarPastaRecursivamente creates deep copy of folder tree.
-// If filtrarExcluidos=true, skips secrets with EstadoExcluido.
-func (m *Manager) copiarPastaRecursivamente(pasta *Pasta, filtrarExcluidos bool) *Pasta {
-	copia := &Pasta{
-		nome:      pasta.nome,
-		pai:       nil, // Will be set during tree reconstruction
-		subpastas: make([]*Pasta, 0, len(pasta.subpastas)),
-		segredos:  make([]*Segredo, 0),
-	}
-
-	// Copy subfolders recursively
-	for _, sub := range pasta.subpastas {
-		subCopia := m.copiarPastaRecursivamente(sub, filtrarExcluidos)
-		subCopia.pai = copia
-		copia.subpastas = append(copia.subpastas, subCopia)
-	}
-
-	// Copy secrets (filter excluido if requested)
-	for _, segredo := range pasta.segredos {
-		if filtrarExcluidos && segredo.estadoSessao == EstadoExcluido {
-			continue // Skip deleted secrets
-		}
-		segredoCopia := m.copiarSegredo(segredo)
-		segredoCopia.pasta = copia
-		copia.segredos = append(copia.segredos, segredoCopia)
-	}
-
-	return copia
-}
-
-// copiarSegredo creates deep copy of secret with all fields.
-func (m *Manager) copiarSegredo(s *Segredo) *Segredo {
-	copia := &Segredo{
-		nome:                  s.nome,
-		favorito:              s.favorito,
-		estadoSessao:          s.estadoSessao,
-		dataCriacao:           s.dataCriacao,
-		dataUltimaModificacao: s.dataUltimaModificacao,
-		campos:                make([]CampoSegredo, len(s.campos)),
-		observacao:            m.copiarCampo(s.observacao),
-	}
-
-	for i, campo := range s.campos {
-		copia.campos[i] = m.copiarCampo(campo)
-	}
-
-	return copia
-}
-
-// copiarCampo creates deep copy of field with []byte value copy.
-func (m *Manager) copiarCampo(c CampoSegredo) CampoSegredo {
-	valorCopia := make([]byte, len(c.valor))
-	copy(valorCopia, c.valor)
-	return CampoSegredo{
-		nome:  c.nome,
-		tipo:  c.tipo,
-		valor: valorCopia,
-	}
 }
 
 // copiarModelo creates deep copy of template.
@@ -438,8 +349,7 @@ func (m *Manager) CriarModelo(nome string, campos []CampoModelo) (*ModeloSegredo
 
 	// Mutation phase
 	modelo := m.cofre.criarModelo(nome, campos)
-	m.cofre.modificado = true
-	m.cofre.dataUltimaModificacao = time.Now().UTC()
+	m.cofre.marcarModificado()
 
 	return modelo, nil
 }
@@ -460,8 +370,7 @@ func (m *Manager) RenomearModelo(modelo *ModeloSegredo, novoNome string) error {
 
 	// Mutation phase (returns true if actually changed)
 	if modelo.renomear(novoNome) {
-		m.cofre.modificado = true
-		m.cofre.dataUltimaModificacao = time.Now().UTC()
+		m.cofre.marcarModificado()
 	}
 
 	return nil
@@ -482,8 +391,7 @@ func (m *Manager) ExcluirModelo(modelo *ModeloSegredo) error {
 
 	// Mutation phase
 	modelo.excluir(m.cofre)
-	m.cofre.modificado = true
-	m.cofre.dataUltimaModificacao = time.Now().UTC()
+	m.cofre.marcarModificado()
 
 	return nil
 }
@@ -504,8 +412,7 @@ func (m *Manager) AdicionarCampo(modelo *ModeloSegredo, nome string, tipo TipoCa
 
 	// Mutation phase
 	modelo.adicionarCampo(nome, tipo, posicao)
-	m.cofre.modificado = true
-	m.cofre.dataUltimaModificacao = time.Now().UTC()
+	m.cofre.marcarModificado()
 
 	return nil
 }
@@ -524,8 +431,7 @@ func (m *Manager) RemoverCampo(modelo *ModeloSegredo, indice int) error {
 
 	// Mutation phase
 	modelo.removerCampo(indice)
-	m.cofre.modificado = true
-	m.cofre.dataUltimaModificacao = time.Now().UTC()
+	m.cofre.marcarModificado()
 
 	return nil
 }
@@ -545,8 +451,7 @@ func (m *Manager) ReordenarCampo(modelo *ModeloSegredo, indiceOrigem, indiceDest
 
 	// Mutation phase
 	modelo.reordenarCampo(indiceOrigem, indiceDestino)
-	m.cofre.modificado = true
-	m.cofre.dataUltimaModificacao = time.Now().UTC()
+	m.cofre.marcarModificado()
 
 	return nil
 }
@@ -571,8 +476,7 @@ func (m *Manager) CriarPasta(pai *Pasta, nome string, posicao int) (*Pasta, erro
 	novaPasta := pai.criarSubpasta(nome, posicao)
 
 	// Update global state
-	m.cofre.modificado = true
-	m.cofre.dataUltimaModificacao = time.Now().UTC()
+	m.cofre.marcarModificado()
 
 	return novaPasta, nil
 }
@@ -604,8 +508,7 @@ func (m *Manager) RenomearPasta(pasta *Pasta, novoNome string) error {
 
 	// Only update global state if actual change (D-12)
 	if alterado {
-		m.cofre.modificado = true
-		m.cofre.dataUltimaModificacao = time.Now().UTC()
+		m.cofre.marcarModificado()
 	}
 
 	return nil
@@ -634,8 +537,7 @@ func (m *Manager) MoverPasta(pasta *Pasta, destino *Pasta) error {
 	pasta.mover(destino)
 
 	// Update global state
-	m.cofre.modificado = true
-	m.cofre.dataUltimaModificacao = time.Now().UTC()
+	m.cofre.marcarModificado()
 
 	return nil
 }
@@ -662,8 +564,7 @@ func (m *Manager) ReposicionarPasta(pasta *Pasta, novaPosicao int) error {
 
 	// Only update global state if actual change (D-12, D-23)
 	if alterado {
-		m.cofre.modificado = true
-		m.cofre.dataUltimaModificacao = time.Now().UTC()
+		m.cofre.marcarModificado()
 	}
 
 	return nil
@@ -731,7 +632,7 @@ func (m *Manager) ExcluirPasta(pasta *Pasta) ([]Renomeacao, error) {
 	renomeacoes := pasta.excluir(pasta.pai)
 
 	// Mark vault as modified
-	m.cofre.modificado = true
+	m.cofre.marcarModificado()
 
 	return renomeacoes, nil
 }
@@ -761,9 +662,8 @@ func (m *Manager) RenomearSegredo(segredo *Segredo, novoNome string) error {
 
 	// Only mark vault modified if actual change occurred (D-12)
 	if alterado {
-		segredo.dataUltimaModificacao = time.Now().UTC()
-		m.cofre.modificado = true
-		m.cofre.dataUltimaModificacao = time.Now().UTC()
+		segredo.marcarModificacao()
+		m.cofre.marcarModificado()
 	}
 
 	return nil
@@ -792,9 +692,8 @@ func (m *Manager) EditarCampoSegredo(segredo *Segredo, indice int, novoValor []b
 
 	// Only mark vault modified if actual change occurred (D-12)
 	if alterado {
-		segredo.dataUltimaModificacao = time.Now().UTC()
-		m.cofre.modificado = true
-		m.cofre.dataUltimaModificacao = time.Now().UTC()
+		segredo.marcarModificacao()
+		m.cofre.marcarModificado()
 	}
 
 	return nil
@@ -824,9 +723,8 @@ func (m *Manager) EditarObservacao(segredo *Segredo, novoTexto string) error {
 
 	// Only mark vault modified if actual change occurred (D-12)
 	if alterado {
-		segredo.dataUltimaModificacao = time.Now().UTC()
-		m.cofre.modificado = true
-		m.cofre.dataUltimaModificacao = time.Now().UTC()
+		segredo.marcarModificacao()
+		m.cofre.marcarModificado()
 	}
 
 	return nil
@@ -851,8 +749,7 @@ func (m *Manager) MoverSegredo(segredo *Segredo, destino *Pasta, posicao int) er
 	segredo.mover(destino, posicao)
 
 	// Update vault state (cofre.modificado = true, but NOT estadoSessao per D-16)
-	m.cofre.modificado = true
-	m.cofre.dataUltimaModificacao = time.Now().UTC()
+	m.cofre.marcarModificado()
 
 	return nil
 }
@@ -881,8 +778,7 @@ func (m *Manager) ReposicionarSegredo(segredo *Segredo, novaPosicao int) error {
 
 	// Only update vault state if position changed (D-12, D-23)
 	if alterado {
-		m.cofre.modificado = true
-		m.cofre.dataUltimaModificacao = time.Now().UTC()
+		m.cofre.marcarModificado()
 	}
 
 	return nil
