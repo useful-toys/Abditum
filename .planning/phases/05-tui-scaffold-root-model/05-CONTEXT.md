@@ -98,8 +98,9 @@ type rootModel struct {
     // Modal stack — LIFO, last element = topmost/active
     modals         []*modalModel
 
-    // Active flow — nil = no flow in progress (see D-19)
+    // Active flow — nil = no flow in progress (see D-19, D-20)
     activeFlow     flowHandler
+    flows          *FlowRegistry
 
     // Shared services — passed to every child at construction
     actions        *ActionManager
@@ -133,7 +134,8 @@ func (m *rootModel) liveModels() []childModel {
   1. Global shortcuts in `rootModel` (`ctrl+Q`, `?`) — always intercepted first.
   2. If `activeFlow != nil` → delegate to `activeFlow.Update(msg)` — flow manages its own modals and async Cmds.
   3. Else if modal stack non-empty → topmost modal (`modals[len(modals)-1]`) has focus.
-  4. Else → currently active base child model.
+  4. Else → check `flows.ForKey(key)` — if a descriptor is found and `IsApplicable()` → allocate flow via `New()`, set `activeFlow` (see D-20).
+  5. Else → currently active base child model.
 - No child model ever calls another child model's methods or reads another child model's fields. All state changes flow through `vault.Manager` → domain message → `rootModel` broadcast.
 
 ### Inter-Model Communication Pattern
@@ -234,8 +236,9 @@ func (m *rootModel) liveModels() []childModel {
 - `actions.go` — `ActionManager` (see D-16)
 - `messages.go` — `MessageManager` (see D-17)
 - `dialogs.go` — dialog factory functions (see D-18)
-- `flow_open_vault.go` — `openVaultFlow` stub (see D-19)
-- `flow_create_vault.go` — `createVaultFlow` stub (see D-19)
+- `flow_open_vault.go` — `openVaultFlow` + `openVaultDescriptor` stubs (see D-19, D-20)
+- `flow_create_vault.go` — `createVaultFlow` + `createVaultDescriptor` stubs (see D-19, D-20)
+- `flows.go` — `FlowRegistry`, `flowDescriptor` interface (see D-20)
 - `prevault.go` — `preVaultModel` stub (ASCII art welcome background; no sub-states)
 - `vaulttree.go` — `vaultTreeModel` stub
 - `secretdetail.go` — `secretDetailModel` stub
@@ -269,6 +272,7 @@ func (m *rootModel) liveModels() []childModel {
 - `MessageManager` API shape (e.g., whether it supports message severity/type, auto-clear after timeout, etc.)
 - `dialogs` factory: exact function signatures, whether callbacks use `tea.Cmd` or typed messages, additional pre-defined dialog types beyond message/confirm
 - `flowHandler` interface exact shape; whether flows receive domain messages or only input messages; how a flow signals completion to `rootModel`
+- `FlowRegistry` ownership API shape (how children tag their registrations for bulk unregistration on deactivation)
 
 ### Message Manager
 
@@ -294,12 +298,33 @@ type flowHandler interface {
   - No `View()` — flows have no visual representation of their own; they push modals onto `rootModel`'s stack to show UI.
   - No `SetSize()` — not needed.
 - **`rootModel` field:** `activeFlow flowHandler` — `nil` when no flow is running.
-- **Starting a flow:** a child emits a domain message (e.g., `startOpenVaultFlowMsg{}`); `rootModel` allocates the appropriate flow and sets `activeFlow`.
+- **Starting a flow:** via `FlowRegistry` (see D-20) — `rootModel` no longer allocates flows directly or handles `startXxxFlowMsg{}`.
 - **Dispatch during active flow:** `rootModel` delegates input events to `activeFlow.Update()` (priority 2 in D-06). The flow pushes/pops modals and returns async Cmds directly.
 - **Completing a flow:** the flow emits a completion message (e.g., `vaultOpenedMsg{}`, `flowCancelledMsg{}`); `rootModel` handles the transition and sets `activeFlow = nil`.
 - **Flow files in Phase 5:** stubs only — no real logic. Concrete flows implemented in Phase 6+.
 - **Known flows:** `openVaultFlow`, `createVaultFlow`. Additional flows (save-as, change password, lock, quit confirmation) identified in later phases.
 - **Whether flows receive domain messages** (tick, vault changed, etc.) is left to researcher/planner.
+
+### Flow Registry
+
+**D-20: `FlowRegistry` + `flowDescriptor` — repository of all available flows**
+- **Problem solved:** `rootModel` should not contain a dispatch table of key → flow. Each flow self-describes its trigger and availability.
+- **`flowDescriptor` interface:**
+```go
+type flowDescriptor interface {
+    Key()          string       // keyboard shortcut that triggers this flow
+    Label()        string       // display label for ActionManager / help
+    IsApplicable() bool         // can this flow be started right now?
+    New()          flowHandler  // factory — creates a fresh handler instance
+}
+```
+- **`FlowRegistry`** is a shared mutable object (concrete pointer) — instantiated in `main.go`, stored on `rootModel`, passed to every child at construction time.
+- **Global flows** (open vault, save, lock, quit…) — registered by `rootModel` at startup. Always present in the registry.
+- **Child-scoped flows** (edit secret, delete folder…) — registered by the child when allocated; unregistered when the child is deactivated (`nil`). The child tags its registrations with an owner key for bulk removal.
+- **`IsApplicable()` uses closures** — each descriptor closes over its owner's state (e.g., `func() bool { return m.focusedSecret != nil }`). No global selection state needed. Context-specific state (focused secret, selected folder) lives inside the child that owns it and is naturally unavailable when that child is `nil`.
+- **Dispatch** (step 4 in D-06): `flows.ForKey(key)` returns the first applicable descriptor; `rootModel` calls `New()` and sets `activeFlow`.
+- **Integration with `ActionManager`:** `rootModel` (or `ActionManager`) calls `flows.Applicable()` to populate the command bar with flow actions alongside child-registered non-flow actions.
+- **Exact registration API shape** (owner tagging, bulk unregister method) is left to researcher/planner.
 
 ### Dialog Factory
 
