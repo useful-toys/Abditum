@@ -118,7 +118,7 @@ func TestSerializarCofre_ValorUTF8(t *testing.T) {
 
 // TestDeserializarCofre_InvalidJSON tests that invalid JSON returns an error.
 func TestDeserializarCofre_InvalidJSON(t *testing.T) {
-	_, err := DeserializarCofre([]byte("not valid json"))
+	_, err := DeserializarCofre([]byte("not valid json"), 1)
 	if err == nil {
 		t.Error("DeserializarCofre with invalid JSON should return error")
 	}
@@ -128,7 +128,7 @@ func TestDeserializarCofre_InvalidJSON(t *testing.T) {
 func TestDeserializarCofre_SemPastaGeral(t *testing.T) {
 	// JSON without pasta_geral
 	jsonSemPastaGeral := `{"data_criacao":"2026-01-01T00:00:00Z","data_ultima_modificacao":"2026-01-01T00:00:00Z"}`
-	_, err := DeserializarCofre([]byte(jsonSemPastaGeral))
+	_, err := DeserializarCofre([]byte(jsonSemPastaGeral), 1)
 	if err == nil {
 		t.Error("DeserializarCofre without pasta_geral should return error")
 	}
@@ -143,7 +143,7 @@ func TestDeserializarCofre_PastaGeralNomeErrado(t *testing.T) {
 		"modelos":[],
 		"pasta_geral":{"nome":"NaoGeral","subpastas":[],"segredos":[]}
 	}`
-	_, err := DeserializarCofre([]byte(jsonNomeErrado))
+	_, err := DeserializarCofre([]byte(jsonNomeErrado), 1)
 	if err == nil {
 		t.Error("DeserializarCofre with pasta_geral.nome != 'Geral' should return error")
 	}
@@ -162,7 +162,7 @@ func TestRoundtrip_CofreVazio(t *testing.T) {
 		t.Fatalf("SerializarCofre() returned error: %v", err)
 	}
 
-	restored, err := DeserializarCofre(data)
+	restored, err := DeserializarCofre(data, 1)
 	if err != nil {
 		t.Fatalf("DeserializarCofre() returned error: %v", err)
 	}
@@ -200,7 +200,7 @@ func TestRoundtrip_Configuracoes(t *testing.T) {
 		t.Fatalf("SerializarCofre() error: %v", err)
 	}
 
-	restored, err := DeserializarCofre(data)
+	restored, err := DeserializarCofre(data, 1)
 	if err != nil {
 		t.Fatalf("DeserializarCofre() error: %v", err)
 	}
@@ -235,7 +235,7 @@ func TestRoundtrip_Modelos(t *testing.T) {
 		t.Fatalf("SerializarCofre() error: %v", err)
 	}
 
-	restored, err := DeserializarCofre(data)
+	restored, err := DeserializarCofre(data, 1)
 	if err != nil {
 		t.Fatalf("DeserializarCofre() error: %v", err)
 	}
@@ -288,7 +288,7 @@ func TestRoundtrip_SegredoCompleto(t *testing.T) {
 		t.Fatalf("SerializarCofre() error: %v", err)
 	}
 
-	restored, err := DeserializarCofre(data)
+	restored, err := DeserializarCofre(data, 1)
 	if err != nil {
 		t.Fatalf("DeserializarCofre() error: %v", err)
 	}
@@ -353,7 +353,7 @@ func TestRoundtrip_ReferenciasPaiFilho(t *testing.T) {
 		t.Fatalf("SerializarCofre() error: %v", err)
 	}
 
-	restored, err := DeserializarCofre(data)
+	restored, err := DeserializarCofre(data, 1)
 	if err != nil {
 		t.Fatalf("DeserializarCofre() error: %v", err)
 	}
@@ -405,7 +405,7 @@ func TestRoundtrip_EstadoSessaoOriginal(t *testing.T) {
 		t.Fatalf("SerializarCofre() error: %v", err)
 	}
 
-	restored, err := DeserializarCofre(data)
+	restored, err := DeserializarCofre(data, 1)
 	if err != nil {
 		t.Fatalf("DeserializarCofre() error: %v", err)
 	}
@@ -431,7 +431,7 @@ func TestRoundtrip_SubpastasAninhadas(t *testing.T) {
 		t.Fatalf("SerializarCofre() error: %v", err)
 	}
 
-	restored, err := DeserializarCofre(data)
+	restored, err := DeserializarCofre(data, 1)
 	if err != nil {
 		t.Fatalf("DeserializarCofre() error: %v", err)
 	}
@@ -483,7 +483,7 @@ func TestRoundtrip_OrdemPreservada(t *testing.T) {
 		t.Fatalf("SerializarCofre() error: %v", err)
 	}
 
-	restored, err := DeserializarCofre(data)
+	restored, err := DeserializarCofre(data, 1)
 	if err != nil {
 		t.Fatalf("DeserializarCofre() error: %v", err)
 	}

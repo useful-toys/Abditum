@@ -221,7 +221,7 @@ func Load(vaultPath string, password []byte) (*vault.Cofre, FileMetadata, error)
 	}
 	defer crypto.Wipe(jsonBytes)
 
-	cofre, err := vault.DeserializarCofre(jsonBytes)
+	cofre, err := vault.DeserializarCofre(jsonBytes, version)
 	if err != nil {
 		return nil, FileMetadata{}, fmt.Errorf("%w: %v", ErrCorrupted, err)
 	}

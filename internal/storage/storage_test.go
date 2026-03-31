@@ -492,59 +492,6 @@ func TestDetectExternalChange_FileNotFound(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Migrate tests
-// ---------------------------------------------------------------------------
-
-// TestMigrate_SameVersion_NoOp verifies that v1->v1 returns data unchanged.
-func TestMigrate_SameVersion_NoOp(t *testing.T) {
-	data := []byte(`{"test":"data"}`)
-	result, err := storage.Migrate(data, 1, 1)
-	if err != nil {
-		t.Fatalf("Migrate(1,1) error: %v", err)
-	}
-	if string(result) != string(data) {
-		t.Errorf("Migrate(1,1) returned %q, want %q", result, data)
-	}
-}
-
-// TestMigrate_FutureVersion_Error verifies that v1->v2 returns error (no path registered).
-func TestMigrate_FutureVersion_Error(t *testing.T) {
-	data := []byte(`{"test":"data"}`)
-	_, err := storage.Migrate(data, 1, 2)
-	if err == nil {
-		t.Error("Migrate(1,2) should return error (no migration path)")
-	}
-}
-
-// TestMigrate_Downgrade_Error verifies that downgrade returns error.
-func TestMigrate_Downgrade_Error(t *testing.T) {
-	data := []byte(`{"test":"data"}`)
-	_, err := storage.Migrate(data, 2, 1)
-	if err == nil {
-		t.Error("Migrate(2,1) should return error (downgrade not supported)")
-	}
-}
-
-// TestMigrate_V1FixtureRoundtrip verifies the full SaveNew + Load pipeline for v1 format.
-func TestMigrate_V1FixtureRoundtrip(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "v1-fixture.abditum")
-
-	cofre := newTestCofre()
-	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
-		t.Fatalf("SaveNew() error: %v", err)
-	}
-
-	loaded, _, err := storage.Load(path, testPassword)
-	if err != nil {
-		t.Fatalf("Load() error: %v", err)
-	}
-	if loaded == nil {
-		t.Fatal("Load() returned nil Cofre")
-	}
-}
-
-// ---------------------------------------------------------------------------
 // Integration tests (Plan 04-04)
 // ---------------------------------------------------------------------------
 

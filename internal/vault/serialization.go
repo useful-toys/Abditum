@@ -42,7 +42,12 @@ type campoJSON struct {
 }
 
 type segredoJSON struct {
-	Nome                  string      `json:"nome"`
+	// v1+ fields
+	Nome string `json:"nome"`
+	// Future compat fields go here — example pattern:
+	//   NomeLeg string `json:"name"` // v0 legado — if nome == "" && version == 0 { nome = raw.NomeLeg }
+	// When a field is renamed between versions, add the old tag here and apply
+	// the fallback in deserializarPasta where the struct is consumed.
 	Campos                []campoJSON `json:"campos"`
 	Observacao            string      `json:"observacao"`
 	Favorito              bool        `json:"favorito"`
@@ -160,11 +165,14 @@ func serializarPasta(pasta *Pasta, isRoot bool) *pastaJSON {
 // --------------------------------------------------------------------------
 // DeserializarCofre converts JSON bytes back to a Cofre.
 //
+// version is the format version byte from the file header. It is passed through
+// to enable compat field selection for renamed or defaulted fields in future
+// format versions. Currently only v1 format exists — version is reserved.
+//
 // Validates that pasta_geral exists and has nome == "Geral".
 // Sets all secrets to estadoSessao = EstadoOriginal.
 // Populates all parent-child references via popularReferencias.
-// --------------------------------------------------------------------------
-func DeserializarCofre(data []byte) (*Cofre, error) {
+func DeserializarCofre(data []byte, version uint8) (*Cofre, error) {
 	var dto cofreJSON
 	if err := json.Unmarshal(data, &dto); err != nil {
 		return nil, err
