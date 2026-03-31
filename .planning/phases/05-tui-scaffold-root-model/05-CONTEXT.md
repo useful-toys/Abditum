@@ -233,6 +233,7 @@ func (m *rootModel) liveModels() []childModel {
 ### Action Manager
 
 **D-16: `ActionManager` — centralized action registry shared by all children**
+- **Guiding analogy:** just as `vault.Manager` is the API for vault operations, `ActionManager` is the API for defining which actions are available at any given moment.
 - `ActionManager` is a **shared mutable object** (concrete pointer) instantiated in `main.go` and passed to `rootModel`, which in turn passes it to every child at construction time.
 - Responsibility: maintain the pool of currently registered actions (keybinding + label + description); decide which subset to surface in the command bar and in what order/grouping.
 - **Registration**: each child calls methods on `ActionManager` to register the actions it owns when it becomes active (or when its context changes). On deactivation/nil, the child's actions are cleared from the registry.
