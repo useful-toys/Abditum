@@ -86,10 +86,11 @@ type passwordEntryResult struct {
 }
 func (passwordEntryResult) isModalResult() {}
 
-type confirmResult struct {
-    Confirmed bool
+type filePickerResult struct {
+    Path      string
+    Cancelled bool
 }
-func (confirmResult) isModalResult() {}
+func (filePickerResult) isModalResult() {}
 ```
 
 Dados sensíveis (ex: bytes de senha) **nunca entram em broadcast** — ficam isolados no caminho flow ↔ modal.
@@ -100,10 +101,13 @@ Interface implementada por fluxos multi-passo (abrir cofre, criar cofre, etc.).
 
 ```go
 type flowHandler interface {
-    Update(tea.Msg) tea.Cmd  // orquestra modais e operações assíncronas
+    Init() tea.Cmd               // empurra primeiro modal ou inicia operação
+    Update(tea.Msg) tea.Cmd      // orquestra modais e operações assíncronas
 }
 ```
 
+- `Init()` é chamado pelo `rootModel` imediatamente após setar `activeFlow`. Retorna `tea.Cmd` que tipicamente empurra o primeiro modal na stack.
+- Se o flow recebeu dados pré-preenchidos no construtor (ex: caminho já conhecido), `Init()` pula etapas — inspeciona os campos preenchidos e emite o modal do passo correto.
 - Sem `View()` — fluxos não renderizam nada diretamente; empurram modais na stack.
 - Sem `SetSize()` — não necessário.
 
@@ -331,12 +335,14 @@ Modais serão sobrepostos **acima** de todo o frame, provavelmente via `lipgloss
         → ScopeLocal: só quando não há flow/modal ativo
         → verifica Enabled() antes de executar Handler()
         ↓ nenhuma ação encontrada
-2. activeFlow != nil              → delega ao flowHandler ativo
+2. stack de modais não vazia      → topmost modal recebe input
         ↓ senão
-3. stack de modais não vazia      → topmost modal recebe input
+3. activeFlow != nil              → delega ao flowHandler ativo (fallback — flow sem modal)
         ↓ senão
 4. child ativo da área de trabalho → recebe input
 ```
+
+**Justificativa da ordem 2→3:** flows operam via modais — empurram `passwordEntryModal`, `filePickerModal`, etc. Se o flow recebesse input antes do modal (ordem antiga), teclas digitadas durante um modal de senha iriam para o flow (que as ignora), e o modal nunca receberia input. Modais antes de flow garante que o modal do topo sempre processa a interação.
 
 ```go
 // rootModel.Update()
@@ -351,12 +357,12 @@ case tea.KeyPressMsg:
         return m, cmd
     }
 
-    if m.activeFlow != nil {
-        return m, m.activeFlow.Update(msg)
-    }
-
     if len(m.modals) > 0 {
         return m, m.modals[len(m.modals)-1].Update(msg)
+    }
+
+    if m.activeFlow != nil {
+        return m, m.activeFlow.Update(msg)
     }
 
     return m, m.activeChild().Update(msg)
@@ -476,24 +482,61 @@ actions.Dispatch(key, inFlowOrModal)
         ↓
 Bubble Tea executa Cmd → startFlowMsg{flow: openVaultFlow{...}}
         ↓
-rootModel.Update(startFlowMsg) → activeFlow = msg.flow
-        ↓
-rootModel.Update() delega input → activeFlow.Update()
-        ↓
-flow empurra modais via pushModalMsg{}
+rootModel.Update(startFlowMsg)
+        → limpa modais órfãos (m.modals = m.modals[:0])
+        → activeFlow = msg.flow
+        → chama msg.flow.Init() — empurra primeiro modal
         ↓
 modal coleta valor → emite modalResult → roteado ao flow
         ↓
-flow executa operação async → emite popModalMsg{} + mensagem de domínio
+flow.Update() processa resultado → avança, volta, ou emite próximo modal
         ↓
-rootModel: activeFlow = nil | transição de estado
+flow executa operação async → feedback via MsgBusy
+        ↓
+resultado chega → flow emite endFlowMsg{} + mensagem de domínio
+        ↓
+rootModel: activeFlow = nil
 ```
+
+```go
+// rootModel.Update()
+case startFlowMsg:
+    m.modals = m.modals[:0]        // limpa modais de flow anterior (se houver)
+    m.activeFlow = msg.flow
+    return m, m.activeFlow.Init()  // flow empurra primeiro modal
+
+case endFlowMsg:
+    m.activeFlow = nil
+```
+
+**Limpeza de modais em `startFlowMsg`:** ao substituir um flow (ex: lock timeout sobrescreve flow ativo), modais do flow anterior ficam órfãos na stack — o flow que os criou não existe mais. A limpeza é segura porque: (a) lock durante flow torna modais anteriores irrelevantes; (b) encadeamento normal já popou modais antes de emitir `startFlowMsg`; (c) início via `ActionManager` (`ScopeLocal`) só dispara sem flow/modal ativo.
+
+**Término de flow (`endFlowMsg`):**
+
+```go
+type endFlowMsg struct{}
+
+func endFlow() tea.Cmd {
+    return func() tea.Msg { return endFlowMsg{} }
+}
+```
+
+Flows que precisam emitir domínio + encerrar:
+
+```go
+return tea.Batch(
+    func() tea.Msg { return vaultSavedMsg{} },
+    endFlow(),
+)
+```
+
+A ordem de processamento é irrelevante: `vaultSavedMsg` vai pelo broadcast (não precisa de flow ativo) e `endFlowMsg` limpa `activeFlow`.
 
 Cada fluxo vive em arquivo próprio (`flow_open_vault.go`, `flow_create_vault.go`, etc.). O `rootModel` não conhece os passos internos de nenhum fluxo.
 
 ### Encadeamento de fluxos
 
-Em casos excepcionais, um fluxo que conclui pode solicitar a execução imediata de outro emitindo `startFlowMsg` diretamente:
+Em casos excepcionais, um fluxo que conclui pode solicitar a execução imediata de outro emitindo `startFlowMsg` diretamente. O flow encadeado **substitui** o anterior — não há stack de flows nem retorno ao flow pai.
 
 ```go
 // Dentro do flowHandler, ao concluir:
@@ -503,9 +546,11 @@ return tea.Batch(
 )
 ```
 
-O Bubble Tea processa **uma mensagem por `Update()`**. A mensagem de domínio chega primeiro — estado completamente atualizado — e só então `startFlowMsg` é processado.
+O Bubble Tea processa **uma mensagem por `Update()`**. A mensagem de domínio chega primeiro — estado completamente atualizado — e só então `startFlowMsg` é processado (rootModel seta `activeFlow` e chama `Init()`).
 
-**Nota:** encadeamento direto via `startFlowMsg` bypassa o `ActionManager` — não verifica `Enabled()`. Isso é aceitável porque o flow que encadeia já validou o estado.
+O flow encadeado pode ser iniciado em qualquer passo — basta o construtor pré-preencher os campos correspondentes (ver `Init()` com skip no exemplo acima).
+
+**Nota:** encadeamento direto via `startFlowMsg` bypassa o `ActionManager` — não verifica `Enabled()`. Isso é aceitável porque o flow que encadeia já validou o estado. Neste caso, `endFlowMsg` **não** é emitido — `startFlowMsg` sobrescreve `activeFlow` diretamente.
 
 ---
 
@@ -644,9 +689,32 @@ Diferente dos managers acima, `dialogs` não é estado compartilhado — são **
 - **ESC** — aciona a opção marcada como `Cancel`. Se não houver opção `Cancel`, ESC emite `popModalMsg{}` (dismiss simples).
 - Cada opção pode ter **teclas de atalho** próprias — exibidas na command bar via `Shortcuts()`.
 
+### `DialogType` — Tipo Semântico de Diálogo
+
+Modais de pergunta e confirmação carregam um **tipo semântico** que determina o emoji e a cor base do modal. O tipo comunica a natureza da decisão ao usuário antes de ler o conteúdo.
+
+```go
+type DialogType int
+const (
+    DialogQuestion DialogType = iota  // ❓ decisão neutra — escolha entre alternativas
+    DialogAlert                        // ⚠️ ação destrutiva ou irreversível
+    DialogInfo                         // ℹ️ informação que requer confirmação explícita
+)
+```
+
+| Tipo | Emoji | Cor base | Hex (Tokyo Night) | Uso típico |
+|---|---|---|---|---|
+| `DialogQuestion` | ❓ | Azul | `#7aa2f7` | Escolhas neutras: salvar/descartar/cancelar, sobrescrever |
+| `DialogAlert` | ⚠️ | Amarelo | `#e0af68` | Ações destrutivas: excluir, descartar alterações |
+| `DialogInfo` | ℹ️ | Ciano | `#7dcfff` | Informações que pedem reconhecimento: política, aviso |
+
+A cor base é aplicada à **borda ou título** do modal (definição visual exata adiada). O emoji é exibido junto ao título.
+
 ### Confirmação e Perguntas (callback-based)
 
 Adequados quando a decisão é finita e o contexto já é conhecido no momento da abertura. Funcionam tanto para children quanto para flows.
+
+Cada diálogo recebe `DialogType`, `title` (frase curta — exibida com emoji) e `message` (explicação — pode ser string vazia se o título for autoexplicativo).
 
 ```go
 type DialogOption struct {
@@ -658,17 +726,17 @@ type DialogOption struct {
 }
 
 // Pergunta genérica com opções customizadas
-dialogs.Ask(question string, options ...DialogOption) tea.Cmd
+dialogs.Ask(dtype DialogType, title, message string, options ...DialogOption) tea.Cmd
 
 // Conveniências pré-definidas:
-dialogs.Confirm(question string, onYes, onNo tea.Cmd) tea.Cmd
-// Equivale a: Ask(question,
+dialogs.Confirm(dtype DialogType, title, message string, onYes, onNo tea.Cmd) tea.Cmd
+// Equivale a: Ask(dtype, title, message,
 //   {Label: "Sim", Keys: ["s","y"], Cmd: onYes, Default: true},
 //   {Label: "Não", Keys: ["n"],     Cmd: onNo,  Cancel: true},
 // )
 
-dialogs.ConfirmOrCancel(question string, onYes, onNo, onCancel tea.Cmd) tea.Cmd
-// Equivale a: Ask(question,
+dialogs.ConfirmOrCancel(dtype DialogType, title, message string, onYes, onNo, onCancel tea.Cmd) tea.Cmd
+// Equivale a: Ask(dtype, title, message,
 //   {Label: "Sim",      Keys: ["s","y"], Cmd: onYes,    Default: true},
 //   {Label: "Não",      Keys: ["n"],     Cmd: onNo},
 //   {Label: "Cancelar", Keys: [],        Cmd: onCancel, Cancel: true},
@@ -677,7 +745,7 @@ dialogs.ConfirmOrCancel(question string, onYes, onNo, onCancel tea.Cmd) tea.Cmd
 
 **Uso por flow (callback como mensagem de retorno para si mesmo):**
 ```go
-return dialogs.Confirm("Sobrescrever arquivo existente?",
+return dialogs.Confirm(DialogQuestion, "Sobrescrever arquivo", "O arquivo já existe. Deseja sobrescrevê-lo?",
     func() tea.Msg { return overwriteConfirmedMsg{} },
     func() tea.Msg { return flowCancelledMsg{} },
 )
@@ -685,15 +753,16 @@ return dialogs.Confirm("Sobrescrever arquivo existente?",
 
 **Uso por child (callback como Cmd factory):**
 ```go
-return dialogs.Confirm("Excluir segredo?",
+return dialogs.Confirm(DialogAlert, "Excluir segredo", "Esta ação pode ser desfeita até salvar o cofre.",
     cmdMarkDeleted(mgr, m.focused), nil)
 ```
 
 ### Mensagem Informativa (sem retorno)
 
 ```go
-dialogs.Message(title, text string) tea.Cmd
+dialogs.Message(dtype DialogType, title, message string) tea.Cmd
 // Dismiss via ESC ou ENTER. Sem callbacks, sem modalResult.
+// dtype tipicamente DialogInfo — mas pode ser DialogAlert para avisos importantes.
 ```
 
 ### Entrada de Senha (`modalResult` — dados sensíveis)
@@ -750,25 +819,54 @@ dialogs.Select(title string, items []SelectItem) tea.Cmd
 
 ### Princípio de design
 
-O flow é um **roteiro** — solicita modais parametrizados e recebe resultados. A lógica visual de cada modal (renderizar campos, validar input, comparar senhas) fica encapsulada na factory. O flow chama uma linha e recebe o resultado pronto:
+O flow é um **roteiro** — solicita modais parametrizados e recebe resultados. A lógica visual de cada modal (renderizar campos, validar input, comparar senhas) fica encapsulada na factory. O flow chama uma linha e recebe o resultado pronto.
+
+**Padrão: switch por tipo de mensagem** — o flow reage ao *resultado* que chegou, não ao passo em que está. O campo `step` (quando necessário) é auxiliar para desambiguar mensagens do mesmo tipo em momentos diferentes.
 
 ```go
-// flow_create_vault.go — roteiro limpo
-func (f *createVaultFlow) Update(msg tea.Msg) tea.Cmd {
-    switch f.step {
-    case stepChoosePath:
-        return dialogs.FilePicker("Salvar cofre como", FilePickerSave, ".abditum")
-    case stepFilePicked:
-        r := msg.(filePickerResult)
-        f.path = r.Path
-        return dialogs.PasswordCreate("Definir senha mestra")
-    case stepPasswordCreated:
-        r := msg.(passwordCreateResult)
-        f.password = r.Password
-        return cmdCreateVault(f.mgr, f.path, f.password)
+// flow_open_vault.go — roteiro com ida e volta
+func newOpenVaultFlow(mgr *vault.Manager, msgs *MessageManager, path string) *openVaultFlow {
+    return &openVaultFlow{mgr: mgr, msgs: msgs, path: path}
+}
+
+func (f *openVaultFlow) Init() tea.Cmd {
+    if f.path != "" {
+        return dialogs.PasswordEntry("Senha mestra")  // caminho já conhecido — pula FilePicker
     }
+    return dialogs.FilePicker("Abrir cofre", FilePickerOpen, ".abditum")
+}
+
+func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
+    switch msg := msg.(type) {
+    case filePickerResult:
+        if msg.Cancelled { return endFlow() }         // desistência total
+        f.path = msg.Path
+        return dialogs.PasswordEntry("Senha mestra")  // avança para senha
+
+    case passwordEntryResult:
+        if msg.Cancelled {
+            f.path = ""
+            return dialogs.FilePicker("Abrir cofre", FilePickerOpen, ".abditum")  // volta
+        }
+        f.msgs.Show(MsgBusy, "Abrindo cofre...", 0, false)
+        return cmdOpenVault(f.mgr, f.path, msg.Password)
+
+    case vaultOpenedMsg:
+        f.msgs.Show(MsgInfo, "Cofre aberto", 3, false)
+        return endFlow()
+
+    case operationFailedMsg:
+        f.msgs.Show(MsgError, msg.err.Error(), 5, false)
+        return dialogs.PasswordEntry("Senha mestra")  // senha errada — tenta de novo
+    }
+    return nil
 }
 ```
+
+Pontos a observar:
+- **Ida e volta:** `passwordEntryResult{Cancelled: true}` → reemite `FilePicker`. Sem máquina de estados formal.
+- **Init() com skip:** se o construtor recebeu `path`, `Init()` pula direto para senha. Cada dado pré-preenchido é um passo pulado.
+- **Switch por tipo:** o flow reage ao que chegou. Não existe `switch f.step` como driver principal.
 
 ---
 
@@ -839,7 +937,9 @@ case tickMsg:
 | Fluxo empurra modal | Retorna Cmd emitindo `pushModalMsg{}` |
 | Fluxo fecha modal programaticamente | Retorna Cmd emitindo `popModalMsg{}` |
 | Modal devolve valor ao flow | Emite `modalResult` — roteado somente ao `activeFlow` |
-| Fluxo conclui | Retorna Cmd emitindo mensagem de conclusão (ex: `vaultOpenedMsg{}`) |
+| Fluxo conclui | Retorna `endFlow()` — emite `endFlowMsg{}`, rootModel seta `activeFlow = nil` |
+| Fluxo conclui com evento | `tea.Batch(domainMsg, endFlow())` — broadcast + limpeza |
+| Fluxo encadeia outro | Retorna `startFlowMsg{flow: ...}` — substitui `activeFlow`, chama `Init()` |
 
 **Regra absoluta:** nenhum filho acessa campos de outro filho. Toda comunicação passa pelo `rootModel` via mensagens de domínio.
 
@@ -860,7 +960,8 @@ O Bubble Tea re-renderiza a tela inteira após todo `Update()`, então mensagens
 | `vaultReloadedMsg{}` | Recarga completa do disco — todos os children resetam estado |
 | `vaultClosedMsg{}` | Cofre bloqueado ou fechado — todos os children limpam memória sensível |
 | `vaultChangedMsg{}` | Fallback genérico — usado por fluxos quando o tipo de mutação não é relevante para broadcast |
-| `startFlowMsg{flow}` | Inicia um flowHandler — interceptado pelo `rootModel` |
+| `startFlowMsg{flow}` | Inicia um flowHandler — interceptado pelo `rootModel` (limpa modais, seta activeFlow, chama Init) |
+| `endFlowMsg{}` | Encerra o flowHandler ativo — interceptado pelo `rootModel` (seta activeFlow = nil) |
 | `pushModalMsg{modal}` | Empurra modal na stack — interceptado pelo `rootModel` |
 | `popModalMsg{}` | Remove topmost modal — interceptado pelo `rootModel` |
 
