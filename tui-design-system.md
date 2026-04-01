@@ -1,7 +1,7 @@
 # Design System — Abditum TUI
 
 > Definições visuais fundamentais para o pacote `internal/tui`.  
-> Complementa `tui-design.md` (layout e interação) e `tui-elm-architecture.md` (arquitetura).
+> Complementa `tui-specification.md` (wireframes e comportamento) e `tui-elm-architecture.md` (arquitetura).
 >
 > **Wireframes com aplicação prática dos tokens:** ver [`tui-specification.md`](tui-specification.md)
 
@@ -9,173 +9,47 @@
 
 ## Paleta de Cores
 
-A paleta é organizada por **papel funcional**, não por nome de cor. Cada papel define *para que* a cor é usada — a cor concreta muda conforme o tema escolhido.
-
-### Papéis funcionais
-
-A TUI usa os seguintes papéis de cor:
-
-| Categoria | Papel | Descrição |
-|---|---|---|
-| **Superfícies** | `surface.base` | Fundo principal da aplicação |
-| | `surface.raised` | Fundo de painéis, modais, elementos elevados |
-| | `surface.overlay` | Fundo de tooltips, menus flutuantes, overlays |
-| **Texto** | `text.primary` | Texto principal — conteúdo, labels, títulos |
-| | `text.secondary` | Texto auxiliar — descrições, placeholders, hints |
-| | `text.disabled` | Texto desabilitado ou indisponível |
-| **Bordas** | `border.default` | Bordas de painéis e separadores — estado normal |
-| | `border.focused` | Borda do painel ou elemento com foco ativo |
-| **Interação** | `accent.primary` | Cor principal de ação — elemento selecionado, cursor, destaque de foco |
-| | `accent.secondary` | Cor secundária — informações complementares, links |
-| **Semânticas** | `semantic.success` | Operação concluída, confirmação positiva |
-| | `semantic.warning` | Atenção requerida, ação potencialmente perigosa |
-| | `semantic.error` | Falha, ação destrutiva, erro |
-| | `semantic.info` | Informação neutra, dica contextual |
-| **Especiais** | `special.muted` | Itens apagados — marcados para exclusão, desabilitados |
-| | `special.highlight` | Fundo de item selecionado em listas/árvore |
+A paleta é organizada por **papel funcional** — cada papel define *para que* a cor é usada, não qual cor concreta. Isso garante que trocar de tema é uma operação isolada: mudar os valores hex sem alterar lógica ou estrutura.
 
 ### Regras de aplicação
 
-- **Texto sobre superfícies:** `text.primary` sobre `surface.base` deve ter contraste mínimo legível. Em TUI, isso é garantido naturalmente pela paleta (fundo escuro + texto claro).
-- **Bordas indicam foco:** `border.focused` é a única indicação visual de qual painel está ativo — deve ser claramente distinta de `border.default`.
-- **Semânticas são reservadas:** cores semânticas aparecem somente para comunicar estado (sucesso, erro, etc.) — nunca como decoração.
-- **Consistência entre contextos:** a mesma cor semântica é usada em mensagens de aviso, modais de alerta, e demais elementos com o mesmo significado — nunca um contexto usa uma cor semântica diferente para o mesmo tipo de informação.
+- **Texto sobre superfícies:** `text.primary` sobre `surface.base` deve ter contraste mínimo legível.
+- **Foco de painel é implícito:** a command bar muda para refletir as ações do painel ativo — não existem bordas de foco em painéis. `border.focused` é reservado para diálogos modais.
+- **Semânticas são reservadas:** cores semânticas aparecem somente para comunicar estado — nunca como decoração.
+- **Consistência entre contextos:** a mesma cor semântica é usada em mensagens de aviso, modais de alerta, e demais elementos com o mesmo significado.
 
----
+### Papéis e tokens
 
-## Proposta A: Tokyo Night
-
-Baseada na paleta [Tokyo Night](https://github.com/enkia/tokyo-night-vscode-theme) — tema escuro com tons predominantemente azuis e roxos. Projetada para conforto em uso prolongado: fundo azul-noite (não preto puro), texto acinzentado-azulado, destaques vibrantes mas dessaturados.
-
-### Superfícies
-
-| Papel | Hex | Swatch | Nota |
-|---|---|---|---|
-| `surface.base` | `#1a1b26` | <span style="background:#1a1b26;color:#1a1b26">██</span> | Azul-noite profundo — menos agressivo que preto puro |
-| `surface.raised` | `#24283b` | <span style="background:#24283b;color:#24283b">██</span> | Elevação sutil — painéis, modais |
-| `surface.overlay` | `#414868` | <span style="background:#414868;color:#414868">██</span> | Overlays — diferenciação clara do fundo |
-
-### Texto
-
-| Papel | Hex | Swatch | Nota |
-|---|---|---|---|
-| `text.primary` | `#a9b1d6` | <span style="color:#a9b1d6">██</span> | Azul-acinzentado claro — confortável para leitura |
-| `text.secondary` | `#565f89` | <span style="color:#565f89">██</span> | Cinza muted — hints, descrições, placeholders |
-| `text.disabled` | `#3b4261` | <span style="color:#3b4261">██</span> | Quase invisível — itens indisponíveis |
-
-### Bordas
-
-| Papel | Hex | Swatch | Nota |
-|---|---|---|---|
-| `border.default` | `#414868` | <span style="color:#414868">██</span> | Cinza-azulado — separadores, bordas sem foco |
-| `border.focused` | `#7aa2f7` | <span style="color:#7aa2f7">██</span> | Azul vibrante — painel ativo, campo em edição |
-
-### Interação
-
-| Papel | Hex | Swatch | Nota |
-|---|---|---|---|
-| `accent.primary` | `#7aa2f7` | <span style="color:#7aa2f7">██</span> | Azul — cursor, item selecionado, ação principal |
-| `accent.secondary` | `#bb9af7` | <span style="color:#bb9af7">██</span> | Lilás — informação complementar, decoração sutil |
-
-### Semânticas
-
-| Papel | Hex | Swatch | Nota |
-|---|---|---|---|
-| `semantic.success` | `#9ece6a` | <span style="color:#9ece6a">██</span> | Verde suave — confirmação, operação ok |
-| `semantic.warning` | `#e0af68` | <span style="color:#e0af68">██</span> | Amarelo quente — bloqueio iminente, ação irreversível |
-| `semantic.error` | `#f7768e` | <span style="color:#f7768e">██</span> | Rosa-avermelhado — falha, exclusão |
-| `semantic.info` | `#7dcfff` | <span style="color:#7dcfff">██</span> | Ciano — informação neutra, reconhecimento |
-
-### Especiais
-
-| Papel | Hex | Swatch | Nota |
-|---|---|---|---|
-| `special.muted` | `#565f89` | <span style="color:#565f89">██</span> | Cinza — itens marcados para exclusão, desabilitados |
-| `special.highlight` | `#283457` | <span style="background:#283457;color:#a9b1d6">██</span> | Azul escuro — fundo de item selecionado em listas |
+| Categoria | Papel | Uso | Tokyo Night | Cyberpunk |
+|---|---|---|---|---|
+| **Superfícies** | `surface.base` | Fundo principal | `#1a1b26` <span style="background:#1a1b26;color:#1a1b26">██</span> | `#0a0a1a` <span style="background:#0a0a1a;color:#0a0a1a">██</span> |
+| | `surface.raised` | Painéis, modais, elevações | `#24283b` <span style="background:#24283b;color:#24283b">██</span> | `#1a1a2e` <span style="background:#1a1a2e;color:#1a1a2e">██</span> |
+| | `surface.overlay` | Tooltips, menus, overlays | `#414868` <span style="background:#414868;color:#414868">██</span> | `#2a2a3e` <span style="background:#2a2a3e;color:#2a2a3e">██</span> |
+| **Texto** | `text.primary` | Texto principal, labels | `#a9b1d6` <span style="color:#a9b1d6">██</span> | `#e0e0ff` <span style="color:#e0e0ff">██</span> |
+| | `text.secondary` | Descrições, hints, placeholders | `#565f89` <span style="color:#565f89">██</span> | `#8888aa` <span style="color:#8888aa">██</span> |
+| | `text.disabled` | Itens indisponíveis | `#3b4261` <span style="color:#3b4261">██</span> | `#444466` <span style="color:#444466">██</span> |
+| **Bordas** | `border.default` | Bordas de diálogos neutros, separadores | `#414868` <span style="color:#414868">██</span> | `#3a3a5c` <span style="color:#3a3a5c">██</span> |
+| | `border.focused` | Borda de diálogo modal ativo | `#7aa2f7` <span style="color:#7aa2f7">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
+| **Interação** | `accent.primary` | Cursor, item selecionado, ação principal | `#7aa2f7` <span style="color:#7aa2f7">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
+| | `accent.secondary` | Favoritos, decoração sutil | `#bb9af7` <span style="color:#bb9af7">██</span> | `#00fff5` <span style="color:#00fff5">██</span> |
+| **Semânticas** | `semantic.success` | Confirmação, operação ok | `#9ece6a` <span style="color:#9ece6a">██</span> | `#05ffa1` <span style="color:#05ffa1">██</span> |
+| | `semantic.warning` | Ação irreversível, bloqueio iminente | `#e0af68` <span style="color:#e0af68">██</span> | `#ffe900` <span style="color:#ffe900">██</span> |
+| | `semantic.error` | Falha, exclusão | `#f7768e` <span style="color:#f7768e">██</span> | `#ff3860` <span style="color:#ff3860">██</span> |
+| | `semantic.info` | Informação neutra, indicadores de sessão | `#7dcfff` <span style="color:#7dcfff">██</span> | `#00b4d8` <span style="color:#00b4d8">██</span> |
+| **Especiais** | `special.muted` | Itens marcados para exclusão | `#565f89` <span style="color:#565f89">██</span> | `#666688` <span style="color:#666688">██</span> |
+| | `special.highlight` | Fundo de item selecionado | `#283457` <span style="background:#283457;color:#a9b1d6">██</span> | `#2a1533` <span style="background:#2a1533;color:#e0e0ff">██</span> |
 
 ### Gradiente do logo
 
-| Linha | Hex | Swatch |
+| Linha | Tokyo Night | Cyberpunk |
 |---|---|---|
-| 1 | `#9d7cd8` | <span style="color:#9d7cd8">██</span> |
-| 2 | `#89ddff` | <span style="color:#89ddff">██</span> |
-| 3 | `#7aa2f7` | <span style="color:#7aa2f7">██</span> |
-| 4 | `#7dcfff` | <span style="color:#7dcfff">██</span> |
-| 5 | `#bb9af7` | <span style="color:#bb9af7">██</span> |
+| 1 | `#9d7cd8` <span style="color:#9d7cd8">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
+| 2 | `#89ddff` <span style="color:#89ddff">██</span> | `#b026ff` <span style="color:#b026ff">██</span> |
+| 3 | `#7aa2f7` <span style="color:#7aa2f7">██</span> | `#00fff5` <span style="color:#00fff5">██</span> |
+| 4 | `#7dcfff` <span style="color:#7dcfff">██</span> | `#05ffa1` <span style="color:#05ffa1">██</span> |
+| 5 | `#bb9af7` <span style="color:#bb9af7">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
 
-### Personalidade
-
-Sóbria, profissional, confortável. Transmite confiança e calma — adequada para uma ferramenta de segurança. Cores dessaturadas reduzem fadiga visual em sessões longas. O azul-noite como fundo evita o preto puro, que pode parecer "portal para o vazio" em terminais grandes.
-
----
-
-## Proposta B: Cyberpunk
-
-Inspirada na estética cyberpunk/synthwave — fundo muito escuro com acentos neon vibrantes. Alta saturação nos destaques, contraste dramático. Cores quentes (rosa, amarelo) dominam a interação, com ciano elétrico como contraponto frio.
-
-### Superfícies
-
-| Papel | Hex | Swatch | Nota |
-|---|---|---|---|
-| `surface.base` | `#0a0a1a` | <span style="background:#0a0a1a;color:#0a0a1a">██</span> | Preto-azulado profundo — noite digital |
-| `surface.raised` | `#1a1a2e` | <span style="background:#1a1a2e;color:#1a1a2e">██</span> | Elevação com tom roxo sutil |
-| `surface.overlay` | `#2a2a3e` | <span style="background:#2a2a3e;color:#2a2a3e">██</span> | Modais e overlays — violeta escuro |
-
-### Texto
-
-| Papel | Hex | Swatch | Nota |
-|---|---|---|---|
-| `text.primary` | `#e0e0ff` | <span style="color:#e0e0ff">██</span> | Lavanda claro — brilhante, futurístico |
-| `text.secondary` | `#8888aa` | <span style="color:#8888aa">██</span> | Lilás apagado — hints, descrições |
-| `text.disabled` | `#444466` | <span style="color:#444466">██</span> | Roxo escuro — quase fundido ao fundo |
-
-### Bordas
-
-| Papel | Hex | Swatch | Nota |
-|---|---|---|---|
-| `border.default` | `#3a3a5c` | <span style="color:#3a3a5c">██</span> | Roxo-acinzentado — separadores discretos |
-| `border.focused` | `#ff2975` | <span style="color:#ff2975">██</span> | Rosa neon — foco impossível de ignorar |
-
-### Interação
-
-| Papel | Hex | Swatch | Nota |
-|---|---|---|---|
-| `accent.primary` | `#ff2975` | <span style="color:#ff2975">██</span> | Rosa-magenta neon — ação principal, cursor |
-| `accent.secondary` | `#00fff5` | <span style="color:#00fff5">██</span> | Ciano elétrico — contraponto frio, informação |
-
-### Semânticas
-
-| Papel | Hex | Swatch | Nota |
-|---|---|---|---|
-| `semantic.success` | `#05ffa1` | <span style="color:#05ffa1">██</span> | Verde neon — brilhante, inequívoco |
-| `semantic.warning` | `#ffe900` | <span style="color:#ffe900">██</span> | Amarelo elétrico — alerta visualmente urgente |
-| `semantic.error` | `#ff3860` | <span style="color:#ff3860">██</span> | Vermelho quente — falha, perigo |
-| `semantic.info` | `#00b4d8` | <span style="color:#00b4d8">██</span> | Ciano médio — informação, reconhecimento |
-
-### Especiais
-
-| Papel | Hex | Swatch | Nota |
-|---|---|---|---|
-| `special.muted` | `#666688` | <span style="color:#666688">██</span> | Lilás desbotado — itens apagados |
-| `special.highlight` | `#2a1533` | <span style="background:#2a1533;color:#e0e0ff">██</span> | Magenta muito escuro — fundo de seleção |
-
-### Gradiente do logo
-
-| Linha | Hex | Swatch |
-|---|---|---|
-| 1 | `#ff2975` | <span style="color:#ff2975">██</span> |
-| 2 | `#b026ff` | <span style="color:#b026ff">██</span> |
-| 3 | `#00fff5` | <span style="color:#00fff5">██</span> |
-| 4 | `#05ffa1` | <span style="color:#05ffa1">██</span> |
-| 5 | `#ff2975` | <span style="color:#ff2975">██</span> |
-
-### Personalidade
-
-Ousada, energética, high-tech. Transmite poder e modernidade — como um terminal de hacker em filme de ficção científica. A alta saturação dos neons chama atenção mas pode causar fadiga em uso prolongado. O rosa neon como cor de foco é incomum e memorável, mas polarizante.
-
----
-
-## Comparação
+### Comparação
 
 | Critério | Tokyo Night | Cyberpunk |
 |---|---|---|
@@ -186,31 +60,35 @@ Ousada, energética, high-tech. Transmite poder e modernidade — como um termin
 | **Adequação ao domínio** | Forte — ferramenta de segurança pede sobriedade | Fraca — neons contrastam com a seriedade de um cofre de senhas |
 | **Expressividade do logo** | Elegante — gradiente suave violeta→ciano | Impactante — gradiente neon rosa→ciano→verde |
 | **Acessibilidade** | Boa — contraste suficiente sem ser agressivo | Risco — neons podem ser problemáticos para sensibilidade visual |
+| **Fidelidade em 256 cores** | **Boa** — tons dessaturados mapeiam bem para o cubo 256 | **Risco** — neons de alta saturação perdem intensidade no mapeamento 256, podendo parecer apagados |
 
----
+### Decisão
 
-## Decisão
+> **Ambos os temas são suportados simultaneamente.** O usuário seleciona o tema ativo nas Configurações; F12 alterna rapidamente entre os dois sem abrir um menu.
 
-> **Em aberto.** A decisão será tomada após avaliar ambas as propostas visualmente na implementação (Phase 5 stubs com cores reais no terminal).
-
-Independente da escolha, a abstração por **papéis funcionais** garante que trocar de paleta é uma operação isolada — mudar os valores hex em um único arquivo de estilos, sem alterar lógica.
+A abstração por **papéis funcionais** é o que viabiliza isso: trocar de tema é uma operação isolada — mudar os valores hex em um único arquivo de estilos, sem alterar lógica ou estrutura.
 
 ---
 
 ## Tipografia
 
-Em TUI não existem fontes nem tamanhos — o terminal usa fonte monoespaçada fixa. Os "pesos tipográficos" disponíveis são atributos ANSI que o lipgloss expõe: **bold**, *italic*, dim, underline e ~~strikethrough~~.
+Em TUI não existem fontes nem tamanhos — o terminal usa fonte monoespaçada fixa. Os "pesos tipográficos" disponíveis são atributos ANSI que o lipgloss expõe. O suporte a esses atributos varia por terminal — a tabela abaixo documenta o comportamento esperado e o fallback de design para cada um.
 
-### Atributos e quando usá-los
+### Atributos, suporte e fallback
 
-| Atributo | Efeito visual | Uso comum |
-|---|---|---|
-| **Bold** | Texto mais brilhante e/ou espesso | Títulos, opções default, labels em foco |
-| *Italic* | Texto inclinado (suporte varia por terminal) | Texto auxiliar, placeholders, descrições |
-| Dim | Texto com brilho reduzido | Itens desabilitados, conteúdo secundário |
-| Underline | Sublinhado | Reservado — uso pontual (links, atalhos) |
-| ~~Strikethrough~~ | Texto riscado | Itens marcados para remoção |
-| Normal | Sem atributo | Corpo de texto, valores, itens de lista |
+| Atributo | Efeito visual | Suporte | Fallback se não suportado | Uso no Abditum |
+|---|---|---|---|---|
+| **Bold** | Texto mais brilhante e/ou espesso | Universal | — (degradação mínima) | Títulos, cursor selecionado, opção default |
+| Dim / Faint | Brilho reduzido | Amplo; em alguns terminais exibe igual ao normal | Cor já comunica — perda tolerável | Itens desabilitados, conteúdo secundário |
+| *Italic* | Texto inclinado | **Parcial** — vários terminais ignoram ou exibem como normal | `text.secondary` já comunica auxiliaridade | Pasta virtual (Favoritos), hints |
+| Underline | Sublinhado | Amplo | — | Uso pontual — não está em uso ativo |
+| ~~Strikethrough~~ | Texto riscado | **Parcial** — terminais legados ignoram | Símbolo `✕` + `special.muted` garantem legibilidade | Itens marcados para exclusão |
+| Reverse | Inverte fg/bg | Amplo | — | Não está em uso ativo |
+| Blink | Piscar | Disponível, mas frequentemente desativado pelo usuário ou terminal | Não usar para comunicar estado — decorativo | **Não usar** |
+
+> **Nota sobre Bold:** em terminais que usam a mesma fonte para bold e normal (ex: alguns multiplexadores tmux), bold se manifesta apenas como cor mais brilhante, não como peso diferente. Isso é aceitável — bold continua sendo o atributo de destaque mais confiável.
+
+> **Nota sobre Italic + Strikethrough:** ambos podem ser ignorados silenciosamente. Todo elemento que usa italic ou strikethrough deve ter um segundo diferenciador (cor, símbolo, ou estrutura) que preserve o significado na ausência do atributo.
 
 ### Combinações
 
@@ -218,23 +96,23 @@ Atributos podem ser combinados. Combinações previstas:
 
 | Combinação | Uso |
 |---|---|
-| Bold + cor semântica | Título de modal com `DialogType` (ex: bold amarelo para `DialogAlert`) |
-| Dim + strikethrough | Item marcado para exclusão e desabilitado simultaneamente |
-| Italic + `text.secondary` | Hints e descrições — itálico reforça o caráter auxiliar |
+| Bold + cor semântica | Título de modal — bold amarelo para alerta, bold ciano para info |
+| Dim + strikethrough | Item marcado para exclusão e desabilitado — `✕` garante legibilidade sem esses atributos |
+| Italic + `text.secondary` | Hints e pastas somente leitura — `text.secondary` é o diferenciador real |
 
 ### Princípios
 
-- **Bold é o único destaque forte.** Usar com moderação — se tudo for bold, nada é destaque.
-- **Dim é o oposto de bold.** Indica que o elemento existe mas não é relevante no momento.
-- **Italic indica conteúdo auxiliar** — não é o dado em si, é uma explicação *sobre* o dado.
+- **Bold é o único destaque confiável.** Usar com moderação — se tudo for bold, nada é destaque.
+- **Nunca depender de italic ou strikethrough como único diferenciador.** Esses atributos podem ser ignorados — cor e símbolo garantem legibilidade.
+- **Dim indica existência sem relevância.** Prefira dim a invisível — o usuário precisa saber que o elemento existe.
+- **Blink não é usado.** Frequentemente desativado; não é garantia de percepção.
 - **Strikethrough tem significado semântico único** — "marcado para remoção". Não usar decorativamente.
-- **Underline é reserva.** Em TUI, underline pode ser confundido com cursor ou link. Evitar uso rotineiro.
 
 ---
 
 ## Bordas
 
-Caracteres de box-drawing Unicode definem a linguagem visual de painéis, modais e separadores. Lipgloss oferece estilos predefinidos.
+A interface é **minimalista**: bordas são usadas apenas em **diálogos modais** e **separadores de linha**. Painéis, campos e listas não têm borda — espaço em branco e hierarquia tipográfica organizam o conteúdo.
 
 ### Estilos disponíveis
 
@@ -246,22 +124,21 @@ Caracteres de box-drawing Unicode definem a linguagem visual de painéis, modais
 | Thick | `┏ ┓ ┗ ┛ ┃ ━` | `┏━━━━━━┓`<br>`┃      ┃`<br>`┗━━━━━━┛` |
 | Hidden | espaços | Sem borda visível — apenas padding |
 
-### Aplicação por elemento
+### Aplicação
 
-| Elemento | Estilo sugerido | Cor da borda | Princípio |
+| Elemento | Estilo | Cor da borda | Princípio |
 |---|---|---|---|
-| Painel inativo | Rounded | `border.default` | Cantos arredondados — visual moderno e leve |
-| Painel com foco | Rounded | `border.focused` | Mesma forma, cor diferente — foco por cor |
-| Modal (semântico) | Rounded | Cor do tipo | Borda colorida comunica tipo/semântica |
-| Modal (neutro) | Rounded | `border.default` ou `border.focused` | Dependente do contexto |
-| Separador | `│` simples | `border.default` | Linha simples para discreção |
+| Modal semântico | Rounded | Cor do tipo (`semantic.*` ou `accent.*`) | Borda colorida comunica o tipo do diálogo |
+| Modal neutro | Rounded | `border.default` | Diálogos informativos sem urgência semântica |
+| Separador vertical | `│` simples | `border.default` | Divide painéis side-by-side sem os envolver |
+| Separador horizontal | `─` linha | `border.default` | Separa grupos de conteúdo ou seções |
 
 ### Princípios
 
-- **Um único estilo de canto** (provavelmente Rounded) para consistência. Evitar misturar Single e Double na mesma interface.
-- **Diferenciação por cor, não por estilo.** Painel ativo = mesma borda, cor diferente. Mais sutil que trocar de Single para Double.
-- **Bordas são discretas.** O conteúdo é protagonista — bordas enquadram sem competir.
-- **Título na borda.** Painéis e modais podem ter título integrado à borda superior (ex: `╭─ Cofre ───────╮`). Lipgloss suporta esse padrão.
+- **Bordas apenas em diálogos.** Painéis, campos e listas não têm borda — espaço e tipografia estruturam o conteúdo sem envolver cada elemento num box.
+- **Rounded é o único estilo usado.** Consistência visual em todos os diálogos — nunca misturar Single, Double ou Thick.
+- **Cor da borda comunica semântica.** Em diálogos modais, a cor reforça o tipo (alerta, info, neutro) antes de o usuário ler o conteúdo.
+- **Separadores são linhas, não boxes.** Áreas de conteúdo são divididas por `│` ou `─` — linhas que separam sem envolver.
 
 ---
 
@@ -273,16 +150,17 @@ Vocabulário de caracteres Unicode usados como ícones na interface. Usa-se Unic
 
 | Símbolo | Uso |
 |---|---|
-| `▸` | Item recolhido/não expandido (U+25B8 BLACK RIGHT-POINTING SMALL TRIANGLE) |
-| `▾` | Item expandido (U+25BE BLACK DOWN-POINTING SMALL TRIANGLE) |
-| `·` | Item folha (U+00B7 MIDDLE DOT) |
+| `▶` | Pasta com filhos, recolhida (U+25B6 BLACK RIGHT-POINTING TRIANGLE) |
+| `▼` | Pasta com filhos, expandida (U+25BC BLACK DOWN-POINTING TRIANGLE) |
+| `▷` | Pasta vazia — sem filhos (U+25B7 WHITE RIGHT-POINTING TRIANGLE) |
+| `●` | Segredo normal — item folha (U+25CF BLACK CIRCLE) em `text.secondary` |
+| `★` | Segredo favoritado — substitui `●` como prefixo (U+2605 BLACK STAR) em `accent.secondary` |
 
 ### Estados de itens
 
 | Símbolo | Semântica |
 |---|---|
-| `★` | Favorito (U+2605 BLACK STAR) — exibido em `accent.secondary` |
-| `☆` | Não favorito — quando necessário mostrar ambos os estados (U+2606 WHITE STAR) |
+| `★` | Segredo favoritado — **prefixo** do item na árvore (U+2605 BLACK STAR) em `accent.secondary`; substitui `●` |
 | `✕` | Marcado para exclusão (U+2715 MULTIPLICATION X) |
 | `+` | Adicionado na sessão atual (U+002B PLUS SIGN) — exibido em `semantic.info` |
 | `~` | Modificado na sessão atual (U+007E TILDE) — exibido em `semantic.info` |
@@ -290,15 +168,17 @@ Vocabulário de caracteres Unicode usados como ícones na interface. Usa-se Unic
 
 ### Mensagens (barra de mensagens)
 
-| Símbolo | Semântica | Nota |
-|---|---|---|
-| `✓` | Sucesso (U+2713 CHECK MARK) | Alternativa a ✅ para máxima compatibilidade |
-| `⚠` | Aviso (U+26A0 WARNING SIGN) | Atenção requerida |
-| `✗` | Erro (U+2717 BALLOT X) | Alternativa a ❌ |
-| `◐ ◓ ◑ ◒` | Progresso/ativo | Spinner — 4 frames |
-| `•` | Informação (U+2022 BULLET) | Alternativa a 💡 |
+| Símbolo | Tipo | Semântica | Colunas |
+|---|---|---|---|
+| `✓` | MsgSuccess | Sucesso (U+2713 CHECK MARK) | 1 |
+| `ℹ` | MsgInfo | Informação (U+2139 INFORMATION SOURCE) | 1 |
+| `⚠` | MsgWarn | Aviso (U+26A0 WARNING SIGN) | 1 |
+| `✗` | MsgError | Erro (U+2717 BALLOT X) | 1 |
+| `◐ ◓ ◑ ◒` | MsgBusy | Spinner — 4 frames | 1 |
+| `•` | MsgHint | Dica contextual de campo (U+2022 BULLET) | 1 |
+| `💡` | MsgTip | Dica de uso (U+1F4A1 LIGHT BULB) | **2** |
 
-> **Emoji vs Unicode:** os emojis (`✅ ⚠️ ❌ 💡`) são visualmente mais ricos mas ocupam 2 colunas em muitos terminais e podem não renderizar em todos os ambientes. Os símbolos Unicode acima são fallback de 1 coluna. A decisão emoji vs Unicode será tomada na implementação com testes em terminais reais.
+> **Largura dupla (`💡`):** o cálculo de truncamento da barra de mensagens deve reservar 2 colunas para o ícone MsgTip. Todos os outros ícones de mensagem ocupam 1 coluna.
 
 ### Tipos de diálogo (semântico)
 
@@ -343,8 +223,8 @@ Definição de como elementos mudam visualmente conforme o estado de interação
 
 | Estado | Cor do texto | Cor de fundo | Atributo | Borda | Exemplo |
 |---|---|---|---|---|---|
-| **Normal** | `text.primary` | `surface.base` | — | `border.default` | Item, campo, painel inativo |
-| **Com foco** | `text.primary` | `surface.base` | — | `border.focused` | Painel ativo |
+| **Normal** | `text.primary` | `surface.base` | — | — | Item, campo, painel |
+| **Painel ativo** | — | — | — | — | Foco indicado pela command bar — sem borda |
 | **Selecionado (cursor)** | `text.primary` | `special.highlight` | **Bold** | — | Item sob cursor em árvore ou lista |
 | **Desabilitado** | `text.disabled` | `surface.base` | Dim | — | Ação indisponível |
 | **Marcado para exclusão** | `special.muted` | `surface.base` | ~~Strikethrough~~ | — | Item com `✕` |
@@ -363,7 +243,7 @@ Em TUI, estados mudam **instantaneamente** — sem animação nem fade. A única
 
 ### Princípios
 
-- **Foco é por borda, seleção é por fundo.** Dois conceitos distintos: foco indica *qual painel* recebe input; seleção indica *qual item* dentro do painel é o alvo.
+- **Foco de painel é pela command bar, seleção é por fundo.** Qual painel recebe input é indicado pelas ações exibidas na command bar. Qual item dentro do painel está selecionado é indicado por `special.highlight`.
 - **Nunca depender só de cor.** Itens marcados para exclusão usam cor + strikethrough + símbolo `✕`. Itens favoritos usam cor + símbolo `★`. Redundância garante legibilidade em terminais com cores limitadas.
 - **Dim é preferível a hidden.** Itens desabilitados devem ser visíveis (dim) para que o usuário saiba que existem — invisibilidade causa confusão.
 
@@ -375,8 +255,9 @@ Em TUI, estados mudam **instantaneamente** — sem animação nem fade. A única
 
 - Modais são painéis sobrepostos **acima** de todo o frame, centralizados na tela.
 - O conteúdo por trás do modal permanece visível mas **não recebe input** — apenas o modal do topo recebe eventos.
+- O conteúdo de fundo **não é escurecido** (sem dim/fade). Re-renderizar o frame com cores alteradas adicionaria complexidade sem ganho de usabilidade em TUI.
 - Modais se auto-dimensionam pelo conteúdo — não recebem tamanho alocado.
-- A **interface de status** (ex: command bar) muda durante modal: exibe atalhos do modal ativo em vez das ações de contexto.
+- A **command bar** troca para os atalhos do modal ativo enquanto ele estiver aberto.
 
 ### Navegação padrão
 
@@ -528,27 +409,18 @@ TUIs rodam em ambientes heterogêneos. O design system deve funcionar desde term
 
 | Nível | Cores | Contexto | Abordagem |
 |---|---|---|---|
-| **True Color (24-bit)** | 16 milhões | Terminais modernos | Alvo principal — cores exatas |
-| **256 cores** | 216 cores + 24 cinzas | Terminais UNIX/Linux | Fallback — cores mapeadas para cubo próximo |
-| **16 cores (ANSI)** | 16 nomeadas | Consoles legados | Fallback mínimo — sem distinção fina |
-| **Monocromático** | Preto e branco | Pipes/redirecionamento | Sem cor |
+| **256 cores (8-bit)** | 216 cores + 24 cinzas | **Alvo principal** — terminais UNIX/Linux, SSH, tmux | Design validado neste nível |
+| **True Color (24-bit)** | 16 milhões | Terminais modernos (Alacritty, Kitty, WezTerm) | Aprimoramento automático via lipgloss downsampling |
+| **16 cores (ANSI)** | 16 nomeadas | Consoles legados | Fallback mínimo — distinção semântica degradada |
+| **Monocromático** | Preto e branco | Pipes/redirecionamento | Sem cor — não é caso de uso interativo |
 
-### Estratégia de fallback
+> **Decisão técnica:** 256 cores é o mínimo garantido. Tokens são especificados como hex (True Color) — o lipgloss faz downsampling automático para o perfil do terminal detectado. O design deve ser **validado em 256 cores** antes de ser aprovado.
 
-Quando degradando de True Color (24-bit) para 256 cores, cores próximas podem colapsar para o mesmo índice. Isso é tolerado quando existe diferenciação estrutural além da cor (ex: borda é box-drawing, texto é conteúdo semantic).
+### Estratégia de alvo 256 cores
 
-### Suporte a atributos ANSI
+Os tokens são definidos como hex True Color, mas devem ser escolhidos considerando sua correspondência no cubo de 256 cores (6×6×6 + 24 cinzas). Cores próximas podem colapsar para o mesmo índice quando mapeadas — isso é tolerado somente quando existe diferenciação estrutural além da cor (símbolo, atributo tipográfico, ou posição na tela).
 
-Atributos como bold, italic, dim, underline e strikethrough têm suporte variado:
-
-- **Bold:** Universal
-- **Dim:** Amplo, com fallback seguro (exibe normal)
-- **Italic:** Parcial em alguns terminais
-- **Underline:** Amplo
-- **Strikethrough:** Parcial em alguns terminais
-- **Cores:** Universal (ANSI 16), amplo (256), moderno (True Color)
-
-**Princípio:** Use atributos como reforço de diferenciação visual, nunca como único indicador. Se italic falhar, a cor ou a estrutura devem comunicar a mesma intenção.
+**Risco principal:** pares de papéis que precisam ser distinguíveis — ex: `surface.base` vs `surface.raised`, ou `border.default` vs `border.focused` — devem produzir índices 256 visivelmente distintos.
 
 ### Largura de caractere
 
@@ -558,7 +430,7 @@ Alguns caracteres Unicode (especialmente emojis) ocupam **2 colunas** de termina
 
 ### Princípios de compatibilidade
 
-- **Degradação graceful:** A interface deve funcionar em 256 cores e ser usável em 16 cores. True Color é preferência.
+- **256 cores é o alvo de design.** True Color é um aprimoramento automático — não é baseline. Decisões visuais (contraste, distinção semântica) devem ser aprovadas em 256 cores.
 - **Atributos como reforço:** Nunca dependa de um único atributo para comunicar significado. Cor + estrutura + símbolo = redundância.
-- **Testar em múltiplos ambientes:** Validar True Color, 256 cores e 16 cores.
+- **Testar em múltiplos ambientes:** Validar obrigatoriamente em 256 cores (ex: `TERM=xterm-256color`); validar True Color para garantir que o aprimoramento não introduz regressões.
 - **Largura segura:** Emojis geram desalinhamento. Use símbolos Unicode ou texto em posições de layout crítico.
