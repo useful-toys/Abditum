@@ -173,7 +173,7 @@ Plans:
 - [x] 05-02-PLAN.md — Shared services: ASCII art logo, ActionManager, MessageManager, modalModel, dialog factory functions
 - [x] 05-03-PLAN.md — All 7 child model stubs (preVaultModel, vaultTreeModel, secretDetailModel, templateListModel, templateDetailModel, settingsModel, helpModal)
 - [x] 05-04-PLAN.md — Flow stubs (openVaultFlow, createVaultFlow) + rootModel (tea.Model, modal stack, dispatch, frame compositor)
-- [ ] 05-05-PLAN.md — Bootstrap cmd/abditum/main.go + rootModel unit tests (race-free, typed-nil safe)
+- [x] 05-05-PLAN.md — Bootstrap cmd/abditum/main.go + rootModel unit tests (race-free, typed-nil safe)
 
 **UAT:**
 - [ ] `./abditum` launches without panic and renders a placeholder welcome message; `q`/`ctrl+c` exits with code 0

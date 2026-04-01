@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 05
 status: executing
-last_updated: "2026-04-01T06:05:13.770Z"
+last_updated: "2026-04-01T06:17:10.420Z"
 progress:
   total_phases: 12
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 23
-  completed_plans: 22
+  completed_plans: 23
 ---
 
 # Project State — Abditum
@@ -34,16 +34,17 @@ progress:
 
 ## Current Phase
 
-**Phase 05: TUI Scaffold + Root Model** — In Progress 🔄
+**Phase 05: TUI Scaffold + Root Model** — Complete ✓
 
-Plans executed so far:
+Plans executed:
 
 - ✓ 05-01: Core TUI type contracts (childModel, FlowContext, FlowRegistry, domain messages, workArea)
 - ✓ 05-02: Shared services + presentation primitives (ActionManager, MessageManager, modalModel, dialog factories)
 - ✓ 05-03: Child model stubs (7 models: preVaultModel, vaultTreeModel, secretDetailModel, templateListModel, templateDetailModel, settingsModel, helpModal)
 - ✓ 05-04: rootModel — sole tea.Model, workArea state machine, modal stack, FlowRegistry, frame compositor
+- ✓ 05-05: main.go TUI bootstrap + NewRootModel export + 5 rootModel unit tests
 
-**Next:** 05-05 (main.go bootstrap + tests)
+**Next:** Phase 06 (Welcome Screen + Vault Create/Open flows)
 
 ## Accumulated Context
 
@@ -211,6 +212,9 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 05-03]: helpModal.buildContent() groups actions by Group field in insertion order from ActionManager.All()
 - [Phase 05-03]: renderHints() helper placed in prevault.go alongside the preVaultModel
 - [Phase 05]: modals field changed to []childModel to support heterogeneous modal types (modalModel + helpModal) without typed-nil trap
+- [Phase 05-05]: NewRootModel exported wrapper added to root.go — main.go is package main and cannot access unexported newRootModel
+- [Phase 05-05]: vault.NovoCofre() used in main.go bootstrap (not NewCofre which doesn't exist) — Portuguese naming convention
+- [Phase 05-05]: CGO_ENABLED=0 go test -race fails on Windows — race detector requires CGO; use CI (Linux) for race detection; local tests verified without -race
 
 ### Phase 02 Decisions
 
