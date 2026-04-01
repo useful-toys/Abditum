@@ -47,9 +47,26 @@ type childModel interface {
 Interface implementada por modais. Separada de `childModel` porque modais têm contrato diferente: não recebem tamanho alocado (se auto-dimensionam por conteúdo), não participam de despacho de ações, e têm ciclo de vida gerenciado pela stack.
 
 ```go
+type Shortcut struct {
+    Key   string
+    Label string
+}
+
 type modalView interface {
     Update(tea.Msg) tea.Cmd
     View() string
+    Shortcuts() []Shortcut  // renderizados na command bar enquanto modal está ativo
+}
+```
+
+`Shortcuts()` permite que a command bar mostre os atalhos do modal ativo em vez das ações do `ActionManager`:
+
+```go
+// rootModel.View()
+if len(m.modals) > 0 {
+    commandBar = renderShortcuts(m.modals[len(m.modals)-1].Shortcuts())
+} else {
+    commandBar = renderActions(m.actions.Visible())
 }
 ```
 
@@ -403,17 +420,23 @@ Modais são gerenciados como uma pilha LIFO em `rootModel.modals []modalView`:
 
 ### Categorias de modal
 
-| Modal | Retorno | Mecanismo |
-|---|---|---|
-| `confirmModal` | Decisão binária | Callbacks (`onYes`, `onNo` tea.Cmd) — contexto embutido |
-| `messageModal` | Nenhum | Dismiss via ESC ou Enter |
-| `passwordEntryModal` | `[]byte` | `modalResult` — roteado somente ao flow |
-| `filePickerModal` | `string` (caminho) | `modalResult` — roteado somente ao flow |
+| Modal | Retorno | Mecanismo | Destinatário |
+|---|---|---|---|
+| `Ask` / `Confirm` / `ConfirmOrCancel` | Decisão | Callback embutido (`Cmd`) | Child ou flow (callback define) |
+| `Message` | Nenhum | Dismiss via ESC ou ENTER | Ninguém |
+| `PasswordEntry` | `[]byte` | `modalResult` | Somente `activeFlow` |
+| `PasswordCreate` | `[]byte` | `modalResult` | Somente `activeFlow` |
+| `FilePicker` | `string` (caminho) | `modalResult` | Somente `activeFlow` |
+| `TextInput` | `string` | `modalResult` | Somente `activeFlow` |
+| `Select` | índice + valor | `modalResult` | Somente `activeFlow` |
+| `helpModal` | Nenhum | Dismiss via ESC | Ninguém |
+
+**Critério: callback vs modalResult** — se o modal coleta um *valor* (texto, senha, caminho, seleção), usa `modalResult`. Se o modal resolve uma *decisão* finita com contexto já conhecido, usa callback.
 
 **Feedback de progresso:** não existe `progressModal`. Operações assíncronas usam `MessageManager.Show(MsgBusy, ...)` na barra de mensagens — spinner animado a 1fps. O `activeFlow` já bloqueia input local (teclas caem no flow, que as ignora). Modal de progresso seria redundante nos três eixos: feedback visual, bloqueio de input, e animação.
 
-**Tipos de modal (stubs no Phase 5):** entrada de senha, criação de senha, confirmação (sim/não), help.
-**File picker modal:** adiado — implementado na fase que introduz seu primeiro caso de uso.
+**Tipos de modal (stubs no Phase 5):** confirmação, mensagem informativa, entrada de senha, help.
+**Modais adiados:** `FilePicker`, `TextInput`, `Select` — implementados na fase que introduz seu primeiro caso de uso.
 
 ---
 
@@ -611,21 +634,141 @@ if m.mgr.IsLockWarning(m.lastActionAt) {
 
 ---
 
-## `dialogs` — Factory de Diálogos Pré-definidos
+## `dialogs` — Factory de Modais Pré-definidos
 
-Diferente dos managers acima, `dialogs` não é estado compartilhado — são **funções puras** que produzem `tea.Cmd`:
+Diferente dos managers acima, `dialogs` não é estado compartilhado — são **funções puras** que produzem `tea.Cmd`. O Cmd emitido é um `pushModalMsg{}`. `rootModel.Update()` intercepta essa mensagem e empurra o modal na stack. Nenhum filho ou flow acessa a stack diretamente.
+
+### Convenções de navegação
+
+- **ENTER** — aciona a opção marcada como `Default`.
+- **ESC** — aciona a opção marcada como `Cancel`. Se não houver opção `Cancel`, ESC emite `popModalMsg{}` (dismiss simples).
+- Cada opção pode ter **teclas de atalho** próprias — exibidas na command bar via `Shortcuts()`.
+
+### Confirmação e Perguntas (callback-based)
+
+Adequados quando a decisão é finita e o contexto já é conhecido no momento da abertura. Funcionam tanto para children quanto para flows.
 
 ```go
-// informativo — dismiss via ESC ou Enter
-dialogs.Message(title, text string) tea.Cmd
+type DialogOption struct {
+    Label   string      // texto exibido na opção
+    Keys    []string    // atalhos — Keys[0] na command bar
+    Cmd     tea.Cmd     // ação ao selecionar
+    Default bool        // true = ENTER aciona esta opção
+    Cancel  bool        // true = ESC aciona esta opção
+}
 
-// pergunta sim/não — dispara onYes ou onNo conforme seleção
+// Pergunta genérica com opções customizadas
+dialogs.Ask(question string, options ...DialogOption) tea.Cmd
+
+// Conveniências pré-definidas:
 dialogs.Confirm(question string, onYes, onNo tea.Cmd) tea.Cmd
+// Equivale a: Ask(question,
+//   {Label: "Sim", Keys: ["s","y"], Cmd: onYes, Default: true},
+//   {Label: "Não", Keys: ["n"],     Cmd: onNo,  Cancel: true},
+// )
+
+dialogs.ConfirmOrCancel(question string, onYes, onNo, onCancel tea.Cmd) tea.Cmd
+// Equivale a: Ask(question,
+//   {Label: "Sim",      Keys: ["s","y"], Cmd: onYes,    Default: true},
+//   {Label: "Não",      Keys: ["n"],     Cmd: onNo},
+//   {Label: "Cancelar", Keys: [],        Cmd: onCancel, Cancel: true},
+// )
 ```
 
-O Cmd emitido é um `pushModalMsg{}`. `rootModel.Update()` intercepta essa mensagem e empurra o modal na stack. Nenhum filho acessa a stack diretamente.
+**Uso por flow (callback como mensagem de retorno para si mesmo):**
+```go
+return dialogs.Confirm("Sobrescrever arquivo existente?",
+    func() tea.Msg { return overwriteConfirmedMsg{} },
+    func() tea.Msg { return flowCancelledMsg{} },
+)
+```
 
-Callbacks (`onYes`, `onNo`) são adequados quando a decisão é binária e o contexto já é conhecido no momento da abertura. Para coleta de valores (senha, caminho), o modal emite `modalResult` em vez de usar callbacks.
+**Uso por child (callback como Cmd factory):**
+```go
+return dialogs.Confirm("Excluir segredo?",
+    cmdMarkDeleted(mgr, m.focused), nil)
+```
+
+### Mensagem Informativa (sem retorno)
+
+```go
+dialogs.Message(title, text string) tea.Cmd
+// Dismiss via ESC ou ENTER. Sem callbacks, sem modalResult.
+```
+
+### Entrada de Senha (`modalResult` — dados sensíveis)
+
+Senhas são `[]byte` e **nunca transitam via callback** — sempre via `modalResult` roteado exclusivamente ao `activeFlow`.
+
+```go
+// Entrada simples — um campo (F1 abrir cofre)
+dialogs.PasswordEntry(title string) tea.Cmd
+// → passwordEntryResult{Password []byte, Cancelled bool}
+
+// Criação com confirmação — dois campos (F2 criar cofre, F11 alterar senha)
+dialogs.PasswordCreate(title string) tea.Cmd
+// → passwordCreateResult{Password []byte, Cancelled bool}
+// Valida internamente que os dois campos coincidem.
+// Se não coincidem, mostra erro inline e pede para redigitar.
+```
+
+### File Picker (`modalResult`)
+
+```go
+type FilePickerMode int
+const (
+    FilePickerOpen FilePickerMode = iota  // escolher arquivo existente para leitura
+    FilePickerSave                         // escolher destino para escrita
+)
+
+dialogs.FilePicker(title string, mode FilePickerMode, extension string) tea.Cmd
+// → filePickerResult{Path string, Cancelled bool}
+// extension: ex. ".abditum" — adicionada automaticamente em FilePickerSave se omitida
+```
+
+### Entrada de Texto (`modalResult`)
+
+```go
+dialogs.TextInput(title string, placeholder string, validate func(string) error) tea.Cmd
+// → textInputResult{Value string, Cancelled bool}
+// validate é chamado a cada ENTER — se retornar error, mostra inline e não fecha.
+// validate = nil → aceita qualquer valor não vazio.
+```
+
+### Seleção em Lista (`modalResult`)
+
+```go
+type SelectItem struct {
+    Label string
+    Value any
+}
+
+dialogs.Select(title string, items []SelectItem) tea.Cmd
+// → selectResult{Index int, Value any, Cancelled bool}
+// Navegação: ↑↓ para mover, ENTER para confirmar, ESC para cancelar.
+```
+
+### Princípio de design
+
+O flow é um **roteiro** — solicita modais parametrizados e recebe resultados. A lógica visual de cada modal (renderizar campos, validar input, comparar senhas) fica encapsulada na factory. O flow chama uma linha e recebe o resultado pronto:
+
+```go
+// flow_create_vault.go — roteiro limpo
+func (f *createVaultFlow) Update(msg tea.Msg) tea.Cmd {
+    switch f.step {
+    case stepChoosePath:
+        return dialogs.FilePicker("Salvar cofre como", FilePickerSave, ".abditum")
+    case stepFilePicked:
+        r := msg.(filePickerResult)
+        f.path = r.Path
+        return dialogs.PasswordCreate("Definir senha mestra")
+    case stepPasswordCreated:
+        r := msg.(passwordCreateResult)
+        f.password = r.Password
+        return cmdCreateVault(f.mgr, f.path, f.password)
+    }
+}
+```
 
 ---
 
@@ -691,7 +834,7 @@ case tickMsg:
 | Filho lê estado do app | A definir (accessor read-only no `rootModel` ou valores passados no construtor) |
 | Filho registra ações disponíveis | Via `ActionManager.Register(...)` no construtor |
 | Filho define mensagem da barra | Chama `MessageManager.Show(kind, text, ttl, clearOnInput)` dentro de `Update()` |
-| Filho abre diálogo | Retorna `dialogs.Confirm(...)` como Cmd |
+| Filho abre diálogo | Retorna `dialogs.Confirm(...)`, `dialogs.Ask(...)`, etc. como Cmd |
 | Action inicia fluxo multi-passo | `Handler` retorna `startFlowMsg{flow: ...}` |
 | Fluxo empurra modal | Retorna Cmd emitindo `pushModalMsg{}` |
 | Fluxo fecha modal programaticamente | Retorna Cmd emitindo `popModalMsg{}` |
