@@ -96,7 +96,7 @@ O usuário tem controle total e exclusivo sobre seus segredos: os dados existem 
 
 ## Context
 
-**Estado atual:** Phase 3 complete — Complete in-memory vault domain layer (`internal/vault`) delivered with all entity types, full Manager API (40+ methods), business rule enforcement, and comprehensive test coverage (96 tests, 84.8% coverage). Phase 2's crypto package integrated for memory wiping. Ready for Phase 4 (Storage Package) implementation.
+**Estado atual:** Phase 5 complete — Full TUI architecture scaffold delivered. `rootModel` is the sole `tea.Model`, implementing D-06 priority dispatch, `workArea` state machine, modal stack, FlowRegistry, and frame compositor. All 7 child model stubs satisfy `childModel`. Charm v2 dependencies in `go.mod`. Unit tests (5) passing. TUI bootstraps via `main.go`. Ready for Phase 6 (Welcome Screen + Vault Create/Open flows).
 
 **Stack definida:**
 - Linguagem: **Go** — compilado como binário único, sem runtime externo
@@ -161,4 +161,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-30 after Phase 3 completion*
+*Last updated: 2026-04-01 after Phase 5 completion*
