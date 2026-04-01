@@ -2,6 +2,8 @@
 
 > Definições visuais fundamentais para o pacote `internal/tui`.  
 > Complementa `tui-design.md` (layout e interação) e `tui-elm-architecture.md` (arquitetura).
+>
+> **Wireframes com aplicação prática dos tokens:** ver [`tui-specification.md`](tui-specification.md)
 
 ---
 
@@ -37,7 +39,7 @@ A TUI usa os seguintes papéis de cor:
 - **Texto sobre superfícies:** `text.primary` sobre `surface.base` deve ter contraste mínimo legível. Em TUI, isso é garantido naturalmente pela paleta (fundo escuro + texto claro).
 - **Bordas indicam foco:** `border.focused` é a única indicação visual de qual painel está ativo — deve ser claramente distinta de `border.default`.
 - **Semânticas são reservadas:** cores semânticas aparecem somente para comunicar estado (sucesso, erro, etc.) — nunca como decoração.
-- **Consistência entre contextos:** a mesma cor semântica é usada em mensagens (`MsgWarn`), modais (`DialogAlert`), e demais elementos com o mesmo significado.
+- **Consistência entre contextos:** a mesma cor semântica é usada em mensagens de aviso, modais de alerta, e demais elementos com o mesmo significado — nunca um contexto usa uma cor semântica diferente para o mesmo tipo de informação.
 
 ---
 
@@ -201,14 +203,14 @@ Em TUI não existem fontes nem tamanhos — o terminal usa fonte monoespaçada f
 
 ### Atributos e quando usá-los
 
-| Atributo | Efeito visual | Uso no Abditum |
+| Atributo | Efeito visual | Uso comum |
 |---|---|---|
-| **Bold** | Texto mais brilhante e/ou espesso | Títulos de painéis, opção default em modais, label de campo em foco, nome da aplicação no header |
-| *Italic* | Texto inclinado (suporte varia por terminal) | Hints (`MsgHint`), placeholders, descrições contextuais |
-| Dim | Texto com brilho reduzido | Itens desabilitados, texto secundário quando `text.secondary` não for suficiente |
-| Underline | Sublinhado | Reservado — uso pontual se necessário (ex: link ou atalho em texto corrido) |
-| ~~Strikethrough~~ | Texto riscado | Segredos marcados para exclusão na árvore |
-| Normal | Sem atributo | Corpo de texto, valores de campos, itens de lista |
+| **Bold** | Texto mais brilhante e/ou espesso | Títulos, opções default, labels em foco |
+| *Italic* | Texto inclinado (suporte varia por terminal) | Texto auxiliar, placeholders, descrições |
+| Dim | Texto com brilho reduzido | Itens desabilitados, conteúdo secundário |
+| Underline | Sublinhado | Reservado — uso pontual (links, atalhos) |
+| ~~Strikethrough~~ | Texto riscado | Itens marcados para remoção |
+| Normal | Sem atributo | Corpo de texto, valores, itens de lista |
 
 ### Combinações
 
@@ -246,14 +248,13 @@ Caracteres de box-drawing Unicode definem a linguagem visual de painéis, modais
 
 ### Aplicação por elemento
 
-| Elemento | Estilo sugerido | Cor da borda | Notas |
+| Elemento | Estilo sugerido | Cor da borda | Princípio |
 |---|---|---|---|
-| Painel sem foco | Rounded | `border.default` | Cantos arredondados — visual moderno e leve |
-| Painel com foco | Rounded | `border.focused` | Mesma forma, cor diferente — foco por cor, não por peso |
-| Modal de confirmação | Rounded | Cor do `DialogType` | Borda colorida comunica tipo antes de ler conteúdo |
-| Modal de senha | Rounded | `border.focused` | Neutro — a atenção é no campo, não na moldura |
-| Modal de help | Rounded | `border.default` | Passivo — overlay informacional |
-| Separador vertical (painéis) | `│` simples | `border.default` | Linha única entre árvore e detalhe |
+| Painel inativo | Rounded | `border.default` | Cantos arredondados — visual moderno e leve |
+| Painel com foco | Rounded | `border.focused` | Mesma forma, cor diferente — foco por cor |
+| Modal (semântico) | Rounded | Cor do tipo | Borda colorida comunica tipo/semântica |
+| Modal (neutro) | Rounded | `border.default` ou `border.focused` | Dependente do contexto |
+| Separador | `│` simples | `border.default` | Linha simples para discreção |
 
 ### Princípios
 
@@ -268,49 +269,53 @@ Caracteres de box-drawing Unicode definem a linguagem visual de painéis, modais
 
 Vocabulário de caracteres Unicode usados como ícones na interface. Usa-se Unicode básico (não Nerd Fonts) para máxima compatibilidade com terminais.
 
-### Navegação na árvore
+### Navegação em árvore ou hierarquia
 
 | Símbolo | Uso |
 |---|---|
-| `▸` | Pasta recolhida (U+25B8 BLACK RIGHT-POINTING SMALL TRIANGLE) |
-| `▾` | Pasta expandida (U+25BE BLACK DOWN-POINTING SMALL TRIANGLE) |
-| `·` | Segredo — item folha (U+00B7 MIDDLE DOT) |
+| `▸` | Item recolhido/não expandido (U+25B8 BLACK RIGHT-POINTING SMALL TRIANGLE) |
+| `▾` | Item expandido (U+25BE BLACK DOWN-POINTING SMALL TRIANGLE) |
+| `·` | Item folha (U+00B7 MIDDLE DOT) |
 
 ### Estados de itens
 
-| Símbolo | Uso |
+| Símbolo | Semântica |
 |---|---|
-| `★` | Favorito (U+2605 BLACK STAR) |
-| `☆` | Não favorito — se necessário mostrar ambos (U+2606 WHITE STAR) |
+| `★` | Favorito (U+2605 BLACK STAR) — exibido em `accent.secondary` |
+| `☆` | Não favorito — quando necessário mostrar ambos os estados (U+2606 WHITE STAR) |
 | `✕` | Marcado para exclusão (U+2715 MULTIPLICATION X) |
-| `•` | Alterações não salvas — indicador no header (U+2022 BULLET) |
+| `+` | Adicionado na sessão atual (U+002B PLUS SIGN) — exibido em `semantic.info` |
+| `~` | Modificado na sessão atual (U+007E TILDE) — exibido em `semantic.info` |
+| `•` | Alterações não salvas no nível do cofre — indicador no header (U+2022 BULLET) |
 
 ### Mensagens (barra de mensagens)
 
-| Símbolo | MsgKind | Uso |
+| Símbolo | Semântica | Nota |
 |---|---|---|
-| `✓` | `MsgInfo` | Sucesso (U+2713 CHECK MARK) — alternativa a ✅ se emoji não renderizar |
-| `⚠` | `MsgWarn` | Atenção (U+26A0 WARNING SIGN) |
-| `✗` | `MsgError` | Erro (U+2717 BALLOT X) — alternativa a ❌ |
-| `◐ ◓ ◑ ◒` | `MsgBusy` | Spinner rotativo — 4 frames a 1fps |
-| `•` | `MsgHint` | Hint (U+2022 BULLET) — alternativa a 💡 |
+| `✓` | Sucesso (U+2713 CHECK MARK) | Alternativa a ✅ para máxima compatibilidade |
+| `⚠` | Aviso (U+26A0 WARNING SIGN) | Atenção requerida |
+| `✗` | Erro (U+2717 BALLOT X) | Alternativa a ❌ |
+| `◐ ◓ ◑ ◒` | Progresso/ativo | Spinner — 4 frames |
+| `•` | Informação (U+2022 BULLET) | Alternativa a 💡 |
 
 > **Emoji vs Unicode:** os emojis (`✅ ⚠️ ❌ 💡`) são visualmente mais ricos mas ocupam 2 colunas em muitos terminais e podem não renderizar em todos os ambientes. Os símbolos Unicode acima são fallback de 1 coluna. A decisão emoji vs Unicode será tomada na implementação com testes em terminais reais.
 
-### Modais (tipo semântico)
+### Tipos de diálogo (semântico)
 
-| Símbolo | DialogType | Uso |
+| Símbolo | Tipo | Semântica |
 |---|---|---|
-| `?` | `DialogQuestion` | Decisão neutra — alternativa a ❓ |
-| `⚠` | `DialogAlert` | Ação destrutiva — mesmo símbolo do warning |
-| `ℹ` | `DialogInfo` | Informação (U+2139 INFORMATION SOURCE) |
+| `?` | Question | Decisão neutra (U+003F) |
+| `⚠` | Alert/Warning | Ação potencialmente destrutiva (U+26A0) |
+| `ℹ` | Info | Informação (U+2139 INFORMATION SOURCE) |
 
-### Campos sensíveis
+### Campos com conteúdo sensível
 
 | Símbolo | Uso |
 |---|---|
-| `•` | Caractere de máscara de senha (U+2022 BULLET) — `••••••••` |
-| `◉` | Campo revelável — indicador de que pode ser desmascarado (U+25C9 FISHEYE) |
+| `•` | Caractere de substituição — repetido para preencher o espaço do valor oculto (U+2022 BULLET), ex: `••••••••` |
+| `◉` | Indicador de que o campo pode ser revelado — exibido como sufixo do **label** do campo, não do valor (U+25C9 FISHEYE) |
+
+> **Nota:** `•` como máscara não é um ícone de estado — é um caractere de substituição repetido, semanticamente distinto do `•` de alterações não salvas no header.
 
 ### Scroll e navegação
 
@@ -338,14 +343,19 @@ Definição de como elementos mudam visualmente conforme o estado de interação
 
 | Estado | Cor do texto | Cor de fundo | Atributo | Borda | Exemplo |
 |---|---|---|---|---|---|
-| **Normal** | `text.primary` | `surface.base` | — | `border.default` | Item de lista, campo, painel inativo |
-| **Focado** | `text.primary` | `surface.base` | — | `border.focused` | Painel ativo — borda muda de cor |
-| **Selecionado (cursor)** | `text.primary` | `special.highlight` | **Bold** | — | Item sob cursor na árvore ou lista |
-| **Ativo (pressionado)** | — | — | — | — | TUI não tem estado pressed |
-| **Desabilitado** | `text.disabled` | `surface.base` | Dim | — | Ação indisponível na command bar |
-| **Marcado para exclusão** | `special.muted` | `surface.base` | ~~Strikethrough~~ | — | Segredo com `✕` na árvore |
-| **Favorito** | `text.primary` | `surface.base` | — | — | Item normal + `★` com `semantic.warning` ou `accent.secondary` |
-| **Erro inline** | `semantic.error` | `surface.raised` | — | — | Mensagem de validação em modal de senha/texto |
+| **Normal** | `text.primary` | `surface.base` | — | `border.default` | Item, campo, painel inativo |
+| **Com foco** | `text.primary` | `surface.base` | — | `border.focused` | Painel ativo |
+| **Selecionado (cursor)** | `text.primary` | `special.highlight` | **Bold** | — | Item sob cursor em árvore ou lista |
+| **Desabilitado** | `text.disabled` | `surface.base` | Dim | — | Ação indisponível |
+| **Marcado para exclusão** | `special.muted` | `surface.base` | ~~Strikethrough~~ | — | Item com `✕` |
+| **Favorito** | `text.primary` | `surface.base` | — | — | Item com `★` em `accent.secondary` |
+| **Adicionado (sessão)** | `text.primary` | `surface.base` | — | — | Item com `+` em `semantic.info` |
+| **Modificado (sessão)** | `text.primary` | `surface.base` | — | — | Item com `~` em `semantic.info` |
+| **Campo sensível revelado** | `text.primary` | `surface.base` | — | — | Valor temporariamente visível — sem diferenciação de cor |
+| **Pasta virtual / somente leitura** | `text.secondary` | `surface.base` | *Italic* | — | Pasta Favoritos — não editável |
+| **Erro inline** | `semantic.error` | `surface.raised` | — | — | Validação com falha |
+
+> **Nota:** TUIs não têm estado "pressionado" (pressed). Confirmação de ação é comunicada por mudança de contexto ou mensagem na barra de status.
 
 ### Transições
 
@@ -359,74 +369,196 @@ Em TUI, estados mudam **instantaneamente** — sem animação nem fade. A única
 
 ---
 
+## Componentes Modais
+
+### Princípios gerais
+
+- Modais são painéis sobrepostos **acima** de todo o frame, centralizados na tela.
+- O conteúdo por trás do modal permanece visível mas **não recebe input** — apenas o modal do topo recebe eventos.
+- Modais se auto-dimensionam pelo conteúdo — não recebem tamanho alocado.
+- A **interface de status** (ex: command bar) muda durante modal: exibe atalhos do modal ativo em vez das ações de contexto.
+
+### Navegação padrão
+
+| Tecla | Comportamento |
+|---|---|
+| **ENTER** | Aciona a opção marcada como `Default` |
+| **ESC** | Aciona a opção marcada como `Cancel`. Se não houver opção cancel, fecha o modal (dismiss) |
+| Atalho da opção | Aciona diretamente a opção correspondente |
+
+### Tipos de modal
+
+#### Confirmação e perguntas
+
+Apresentam um **título**, uma **mensagem** explicativa (opcional), e um conjunto finito de opções. Cada opção tem label, atalhos, e um Cmd a executar.
+
+##### Tipo semântico (`DialogType`)
+
+O tipo semântico determina o emoji e a cor base do modal, comunicando a natureza da decisão antes de o usuário ler o conteúdo.
+
+| Tipo | Emoji | Semântica | Cor base |
+|---|---|---|---|
+| Question | ❓ | Decisão neutra | Azul (`#7aa2f7`) |
+| Alert | ⚠️ | Ação potencialmente destrutiva | Amarelo (`#e0af68`) |
+| Info | ℹ️ | Informação que requer reconhecimento | Ciano (`#7dcfff`) |
+
+A cor base é aplicada à **borda ou título** do modal (definição visual exata adiada para fase de implementação). O emoji é exibido junto ao título.
+
+##### Variantes pré-definidas
+
+| Factory | Opções | Default (ENTER) | Cancel (ESC) | Padrão de uso |
+|---|---|---|---|---|
+| `Confirm` | Sim / Não | Sim | Não | Confirmações binárias |
+| `ConfirmOrCancel` | Sim / Não / Cancelar | Sim | Cancelar | Decisões com escape |
+| `Ask` | Opções customizadas | Configurável | Configurável | Múltiplas alternativas |
+
+##### Composição visual
+
+- **Título** — frase curta, exibida com o emoji do tipo semântico (ex: "⚠️ Confirmação").
+- **Mensagem** — texto explicativo. Pode ser vazio se o título for autoexplicativo.
+- **Opções** — exibidas como botões ou labels com atalhos.
+- A opção padrão é visualmente destacada (bold ou cor).
+- Atalhos aparecem na interface de status.
+
+Modais de confirmação comunicam a decisão a quem os abriu via callback ou similar mecanismo.
+
+#### Mensagem informativa
+
+Apresenta um título e texto descritivo, com tipo semântico (`DialogType`). Sem opções — apenas dismiss.
+
+| Factory | Dismiss | Tipo |
+|---|---|---|
+| `Message` | ESC ou ENTER | Qualquer `DialogType` |
+
+**Composição visual:**
+
+- Título com emoji do tipo semântico (ex: "ℹ️ Informação", "⚠️ Aviso").
+- Texto livre abaixo — pode ter múltiplas linhas.
+- Cor da borda/título segue o tipo.
+- Interface de status mostra apenas: OK / Fechar.
+
+#### Entrada de dados sensíveis
+
+Campos cujo conteúdo deve ser protegido visualmente.
+
+| Variante | Campos | Validação |
+|---|---|---|
+| Single | 1 campo | Nenhuma |
+| Dual | 2 campos (repetição) | Verifica correspondência |
+
+**Composição visual:**
+
+- Título descritivo.
+- Campo(s) com máscara — caracteres substituídos por símbolo (ex: `•`).
+- **Cor:** mesma que campos normais (`text.primary`). A máscara já comunica o caráter sensível.
+- Interface de status: Confirmar / Cancelar.
+
+**Nota:** Dados sensíveis devem nunca transitar por log ou broadcast.
+
+#### Seleção de arquivo
+
+Navegação e seleção de arquivo do sistema de arquivos.
+
+| Modo | Função |
+|---|---|
+| Open | Selecionar arquivo existente |
+| Save | Escolher destino para escrita |
+
+**Composição visual:**
+
+- Título descritivo.
+- Navegação de diretórios.
+- Modo save: campo para nome do arquivo.
+- Interface de status: Selecionar / Cancelar.
+
+#### Entrada de texto
+
+Campo de texto livre com validação opcional.
+
+| Tipo | Validação |
+|---|---|
+| Simples | Nenhuma |
+| Com validação | Callback/função |
+
+**Composição visual:**
+
+- Título descritivo.
+- Campo com placeholder opcional.
+- Se validação falhar, mensagem de erro exibida — modal não fecha.
+- Interface de status: Confirmar / Cancelar.
+
+#### Seleção em lista
+
+Lista de opções navegável e selecionável.
+
+**Composição visual:**
+
+- Título descritivo.
+- Lista de itens com cursor.
+- Item selecionado visualmente destacado.
+- Interface de status: Selecionar / Cancelar / Navegar.
+
+#### Help/Ajuda
+
+Modal com referência de ações e atalhos disponíveis.
+
+**Composição visual:**
+
+- Ações agrupadas por categoria.
+- Cada ação mostra: teclas, descrição.
+- Pode ter scroll se a lista for longa.
+- Interface de status: Fechar.
+- Dismiss via tecla de escape.
+
+### Stack de modais
+
+Modais podem se sobrepor. Regras:
+
+- O modal do topo recebe input. Modais abaixo permanecem vivos mas não recebem eventos.
+- Modais abaixo não são atualizados até serem trazidos ao topo.
+- A interface de status sempre reflete os atalhos do modal do **topo** da stack.
+
+---
+
 ## Compatibilidade de Terminal
 
 TUIs rodam em ambientes heterogêneos. O design system deve funcionar desde terminais modernos (24-bit color, todos os atributos) até terminais com capacidades reduzidas.
 
 ### Níveis de cor
 
-| Nível | Cores | Terminais típicos | Suporte |
+| Nível | Cores | Contexto | Abordagem |
 |---|---|---|---|
-| **True Color (24-bit)** | 16 milhões | Windows Terminal, iTerm2, Alacritty, kitty, WezTerm, VS Code, GNOME Terminal (recente) | Alvo principal — hex exatos da paleta |
-| **256 cores** | 216 cores + 24 cinzas | xterm-256color, tmux, Terminal.app (macOS), terminais SSH | Fallback obrigatório — cores mapeadas para o cubo 6×6×6 mais próximo |
-| **16 cores (ANSI)** | 16 nomeadas | Consoles legados, SSH para servidores antigos, tty Linux | Fallback mínimo — funcional mas sem distinção fina |
-| **Sem cor** | Monocromático | Pipes, redirecionamento, terminais muito antigos | Lipgloss desativa cor automaticamente (detecção via `$TERM` / `$NO_COLOR`) |
+| **True Color (24-bit)** | 16 milhões | Terminais modernos | Alvo principal — cores exatas |
+| **256 cores** | 216 cores + 24 cinzas | Terminais UNIX/Linux | Fallback — cores mapeadas para cubo próximo |
+| **16 cores (ANSI)** | 16 nomeadas | Consoles legados | Fallback mínimo — sem distinção fina |
+| **Monocromático** | Preto e branco | Pipes/redirecionamento | Sem cor |
 
-### Estratégia de fallback para 256 cores
+### Estratégia de fallback
 
-As cores hex da paleta (Tokyo Night / Cyberpunk) são True Color. Em terminais 256-color, lipgloss converte automaticamente para o índice mais próximo no cubo XTerm. O resultado pode perder nuance — cores próximas podem colapsar para o mesmo índice.
+Quando degradando de True Color (24-bit) para 256 cores, cores próximas podem colapsar para o mesmo índice. Isso é tolerado quando existe diferenciação estrutural além da cor (ex: borda é box-drawing, texto é conteúdo semantic).
 
-**Cores em risco (Tokyo Night):**
+### Suporte a atributos ANSI
 
-| Papel | Hex exato | Índice 256 aproximado | Resultado visual |
-|---|---|---|---|
-| `surface.base` `#1a1b26` | 234 (`#1c1c1c`) | OK — escuro próximo |
-| `surface.raised` `#24283b` | 236 (`#303030`) | OK — distinguível de base |
-| `text.secondary` `#565f89` | 60 (`#5f5f87`) | OK — match aceitável |
-| `border.default` `#414868` | 60 (`#5f5f87`) | Risco — colide com `text.secondary` |
-| `special.highlight` `#283457` | 236 (`#303030`) | Risco — colide com `surface.raised` |
+Atributos como bold, italic, dim, underline e strikethrough têm suporte variado:
 
-**Mitigação:** em decisões de design onde cor é a única diferenciação (ex: `border.default` vs `text.secondary`), garantir que exista também uma diferença estrutural (borda é box-drawing, texto é conteúdo) que sobreviva à colisão de cores.
+- **Bold:** Universal
+- **Dim:** Amplo, com fallback seguro (exibe normal)
+- **Italic:** Parcial em alguns terminais
+- **Underline:** Amplo
+- **Strikethrough:** Parcial em alguns terminais
+- **Cores:** Universal (ANSI 16), amplo (256), moderno (True Color)
 
-### Atributos ANSI — matriz de suporte
+**Princípio:** Use atributos como reforço de diferenciação visual, nunca como único indicador. Se italic falhar, a cor ou a estrutura devem comunicar a mesma intenção.
 
-| Atributo | Suporte | Risco | Fallback |
-|---|---|---|---|
-| **Bold** | Universal — todos os terminais | Nenhum | — |
-| **Dim** (faint) | Amplo — falta em poucos | Baixo | Se ausente, terminal ignora (exibe normal) — aceitável, pois dim é reforço, não única diferenciação |
-| **Italic** | Parcial — falha em: cmd.exe, ConHost (Windows legado), Terminal.app (macOS antigo), alguns terminais Linux sobre SSH | Médio | Texto italic aparece normal. Hints devem usar `text.secondary` (cor) como diferenciação primária, italic como reforço |
-| **Underline** | Amplo | Baixo | Uso reservado — impacto mínimo se ausente |
-| **Strikethrough** | Parcial — falha em: ConHost, Terminal.app, terminais mais antigos | Médio | Segredos excluídos devem ter `✕` + cor muted como diferenciação primária. Strikethrough é reforço visual |
-| **Reverse** (inversão fg/bg) | Universal | Nenhum | Candidato alternativo para seleção de itens |
-| **Foreground color** | Universal (ANSI 16), amplo (256), amplo (True Color) | Baixo | Lipgloss faz downgrade automático |
-| **Background color** | Igual ao foreground | Baixo | Lipgloss faz downgrade automático |
+### Largura de caractere
 
-### Restrições de caracteres Unicode
+Alguns caracteres Unicode (especialmente emojis) ocupam **2 colunas** de terminal em vez de 1, quebrando layouts calculados.
 
-| Característica | Suporte | Risco | Fallback |
-|---|---|---|---|
-| **Box-drawing** (`─│╭╮╰╯`) | Universal em terminais gráficos | Falha rara — terminais sem Unicode | Lipgloss tem estilo `ASCII` (`-`, `\|`, `+`) |
-| **Símbolos básicos** (`★✕▸▾·•`) | Amplo — presente na maioria das fontes monoespaçadas | Baixo | Alternativas ASCII: `*`, `x`, `>`, `v`, `.`, `o` |
-| **Emoji** (`✅❌⚠️💡❓ℹ️`) | Parcial — largura inconsistente (1 ou 2 colunas), renderização varia entre terminais e fontes | Alto | Usar símbolos Unicode de 1 coluna (`✓✗⚠•?ℹ`) como fallback. Decisão emoji vs Unicode na implementação |
-| **Nerd Fonts glyphs** | Requer instalação de fonte específica | Não usar | — |
-
-### Largura de caractere — o problema dos 2 colunas
-
-Alguns caracteres Unicode (especialmente emojis e CJK) ocupam **2 colunas** de terminal em vez de 1. Isso quebra layouts calculados se a contagem de colunas estiver errada.
-
-| Caractere | Largura esperada | Largura real (varia) | Problema |
-|---|---|---|---|
-| `✅` | 1 | 2 (na maioria) | Desalinha colunas de tabela |
-| `⚠️` | 1 | 1 ou 2 (inconsistente!) | Impossível calcular layout confiável |
-| `★` | 1 | 1 (consistente) | Seguro |
-| `◐` | 1 | 1 (consistente) | Seguro |
-
-**Regra:** elementos usados em posições onde o alinhamento importa (command bar, colunas, prefixos de lista) devem usar **apenas caracteres de largura 1 garantida**. Emojis ficam restritos à barra de mensagens (onde desalinhamento de ±1 coluna é tolerável) ou são substituídos por símbolos.
+**Regra:** Caracteres em posições onde o alinhamento importa (tabelas, prefixos) devem ser de largura **1 coluna garantida**. Símbolos como `★`, `✓`, `✕`, `◐` são seguros. Emojis ficam restritos a texto livre onde desalinhamento é tolerável.
 
 ### Princípios de compatibilidade
 
-- **Degradação graceful:** a interface deve ser *funcional* em 256 cores e *usável* em 16 cores. True Color é preferência, não requisito.
-- **Atributos como reforço, não como única diferenciação.** Se italic falhar, o hint ainda é visível via cor. Se strikethrough falhar, o `✕` e a cor muted ainda comunicam exclusão.
-- **Testar nos 3 terminais de referência:** Windows Terminal (True Color), tmux sobre SSH (256), Terminal.app macOS (256 + italic limitado).
-- **Respeitar `$NO_COLOR`.** Se a variável `NO_COLOR` estiver definida, desativar toda cor. Lipgloss/Bubble Tea v2 fazem isso automaticamente.
-- **Largura segura.** Nunca usar emoji em posições de layout calculado. Reservar para texto livre onde ±1 coluna não afeta funcionalidade.
+- **Degradação graceful:** A interface deve funcionar em 256 cores e ser usável em 16 cores. True Color é preferência.
+- **Atributos como reforço:** Nunca dependa de um único atributo para comunicar significado. Cor + estrutura + símbolo = redundância.
+- **Testar em múltiplos ambientes:** Validar True Color, 256 cores e 16 cores.
+- **Largura segura:** Emojis geram desalinhamento. Use símbolos Unicode ou texto em posições de layout crítico.
