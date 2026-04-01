@@ -55,3 +55,6 @@ config.local.yml
 config.local.yaml
 secret.env
 problemas.md
+
+# Windows NUL device artefact (created by PowerShell /dev/null redirect)
+nul
