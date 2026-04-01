@@ -52,6 +52,12 @@ type rootModel struct {
 // Compile-time assertion: rootModel satisfies tea.Model.
 var _ tea.Model = &rootModel{}
 
+// NewRootModel is the exported constructor for main.go (package main cannot
+// access unexported newRootModel). It delegates directly to newRootModel.
+func NewRootModel(mgr *vault.Manager, initialPath string) *rootModel {
+	return newRootModel(mgr, initialPath)
+}
+
 // newRootModel constructs a fully initialized rootModel.
 // mgr may be nil during tests (Phase 5 has no open vault).
 // initialPath is the optional vault path from os.Args (may be empty).
