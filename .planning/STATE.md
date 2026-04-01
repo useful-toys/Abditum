@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 05
 status: executing
-last_updated: "2026-04-01T05:43:51.411Z"
+last_updated: "2026-04-01T05:54:04.969Z"
 progress:
   total_phases: 12
   completed_phases: 5
   total_plans: 23
-  completed_plans: 20
+  completed_plans: 21
 ---
 
 # Project State — Abditum
 
-**Last updated:** 2026-04-01T02:42:26Z
+**Last updated:** 2026-04-01T05:52:46Z
 **Current phase:** 05
 **Milestone:** v1.0
 
@@ -40,8 +40,9 @@ Plans executed so far:
 
 - ✓ 05-01: Core TUI type contracts (childModel, FlowContext, FlowRegistry, domain messages, workArea)
 - ✓ 05-02: Shared services + presentation primitives (ActionManager, MessageManager, modalModel, dialog factories)
+- ✓ 05-03: Child model stubs (7 models: preVaultModel, vaultTreeModel, secretDetailModel, templateListModel, templateDetailModel, settingsModel, helpModal)
 
-**Next:** 05-03 (child model stubs)
+**Next:** 05-04 (rootModel)
 
 ## Accumulated Context
 
@@ -204,6 +205,10 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 05-02]: modalModel fully interactive (j/k navigation, enter/esc) not a passive content container
 - [Phase 05-02]: NewMessage/NewConfirm naming (not Message/Confirm) per plan spec
 - [Phase 05-02]: popModalMsg defined in modal.go alongside the type that emits it
+- [Phase 05-03]: preVaultModel constructor takes *ActionManager (not zero-arg) for consistency and forward compatibility
+- [Phase 05-03]: Work area stubs take (mgr *vault.Manager, actions *ActionManager, msgs *MessageManager) — matches Plan 04 rootModel call sites
+- [Phase 05-03]: helpModal.buildContent() groups actions by Group field in insertion order from ActionManager.All()
+- [Phase 05-03]: renderHints() helper placed in prevault.go alongside the preVaultModel
 
 ### Phase 02 Decisions
 
@@ -214,7 +219,7 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 
 ## Open Decisions
 
-- Help overlay de teclado (`?` key / footer hints) — especificar antes da Phase 5 (TUI scaffold)
+- (None — help overlay implemented in 05-03 via helpModal reading ActionManager.All())
 
 ## Notes
 
