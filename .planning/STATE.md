@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 05
-status: ready
-last_updated: "2026-03-31T22:00:00Z"
+status: executing
+last_updated: "2026-04-01T05:35:46.522Z"
 progress:
   total_phases: 12
   completed_phases: 5
-  total_plans: 21
-  completed_plans: 18
+  total_plans: 23
+  completed_plans: 19
 ---
 
 # Project State — Abditum
@@ -64,7 +64,7 @@ All 3 plans executed successfully:
 
 ### Phase 04.1: Refinamento da Camada de Domínio (Completed 2026-03-31)
 
-**Status:** Complete ✅
+**Status:** Executing Phase 05
 
 **Key Deliverables:**
 
@@ -197,6 +197,9 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 03-06]: Structural operations (move, reposition) only update cofre.modificado, NOT estadoSessao per D-16
 - [Phase 03-06]: Observação architecturally separated (CampoSegredo field, excluded from campos slice) per D-29
 - [Phase 03-06]: Change detection returns (alterado bool, err error) - no-op edits don't mark modified per D-12
+- [Phase 05]: childModel does NOT implement tea.Model — only rootModel does; View() returns string not tea.View
+- [Phase 05]: Extra stub files created beyond plan's files_modified to keep package buildable and all 5 deps in go.mod
+- [Phase 05]: FocusedField uses *vault.CampoSegredo — plan CONTEXT.md D-20 had wrong type name *vault.Campo
 
 ### Phase 02 Decisions
 

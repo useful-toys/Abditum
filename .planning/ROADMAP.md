@@ -169,7 +169,7 @@ Plans:
 **Plans:** 5 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Add charm.land v2 deps to go.mod; define core type contracts (childModel, FlowContext, workArea enum, domain messages, Cmd factory stubs)
+- [x] 05-01-PLAN.md — Add charm.land v2 deps to go.mod; define core type contracts (childModel, FlowContext, workArea enum, domain messages, Cmd factory stubs)
 - [ ] 05-02-PLAN.md — Shared services: ASCII art logo, ActionManager, MessageManager, modalModel, dialog factory functions
 - [ ] 05-03-PLAN.md — All 7 child model stubs (preVaultModel, vaultTreeModel, secretDetailModel, templateListModel, templateDetailModel, settingsModel, helpModal)
 - [ ] 05-04-PLAN.md — Flow stubs (openVaultFlow, createVaultFlow) + rootModel (tea.Model, modal stack, dispatch, frame compositor)
