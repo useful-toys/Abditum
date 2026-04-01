@@ -1,76 +1,93 @@
 package tui
 
-import (
-	"charm.land/bubbles/v2/textinput"
-	tea "charm.land/bubbletea/v2"
-)
+import "charm.land/lipgloss/v2"
 
-// ActionManager is the centralized registry of keyboard actions available at any moment.
-// It is a shared mutable object instantiated in main.go and passed to rootModel,
-// which in turn passes it to every child at construction time.
+// Action represents a single registered keyboard action shown in the command bar or help.
+type Action struct {
+	Key         string // keyboard shortcut string (e.g., "ctrl+q", "?")
+	Label       string // short display label for command bar
+	Description string // longer description for help overlay
+	Group       string // grouping label (e.g., "Global", "Vault", "Navigation")
+	Priority    int    // higher priority shown first in command bar; 0 = default
+}
+
+// ActionManager is the centralized registry of currently available actions.
+// It is a shared mutable object: rootModel and all children call Register/Clear
+// on it; only rootModel.View() reads from it via Visible() and All().
 //
-// Guiding analogy: just as vault.Manager is the API for vault operations,
-// ActionManager is the API for defining which actions are available (D-16).
+// ActionManager does NOT know about Bubble Tea internals — it holds no tea.Cmd
+// or messages. It is queried synchronously from View() only.
 //
-// Usage:
-//   - Registration: each child calls Register when it becomes active
-//   - Command bar: reads Visible() — a prioritized, display-width-aware subset
-//   - Help modal: reads All() — the full list of registered actions
-//   - rootModel: registers global shortcuts (ctrl+Q, ?) at startup
-//
-// ActionManager does NOT know about Bubble Tea internals — it is a plain Go struct
-// with no tea.Cmd or messaging. It is queried synchronously from View() only.
+// Phase 5: stub implementation — Visible() returns a flat slice, no display-width
+// awareness yet. Full priority/grouping logic added in later phases.
 type ActionManager struct {
 	actions []Action
 }
 
-// Action represents a single keyboard action available in the current context.
-type Action struct {
-	Key         string // keyboard shortcut (e.g., "ctrl+q", "enter", "n")
-	Label       string // short display label for command bar (e.g., "Quit", "New")
-	Description string // longer description for help overlay
-	Group       string // grouping key for help overlay (e.g., "Global", "Vault", "Secret")
+// NewActionManager creates a new, empty ActionManager.
+func NewActionManager() *ActionManager {
+	return &ActionManager{}
 }
 
-// Register adds an action to the registry.
-// Children call this when they become active to surface their shortcuts.
+// Register adds an action to the registry. Duplicate keys are allowed
+// (the latest registration wins display priority when groups are merged).
 func (a *ActionManager) Register(action Action) {
 	a.actions = append(a.actions, action)
 }
 
-// Unregister removes all actions belonging to a given group.
-// Children call this when they become inactive to clean up their shortcuts.
-func (a *ActionManager) Unregister(group string) {
+// ClearGroup removes all actions belonging to the given group.
+// Children call this when they deactivate, passing their group name.
+func (a *ActionManager) ClearGroup(group string) {
 	filtered := a.actions[:0]
-	for _, action := range a.actions {
-		if action.Group != group {
-			filtered = append(filtered, action)
+	for _, act := range a.actions {
+		if act.Group != group {
+			filtered = append(filtered, act)
 		}
 	}
 	a.actions = filtered
 }
 
-// All returns the complete list of registered actions, for the help overlay.
+// Visible returns a prioritized subset of registered actions for the command bar.
+// Phase 5: returns all actions sorted by Priority descending (flat list).
+// Later phases: add display-width awareness and truncation.
+func (a *ActionManager) Visible() []Action {
+	// Return copy sorted by priority (higher first).
+	result := make([]Action, len(a.actions))
+	copy(result, a.actions)
+	// Simple insertion sort by Priority descending (small slice, no import needed).
+	for i := 1; i < len(result); i++ {
+		for j := i; j > 0 && result[j].Priority > result[j-1].Priority; j-- {
+			result[j], result[j-1] = result[j-1], result[j]
+		}
+	}
+	return result
+}
+
+// All returns all registered actions, grouped. Used by the help overlay.
 func (a *ActionManager) All() []Action {
 	result := make([]Action, len(a.actions))
 	copy(result, a.actions)
 	return result
 }
 
-// Visible returns a subset of registered actions for the command bar.
-// Phase 5 stub: returns all actions (full prioritization logic deferred to later phases).
-func (a *ActionManager) Visible() []Action {
-	return a.All()
+// RenderCommandBar renders the command bar line from visible actions.
+// Placeholder style: "  key  label  |  key  label  ..."
+func (a *ActionManager) RenderCommandBar(width int) string {
+	actions := a.Visible()
+	if len(actions) == 0 {
+		return ""
+	}
+	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("11")) // yellow
+	var parts []string
+	for _, act := range actions {
+		parts = append(parts, keyStyle.Render(act.Key)+"  "+act.Label)
+	}
+	bar := ""
+	for i, p := range parts {
+		if i > 0 {
+			bar += "  │  "
+		}
+		bar += p
+	}
+	return lipgloss.NewStyle().Width(width).Render(bar)
 }
-
-// NewActionManager creates a new ActionManager with no registered actions.
-func NewActionManager() *ActionManager {
-	return &ActionManager{}
-}
-
-// Ensure textinput import is used — bubbles/v2 provides components for future phases.
-// This blank assignment keeps the import active until real textinput usage is added.
-var _ = textinput.New
-
-// Ensure tea import is used.
-var _ tea.Cmd
