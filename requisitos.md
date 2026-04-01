@@ -27,7 +27,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 ## Conceitos (Glossário)
 
 - **Senha mestra**: chave de acesso ao cofre, usada para criptografar e descriptografar os dados
-- **Senha falsa de coação** *(Duress Password)*: senha mestra alternativa que abre uma versão restrita do cofre, protegendo os dados reais em situações de ameaça
+- **Senha falsa de coação** *(Duress Password)*: senha mestra alternativa que abre uma versão restrita do cofre, protegendo os dados reais em situações de ameaça *(fora de escopo v1)*
 - **Cofre**: arquivo criptografado que armazena os segredos do usuário
   - **Bloqueio do cofre**: interrupção do acesso ao conteúdo do cofre, exigindo nova autenticação para retomar
 - **Segredo**: item individual dentro do cofre, composto por campos
@@ -35,7 +35,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - **Campo**: elemento individual de um segredo, com nome e valor. Existem dois tipos de campo:
   - **Campo comum**: campo com valor sempre visível, como nome do serviço ou usuário
   - **Campo sensível**: campo com valor oculto por padrão, como senha ou chave de API
-- **Observação**: campo comum especial que existe automaticamente em todo segredo, não pode ser renomeado ou excluído
+- **Observação**: campo comum especial que existe automaticamente em todo segredo; não pode ser renomeado, excluído ou movido (ver Regras Transversais → Observação)
 - **Pasta**: estrutura que agrupa segredos e outras pastas dentro do cofre
 - **Modelo de segredo**: estrutura predefinida de campos para agilizar a criação de segredos
 
@@ -85,7 +85,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - O bloqueio retorna ao fluxo de abertura do cofre, exigindo nova autenticação para retomar o acesso
   - Ao bloquear, a senha mestra é limpa da memória (sobrescrita com zeros) e buffers sensíveis são descartados
   - O terminal é limpo (clear screen) antes de devolver o controle ao shell, evitando que dados visíveis na TUI permaneçam no buffer do terminal
-  - Implementação esforça-se por usar memória protegida (mlock/VirtualLock quando disponível) durante a sessão para impedir swap do arquivo de memória para disco. Se memória protegida não estiver disponível, a aplicação opera normalmente sem essa camada de proteção
+  - Implementação usa memória protegida (mlock/VirtualLock) quando disponível para impedir swap de dados sensíveis. Se indisponível, a aplicação opera normalmente sem essa camada de proteção
 - Sair da aplicação
   - Se houver alterações não salvas, exibir confirmação com opções: Salvar e Sair / Descartar e Sair / Cancelar
   - Se não houver alterações pendentes, sair diretamente sem confirmação
@@ -143,9 +143,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
   - Não altera a estrutura do segredo (para alterar estrutura, use Adicionar/Renomear/Reordenar/Excluir campo)
 - Alterar estrutura do segredo: adicionar campo (com nome e tipo); renomear campo; reordenar campos; excluir campo
   - Não permite alterar o tipo de um campo
-  - Não permite alterar a posição, tipo ou nome da observação
-  - A Observação ocupa sempre a última posição na lista de campos — campos adicionados pelo usuário são posicionados acima dela
-  - A Observação não pode ser movida — apenas campos do usuário participam da reordenação
+  - Não permite alterar a posição, tipo ou nome da observação (ver Regras Transversais → Observação)
 - Favoritar e desfavoritar segredo
 - Marcar segredo para exclusão
   - O segredo permanece na lista da pasta, visualmente sinalizado como excluído
@@ -193,7 +191,7 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 - Excluir modelo de segredo
 - Criar modelo a partir de um segredo existente
   - A Observação automática do segredo é sempre ignorada — não é copiada para o modelo
-  - O campo "Observação" não pode ser adicionado, renomeado ou copiado para um modelo. A aplicação deve impedir a criação de um campo com este nome em um modelo.
+  - O campo "Observação" não pode ser criado em um modelo (ver Regras Transversais → Observação)
 
 ## Regras Transversais
 
@@ -226,7 +224,15 @@ O Abditum foi projetado para que seus dados nunca estejam acessíveis a ninguém
 
 ### Limites
 - Não há limite de quantidade para: pastas, segredos, modelos, campos em segredo, campos em modelo
-- Limites são regidos pelo bom senso e pelos recursos do sistema
+- Limites são regidos pelos recursos do sistema; a aplicação não impõe limites artificiais
+
+### Concorrência e Acesso ao Arquivo
+- Se o arquivo do cofre estiver sendo usado por outro processo, a abertura deve falhar com mensagem informativa
+- Se o arquivo do cofre não tiver permissão de leitura, a abertura deve falhar com mensagem informativa
+- Se o arquivo do cofre não tiver permissão de escrita, o salvamento deve falhar com mensagem informativa
+- Nomes de pastas e segredos podem conter qualquer caractere Unicode exceto separadores de caminho (`/`, `\`) e caracteres de controle
+
+### Ordenação
 
 ### Ordenação
 - A ordenação de segredos, pastas e campos é mantida pela ação do usuário (reordenação manual)
