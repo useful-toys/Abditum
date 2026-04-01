@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 05
 status: executing
-last_updated: "2026-04-01T05:35:46.522Z"
+last_updated: "2026-04-01T05:43:51.411Z"
 progress:
   total_phases: 12
   completed_phases: 5
   total_plans: 23
-  completed_plans: 19
+  completed_plans: 20
 ---
 
 # Project State — Abditum
 
-**Last updated:** 2026-03-31T22:00:00Z
+**Last updated:** 2026-04-01T02:42:26Z
 **Current phase:** 05
 **Milestone:** v1.0
 
@@ -34,15 +34,14 @@ progress:
 
 ## Current Phase
 
-**Phase 04.1: Refinamento da Camada de Domínio** — Complete ✅
+**Phase 05: TUI Scaffold + Root Model** — In Progress 🔄
 
-All 3 plans executed successfully:
+Plans executed so far:
 
-- ✓ 04.1-01: Private entity methods + factory estadoSessao fixes
-- ✓ 04.1-02: Versioned DeserializarCofre + migrate.go removed
-- ✓ 04.1-03: Manager fully refactored + AlternarFavorito bug fixed + 3 regression tests
+- ✓ 05-01: Core TUI type contracts (childModel, FlowContext, FlowRegistry, domain messages, workArea)
+- ✓ 05-02: Shared services + presentation primitives (ActionManager, MessageManager, modalModel, dialog factories)
 
-**Next:** Phase 05 - TUI Scaffold + Root Model
+**Next:** 05-03 (child model stubs)
 
 ## Accumulated Context
 
@@ -200,6 +199,11 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 05]: childModel does NOT implement tea.Model — only rootModel does; View() returns string not tea.View
 - [Phase 05]: Extra stub files created beyond plan's files_modified to keep package buildable and all 5 deps in go.mod
 - [Phase 05]: FocusedField uses *vault.CampoSegredo — plan CONTEXT.md D-20 had wrong type name *vault.Campo
+- [Phase 05-02]: ActionManager uses insertion sort for priority (small slice, no sort import needed)
+- [Phase 05-02]: MessageManager simplified to single string slot — severity tiers deferred per D-17
+- [Phase 05-02]: modalModel fully interactive (j/k navigation, enter/esc) not a passive content container
+- [Phase 05-02]: NewMessage/NewConfirm naming (not Message/Confirm) per plan spec
+- [Phase 05-02]: popModalMsg defined in modal.go alongside the type that emits it
 
 ### Phase 02 Decisions
 
