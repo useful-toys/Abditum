@@ -186,6 +186,17 @@ Plans:
 
 ---
 
+### Phase 05.1: 05-tui-scaffold-root-model-fix (INSERTED)
+
+**Goal:** Realign internal/tui contracts with 	ui-elm-architecture.md before Phase 6 builds real screens. Rewrites childModel(3), modalView, flowHandler+Init, ActionManager owner API, MessageManager with MsgKind/TTL, dialogs expansion, and root.go dispatch — eliminating FlowRegistry/FlowContext/flowDescriptor which Phase 5 introduced but the canonical architecture abandoned.
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 2 plans in 2 waves
+
+Plans:
+- [ ] 05.1-01-PLAN.md — Interface contracts + service rewrites + modal/child migrations (flows.go, actions.go, messages.go, dialogs.go, modal.go, help.go, welcome.go, child stubs)
+- [ ] 05.1-02-PLAN.md — root.go complete rewrite + root_test.go (restores compilation, all tests pass)
+
 ### Phase 6: Welcome Screen + Vault Create/Open
 
 **Goal:** A user can pick a vault file path, create a new vault with a master password (with real-time strength feedback), or open an existing vault ï¿½ and every error case surfaces the correct generic user message with no technical detail leaked.
