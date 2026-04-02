@@ -1,4 +1,4 @@
-# Arquitetura TUI do Abditum
+﻿# Arquitetura TUI do Abditum
 
 > Documento de referência arquitetural para o pacote `internal/tui`.  
 > Baseado nas decisões capturadas em `.planning/phases/05-tui-scaffold-root-model/05-CONTEXT.md`.
@@ -130,7 +130,9 @@ type Action struct {
                                 // todas aparecem no help screen
     Label       string          // nome curto — command bar e help
     Description string          // texto longo — só no help screen
-    Group       string          // agrupamento no help screen
+    Group       int             // agrupamento no Help — grupos em ordem crescente
+    Priority    int             // ordem na barra: maior = mais à esquerda; governa truncação
+    HideFromBar bool            // oculta da barra; listado no Help
     Scope       ActionScope     // quando a ação pode disparar
     Enabled     func() bool     // lê estado do child no momento da chamada
     Handler     func() tea.Cmd  // retorna intenção de execução
@@ -418,7 +420,7 @@ Modais são gerenciados como uma pilha LIFO em `rootModel.modals []modalView`:
 - **Push:** via `pushModalMsg{}` — `modals = append(modals, msg.modal)`. Nenhum child ou flow acessa a stack diretamente.
 - **Pop por usuário:** via ESC ou seleção — o modal retorna `popModalMsg{}` como Cmd.
 - **Pop programático:** o flow emite `popModalMsg{}` quando uma operação async conclui — fecha o modal sem ação do usuário.
-- **Segurança do pop:** `ctrl+Q` é `ScopeLocal` — não dispara durante flows/modais. O único `ScopeGlobal` (`?`) empurra `helpModal` que é passivo (dismiss via ESC). Portanto, não há risco de um push externo intercalar com um pop pendente.
+- **Segurança do pop:** `F5` é `ScopeLocal` — não dispara durante flows/modais. O único `ScopeGlobal` que empurra modal é `F1` (helpModal), que é passivo (dismiss via ESC). Portanto, não há risco de um push externo intercalar com um pop pendente.
 - **Invariante de callbacks:** callbacks `onYes`/`onNo` de `confirmModal` não devem ser `pushModalMsg` instantâneos. Se `onYes` precisa abrir outro modal, deve fazê-lo via `startFlowMsg` ou Cmd assíncrono — garantindo que o `popModalMsg` do confirm seja processado primeiro.
 - O modal do topo recebe input de teclado/mouse (via passo 3 do despacho).
 - Modais abaixo continuam vivos e recebem mensagens de domínio via `broadcast()`.
@@ -567,11 +569,11 @@ API para todas as operações sobre o cofre (domínio). Fonte primária de dados
 > **Analogia:** assim como `vault.Manager` é a API para operações sobre o cofre, `ActionManager` é a API para definir quais ações estão disponíveis em cada momento **e o ponto único de despacho de input**.
 
 - Objeto Go puro — sem `tea.Cmd`, sem mensagens, sem Bubble Tea.
-- **Registro:** cada child registra suas ações no construtor via `actions.Register(owner, ...Action)`. `rootModel` registra ações de startup (`ctrl+Q` com `ScopeLocal`, `?` com `ScopeGlobal`).
+- **Registro:** cada child registra suas ações no construtor via `actions.Register(owner, ...Action)`. `rootModel` registra ações de startup (`F5` Sair com `ScopeLocal`, `F1` Ajuda com `ScopeGlobal`, `F12` Tema com `ScopeGlobal` + `HideFromBar: true`).
 - **Descarte:** `actions.ClearOwned(owner)` — chamado **antes** de setar o child para `nil` (invariante de ciclo de vida).
 - **Dono ativo:** `actions.SetActiveOwner(owner)` — quando dois children estão vivos (`vaultTree` + `secretDetail`), `Dispatch` prioriza ações do dono ativo. Ações do `rootModel` (globais) são sempre elegíveis.
 - **Despacho:** `actions.Dispatch(key string, inFlowOrModal bool) tea.Cmd` — verifica `Scope`, `Enabled()`, e executa `Handler()`.
-- **Command bar:** `ActionManager.Visible()` — ações onde `Enabled() == true`, subconjunto priorizado para o espaço disponível.
+- **Command bar:** `ActionManager.Visible()` — ações onde `Enabled() == true` e `HideFromBar == false`, ordenadas por `Priority` decrescente. `F1 Ajuda` é âncora fixa reservada à extrema direita — descontada antes de distribuir as demais.
 - **Help modal:** `ActionManager.All()` — lista completa de todas as ações registradas, agrupadas por `Group`.
 
 ### `MessageManager`
@@ -583,11 +585,12 @@ Objeto Go puro — sem `tea.Cmd`, sem mensagens Bubble Tea.
 ```go
 type MsgKind int
 const (
-    MsgInfo  MsgKind = iota  // ✅ operação concluída com sucesso
-    MsgWarn                   // ⚠️  atenção — bloqueio iminente, conflito externo
-    MsgError                  // ❌ falha — salvamento, corrupção
-    MsgBusy                   // ⏳ operação em andamento — salvando, exportando (spinner animado)
-    MsgHint                   // 💡 explicação contextual — descrição de campo
+    MsgSuccess MsgKind = iota // ✓  operação concluída com sucesso — semantic.success, TTL 3s
+    MsgInfo                   // ℹ  informação neutra — semantic.info, TTL 3s
+    MsgWarn                   // ⚠  atenção — semantic.warning, permanente, clearOnInput
+    MsgError                  // ✗  falha — semantic.error bold, TTL 5s
+    MsgBusy                   // ◐◓◑◒ operação em andamento — spinner animado, permanente
+    MsgHint                   // •  dica contextual de campo — text.secondary italic, permanente
 )
 ```
 
@@ -629,7 +632,7 @@ func (mm *MessageManager) HandleInput()  // limpa se clearOnInput == true
 
 - **`Show()`/`Clear()` são chamados exclusivamente dentro de `Update()`** — nunca dentro de Cmd factories (`func() tea.Msg`). Cmd factories executam em goroutine separada no Bubble Tea; chamar `Show()` de lá causaria race condition.
 - **Children e flows** chamam `Show()` ou `Clear()` de dentro do seu `Update()` — síncrono, seguro.
-- O **`rootModel`** chama `Show()` ao processar mensagens de domínio retornadas por Cmd factories (ex: `secretModifiedMsg` → `Show(MsgInfo, "Favoritado", 2, false)`).
+- O **`rootModel`** chama `Show()` ao processar mensagens de domínio retornadas por Cmd factories (ex: `secretModifiedMsg` → `Show(MsgSuccess, "Favoritado", 2, false)`).
 - **Prioridade:** last-write-wins — sem stack, sem fila. Se um `MsgInfo` ("Copiado", TTL=3s) sobrescrever um `MsgWarn` de lock, no próximo tick `IsLockWarning` re-emite o warning automaticamente.
 - Filhos **não leem** do `MessageManager` — é write-only para eles.
 - **Invariante de `MsgBusy`:** fluxos que emitem `Show(MsgBusy, ...)` devem emitir `Show()` ou `Clear()` em **todo** caminho de saída (sucesso, erro, cancelamento). `MsgBusy` não tem TTL — permanece até ser substituído.
@@ -654,7 +657,7 @@ Estilos por `Kind` (cor + formatação) vivem na camada de renderização, não 
 ```go
 // rootModel.Update() — feedback de operação simples
 case secretModifiedMsg:
-    m.messages.Show(MsgInfo, "Favoritado", 2, false)
+    m.messages.Show(MsgSuccess, "Favoritado", 2, false)
     return m, tea.Batch(m.broadcast(msg)...)
 
 // flowHandler.Update() — progresso e resultado
@@ -770,7 +773,7 @@ dialogs.Message(dtype DialogType, title, message string) tea.Cmd
 Senhas são `[]byte` e **nunca transitam via callback** — sempre via `modalResult` roteado exclusivamente ao `activeFlow`.
 
 ```go
-// Entrada simples — um campo (F1 abrir cofre)
+// Entrada simples — um campo (fluxo Abrir cofre)
 dialogs.PasswordEntry(title string) tea.Cmd
 // → passwordEntryResult{Password []byte, Cancelled bool}
 
@@ -975,8 +978,9 @@ Atalhos registrados pelo `rootModel` no startup. Passam pelo `ActionManager.Disp
 
 | Tecla | Comportamento | Scope | Justificativa |
 |---|---|---|---|
-| `ctrl+Q` | Quit — confirmação modal se há alterações não salvas | `ScopeLocal` | Durante flow/modal ativo, quit causaria conflitos: sobrescrita de `activeFlow`, modais órfãos na stack, Cmds assíncronos retornando para o flow errado. O caminho seguro é ESC (fecha modal/flow) → `ctrl+Q` |
-| `?` | Abre `helpModal` com todas as ações registradas no `ActionManager` | `ScopeGlobal` | Help é passivo — overlay informacional sem estado, dismiss via ESC, sem conflito de flow |
+| `F5` | Sair — confirmação modal se há alterações não salvas | `ScopeLocal` | Durante flow/modal ativo, sair causaria conflitos: sobrescrita de `activeFlow`, modais órfãos na stack, Cmds assíncronos retornando para o flow errado. O caminho seguro é ESC (fecha modal/flow) → `F5` |
+| `F1` | Abre `helpModal` com todas as ações registradas no `ActionManager` | `ScopeGlobal` | Help é passivo — overlay informacional sem estado, dismiss via ESC, sem conflito de flow |
+| `F12` | Alterna tema (Tokyo Night ↔ Cyberpunk) | `ScopeGlobal` | Ação pontual sem visibilidade permanente — `HideFromBar: true`, aparece no Help |
 | `ctrl+C` | **Não é quit** | — | |
 | `q` | **Não é quit global** | — | |
 
