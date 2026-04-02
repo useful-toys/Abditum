@@ -291,7 +291,8 @@ O contexto de uso detalhado de cada símbolo está na seção onde ele é consum
 | `▌` | Cursor de campo | 1 | Block Elements |
 | `↑` `↓` | Indicação de scroll | 1 | Arrows |
 | `─` `│` | Separadores | 1 | Box Drawing |
-| `╭╮╰╯` | Cantos arredondados (diálogos) | 1 | Box Drawing |
+| `·` | Separador do cabeçalho | 1 | Latin Supplement |
+| `╭╮╰╯` | Cantos arredondados | 1 | Box Drawing |
 | `<╡` | Conector árvore → detalhe | 1+1 | Basic Latin + Box Drawing |
 | `…` | Truncamento | 1 | Latin Supplement |
 | `••••` | Máscara de conteúdo sensível | 1/cada | Latin Supplement |
@@ -424,6 +425,35 @@ Regras específicas:
 
 > A anatomia interna de cada diálogo funcional está documentada na [especificação de telas](tui-specification-novo.md#diálogos-funcionais).
 
+**Ação default condicional (diálogos funcionais):**
+
+Em diálogos funcionais com campos de entrada, a ação default (confirmar/continuar) fica **inativa** até que as condições mínimas do diálogo sejam satisfeitas. Isso se aplica a **todos os meios de acionamento**: `Enter`, mouse, atalho de teclado.
+
+| Estado | Estilo da ação default | Comportamento |
+|---|---|---|
+| Condições **não** satisfeitas | `text.disabled`, sem bold | Tecla/mouse ignorados silenciosamente |
+| Condições satisfeitas | Token normal da severidade + **bold** | Tecla/mouse acionam a ação |
+
+A especificação de cada diálogo funcional documenta suas condições em uma tabela dedicada.
+
+> A ação de cancelamento (`Esc`) permanece sempre ativa — o usuário pode abandonar o diálogo a qualquer momento.
+
+**Barra de mensagens em diálogos:**
+
+Diálogos funcionais usam a barra de mensagens para comunicar dicas e erros de validação. Diálogos de decisão (confirmação/reconhecimento) **não** usam a barra — a mensagem completa está no corpo do diálogo.
+
+Ciclo de vida da barra durante um diálogo funcional:
+
+| Momento | Conteúdo da barra | Tipo |
+|---|---|---|
+| Diálogo abre | Dica contextual do primeiro campo com foco | Dica de campo (`•` italic) |
+| Foco entra em campo (branco ou válido) | Dica descritiva sobre o campo | Dica de campo (`•` italic) |
+| Foco entra em campo (com valor inválido) | Mensagem de erro explicando a invalidação | Erro (`✗` bold, TTL 5s) |
+| Tentativa de confirmar com validação falha | Mensagem de erro; diálogo permanece aberto | Erro (`✗` bold, TTL 5s) |
+| Diálogo fecha (confirmação ou cancelamento) | Barra é limpa | — |
+
+> **Separação de responsabilidade:** mensagens pós-fechamento (ex: "◐ Criando cofre…", "✓ Cofre aberto", "Operação cancelada") são responsabilidade do orquestrador — não do diálogo.
+
 ---
 
 ### Mensagens
@@ -450,8 +480,9 @@ A aplicação comunica feedback ao usuário por meio de uma mensagem exibida na 
 
 - Mensagem de **Aviso** é re-emitida a cada tick enquanto a condição persistir (ex: bloqueio iminente)
 - **Ocupado** permanece até ser substituído por Sucesso ou Erro ao concluir a operação; spinner avança 1 frame/segundo sincronizado com tick global
-- **Dica de campo** é substituída ao navegar para outro campo
+- **Dica de campo** é substituída ao navegar para outro campo, ou por um Erro se o campo tiver valor inválido ao receber foco
 - **Dica de uso** é substituída pela próxima mensagem de qualquer tipo
+- Ao **fechar um diálogo** (confirmação ou cancelamento), a barra é limpa. Mensagens subsequentes são responsabilidade do orquestrador
 
 ---
 
