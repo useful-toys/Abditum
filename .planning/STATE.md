@@ -49,6 +49,7 @@ Plans executed:
 ## Accumulated Context
 
 ### Roadmap Evolution
+- Phase 05.2 inserted after Phase 5: tui-scaffold-root-model-test (INSERTED)
 
 - Phase 04.1 inserted after Phase 04: Refinamento da camada de domínio — encapsulamento e versioning (INSERTED)
 
