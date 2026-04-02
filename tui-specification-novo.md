@@ -33,6 +33,7 @@ Quando algo é específico de uma tela ou componente (ex: quais campos o diálog
   - [Help](#help)
 - [Componentes](#componentes)
   - [Cabeçalho](#cabeçalho)
+  - [Barra de Comandos](#barra-de-comandos)
 
 ---
 
@@ -674,14 +675,14 @@ Sem nome de cofre, sem indicador dirty, sem abas. A linha separadora é contínu
 **Sem alterações:**
 
 ```
-  Abditum  ·  cofre.abditum               ╭ Cofre ╮  ╭ Modelos ╮  ╭ Configurações ╮
+  Abditum · cofre                          ╭ Cofre ╮  ╭ Modelos ╮  ╭ Config ╮
 ──────────────────────────────────────────────────────────────────────────────────
 ```
 
 **Com alterações não salvas:**
 
 ```
-  Abditum  ·  cofre.abditum  •            ╭ Cofre ╮  ╭ Modelos ╮  ╭ Configurações ╮
+  Abditum · cofre •                         ╭ Cofre ╮  ╭ Modelos ╮  ╭ Config ╮
 ──────────────────────────────────────────────────────────────────────────────────
 ```
 
@@ -692,8 +693,8 @@ O `•` aparece imediatamente após o nome do cofre, em `semantic.warning`. Desa
 #### Modo Cofre ativo
 
 ```
-  Abditum  ·  cofre.abditum  •        ╭───────╮  ╭ Modelos ╮  ╭ Configurações ╮
-─────────────────────────────────────╯ Cofre ╰────────────────────────────────────
+  Abditum · cofre •                      ╭───────╮  ╭ Modelos ╮  ╭ Config ╮
+─────────────────────────────────────────╯ Cofre ╰──────────────────────────────
 ```
 
 A aba ativa na linha 1 substitui o texto por `─` (`╭───────╮`), mantendo a mesma largura da versão inativa (`╭ Cofre ╮`). Na linha 2, o texto desce para o gap entre `╯` e `╰`, que se alinham verticalmente com `╭` e `╮` da linha 1 — conectando visualmente a aba à área de trabalho abaixo.
@@ -703,8 +704,8 @@ A aba ativa na linha 1 substitui o texto por `─` (`╭───────╮
 #### Modo Modelos ativo
 
 ```
-  Abditum  ·  cofre.abditum            ╭ Cofre ╮  ╭─────────╮  ╭ Configurações ╮
-────────────────────────────────────────────────╯ Modelos ╰──────────────────────
+  Abditum · cofre                          ╭ Cofre ╮  ╭─────────╮  ╭ Config ╮
+──────────────────────────────────────────────────────╯ Modelos ╰────────────────
 ```
 
 ---
@@ -712,11 +713,13 @@ A aba ativa na linha 1 substitui o texto por `─` (`╭───────╮
 #### Modo Configurações ativo
 
 ```
-  Abditum  ·  cofre.abditum            ╭ Cofre ╮  ╭ Modelos ╮  ╭────────────────╮
-──────────────────────────────────────────────────────────────╯ Configurações ╰
+  Abditum · cofre                           ╭ Cofre ╮  ╭ Modelos ╮  ╭────────╮
+────────────────────────────────────────────────────────────────────╯ Config ╰──
 ```
 
 A aba mais à direita pode encostar na borda do terminal — `╰` ocupa a última coluna, sem `─` posterior.
+
+> **Nota:** a aba Configurações é referida como "Config" nos wireframes por economia de espaço. O texto completo na implementação é `Config`.
 
 ---
 
@@ -741,14 +744,16 @@ Regras de alinhamento:
 
 #### Truncamento do nome do cofre
 
-O espaço disponível para o nome do arquivo é limitado — as abas ocupam largura fixa à direita. O componente calcula o espaço em tempo real.
+O espaço disponível para o nome do cofre é limitado — as abas ocupam largura fixa à direita. O componente calcula o espaço em tempo real.
+
+> **Extensão `.abditum` é omitida** — a app só trabalha com este formato, então a extensão é redundante. O nome exibido é o radical do arquivo (ex: `cofre.abditum` → `cofre`).
 
 **Fórmula:**
 
 ```
-prefixo  = "  Abditum  ·  "                           (14 colunas)
-dirty    = "  •"  se IsDirty(), ou ""                 (3 ou 0 colunas)
-abas     = bloco de abas + espaços entre elas         (largura fixa, ~42 colunas)
+prefixo  = "  Abditum · "                             (12 colunas)
+dirty    = " •"  se IsDirty(), ou ""                   (2 ou 0 colunas)
+abas     = bloco de abas + espaços entre elas           (largura fixa, ~32 colunas)
 padding  = mín. 1 coluna entre nome/dirty e abas
 
 disponível = largura_terminal − prefixo − dirty − abas − padding
@@ -756,10 +761,9 @@ disponível = largura_terminal − prefixo − dirty − abas − padding
 
 **Algoritmo:**
 
-1. Se o nome completo cabe → exibir como está
-2. Se não cabe → truncar o radical (parte antes de `.abditum`), preservar a extensão:
-   `{radical[0..n]}….abditum` onde `n` é calculado para caber no espaço disponível
-3. Se nem `….abditum` (9 colunas) cabe → exibir apenas `…`
+1. Se o nome completo (radical sem extensão) cabe → exibir como está
+2. Se não cabe → truncar com `…`: `{nome[0..n]}…` onde `n` é calculado para caber
+3. Se nem 1 caractere + `…` (2 colunas) cabe → exibir apenas `…`
 
 **Prioridade de cessão de espaço:**
 
@@ -772,11 +776,11 @@ disponível = largura_terminal − prefixo − dirty − abas − padding
 **Wireframe — nome truncado (terminal ~80 colunas, modo Cofre):**
 
 ```
-  Abditum  ·  meu-cofre-pe….abditum  •  ╭───────╮  ╭ Modelos ╮  ╭ Configurações ╮
-──────────────────────────────────────╯ Cofre ╰────────────────────────────────────
+  Abditum · meu-cofre-pessoa… •          ╭───────╮  ╭ Modelos ╮  ╭ Config ╮
+─────────────────────────────────────────╯ Cofre ╰──────────────────────────────
 ```
 
-O radical `meu-cofre-pessoal` foi truncado para `meu-cofre-pe…`, mantendo `.abditum` legível.
+O radical `meu-cofre-pessoal` foi truncado para `meu-cofre-pessoa…`.
 
 ---
 
@@ -786,7 +790,7 @@ O radical `meu-cofre-pessoal` foi truncado para `meu-cofre-pe…`, mantendo `.ab
 |---|---|---|
 | `Abditum` (nome da app) | `accent.primary` | **bold** |
 | `·` separador nome/cofre | `border.default` | — |
-| `cofre.abditum` (nome do arquivo) | `text.secondary` | — |
+| Nome do cofre (radical, sem `.abditum`) | `text.secondary` | — |
 | `•` indicador não salvo | `semantic.warning` | — |
 | Bordas das abas (`╭╮╯╰─`) — ativa e inativa | `border.default` | — |
 | Aba ativa — fundo (gap entre `╯` e `╰`) | `special.highlight` | — |
@@ -804,7 +808,7 @@ O radical `meu-cofre-pessoal` foi truncado para `meu-cofre-pe…`, mantendo `.ab
 | Cofre fechado / bloqueado | Desaparece nome do cofre e abas; volta ao estado boas-vindas |
 | Alteração em memória (`IsDirty() = true`) | Aparece `•` em `semantic.warning` |
 | Salvamento bem-sucedido (`IsDirty() = false`) | Desaparece `•` |
-| Navegação entre modos (F-key ou clique) | Aba ativa muda; nova aba suspensa na linha separadora |
+| Navegação entre modos (`F1` Cofre / `F2` Modelos / `F3` Config, ou clique) | Aba ativa muda; nova aba suspensa na linha separadora |
 | Terminal redimensionado | Nome do cofre recalcula truncamento |
 
 ---
@@ -812,9 +816,108 @@ O radical `meu-cofre-pessoal` foi truncado para `meu-cofre-pe…`, mantendo `.ab
 #### Comportamento
 
 - **Abas clicáveis** — mouse troca o modo ativo ao clicar no texto ou na borda da aba (área de hit inclui linhas 1 e 2 da aba)
-- **Navegação por teclado** — F-keys (a definir no mapa de teclas) alternam entre modos
+- **Navegação por teclado** — `F1` Cofre, `F2` Modelos, `F3` Config (escopo Área de trabalho — só ativas com cofre aberto)
 - **Indicador dirty** — aparece/desaparece imediatamente conforme `IsDirty()`, sem animação
 - **Truncamento dinâmico** — recalculado a cada renderização (resize do terminal, mudança de modo ativo, cofre aberto/fechado)
+
+---
+
+### Barra de Comandos
+
+**Responsabilidade:** exibir as ações disponíveis no contexto ativo — o usuário nunca precisa adivinhar o que pode fazer.
+**Posição:** última linha da tela (zona Barra de comandos do [DS — Dimensionamento](tui-design-system-novo.md#dimensionamento-e-layout)).
+**Altura fixa:** 1 linha.
+
+**Princípio de conteúdo:** a barra exibe apenas ações de caso de uso (F-keys, atalhos de domínio, `^S`). Teclas de navegação universais — `↑↓`, `←→`, `Tab`, `Enter`, `Esc` — são senso comum em TUI e não são exibidas. Exceção: diálogos exibem ações internas específicas do contexto.
+
+---
+
+#### Anatomia
+
+Cada ação na barra segue o formato: **TECLA Label** — tecla em `accent.primary` **bold**, label em `text.primary`. Ações separadas por `·` em `text.secondary`. A ação `?` (Ajuda) é âncora fixa na extrema direita.
+
+**Estado normal:**
+
+```
+  F21 Novo · F22 Editar · F23 Excluir · ^S Salvar                                   ?
+```
+
+**Com ação desabilitada (nenhum segredo selecionado):**
+
+```
+  F21 Novo · F22 Editar · F23 Excluir · ^S Salvar                                   ?
+```
+
+`F23 Excluir` em `text.disabled` + dim. Permanece visível na posição — não colapsa.
+
+**Durante diálogo ativo (apenas ações internas):**
+
+```
+  Tab Campos · F5 Revelar                                                            ?
+```
+
+Ações do ActionManager ficam ocultas. A barra mostra apenas as ações internas do diálogo do topo da pilha. Ações de confirmação/cancelamento (`Enter`/`Esc`) já estão na borda do diálogo — não são duplicadas na barra.
+
+**Espaço restrito:**
+
+```
+  F21 Novo                                                                           ?
+```
+
+Ações de menor prioridade são ocultadas quando não há espaço. `?` permanece sempre visível — é via Help que o usuário descobre as ações ocultas.
+
+---
+
+#### Tokens
+
+| Elemento | Token | Atributo |
+|---|---|---|
+| Tecla da ação (ex: `F21`) | `accent.primary` | **bold** |
+| Label da ação (ex: `Novo`) | `text.primary` | — |
+| Ação desabilitada — tecla e label | `text.disabled` | dim |
+| Separador `·` | `text.secondary` | — |
+| `?` (Ajuda) | `accent.primary` | **bold** |
+
+---
+
+#### Atributos das ações
+
+Cada ação registrada no ActionManager possui atributos que controlam sua visibilidade na barra:
+
+| Atributo | Efeito na barra | Efeito no Help |
+|---|---|---|
+| `Enabled = true` | Exibida com estilo normal | Listada |
+| `Enabled = false` | Exibida em `text.disabled` + dim | Listada |
+| `HideFromBar = false` | Exibida (se Enabled) | Listada |
+| `HideFromBar = true` | **Não aparece** na barra | Listada |
+
+Além destes:
+
+- **Prioridade** — valor numérico. Maior prioridade → mais à esquerda na barra. Quando o espaço é insuficiente, ações de menor prioridade são removidas primeiro
+- **Agrupamento** — usado exclusivamente no modal de Ajuda para organizar ações por contexto. Não afeta a barra de comandos
+
+---
+
+#### Eventos
+
+| Evento | Mudança na barra |
+|---|---|
+| Troca de foco entre painéis (`Tab` / `Shift+Tab`) | Ações do painel que recebe foco ficam ativas |
+| Seleção de item na árvore | Ações de item (editar, excluir, revelar) ficam `Enabled` |
+| Nenhum item selecionado | Ações de item ficam `Enabled = false` (`text.disabled` + dim) |
+| Diálogo aberto (push na pilha) | Troca para ações internas do diálogo |
+| Diálogo fechado (pop da pilha) | Volta para ações do ActionManager |
+| Terminal redimensionado | Recalcula quais ações cabem (prioridade governa corte) |
+
+---
+
+#### Comportamento
+
+- **Âncora `?`** — reserva espaço fixo na extrema direita. O cálculo de espaço disponível desconta `?` antes de distribuir as demais ações
+- **Ações desabilitadas ocupam espaço** — não colapsam. Isso preserva estabilidade espacial (princípio do DS) — a barra não "pula" quando um item é selecionado/desselecionado
+- **Diálogos de decisão** (confirmação/reconhecimento) — tipicamente não têm ações internas; a barra pode ficar vazia (apenas `?`) enquanto o diálogo estiver aberto
+- **Diálogos funcionais** (PasswordEntry, FilePicker etc.) — registram ações internas (Tab entre campos, revelar senha, etc.) que aparecem na barra
+- **Truncamento** — se mesmo a ação de maior prioridade + `?` não cabem, a barra mostra apenas `?`
 
 ---
 
@@ -830,7 +933,6 @@ O radical `meu-cofre-pessoal` foi truncado para `meu-cofre-pe…`, mantendo `.ab
 
 ## Componentes
 
-### Barra de Comandos
 ### Painel Esquerdo: Árvore
 ### Painel Direito: Detalhe do Segredo
 ### Painel Direito: Detalhe do Modelo
