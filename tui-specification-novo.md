@@ -33,6 +33,7 @@ Quando algo é específico de uma tela ou componente (ex: quais campos o diálog
   - [Help](#help)
 - [Componentes](#componentes)
   - [Cabeçalho](#cabeçalho)
+  - [Barra de Mensagens](#barra-de-mensagens)
   - [Barra de Comandos](#barra-de-comandos)
 
 ---
@@ -598,36 +599,109 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 
 ### Help
 
-**Contexto de uso:** tabela de atalhos do contexto ativo.
+**Contexto de uso:** lista todas as ações do ActionManager, agrupadas. Acionado por `?` em qualquer contexto.
 **Token de borda:** `border.default` (diálogo de consulta, não recebe entrada de texto)
+**Dimensionamento:** largura máxima do DS; altura até 80% do terminal. Scroll quando o conteúdo excede a viewport.
+
+**Wireframe (exemplo: Modo Cofre — segredo selecionado, sem scroll):**
 
 ```
-╭── Ajuda — Atalhos e Ações ──────────────────────────────────────╮
+╭── Ajuda — Atalhos e Ações ───────────────────────────────────────╮
 │                                                                  │
-│  Navegação                        ← grupo em text.secondary bold │
-│  ↑↓        Mover cursor                                         │
-│  → Enter   Expandir / selecionar                                 │
-│  Tab       Alternar painéis                                      │
+│  Navegação                                                       │
+│  ↑↓          Mover cursor na lista                               │
+│  → / Enter   Expandir pasta ou selecionar segredo                │
+│  ←           Recolher pasta ou subir para pasta pai              │
+│  Tab         Alternar foco entre painéis                         │
 │                                                                  │
-│  Segredo                          ← grupos agrupam por contexto  │
-│  F16       Revelar / ocultar                                     │
-│  F17       Copiar valor                                          │
-│                                                        ↓ mais ── │
-╰──────────────────────────────────────────────── Esc Fechar ╯
+│  Segredo                                                         │
+│  Ctrl+R      Revelar / ocultar campo sensível                    │
+│  Ctrl+C      Copiar valor para área de transferência             │
+│  F21         Novo segredo                                        │
+│  F22         Editar segredo                                      │
+│  F23         Excluir segredo                                     │
+│                                                                  │
+│  Cofre                                                           │
+│  ^S          Salvar cofre                                        │
+│  F5          Sair (salva se necessário)                          │
+│  ?           Esta ajuda                                          │
+│                                                                  │
+╰──────────────────────────────────────────────────── Esc Fechar ──╯
 ```
+
+**Wireframe (exemplo: scroll — início do conteúdo, mais abaixo):**
+
+```
+╭── Ajuda — Atalhos e Ações ───────────────────────────────────────╮
+│                                                                  ■
+│  Navegação                                                       │
+│  ↑↓          Mover cursor na lista                               │
+│  → / Enter   Expandir pasta ou selecionar segredo                │
+│  ←           Recolher pasta ou subir para pasta pai              │
+│  Tab         Alternar foco entre painéis                         │
+│                                                                  │
+│  Segredo                                                         │
+│  Ctrl+R      Revelar / ocultar campo sensível                    ↓
+╰──────────────────────────────────────────────────── Esc Fechar ──╯
+```
+
+**Wireframe (exemplo: scroll — meio do conteúdo):**
+
+```
+╭── Ajuda — Atalhos e Ações ───────────────────────────────────────╮
+│                                                                  ↑
+│  Ctrl+C      Copiar valor para área de transferência             │
+│  F21         Novo segredo                                        │
+│  F22         Editar segredo                                      │
+│  F23         Excluir segredo                                     ■
+│                                                                  │
+│  Cofre                                                           │
+│  ^S          Salvar cofre                                        │
+│  F5          Sair (salva se necessário)                          │
+│  ?           Esta ajuda                                          ↓
+╰──────────────────────────────────────────────────── Esc Fechar ──╯
+```
+
+> **Nota:** os wireframes são snapshots ilustrativos. O conteúdo real é gerado dinamicamente pelo ActionManager a partir do contexto ativo.
+
+#### Tokens
 
 | Elemento | Token | Atributo |
 |---|---|---|
 | Título `Ajuda — Atalhos e Ações` | `text.primary` | **bold** |
-| Nome do grupo (`Navegação`, `Segredo`) | `text.secondary` | **bold** |
-| Tecla (ex: `F16`) | `accent.primary` | — |
+| Label do grupo (`Navegação`, `Segredo`, `Cofre`) | `text.secondary` | **bold** |
+| Tecla (ex: `Ctrl+R`, `F21`, `^S`) | `accent.primary` | — |
 | Descrição da ação | `text.primary` | — |
-| Indicador de scroll `↓ mais` | `text.secondary` | — |
+| Seta de scroll (`↑` / `↓` na borda direita) | `text.secondary` | — |
+| Thumb de posição (`■` na borda direita) | `text.secondary` | — |
+| Borda | `border.default` | — |
 
-**Comportamento:**
-- Conteúdo gerado dinamicamente a partir dos atalhos do contexto ativo
-- `↑↓` para scroll se o conteúdo exceder a área visível
-- `Esc` fecha o modal
+#### Estados dos componentes
+
+| Componente | Estado | Condição |
+|---|---|---|
+| Conteúdo | sem scroll | Todas as ações cabem na viewport |
+| Conteúdo | com scroll | Ações excedem a viewport — indicadores `↑`/`↓` e thumb `■` na borda direita (ver [DS — Scroll em diálogos](tui-design-system-novo.md#scroll-em-diálogos)) |
+| `?` na barra de comandos | oculto (`HideFromBar`) | Enquanto o Help estiver aberto |
+| Barra de comandos | vazia | Help não registra ações internas na barra |
+
+#### Eventos
+
+| Evento | Efeito |
+|---|---|
+| `?` pressionado (qualquer contexto) | Abre o modal; barra de comandos fica vazia; `?` oculto |
+| `Esc` | Fecha o modal; `?` volta visível na barra |
+| `↑` / `↓` | Scroll por linha (se conteúdo excede viewport) |
+| `PgUp` / `PgDn` | Scroll por página (viewport − 1 linhas) |
+| `Home` / `End` | Vai ao início / fim do conteúdo |
+
+#### Comportamento
+
+- **Conteúdo dinâmico** — gerado a partir de todas as ações registradas no ActionManager no momento da abertura
+- **Agrupamento** — ações são organizadas pelo atributo numérico `Grupo`. Cada grupo tem um `Label` registrado (ex: 1 → "Navegação", 2 → "Segredo"). Grupos renderizados em ordem numérica crescente
+- **Ordenação interna** — dentro de cada grupo, ações ordenadas por `Prioridade` (maior primeiro)
+- **Scroll** — segue o padrão transversal do DS: indicadores `↑`/`↓` na borda direita, navegação por `↑↓` / `PgUp`/`PgDn` / `Home`/`End`
+- **Borda inferior** — `Esc Fechar` sempre visível, independente do estado de scroll
 
 ---
 
@@ -874,7 +948,7 @@ Ações de menor prioridade são ocultadas quando não há espaço. `?` permanec
 |---|---|---|
 | Tecla da ação (ex: `F21`) | `accent.primary` | **bold** |
 | Label da ação (ex: `Novo`) | `text.primary` | — |
-| Ação desabilitada — tecla e label | `text.disabled` | dim |
+
 | Separador `·` | `text.secondary` | — |
 | `?` (Ajuda) | `accent.primary` | **bold** |
 
@@ -882,19 +956,20 @@ Ações de menor prioridade são ocultadas quando não há espaço. `?` permanec
 
 #### Atributos das ações
 
-Cada ação registrada no ActionManager possui atributos que controlam sua visibilidade na barra:
+Cada ação registrada no ActionManager possui atributos que controlam sua apresentação:
 
 | Atributo | Efeito na barra | Efeito no Help |
 |---|---|---|
 | `Enabled = true` | Exibida com estilo normal | Listada |
-| `Enabled = false` | Exibida em `text.disabled` + dim | Listada |
-| `HideFromBar = false` | Exibida (se Enabled) | Listada |
+| `Enabled = false` | **Não aparece** na barra | Listada |
 | `HideFromBar = true` | **Não aparece** na barra | Listada |
+| `HideFromBar = false` | Exibida (se `Enabled`) | Listada |
 
 Além destes:
 
 - **Prioridade** — valor numérico. Maior prioridade → mais à esquerda na barra. Quando o espaço é insuficiente, ações de menor prioridade são removidas primeiro
-- **Agrupamento** — usado exclusivamente no modal de Ajuda para organizar ações por contexto. Não afeta a barra de comandos
+- **Grupo** — valor numérico. Usado exclusivamente no modal de Ajuda para organizar ações. Grupos renderizados em ordem numérica crescente. Dentro de cada grupo, ações ordenadas por `Prioridade`. Não afeta a barra de comandos
+- **Label do grupo** — string registrada por grupo (ex: grupo 1 → "Navegação"). Exibido como título de seção no Help em `text.secondary` bold
 
 ---
 
@@ -903,8 +978,8 @@ Além destes:
 | Evento | Mudança na barra |
 |---|---|
 | Troca de foco entre painéis (`Tab` / `Shift+Tab`) | Ações do painel que recebe foco ficam ativas |
-| Seleção de item na árvore | Ações de item (editar, excluir, revelar) ficam `Enabled` |
-| Nenhum item selecionado | Ações de item ficam `Enabled = false` (`text.disabled` + dim) |
+| Seleção de item na árvore | Ações de item (editar, excluir, revelar) ficam `Enabled = true` — aparecem na barra |
+| Nenhum item selecionado | Ações de item ficam `Enabled = false` — desaparecem da barra |
 | Diálogo aberto (push na pilha) | Troca para ações internas do diálogo |
 | Diálogo fechado (pop da pilha) | Volta para ações do ActionManager |
 | Terminal redimensionado | Recalcula quais ações cabem (prioridade governa corte) |
@@ -914,10 +989,116 @@ Além destes:
 #### Comportamento
 
 - **Âncora `?`** — reserva espaço fixo na extrema direita. O cálculo de espaço disponível desconta `?` antes de distribuir as demais ações
-- **Ações desabilitadas ocupam espaço** — não colapsam. Isso preserva estabilidade espacial (princípio do DS) — a barra não "pula" quando um item é selecionado/desselecionado
+- **Ações desabilitadas desaparecem da barra** — `Enabled = false` remove a ação da barra (não fica exibida como dim). A ação continua listada no Help
 - **Diálogos de decisão** (confirmação/reconhecimento) — tipicamente não têm ações internas; a barra pode ficar vazia (apenas `?`) enquanto o diálogo estiver aberto
 - **Diálogos funcionais** (PasswordEntry, FilePicker etc.) — registram ações internas (Tab entre campos, revelar senha, etc.) que aparecem na barra
 - **Truncamento** — se mesmo a ação de maior prioridade + `?` não cabem, a barra mostra apenas `?`
+
+---
+
+### Barra de Mensagens
+
+**Responsabilidade:** comunicar feedback ao usuário — sucesso, erro, aviso, progresso, dicas.
+**Posição:** 1 linha fixa entre a área de trabalho e a barra de comandos (zona Barra de mensagens do [DS — Dimensionamento](tui-design-system-novo.md#dimensionamento-e-layout)).
+**Altura fixa:** 1 linha.
+**Anatomia:** borda `─` contínua na largura total do terminal. Quando há mensagem, o texto (símbolo + conteúdo) começa com 2 espaços de padding à esquerda (alinhado com o texto do cabeçalho), seguido de `─` até o fim da linha.
+
+**Wireframe (sem mensagem — borda separadora):**
+
+```
+────────────────────────────────────────────────────────────────────────────────
+```
+
+**Wireframe (sucesso):**
+
+```
+── ✓ Gmail copiado para a área de transferência ────────────────────────────────
+   ↑ semantic.success
+```
+
+**Wireframe (erro):**
+
+```
+── ✗ Falha ao salvar — arquivo em uso por outro processo ───────────────────────
+   ↑ semantic.error + bold
+```
+
+**Wireframe (aviso):**
+
+```
+── ⚠ Cofre será bloqueado em 15 segundos ──────────────────────────────────────
+   ↑ semantic.warning
+```
+
+**Wireframe (spinner):**
+
+```
+── ◐ Salvando cofre... ─────────────────────────────────────────────────────────
+   ↑ accent.primary
+```
+
+**Wireframe (dica de campo / dica de uso):**
+
+```
+── • Use Tab para alternar o foco entre os painéis ─────────────────────────────
+   ↑ text.secondary + italic
+```
+
+**Wireframe (informação):**
+
+```
+── ℹ Cofre criado em /home/user/documentos/pessoal.abditum ─────────────────────
+   ↑ semantic.info
+```
+
+**Wireframe (truncamento — mensagem excede largura disponível):**
+
+```
+── ✗ Erro ao importar arquivo: o formato do arquivo não é compatível com a v… ──
+   ↑ semantic.error + bold                                            ↑ trunca com …
+```
+
+#### Tokens
+
+Os tokens de cada tipo de mensagem são definidos no [DS — Mensagens](tui-design-system-novo.md#mensagens). Adicional:
+
+| Elemento | Token | Atributo |
+|---|---|---|
+| Borda `─` (sem mensagem) | `border.default` | — |
+| Borda `─` (com mensagem) | `border.default` | — |
+
+> A cor da borda não muda conforme o tipo de mensagem — apenas o texto embutido usa o token semântico correspondente.
+
+#### Estados dos componentes
+
+| Componente | Estado | Condição |
+|---|---|---|
+| Borda | visível (sem texto) | Nenhuma mensagem ativa |
+| Borda + mensagem | visível (texto embutido) | Mensagem ativa — tipo governa símbolo, cor e atributo |
+| Texto | truncado com `…` | Mensagem excede ~95% da largura do terminal |
+
+#### Eventos
+
+| Evento | Efeito |
+|---|---|
+| Operação concluída com sucesso | Exibe `✓` mensagem (`semantic.success`, TTL 2–3s) |
+| Informação neutra | Exibe `ℹ` mensagem (`semantic.info`, TTL 3s) |
+| Condição de alerta (ex: bloqueio iminente) | Exibe `⚠` mensagem (`semantic.warning`, permanente, desaparece com input) |
+| Falha em operação | Exibe `✗` mensagem (`semantic.error` + bold, TTL 5s) |
+| Operação em andamento | Exibe spinner `◐◓◑◒` (`accent.primary`, permanente até sucesso/erro) |
+| Campo recebe foco (diálogo funcional) | Exibe `•` dica de campo (`text.secondary` italic) |
+| Aplicação emite dica proativa | Exibe `•` dica de uso (`text.secondary` italic) |
+| TTL expira | Mensagem desaparece — volta à borda `─` |
+| Nova mensagem emitida | Substitui imediatamente a mensagem anterior |
+| Diálogo fecha | Barra é limpa — volta à borda `─` |
+
+#### Comportamento
+
+- **Borda permanente** — a borda `─` é sempre visível, funcionando como separador entre a área de trabalho e a barra de comandos. Contribui para a estabilidade espacial
+- **Uma mensagem por vez** — nova mensagem substitui a anterior imediatamente. Não há fila nem pilha
+- **Texto embutido** — o texto (símbolo + conteúdo) substitui o trecho central da borda, com `─` preenchendo os lados
+- **Aviso re-emitido** — mensagens de aviso são re-emitidas a cada tick enquanto a condição persistir
+- **Responsabilidade do orquestrador** — mensagens pós-fechamento de diálogo (ex: "✓ Cofre aberto") são emitidas pelo orquestrador, não pelo diálogo
 
 ---
 
