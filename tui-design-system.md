@@ -1,43 +1,107 @@
 # Design System — Abditum TUI
 
-> Definições visuais fundamentais para o pacote `internal/tui`.  
-> Complementa `tui-specification.md` (wireframes e comportamento) e `tui-elm-architecture.md` (arquitetura).
+> Fundações visuais e padrões transversais para o pacote `internal/tui`.
+> Define princípios, tokens, estados e padrões que governam toda decisão de UI.
 >
-> **Wireframes com aplicação prática dos tokens:** ver [`tui-specification.md`](tui-specification.md)
+> **Regra de fronteira:** este documento define *fundações* — o que cada peça visual é e como se comporta em abstrato.
+> A composição dessas peças em telas, wireframes e fluxos concretos pertence aos documentos de especificação.
+>
+> **Documentos complementares:**
+> - [`tui-specification.md`](tui-specification.md) — composição de telas, wireframes e fluxos visuais
+> - [`tui-elm-architecture.md`](tui-elm-architecture.md) — arquitetura de componentes (Elm pattern)
 
 ---
+
+## O Terminal como Meio
+
+O Abditum é uma aplicação TUI. As propriedades do terminal não são restrições a superar — são o material com o qual trabalhamos. Todo o design opera dentro deste perímetro.
+
+**O que o terminal oferece:**
+- Grade fixa de caracteres monospaced — alinhamento perfeito é gratuito
+- Atributos ANSI: bold (universal), dim (amplo), italic (parcial), strikethrough (parcial), underline (amplo)
+- Cores: true color em terminais modernos, 256 cores em legados, `NO_COLOR` como contrato de acessibilidade
+- Teclado como canal de entrada primário — cada tecla é um evento discreto
+- Mouse como canal secundário — clique e scroll, sem hover real nem drag contínuo
+- Renderização de texto Unicode (BMP seguro; glifos de largura ambígua e Nerd Fonts são um risco)
+
+**O que o terminal não tem:**
+- Pixel independente, subpixel rendering, fontes customizadas, tamanhos de texto
+- Z-index real, transparência, sombras, gradientes, bordas arredondadas reais
+- Hover state, animação suave, transições visuais
+- Layout flexível — a posição de cada caractere é absoluta na grade
+
+**Consequências para o design:**
+- A estrutura visual é construída por espaço em branco, alinhamento, separadores ASCII e hierarquia tipográfica — não por bordas decorativas nem containers visuais
+- `bold` é o único destaque tipográfico universalmente confiável; `italic` e `strikethrough` precisam de reforço visual (detalhes na seção [Tipografia](#tipografia))
+- Nenhum estado crítico pode depender exclusivamente de cor — cada estado usa pelo menos duas camadas de comunicação (detalhes na seção [Acessibilidade](#acessibilidade))
+- Símbolos são escolhidos por clareza semântica e previsibilidade de renderização, não por estética (detalhes na seção [Ícones e Símbolos](#ícones-e-símbolos))
+- O teclado é o caminho primário; toda ação acionável por teclado deve ser descobrível e executável também por mouse
+
+---
+
+## Princípios
+
+Todos os princípios operam dentro do perímetro definido pelo terminal. Não há hierarquia entre eles — são compromissos simultâneos que a interface deve honrar. Quando dois princípios tensionam, a resolução é pelo contexto da tela específica, documentada na especificação.
+
+> **Regra de governança:** toda decisão de UI/UX deste projeto deve ser compatível com estes princípios. Em caso de conflito entre uma especificação local e um princípio, o princípio prevalece e a especificação deve ser ajustada.
+
+### Identidade
+
+- **Segurança como experiência:** segurança não é um recurso técnico invisível — é algo que o usuário deve *sentir* na interface. Operações sensíveis (revelar senha, exportar, sobrescrever, excluir) parecem deliberadas, com confirmação proporcional ao risco. Campos sensíveis são ocultos por padrão. A interface nunca expõe dados protegidos sem ação explícita.
+- **Discrição e portabilidade:** a interface não chama atenção em ambientes públicos ou compartilhados. O visual é contido. Nenhum dado sensível aparece fora do contexto controlado pelo usuário. A aplicação não deixa rastros — não persiste estado fora do arquivo do cofre.
+- **Controle total do usuário:** o usuário decide quando salvar, quando revelar, quando exportar. A aplicação não toma decisões irreversíveis em nome dele. Alterações permanecem reversíveis até o salvamento explícito. A única exceção é a alteração de senha mestra, que é imediata por necessidade criptográfica.
+- **Simplicidade com profundidade:** a interface expõe primeiro o essencial — abrir, navegar, copiar. Complexidade (edição de estrutura, reordenação, busca, configurações) aparece apenas quando o usuário a procura. Um iniciante consegue usar o cofre em 30 segundos; um usuário avançado tem atalhos para tudo.
+
+### Experiência
+
+- **Hierarquia da informação:** o usuário distingue rapidamente contexto global (qual cofre, qual pasta, qual segredo), seleção atual, detalhe exibido e ações disponíveis. A importância relativa dos elementos é comunicada por posição, peso tipográfico e cor — nunca apenas por cor.
+- **Estado sempre visível:** seleção, alterações pendentes, itens modificados, bloqueios, erros e processamento são perceptíveis sem exigir memorização do último comando executado. O estado do cofre (dirty/clean) está sempre no cabeçalho. O estado de cada segredo (adicionado/modificado/excluído) está junto ao item na árvore.
+- **Feedback imediato:** toda ação relevante produz resposta visível — mudança de contexto, atualização do item, mensagem transitória ou indicador de progresso. Ausência de feedback é um defeito.
+- **Reversibilidade por padrão:** ações destrutivas pedem confirmação. Ações de alto impacto oferecem cancelamento claro. Exclusão de segredos é uma marcação reversível até o salvamento.
+- **Consistência de interação:** a mesma tecla, o mesmo símbolo e o mesmo tratamento visual mantêm o mesmo significado em toda a aplicação. `Enter` sempre confirma. `Esc` sempre cancela ou fecha. `F16` sempre revela/oculta. Exceções devem ser documentadas e justificadas.
+- **Estabilidade espacial:** cabeçalho, árvore, detalhe e barra de comandos permanecem em posições previsíveis entre estados. O layout não "pula" quando o conteúdo muda. Isso preserva memória muscular e reduz carga cognitiva.
 
 ## Paleta de Cores
 
 A paleta é organizada por **papel funcional** — cada papel define *para que* a cor é usada, não qual cor concreta. Isso garante que trocar de tema é uma operação isolada: mudar os valores hex sem alterar lógica ou estrutura.
 
-### Regras de aplicação
+### Princípios da paleta
 
-- **Texto sobre superfícies:** `text.primary` sobre `surface.base` deve ter contraste mínimo legível.
-- **Foco de painel é implícito:** a command bar muda para refletir as ações do painel ativo — não existem bordas de foco em painéis. `border.focused` é reservado para diálogos modais.
-- **Semânticas são reservadas:** cores semânticas aparecem somente para comunicar estado — nunca como decoração.
-- **Consistência entre contextos:** a mesma cor semântica é usada em mensagens de aviso, modais de alerta, e demais elementos com o mesmo significado.
+- **Papéis não são intercambiáveis:** mesmo quando dois tokens compartilham o mesmo valor, o papel funcional continua sendo diferente.
+- **Semânticas não são decorativas:** `semantic.*` existe para comunicar estado, nunca para ornamentar a interface.
+- **Contraste é obrigatório:** textos e sinais críticos precisam continuar legíveis sobre suas superfícies previstas.
 
 ### Papéis e tokens
 
 | Categoria | Papel | Uso | Tokyo Night | Cyberpunk |
 |---|---|---|---|---|
-| **Superfícies** | `surface.base` | Fundo principal | `#1a1b26` <span style="background:#1a1b26;color:#1a1b26">██</span> | `#0a0a1a` <span style="background:#0a0a1a;color:#0a0a1a">██</span> |
-| | `surface.raised` | Painéis, modais, elevações | `#24283b` <span style="background:#24283b;color:#24283b">██</span> | `#1a1a2e` <span style="background:#1a1a2e;color:#1a1a2e">██</span> |
-| | `surface.overlay` | Tooltips, menus, overlays | `#414868` <span style="background:#414868;color:#414868">██</span> | `#2a2a3e` <span style="background:#2a2a3e;color:#2a2a3e">██</span> |
-| **Texto** | `text.primary` | Texto principal, labels | `#a9b1d6` <span style="color:#a9b1d6">██</span> | `#e0e0ff` <span style="color:#e0e0ff">██</span> |
-| | `text.secondary` | Descrições, hints, placeholders | `#565f89` <span style="color:#565f89">██</span> | `#8888aa` <span style="color:#8888aa">██</span> |
-| | `text.disabled` | Itens indisponíveis | `#3b4261` <span style="color:#3b4261">██</span> | `#444466` <span style="color:#444466">██</span> |
-| **Bordas** | `border.default` | Bordas de diálogos neutros, separadores | `#414868` <span style="color:#414868">██</span> | `#3a3a5c` <span style="color:#3a3a5c">██</span> |
-| | `border.focused` | Borda de diálogo modal ativo | `#7aa2f7` <span style="color:#7aa2f7">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
-| **Interação** | `accent.primary` | Cursor, item selecionado, ação principal | `#7aa2f7` <span style="color:#7aa2f7">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
-| | `accent.secondary` | Favoritos, decoração sutil | `#bb9af7` <span style="color:#bb9af7">██</span> | `#00fff5` <span style="color:#00fff5">██</span> |
-| **Semânticas** | `semantic.success` | Confirmação, operação ok | `#9ece6a` <span style="color:#9ece6a">██</span> | `#05ffa1` <span style="color:#05ffa1">██</span> |
-| | `semantic.warning` | Ação irreversível, bloqueio iminente | `#e0af68` <span style="color:#e0af68">██</span> | `#ffe900` <span style="color:#ffe900">██</span> |
-| | `semantic.error` | Falha, exclusão | `#f7768e` <span style="color:#f7768e">██</span> | `#ff3860` <span style="color:#ff3860">██</span> |
-| | `semantic.info` | Informação neutra, indicadores de sessão | `#7dcfff` <span style="color:#7dcfff">██</span> | `#00b4d8` <span style="color:#00b4d8">██</span> |
-| **Especiais** | `special.muted` | Itens marcados para exclusão | `#565f89` <span style="color:#565f89">██</span> | `#666688` <span style="color:#666688">██</span> |
-| | `special.highlight` | Fundo de item selecionado | `#283457` <span style="background:#283457;color:#a9b1d6">██</span> | `#2a1533` <span style="background:#2a1533;color:#e0e0ff">██</span> |
+| **Superfícies** | `surface.base` | Cor de fundo da tela inteira | `#1a1b26` <span style="background:#1a1b26;color:#1a1b26">██</span> | `#0a0a1a` <span style="background:#0a0a1a;color:#0a0a1a">██</span> |
+| | `surface.raised` | Fundo dos painéis laterais e das janelas que abrem sobre a tela | `#24283b` <span style="background:#24283b;color:#24283b">██</span> | `#1a1a2e` <span style="background:#1a1a2e;color:#1a1a2e">██</span> |
+| | `surface.input` | Fundo dos campos de texto dentro de diálogos — tom rebaixado que delimita a área digitável | `#1e1f2e` <span style="background:#1e1f2e;color:#1e1f2e">██</span> | `#0e0e22` <span style="background:#0e0e22;color:#0e0e22">██</span> |
+| **Texto** | `text.primary` | Texto normal — nomes de segredos, títulos de campos, conteúdo legível | `#a9b1d6` <span style="color:#a9b1d6">██</span> | `#e0e0ff` <span style="color:#e0e0ff">██</span> |
+| | `text.secondary` | Texto de apoio — descrições de segredos, texto dentro de campos vazios, atalhos na barra inferior | `#565f89` <span style="color:#565f89">██</span> | `#8888aa` <span style="color:#8888aa">██</span> |
+| | `text.disabled` | Texto de opções que não podem ser usadas no momento | `#3b4261` <span style="color:#3b4261">██</span> | `#444466` <span style="color:#444466">██</span> |
+| | `text.link` | URLs e referências externas (tela Sobre) | `#7aa2f7` <span style="color:#7aa2f7">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
+| **Bordas** | `border.default` | Linhas que dividem painéis, bordas de janelas informativas (ajuda, seleção de itens, navegação de arquivos) | `#414868` <span style="color:#414868">██</span> | `#3a3a5c` <span style="color:#3a3a5c">██</span> |
+| | `border.focused` | Borda do painel ativo, de janelas de entrada (senhas, textos) e de diálogos neutros (perguntas sem urgência). Diálogos com severidade usam `semantic.*` — ver Sobreposição | `#7aa2f7` <span style="color:#7aa2f7">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
+| **Interação** | `accent.primary` | Barra de seleção na lista, cursor de navegação, botão principal de ação | `#7aa2f7` <span style="color:#7aa2f7">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
+| | `accent.secondary` | Ícone de favorito (★), nomes de pastas na navegação de arquivos | `#bb9af7` <span style="color:#bb9af7">██</span> | `#00fff5` <span style="color:#00fff5">██</span> |
+| **Semânticas** | `semantic.success` | Operação concluída com sucesso, configuração ligada (ON) | `#9ece6a` <span style="color:#9ece6a">██</span> | `#05ffa1` <span style="color:#05ffa1">██</span> |
+| | `semantic.warning` | Alerta antes de ação permanente, aviso de bloqueio por tentativas erradas | `#e0af68` <span style="color:#e0af68">██</span> | `#ffe900` <span style="color:#ffe900">██</span> |
+| | `semantic.error` | Erro de operação, senha incorreta, borda de diálogos destrutivos | `#f7768e` <span style="color:#f7768e">██</span> | `#ff3860` <span style="color:#ff3860">██</span> |
+| | `semantic.info` | Informação contextual, marcadores de segredos novos (`+`) ou modificados (`~`) | `#7dcfff` <span style="color:#7dcfff">██</span> | `#00b4d8` <span style="color:#00b4d8">██</span> |
+| | `semantic.off` | Configuração desligada (OFF) | `#737aa2` <span style="color:#737aa2">██</span> | `#9999cc` <span style="color:#9999cc">██</span> |
+| **Especiais** | `special.muted` | Texto de segredos marcados para exclusão (riscado, esmaecido) | `#565f89` <span style="color:#565f89">██</span> | `#666688` <span style="color:#666688">██</span> |
+| | `special.highlight` | Fundo colorido atrás do item selecionado na lista | `#283457` <span style="background:#283457;color:#a9b1d6">██</span> | `#2a1533` <span style="background:#2a1533;color:#e0e0ff">██</span> |
+| | `special.match` | Trecho de texto que corresponde ao termo digitado na busca | `#f7c67a` <span style="color:#f7c67a">██</span> | `#ffc107` <span style="color:#ffc107">██</span> |
+
+### Notas de contraste
+
+> **`special.muted` sobre `special.highlight`:** em Tokyo Night, `#565f89` (texto de item excluído) sobre `#283457` (fundo selecionado) apresenta contraste reduzido (~2.5:1). O símbolo `✕` + strikethrough garantem legibilidade na ausência de contraste de cor suficiente — conforme o princípio de dupla camada. Validar em monitores com brilho reduzido.
+
+> **Aliases de valor:** `text.link` = `accent.primary` em hex. O alias documenta intenção — autores de temas podem divergir os valores quando precisarem distinguir link de ação primária.
+
+> **Bordas de modais semânticos:** modais com urgência semântica (DialogAlert, DialogInfo) usam diretamente os tokens `semantic.warning`, `semantic.info` ou `semantic.error` como cor de borda — não existe token `border.*` separado para casos semânticos. A semântica do modal governa a borda.
 
 ### Gradiente do logo
 
@@ -49,388 +113,390 @@ A paleta é organizada por **papel funcional** — cada papel define *para que* 
 | 4 | `#7dcfff` <span style="color:#7dcfff">██</span> | `#05ffa1` <span style="color:#05ffa1">██</span> |
 | 5 | `#bb9af7` <span style="color:#bb9af7">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
 
-### Comparação
-
-| Critério | Tokyo Night | Cyberpunk |
-|---|---|---|
-| **Conforto prolongado** | Excelente — dessaturada, tons frios e suaves | Moderado — neons cansam em sessões longas |
-| **Legibilidade** | Alta — texto `#a9b1d6` sobre `#1a1b26` é equilibrado | Alta — texto `#e0e0ff` sobre `#0a0a1a` tem mais contraste |
-| **Distinção semântica** | Clara — cores suficientemente distintas entre si | Muito clara — alta saturação torna diferenças óbvias |
-| **Profissionalismo** | Alta — sóbria, familiar a devs (VS Code, IDEs) | Baixa — estética de entretenimento, pode parecer lúdica |
-| **Adequação ao domínio** | Forte — ferramenta de segurança pede sobriedade | Fraca — neons contrastam com a seriedade de um cofre de senhas |
-| **Expressividade do logo** | Elegante — gradiente suave violeta→ciano | Impactante — gradiente neon rosa→ciano→verde |
-| **Acessibilidade** | Boa — contraste suficiente sem ser agressivo | Risco — neons podem ser problemáticos para sensibilidade visual |
-| **Fidelidade em 256 cores** | **Boa** — tons dessaturados mapeiam bem para o cubo 256 | **Risco** — neons de alta saturação perdem intensidade no mapeamento 256, podendo parecer apagados |
-
 ### Decisão
 
 > **Ambos os temas são suportados simultaneamente.** O usuário seleciona o tema ativo nas Configurações; F12 alterna rapidamente entre os dois sem abrir um menu.
 
-A abstração por **papéis funcionais** é o que viabiliza isso: trocar de tema é uma operação isolada — mudar os valores hex em um único arquivo de estilos, sem alterar lógica ou estrutura.
-
----
-
 ## Tipografia
 
-Em TUI não existem fontes nem tamanhos — o terminal usa fonte monoespaçada fixa. Os "pesos tipográficos" disponíveis são atributos ANSI que o lipgloss expõe. O suporte a esses atributos varia por terminal — a tabela abaixo documenta o comportamento esperado e o fallback de design para cada um.
+Em TUI não existem fontes nem tamanhos; a tipografia disponível é o conjunto de atributos ANSI que o terminal realmente suporta. O papel do design system é definir **quando** usar esses atributos e como degradar quando eles falharem.
 
-### Atributos, suporte e fallback
+### Atributos e fallback
 
-| Atributo | Efeito visual | Suporte | Fallback se não suportado | Uso no Abditum |
-|---|---|---|---|---|
-| **Bold** | Texto mais brilhante e/ou espesso | Universal | — (degradação mínima) | Títulos, cursor selecionado, opção default |
-| Dim / Faint | Brilho reduzido | Amplo; em alguns terminais exibe igual ao normal | Cor já comunica — perda tolerável | Itens desabilitados, conteúdo secundário |
-| *Italic* | Texto inclinado | **Parcial** — vários terminais ignoram ou exibem como normal | `text.secondary` já comunica auxiliaridade | Pasta virtual (Favoritos), hints |
-| Underline | Sublinhado | Amplo | — | Uso pontual — não está em uso ativo |
-| ~~Strikethrough~~ | Texto riscado | **Parcial** — terminais legados ignoram | Símbolo `✕` + `special.muted` garantem legibilidade | Itens marcados para exclusão |
-| Reverse | Inverte fg/bg | Amplo | — | Não está em uso ativo |
-| Blink | Piscar | Disponível, mas frequentemente desativado pelo usuário ou terminal | Não usar para comunicar estado — decorativo | **Não usar** |
+| Atributo | Suporte | Fallback | Uso principal |
+|---|---|---|---|
+| **Bold** | Universal | — | Títulos, cursor selecionado, ação default |
+| Dim / Faint | Amplo | Cor já comunica o estado | Itens desabilitados, conteúdo secundário |
+| *Italic* | Parcial | `text.secondary` já diferencia | Hints, pastas virtuais, textos auxiliares |
+| Underline | Amplo | — | Uso pontual |
+| ~~Strikethrough~~ | Parcial | `✕` + `special.muted` preservam o sentido | Itens marcados para exclusão |
+| Blink | Inconsistente | Não usar | Nenhum |
 
-> **Nota sobre Bold:** em terminais que usam a mesma fonte para bold e normal (ex: alguns multiplexadores tmux), bold se manifesta apenas como cor mais brilhante, não como peso diferente. Isso é aceitável — bold continua sendo o atributo de destaque mais confiável.
-
-> **Nota sobre Italic + Strikethrough:** ambos podem ser ignorados silenciosamente. Todo elemento que usa italic ou strikethrough deve ter um segundo diferenciador (cor, símbolo, ou estrutura) que preserve o significado na ausência do atributo.
-
-### Combinações
-
-Atributos podem ser combinados. Combinações previstas:
+### Combinações previstas
 
 | Combinação | Uso |
 |---|---|
-| Bold + cor semântica | Título de modal — bold amarelo para alerta, bold ciano para info |
-| Dim + strikethrough | Item marcado para exclusão e desabilitado — `✕` garante legibilidade sem esses atributos |
-| Italic + `text.secondary` | Hints e pastas somente leitura — `text.secondary` é o diferenciador real |
+| Bold + cor semântica | Título de modal de alerta ou informação |
+| Dim + strikethrough | Item excluído, com `✕` como reforço |
+| Italic + `text.secondary` | Hints e textos auxiliares |
 
-### Princípios
-
-- **Bold é o único destaque confiável.** Usar com moderação — se tudo for bold, nada é destaque.
-- **Nunca depender de italic ou strikethrough como único diferenciador.** Esses atributos podem ser ignorados — cor e símbolo garantem legibilidade.
-- **Dim indica existência sem relevância.** Prefira dim a invisível — o usuário precisa saber que o elemento existe.
-- **Blink não é usado.** Frequentemente desativado; não é garantia de percepção.
-- **Strikethrough tem significado semântico único** — "marcado para remoção". Não usar decorativamente.
+> **Regra prática:** `bold` é o único destaque tipográfico realmente confiável. `italic` e ~~strikethrough~~ sempre precisam de reforço visual; `blink` não é usado.
 
 ---
 
 ## Bordas
 
-A interface é **minimalista**: bordas são usadas apenas em **diálogos modais** e **separadores de linha**. Painéis, campos e listas não têm borda — espaço em branco e hierarquia tipográfica organizam o conteúdo.
-
-### Estilos disponíveis
-
-| Estilo | Caracteres | Exemplo |
-|---|---|---|
-| Rounded | `╭ ╮ ╰ ╯ │ ─` | `╭──────╮`<br>`│      │`<br>`╰──────╯` |
-| Single | `┌ ┐ └ ┘ │ ─` | `┌──────┐`<br>`│      │`<br>`└──────┘` |
-| Double | `╔ ╗ ╚ ╝ ║ ═` | `╔══════╗`<br>`║      ║`<br>`╚══════╝` |
-| Thick | `┏ ┓ ┗ ┛ ┃ ━` | `┏━━━━━━┓`<br>`┃      ┃`<br>`┗━━━━━━┛` |
-| Hidden | espaços | Sem borda visível — apenas padding |
+A interface é minimalista: bordas aparecem apenas em modais e separadores. Painéis, listas e blocos de conteúdo são organizados por espaço, alinhamento e hierarquia tipográfica.
 
 ### Aplicação
 
-| Elemento | Estilo | Cor da borda | Princípio |
+| Elemento | Estilo | Token | Observação |
 |---|---|---|---|
-| Modal semântico | Rounded | Cor do tipo (`semantic.*` ou `accent.*`) | Borda colorida comunica o tipo do diálogo |
-| Modal neutro | Rounded | `border.default` | Diálogos informativos sem urgência semântica |
-| Separador vertical | `│` simples | `border.default` | Divide painéis side-by-side sem os envolver |
-| Separador horizontal | `─` linha | `border.default` | Separa grupos de conteúdo ou seções |
+| Modal neutro | Rounded (`╭╮╰╯│─`) | `border.default` | Diálogo sem urgência semântica |
+| Modal semântico | Rounded (`╭╮╰╯│─`) | `semantic.*` ou `accent.*` | Cor reforça o tipo do diálogo |
+| Separador vertical | `│` | `border.default` | Divide painéis lado a lado |
+| Separador horizontal | `─` | `border.default` | Separa grupos ou seções |
 
-### Princípios
-
-- **Bordas apenas em diálogos.** Painéis, campos e listas não têm borda — espaço e tipografia estruturam o conteúdo sem envolver cada elemento num box.
-- **Rounded é o único estilo usado.** Consistência visual em todos os diálogos — nunca misturar Single, Double ou Thick.
-- **Cor da borda comunica semântica.** Em diálogos modais, a cor reforça o tipo (alerta, info, neutro) antes de o usuário ler o conteúdo.
-- **Separadores são linhas, não boxes.** Áreas de conteúdo são divididas por `│` ou `─` — linhas que separam sem envolver.
+> **Regra prática:** Rounded é o único estilo de caixa adotado. Separadores são linhas; a interface evita boxes decorativos.
 
 ---
 
 ## Ícones e Símbolos
 
-Vocabulário de caracteres Unicode usados como ícones na interface. Usa-se Unicode básico (não Nerd Fonts) para máxima compatibilidade com terminais.
+Inventário completo dos caracteres Unicode usados pela interface. A seleção privilegia símbolos do BMP (Basic Multilingual Plane), com largura previsível, em vez de glifos dependentes de fonte.
 
-### Navegação em árvore ou hierarquia
+O contexto de uso detalhado de cada símbolo está na seção onde ele é consumido (Sobreposição, Mensagens, Estados Visuais, especificação de telas).
 
-| Símbolo | Uso |
-|---|---|
-| `▶` | Pasta com filhos, recolhida (U+25B6 BLACK RIGHT-POINTING TRIANGLE) |
-| `▼` | Pasta com filhos, expandida (U+25BC BLACK DOWN-POINTING TRIANGLE) |
-| `▷` | Pasta vazia — sem filhos (U+25B7 WHITE RIGHT-POINTING TRIANGLE) |
-| `●` | Segredo normal — item folha (U+25CF BLACK CIRCLE) em `text.secondary` |
-| `★` | Segredo favoritado — substitui `●` como prefixo (U+2605 BLACK STAR) em `accent.secondary` |
-
-### Estados de itens
-
-| Símbolo | Semântica |
-|---|---|
-| `★` | Segredo favoritado — **prefixo** do item na árvore (U+2605 BLACK STAR) em `accent.secondary`; substitui `●` |
-| `✕` | Marcado para exclusão (U+2715 MULTIPLICATION X) |
-| `+` | Adicionado na sessão atual (U+002B PLUS SIGN) — exibido em `semantic.info` |
-| `~` | Modificado na sessão atual (U+007E TILDE) — exibido em `semantic.info` |
-| `•` | Alterações não salvas no nível do cofre — indicador no header (U+2022 BULLET) |
-
-### Mensagens (barra de mensagens)
-
-| Símbolo | Tipo | Semântica | Colunas |
-|---|---|---|---|
-| `✓` | MsgSuccess | Sucesso (U+2713 CHECK MARK) | 1 |
-| `ℹ` | MsgInfo | Informação (U+2139 INFORMATION SOURCE) | 1 |
-| `⚠` | MsgWarn | Aviso (U+26A0 WARNING SIGN) | 1 |
-| `✗` | MsgError | Erro (U+2717 BALLOT X) | 1 |
-| `◐ ◓ ◑ ◒` | MsgBusy | Spinner — 4 frames | 1 |
-| `•` | MsgHint | Dica contextual de campo (U+2022 BULLET) | 1 |
-| `💡` | MsgTip | Dica de uso (U+1F4A1 LIGHT BULB) | **2** |
-
-> **Largura dupla (`💡`):** o cálculo de truncamento da barra de mensagens deve reservar 2 colunas para o ícone MsgTip. Todos os outros ícones de mensagem ocupam 1 coluna.
-
-### Tipos de diálogo (semântico)
-
-| Símbolo | Tipo | Semântica |
+| Símbolo | Nome semântico | Colunas |
 |---|---|---|
-| `?` | Question | Decisão neutra (U+003F) |
-| `⚠` | Alert/Warning | Ação potencialmente destrutiva (U+26A0) |
-| `ℹ` | Info | Informação (U+2139 INFORMATION SOURCE) |
+| `▶` | Pasta recolhida | 1 |
+| `▼` | Pasta expandida | 1 |
+| `▷` | Pasta vazia | 1 |
+| `●` | Item folha | 1 |
+| `★` | Favorito | 1 |
+| `✕` | Marcado para exclusão | 1 |
+| `+` | Adicionado na sessão | 1 |
+| `~` | Modificado na sessão | 1 |
+| `•` | Indicador contextual (ver nota) | 1 |
+| `◉` | Campo revelável | 1 |
+| `✓` | Sucesso | 1 |
+| `ℹ` | Informação | 1 |
+| `⚠` | Alerta / aviso | 1 |
+| `✗` | Erro | 1 |
+| `?` | Pergunta / decisão | 1 |
+| `◐ ◓ ◑ ◒` | Spinner de atividade | 1 |
+| `💡` | Dica de uso | 2 |
+| `▌` | Cursor de campo | 1 |
+| `↑` `↓` | Indicação de scroll | 1 |
+| `─` `│` | Separadores | 1 |
+| `╭╮╰╯` | Cantos arredondados (diálogos) | 1 |
+| `<╡` | Conector árvore → detalhe | 1+1 |
+| `…` | Truncamento | 1 |
+| `••••` | Máscara de conteúdo sensível | 1/cada |
 
-### Campos com conteúdo sensível
+> **`•` reutilizado:** aparece como indicador de alterações pendentes no cabeçalho, como marcador de dica contextual na barra de mensagens, e como caractere de máscara em campos sensíveis. A distinção é sempre pelo contexto visual — nunca coexistem na mesma região.
 
-| Símbolo | Uso |
-|---|---|
-| `•` | Caractere de substituição — repetido para preencher o espaço do valor oculto (U+2022 BULLET), ex: `••••••••` |
-| `◉` | Indicador de que o campo pode ser revelado — exibido como sufixo do **label** do campo, não do valor (U+25C9 FISHEYE) |
-
-> **Nota:** `•` como máscara não é um ícone de estado — é um caractere de substituição repetido, semanticamente distinto do `•` de alterações não salvas no header.
-
-### Scroll e navegação
-
-| Símbolo | Uso |
-|---|---|
-| `↑` `↓` | Indicadores de scroll disponível (U+2191, U+2193) |
-| `─` | Separador horizontal (U+2500 BOX DRAWINGS LIGHT HORIZONTAL) |
-| `│` | Separador vertical (U+2502 BOX DRAWINGS LIGHT VERTICAL) |
-| `…` | Texto truncado (U+2026 HORIZONTAL ELLIPSIS) |
-
-### Princípios
-
-- **Semântica antes de estética.** Cada símbolo tem um significado único — não reutilizar `★` para dois propósitos diferentes.
-- **Fallback de 1 coluna.** Todo símbolo deve ter uma alternativa que ocupa exatamente 1 coluna de terminal, para layouts previsíveis.
-- **Sem Nerd Fonts.** A TUI deve funcionar em qualquer terminal com suporte Unicode básico. Ícones elaborados (nerdfont glyphs) excluem usuários com configuração padrão.
-- **Consistência com hierarquia tipográfica.** Símbolos complementam — bold para títulos, `★` para favorito, `✕` para exclusão. Nunca usar mais de um ícone por item.
+> **`💡` é o único emoji previsto.** A stack Charm mede largura de exibição corretamente, mas ele deve ficar fora de cálculos manuais sensíveis a alinhamento.
 
 ---
 
 ## Estados Visuais
 
-Definição de como elementos mudam visualmente conforme o estado de interação.
+Estados visuais definem como o mesmo elemento muda de aparência conforme o contexto.
 
-### Matriz de estados
+### Matriz resumida
 
-| Estado | Cor do texto | Cor de fundo | Atributo | Borda | Exemplo |
-|---|---|---|---|---|---|
-| **Normal** | `text.primary` | `surface.base` | — | — | Item, campo, painel |
-| **Painel ativo** | — | — | — | — | Foco indicado pela command bar — sem borda |
-| **Selecionado (cursor)** | `text.primary` | `special.highlight` | **Bold** | — | Item sob cursor em árvore ou lista |
-| **Desabilitado** | `text.disabled` | `surface.base` | Dim | — | Ação indisponível |
-| **Marcado para exclusão** | `special.muted` | `surface.base` | ~~Strikethrough~~ | — | Item com `✕` |
-| **Favorito** | `text.primary` | `surface.base` | — | — | Item com `★` em `accent.secondary` |
-| **Adicionado (sessão)** | `text.primary` | `surface.base` | — | — | Item com `+` em `semantic.info` |
-| **Modificado (sessão)** | `text.primary` | `surface.base` | — | — | Item com `~` em `semantic.info` |
-| **Campo sensível revelado** | `text.primary` | `surface.base` | — | — | Valor temporariamente visível — sem diferenciação de cor |
-| **Pasta virtual / somente leitura** | `text.secondary` | `surface.base` | *Italic* | — | Pasta Favoritos — não editável |
-| **Erro inline** | `semantic.error` | `surface.raised` | — | — | Validação com falha |
+| Estado | Tratamento visual |
+|---|---|
+| Normal | `text.primary` sobre `surface.base` |
+| Selecionado | `special.highlight` + **bold** |
+| Desabilitado | `text.disabled` + dim |
+| Marcado para exclusão | `special.muted` + `✕` + ~~strikethrough~~ |
+| Favorito | `★` em `accent.secondary` |
+| Adicionado / modificado | `+` ou `~` em `semantic.info` |
+| Pasta virtual / leitura | `text.secondary` + *italic* |
+| Campo sensível revelado | mesmo estilo do texto normal; a diferença é o valor exposto |
+| Erro inline | `semantic.error` |
 
-> **Nota:** TUIs não têm estado "pressionado" (pressed). Confirmação de ação é comunicada por mudança de contexto ou mensagem na barra de status.
+### Regras de transição
 
-### Transições
-
-Em TUI, estados mudam **instantaneamente** — sem animação nem fade. A única animação é o spinner `MsgBusy` (1fps). Transições suaves não são viáveis em terminais.
-
-### Princípios
-
-- **Foco de painel é pela command bar, seleção é por fundo.** Qual painel recebe input é indicado pelas ações exibidas na command bar. Qual item dentro do painel está selecionado é indicado por `special.highlight`.
-- **Nunca depender só de cor.** Itens marcados para exclusão usam cor + strikethrough + símbolo `✕`. Itens favoritos usam cor + símbolo `★`. Redundância garante legibilidade em terminais com cores limitadas.
-- **Dim é preferível a hidden.** Itens desabilitados devem ser visíveis (dim) para que o usuário saiba que existem — invisibilidade causa confusão.
+- Foco de painel é indicado pelo separador vertical (ver Padrão: Foco e Navegação) e pela barra de comandos — não por borda ao redor do painel.
+- TUI não tem estado "pressionado"; confirmação vem por mudança de contexto ou mensagem.
+- Transições são instantâneas. A única animação prevista é o spinner `MsgBusy`.
 
 ---
 
-## Componentes Modais
+## Padrões
 
-### Princípios gerais
+Padrões são regras de comportamento transversais — aplicam-se a múltiplas telas e componentes. Os documentos de especificação consomem estes padrões ao definir componentes e fluxos concretos.
 
-- Modais são painéis sobrepostos **acima** de todo o frame, centralizados na tela.
-- O conteúdo por trás do modal permanece visível mas **não recebe input** — apenas o modal do topo recebe eventos.
-- O conteúdo de fundo **não é escurecido** (sem dim/fade). Re-renderizar o frame com cores alteradas adicionaria complexidade sem ganho de usabilidade em TUI.
-- Modais se auto-dimensionam pelo conteúdo — não recebem tamanho alocado.
-- A **command bar** troca para os atalhos do modal ativo enquanto ele estiver aberto.
+---
 
-### Navegação padrão
+### Sobreposição
+
+Elementos sobrepostos (modais, diálogos, seletores) seguem regras uniformes de apresentação e interação.
+
+**Apresentação:**
+
+- Centralizados horizontal e verticalmente sobre o conteúdo
+- Estilo de borda: Rounded (`╭╮╰╯│─`)
+- Fundo interno: `surface.raised`
+- O conteúdo abaixo permanece visível, mas inativo — sem escurecimento de overlay
+
+**Foco e pilha:**
+
+- Apenas o elemento do topo recebe input; os inferiores permanecem montados, porém congelados
+- A barra de comandos reflete os atalhos do elemento do topo enquanto ele estiver ativo
+- Ao fechar o elemento do topo, o foco retorna ao elemento anterior na pilha (ou ao conteúdo base)
+
+**Navegação padrão:**
 
 | Tecla | Comportamento |
 |---|---|
-| **ENTER** | Aciona a opção marcada como `Default` |
-| **ESC** | Aciona a opção marcada como `Cancel`. Se não houver opção cancel, fecha o modal (dismiss) |
+| `Enter` | Aciona a opção default |
+| `Esc` | Aciona a opção de cancelamento; se não existir, fecha o elemento |
 | Atalho da opção | Aciona diretamente a opção correspondente |
 
-### Tipos de modal
+**Tipos semânticos:**
 
-#### Confirmação e perguntas
+Elementos sobrepostos carregam intenção semântica que governa o estilo de borda e título:
 
-Apresentam um **título**, uma **mensagem** explicativa (opcional), e um conjunto finito de opções. Cada opção tem label, atalhos, e um Cmd a executar.
-
-##### Tipo semântico (`DialogType`)
-
-O tipo semântico determina o emoji e a cor base do modal, comunicando a natureza da decisão antes de o usuário ler o conteúdo.
-
-| Tipo | Emoji | Semântica | Cor base |
+| Tipo | Símbolo | Papel | Token de borda |
 |---|---|---|---|
-| Question | ❓ | Decisão neutra | Azul (`#7aa2f7`) |
-| Alert | ⚠️ | Ação potencialmente destrutiva | Amarelo (`#e0af68`) |
-| Info | ℹ️ | Informação que requer reconhecimento | Ciano (`#7dcfff`) |
+| Neutro | — | Operação sem urgência | `border.focused` |
+| Pergunta | `?` | Decisão neutra | `border.focused` |
+| Alerta | `⚠` | Ação potencialmente destrutiva | `semantic.warning` |
+| Informação | `ℹ` | Informação que requer reconhecimento | `semantic.info` |
+| Erro | — | Validação com falha | `semantic.error` |
 
-A cor base é aplicada à **borda ou título** do modal (definição visual exata adiada para fase de implementação). O emoji é exibido junto ao título.
+**Anatomia comum:**
 
-##### Variantes pré-definidas
+Todo diálogo — de decisão ou funcional — segue a mesma estrutura de moldura:
 
-| Factory | Opções | Default (ENTER) | Cancel (ESC) | Padrão de uso |
-|---|---|---|---|---|
-| `Confirm` | Sim / Não | Sim | Não | Confirmações binárias |
-| `ConfirmOrCancel` | Sim / Não / Cancelar | Sim | Cancelar | Decisões com escape |
-| `Ask` | Opções customizadas | Configurável | Configurável | Múltiplas alternativas |
+```
+╭── ⚠  Título ────────────────────╮  ← borda superior: símbolo + título em bold
+│                                  │
+│  (conteúdo interno do diálogo)   │
+│                                  │
+╰────────── S Ação ── Esc Cancelar ╯  ← borda inferior: ações alinhadas à direita
+```
 
-##### Composição visual
+Regras da moldura:
 
-- **Título** — frase curta, exibida com o emoji do tipo semântico (ex: "⚠️ Confirmação").
-- **Mensagem** — texto explicativo. Pode ser vazio se o título for autoexplicativo.
-- **Opções** — exibidas como botões ou labels com atalhos.
-- A opção padrão é visualmente destacada (bold ou cor).
-- Atalhos aparecem na interface de status.
+- **Borda superior** contém o título embutido, precedido pelo símbolo semântico quando aplicável (`?`, `⚠`, `ℹ`)
+- **Borda inferior** contém apenas ações de confirmação e cancelamento, alinhadas à direita
+- **Ação default** (associada a `Enter`): tecla + label em **bold**, coloridos com o token de destaque do tipo de diálogo (ver tabela abaixo) — visualmente distinta das demais
+- **Demais ações**: tecla + label na cor da borda, sem bold
+- **Borda e título** usam o mesmo token — definido pela tabela de tipos semânticos
+- **Ações internas** (revelar senha, alternar campo, expandir diretório) aparecem exclusivamente na barra de comandos — não na borda do diálogo
+- **Teclas de navegação** (↑↓, →, ←, Tab) são de conhecimento amplo e não aparecem na borda
+- A **barra de comandos** espelha as ações de confirmação/cancelamento e acrescenta as ações internas e de navegação do diálogo
 
-Modais de confirmação comunicam a decisão a quem os abriu via callback ou similar mecanismo.
+Token da tecla de ação por tipo de diálogo:
 
-#### Mensagem informativa
-
-Apresenta um título e texto descritivo, com tipo semântico (`DialogType`). Sem opções — apenas dismiss.
-
-| Factory | Dismiss | Tipo |
+| Tipo | Token da tecla principal | Motivo |
 |---|---|---|
-| `Message` | ESC ou ENTER | Qualquer `DialogType` |
+| Pergunta | `accent.primary` | Ação neutra, sem risco |
+| Alerta | `semantic.error` | Ação destrutiva — cor de perigo reforça a gravidade |
+| Informação | `accent.primary` | Apenas reconhecimento, sem risco |
+| Neutro / Funcional | `accent.primary` | Padrão para diálogos sem urgência |
 
-**Composição visual:**
+**Diálogos de decisão:**
 
-- Título com emoji do tipo semântico (ex: "ℹ️ Informação", "⚠️ Aviso").
-- Texto livre abaixo — pode ter múltiplas linhas.
-- Cor da borda/título segue o tipo.
-- Interface de status mostra apenas: OK / Fechar.
+DialogQuestion, DialogAlert e DialogInfo pedem uma decisão do usuário. O conteúdo interno é uma mensagem + contexto:
 
-#### Entrada de dados sensíveis
+- **Mensagem** em `text.primary`; nomes de itens referenciados em **bold**
 
-Campos cujo conteúdo deve ser protegido visualmente.
+```
+╭── ⚠  Excluir segredo ───────────╮
+│                                  │
+│  Gmail será excluído             │
+│  permanentemente.                │
+│  Esta ação não pode ser desfeita.│
+│                                  │
+╰────────── S Excluir ── N Cancelar ╯
+```
 
-| Variante | Campos | Validação |
-|---|---|---|
-| Single | 1 campo | Nenhuma |
-| Dual | 2 campos (repetição) | Verifica correspondência |
+```
+╭── ?  Alterações não salvas ─────╮
+│                                  │
+│  Deseja salvar antes de sair?    │
+│                                  │
+╰── S Salvar ── N Descartar ── Esc Voltar ╯
+```
 
-**Composição visual:**
+```
+╭── ℹ  Conflito detectado ───────╮
+│                                  │
+│  O arquivo foi modificado        │
+│  externamente.                   │
+│                                  │
+╰───────────────────── Enter OK ──╯
+```
 
-- Título descritivo.
-- Campo(s) com máscara — caracteres substituídos por símbolo (ex: `•`).
-- **Cor:** mesma que campos normais (`text.primary`). A máscara já comunica o caráter sensível.
-- Interface de status: Confirmar / Cancelar.
+**Diálogos funcionais:**
 
-**Nota:** Dados sensíveis devem nunca transitar por log ou broadcast.
+PasswordEntry, PasswordCreate, FilePicker e Help oferecem uma função específica em vez de uma decisão sim/não. Compartilham a mesma moldura (título na borda superior, ações na borda inferior) mas diferem no conteúdo interno.
 
-#### Seleção de arquivo
+Regras específicas:
 
-Navegação e seleção de arquivo do sistema de arquivos.
+- **Título** sem símbolo semântico (não há urgência)
+- **Borda** em `border.focused` para diálogos que recebem entrada de texto; `border.default` para diálogos de consulta
+- A anatomia interna completa de cada um está documentada na especificação de telas
 
-| Modo | Função |
-|---|---|
-| Open | Selecionar arquivo existente |
-| Save | Escolher destino para escrita |
+**PasswordEntry** — entrada de senha única (abrir cofre):
 
-**Composição visual:**
+```
+╭── Senha mestra ─────────────────╮
+│                                  │
+│  Senha                           │  ← label em text.secondary
+│  ••••••••••▌                     │  ← texto mascarado + cursor
+│                                  │
+│  Tentativa 2 de 5                │  ← contador em text.secondary
+╰────────── Enter Confirmar ── Esc Cancelar ╯
+```
 
-- Título descritivo.
-- Navegação de diretórios.
-- Modo save: campo para nome do arquivo.
-- Interface de status: Selecionar / Cancelar.
+**PasswordCreate** — criação de senha com confirmação (criar cofre, alterar senha):
 
-#### Entrada de texto
+```
+╭── Definir senha mestra ─────────╮
+│                                  │
+│  Nova senha                      │  ← label em accent.primary (campo ativo)
+│  ••••••••••▌                     │  ← texto mascarado + cursor
+│                                  │
+│  Confirmação                     │  ← label em text.secondary (campo inativo)
+│                                  │
+│  Força: ████████░░ Boa           │  ← medidor de força
+╰────────── Enter Confirmar ── Esc Cancelar ╯
+```
 
-Campo de texto livre com validação opcional.
+**FilePicker** — navegação de diretórios com painéis (abrir/salvar):
 
-| Tipo | Validação |
-|---|---|
-| Simples | Nenhuma |
-| Com validação | Callback/função |
+```
+╭── Abrir cofre ───────────────────────────────────────────────────╮
+│  ── Diretórios ──────────────┬── /home/usuario/cofres ────────── │
+│  ▸ /                         │  cofre.abditum                    │
+│    ▾ usuario/                │  pessoal.abditum                  │
+│      ► cofres/               │  trabalho.abditum                 │
+│      Documents/              │                                   │
+│  ────────────────────────────┴────────────────────────────────── │
+│  Nome do arquivo               ← só no modo save                │
+│  meu-cofre▌                    ← campo de nome com cursor       │
+╰───────────────────────── Enter Selecionar ── Esc Cancelar ╯
+```
 
-**Composição visual:**
+**Help** — tabela de atalhos do contexto ativo:
 
-- Título descritivo.
-- Campo com placeholder opcional.
-- Se validação falhar, mensagem de erro exibida — modal não fecha.
-- Interface de status: Confirmar / Cancelar.
-
-#### Seleção em lista
-
-Lista de opções navegável e selecionável.
-
-**Composição visual:**
-
-- Título descritivo.
-- Lista de itens com cursor.
-- Item selecionado visualmente destacado.
-- Interface de status: Selecionar / Cancelar / Navegar.
-
-#### Help/Ajuda
-
-Modal com referência de ações e atalhos disponíveis.
-
-**Composição visual:**
-
-- Ações agrupadas por categoria.
-- Cada ação mostra: teclas, descrição.
-- Pode ter scroll se a lista for longa.
-- Interface de status: Fechar.
-- Dismiss via tecla de escape.
-
-### Stack de modais
-
-Modais podem se sobrepor. Regras:
-
-- O modal do topo recebe input. Modais abaixo permanecem vivos mas não recebem eventos.
-- Modais abaixo não são atualizados até serem trazidos ao topo.
-- A interface de status sempre reflete os atalhos do modal do **topo** da stack.
+```
+╭── Ajuda — Atalhos e Ações ──────────────────────────────────────╮
+│                                                                  │
+│  Navegação                        ← grupo em text.secondary bold │
+│  ↑↓        Mover cursor                                         │
+│  → Enter   Expandir / selecionar                                 │
+│  Tab       Alternar painéis                                      │
+│                                                                  │
+│  Segredo                          ← grupos agrupam por contexto  │
+│  F16       Revelar / ocultar                                     │
+│  F17       Copiar valor                                          │
+│                                                        ↓ mais ── │
+╰──────────────────────────────────────────────── Esc Fechar ╯
+```
 
 ---
 
-## Compatibilidade de Terminal
+### Mensagens
 
-TUIs rodam em ambientes heterogêneos. O design system deve funcionar desde terminais modernos (24-bit color, todos os atributos) até terminais com capacidades reduzidas.
+A aplicação comunica feedback ao usuário por meio de uma mensagem exibida na barra de mensagens. Uma mensagem por vez — nova mensagem substitui a anterior imediatamente. Não há fila nem pilha.
 
-### Níveis de cor
+**Posição:** sobreposta à última linha da área de trabalho — não reserva linha própria.
 
-| Nível | Cores | Contexto | Abordagem |
-|---|---|---|---|
-| **256 cores (8-bit)** | 216 cores + 24 cinzas | **Alvo principal** — terminais UNIX/Linux, SSH, tmux | Design validado neste nível |
-| **True Color (24-bit)** | 16 milhões | Terminais modernos (Alacritty, Kitty, WezTerm) | Aprimoramento automático via lipgloss downsampling |
-| **16 cores (ANSI)** | 16 nomeadas | Consoles legados | Fallback mínimo — distinção semântica degradada |
-| **Monocromático** | Preto e branco | Pipes/redirecionamento | Sem cor — não é caso de uso interativo |
+**Largura:** ~95% da largura do terminal. Trunca com `…` se necessário.
 
-> **Decisão técnica:** 256 cores é o mínimo garantido. Tokens são especificados como hex (True Color) — o lipgloss faz downsampling automático para o perfil do terminal detectado. O design deve ser **validado em 256 cores** antes de ser aprovado.
+**Tipos de mensagem:**
 
-### Estratégia de alvo 256 cores
+| Tipo | Símbolo | Token | Atributo | TTL | Desaparece com input |
+|---|---|---|---|---|---|
+| Sucesso | `✓` | `semantic.success` | — | 2–3 s | Não |
+| Informação | `ℹ` | `semantic.info` | — | 3 s | Não |
+| Aviso | `⚠` | `semantic.warning` | — | Permanente | **Sim** |
+| Erro | `✗` | `semantic.error` | **bold** | 5 s | Não |
+| Ocupado (spinner) | `◐ ◓ ◑ ◒` | `accent.primary` | — | Permanente | Não |
+| Dica de campo | `•` | `text.secondary` | *italic* | Permanente | Não |
+| Dica de uso | `💡` | `text.secondary` | *italic* | Permanente | Não |
 
-Os tokens são definidos como hex True Color, mas devem ser escolhidos considerando sua correspondência no cubo de 256 cores (6×6×6 + 24 cinzas). Cores próximas podem colapsar para o mesmo índice quando mapeadas — isso é tolerado somente quando existe diferenciação estrutural além da cor (símbolo, atributo tipográfico, ou posição na tela).
+**Regras de comportamento:**
 
-**Risco principal:** pares de papéis que precisam ser distinguíveis — ex: `surface.base` vs `surface.raised`, ou `border.default` vs `border.focused` — devem produzir índices 256 visivelmente distintos.
+- Mensagem de **Aviso** é re-emitida a cada tick enquanto a condição persistir (ex: bloqueio iminente)
+- **Ocupado** permanece até ser substituído por Sucesso ou Erro ao concluir a operação; spinner avança 1 frame/segundo sincronizado com tick global
+- **Dica de campo** é substituída ao navegar para outro campo
+- **Dica de uso** é substituída pela próxima mensagem de qualquer tipo
+- `💡` ocupa 2 colunas — reservar espaço adequado em cálculos de truncamento
 
-### Largura de caractere
+---
 
-Alguns caracteres Unicode (especialmente emojis) ocupam **2 colunas** de terminal em vez de 1, quebrando layouts calculados.
+### Foco e Navegação
 
-**Regra:** Caracteres em posições onde o alinhamento importa (tabelas, prefixos) devem ser de largura **1 coluna garantida**. Símbolos como `★`, `✓`, `✕`, `◐` são seguros. Emojis ficam restritos a texto livre onde desalinhamento é tolerável.
+O modelo de foco define como o usuário percebe e alterna entre áreas interativas da interface.
 
-### Princípios de compatibilidade
+**Alternância com Tab:**
 
-- **256 cores é o alvo de design.** True Color é um aprimoramento automático — não é baseline. Decisões visuais (contraste, distinção semântica) devem ser aprovadas em 256 cores.
-- **Atributos como reforço:** Nunca dependa de um único atributo para comunicar significado. Cor + estrutura + símbolo = redundância.
-- **Testar em múltiplos ambientes:** Validar obrigatoriamente em 256 cores (ex: `TERM=xterm-256color`); validar True Color para garantir que o aprimoramento não introduz regressões.
-- **Largura segura:** Emojis geram desalinhamento. Use símbolos Unicode ou texto em posições de layout crítico.
+`Tab` é contextual — o comportamento depende do estado do painel:
+
+| Contexto | `Tab` | `Shift+Tab` |
+|---|---|---|
+| Modo leitura | Foco → próximo painel (árvore ↔ detalhe) | Foco → painel anterior |
+| Modo edição (detalhe) | Foco → próximo campo editável | Foco → campo anterior |
+| Modo edição, último campo | Foco → painel esquerdo (árvore) | Foco → campo anterior |
+| Modo edição, primeiro campo | Foco → próximo campo | Foco → painel esquerdo (árvore) |
+
+O ciclo entre painéis é circular. Painéis vazios ou sem conteúdo interativo são pulados.
+
+**Indicação de foco:**
+
+- A área de trabalho não tem painéis com borda — existe apenas um separador vertical (`│`) em `border.default` entre a árvore/lista (esquerda) e o detalhe (direita)
+- **Conector `<╡`:** na linha do item selecionado na árvore, o separador `│` é substituído por `<╡` em `accent.primary` — amarra visualmente o item ao conteúdo detalhado à direita
+- O painel ativo é identificado pela **barra de comandos**, que exibe as ações do painel com foco
+
+**Teclado primeiro, mouse sempre:**
+
+- Teclas de navegação direcional (`↑↓←→`) são o caminho primário para listas e árvores
+- `Home` / `End` navegam ao primeiro / último item visível
+- Toda ação acionável por teclado deve ser descobrível e executável também por mouse
+
+**Campos de entrada de texto:**
+
+- Campos não possuem borda — a área digitável é delimitada por um fundo `surface.input` (tom rebaixado em relação ao `surface.raised` do diálogo)
+- Label do campo ativo em `accent.primary` + **bold**; label dos campos inativos em `text.secondary`
+- Foco indicado pela presença do cursor `▌` em `text.primary` dentro do fundo `surface.input`
+- Placeholder em `text.secondary` + *italic* — desaparece ao digitar
+- Erro de validação: exibido na barra de mensagens (tipo Erro), não inline — os formulários são simples o suficiente para mostrar um erro por vez
+- Em **NO_COLOR**: o fundo `surface.input` pode ser perdido; o cursor + label em **bold** permanecem como indicadores de foco suficientes
+
+---
+
+### Acessibilidade
+
+#### NO_COLOR e modo monocromático
+
+Quando `$NO_COLOR` está definido (ou o terminal informa que não suporta cores), `lipgloss` remove todas as cores. A interface deve permanecer totalmente funcional.
+
+**Princípio:** nenhum estado crítico pode depender exclusivamente de cor. Todo estado usa pelo menos duas camadas de comunicação (cor + símbolo, cor + atributo tipográfico, símbolo + posição).
+
+**Matriz de fallback:**
+
+| Estado visual | Com cor | Fallback NO_COLOR |
+|---|---|---|
+| Item selecionado | `special.highlight` + **bold** | **bold** |
+| Aba ativa | `special.highlight` + **bold** | **bold** + borda `╭───╮` |
+| Badge `⚠ Fraca` | `semantic.warning` | `⚠ Fraca` (símbolo preserva semântica) |
+| Badge `✓ Forte` | `semantic.success` | `✓ Forte` |
+| Config "ativado" | `semantic.success` | `ativado` (texto preserva estado) |
+| Config "desativado" | `semantic.off` | `desativado` (texto preserva estado) |
+| Dirty `•` | `semantic.warning` | `•` (símbolo preserva estado) |
+| Indicador `+` / `~` | `semantic.info` | `+` / `~` (símbolos preservam estado) |
+| Busca match | `special.match` + **bold** | **bold** |
+| Exclusão `✕` | `semantic.error` + strikethrough | `✕` + strikethrough |
+| Favorito `★` | `accent.secondary` | `★` (símbolo preserva semântica) |
+| Máscara `••••••••` | `text.secondary` | `text.primary` |
+| Borda de modal | `semantic.*` / `border.*` | Borda presente — tipo distinguido por símbolo no título |
+| Campo de input | `surface.input` | `surface.base` — borda ainda presente |
