@@ -7,8 +7,7 @@ import (
 )
 
 // templateDetailModel is the right-panel child model active during workAreaTemplates.
-// It renders the focused template's field definitions.
-// Stub in Phase 5 — real implementation in Phase 8.
+// Stub in Phase 5 - real implementation in Phase 8.
 type templateDetailModel struct {
 	mgr     *vault.Manager
 	actions *ActionManager
@@ -31,24 +30,13 @@ func (m *templateDetailModel) Update(msg tea.Msg) tea.Cmd {
 }
 
 // View renders a placeholder for the template detail panel.
-// Phase 8 will replace this with the real field editor.
 func (m *templateDetailModel) View() string {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color("245")).
-		Render("[template detail — Phase 8]")
+		Render("[template detail - Phase 8]")
 }
 
 // SetSize stores the allocated panel dimensions.
 func (m *templateDetailModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
-}
-
-// Context returns the current navigation context for flow dispatch.
-func (m *templateDetailModel) Context() FlowContext {
-	return FlowContext{}
-}
-
-// ChildFlows returns nil — no child-specific flows in stub.
-func (m *templateDetailModel) ChildFlows() []flowDescriptor {
-	return nil
 }

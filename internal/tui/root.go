@@ -12,9 +12,8 @@ import (
 // rootModel is the sole tea.Model in the tui package.
 // It owns the workArea state machine, modal stack, active flow slot,
 // shared services, and the frame compositor.
-// All child models (preVault, vaultTree, etc.) are stored as concrete
-// pointer fields — nil means inactive. Never store children as childModel
-// interface values in struct fields (typed nil trap).
+// All child models are stored as concrete pointer fields - nil means inactive.
+// Never store children as childModel interface values (typed nil trap).
 type rootModel struct {
 	// State machine
 	area      workArea
@@ -23,307 +22,233 @@ type rootModel struct {
 	width     int
 	height    int
 
-	// Child models — nil = inactive
-	preVault       *preVaultModel
+	// Child models - nil = inactive. NEVER store as childModel interface.
+	welcome        *welcomeModel
 	vaultTree      *vaultTreeModel
 	secretDetail   *secretDetailModel
 	templateList   *templateListModel
 	templateDetail *templateDetailModel
 	settings       *settingsModel
 
-	// Modal stack — LIFO; last element = topmost/active.
-	// Stored as childModel interface to allow heterogeneous modal types
-	// (e.g., *modalModel, *helpModal) without a typed-nil trap at the
-	// concrete field level. All elements are non-nil when appended.
-	modals []childModel
+	// Modal stack - LIFO; last element = topmost/active. []modalView per D-02.
+	modals []modalView
 
-	// Active flow — nil = no flow running
+	// Active flow - nil = no flow running.
 	activeFlow flowHandler
-	flows      *FlowRegistry
 
-	// Shared services
+	// Shared services.
 	actions  *ActionManager
 	messages *MessageManager
 
-	// Tick tracking
+	// Timer fields.
 	lastActionAt time.Time
+	lastCopyAt   time.Time // D-12: reset when a field is copied to clipboard
+	lastRevealAt time.Time // D-12: reset when a sensitive field is revealed
 }
 
 // Compile-time assertion: rootModel satisfies tea.Model.
 var _ tea.Model = &rootModel{}
 
-// NewRootModel is the exported constructor for main.go (package main cannot
-// access unexported newRootModel). It delegates directly to newRootModel.
+// NewRootModel is the exported constructor for main.go.
 func NewRootModel(mgr *vault.Manager, initialPath string) *rootModel {
 	return newRootModel(mgr, initialPath)
 }
 
 // newRootModel constructs a fully initialized rootModel.
-// mgr may be nil during tests (Phase 5 has no open vault).
-// initialPath is the optional vault path from os.Args (may be empty).
 func newRootModel(mgr *vault.Manager, initialPath string) *rootModel {
 	actions := NewActionManager()
 	messages := NewMessageManager()
-	flows := &FlowRegistry{}
-
-	// Register global flows
-	flows.Register(openVaultDescriptor{})
-	flows.Register(createVaultDescriptor{})
 
 	m := &rootModel{
-		area:         workAreaPreVault,
+		area:         workAreaWelcome,
 		mgr:          mgr,
 		vaultPath:    initialPath,
-		flows:        flows,
 		actions:      actions,
 		messages:     messages,
 		lastActionAt: time.Now(),
 	}
 
-	// Mount initial work area
-	m.preVault = newPreVaultModel(actions)
+	m.welcome = newWelcomeModel(actions)
 
-	// Register global shortcuts into ActionManager
-	actions.Register(Action{Key: "ctrl+q", Label: "Quit", Description: "Quit Abditum (confirms if unsaved)", Group: "Global", Priority: 100})
-	actions.Register(Action{Key: "?", Label: "Help", Description: "Show keyboard shortcuts", Group: "Global", Priority: 90})
+	// Register global actions on rootModel as owner (D-06).
+	actions.Register(m,
+		Action{
+			Keys:        []string{"ctrl+q"},
+			Label:       "Quit",
+			Description: "Quit Abditum (confirms if unsaved changes)",
+			Group:       "Global",
+			Scope:       ScopeLocal,
+			Enabled:     func() bool { return true },
+			Handler: func() tea.Cmd {
+				if m.mgr != nil && m.mgr.IsModified() {
+					return Confirm(DialogAlert, "Sair", "Ha alteracoes nao salvas. Deseja sair mesmo assim?", tea.Quit, nil)
+				}
+				return tea.Quit
+			},
+		},
+		Action{
+			Keys:        []string{"?"},
+			Label:       "Ajuda",
+			Description: "Mostrar atalhos de teclado",
+			Group:       "Global",
+			Scope:       ScopeGlobal,
+			Enabled:     func() bool { return true },
+			Handler: func() tea.Cmd {
+				return func() tea.Msg {
+					return pushModalMsg{modal: newHelpModal(actions)}
+				}
+			},
+		},
+	)
 
 	return m
 }
 
-// Init satisfies tea.Model. Returns nil — the global tick does NOT start here.
-// Tick starts only on transition to workAreaVault (see enterVault).
+// Init satisfies tea.Model. Returns nil - the global tick does NOT start here.
 func (m *rootModel) Init() tea.Cmd {
 	return nil
 }
 
-// Update satisfies tea.Model. Implements the dispatch priority rules from D-06:
-//  1. Global shortcuts (ctrl+Q, ?)
-//  2. activeFlow (if non-nil) receives input
-//  3. Topmost modal receives input (if stack non-empty)
-//  4. Flow dispatch via FlowRegistry
-//  5. Active base child model
-//
-// Domain messages (tick, vault events, pushModal, popModal) are handled
-// before routing to avoid double-dispatch.
+// Update satisfies tea.Model. Implements the D-09 dispatch order.
 func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
-	// --- Window resize: propagate to all live children ---
+	// --- Window resize: propagate to work-area children only (not modals - D-02) ---
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		for _, child := range m.liveModels() {
+		for _, child := range m.liveWorkChildren() {
 			child.SetSize(msg.Width, msg.Height)
 		}
 		return m, nil
 
-	// --- Modal stack management ---
+	// --- Modal stack: push ---
 	case pushModalMsg:
 		if msg.modal != nil {
-			msg.modal.SetSize(m.width, m.height)
 			m.modals = append(m.modals, msg.modal)
 		}
 		return m, nil
 
+	// --- Modal stack: pop ---
 	case popModalMsg:
 		if len(m.modals) > 0 {
 			m.modals = m.modals[:len(m.modals)-1]
 		}
 		return m, nil
 
-	// --- Global tick ---
-	case tickMsg:
-		var cmds []tea.Cmd
-		// Broadcast tick to all live models for periodic UI updates (e.g., clock)
-		for _, child := range m.liveModels() {
-			if cmd := child.Update(msg); cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-		}
-		// Re-issue tick to keep loop alive
-		cmds = append(cmds, tea.Tick(time.Second, func(t time.Time) tea.Msg { return tickMsg(t) }))
-		return m, tea.Batch(cmds...)
+	// --- Flow lifecycle: start (D-08) ---
+	case startFlowMsg:
+		m.modals = m.modals[:0] // clear orphan modals from any previous flow
+		m.activeFlow = msg.flow
+		return m, m.activeFlow.Init()
 
-	// --- Flow chaining ---
-	case chainFlowMsg:
-		ctx := m.buildFlowContext()
-		if d := m.flows.ForKey(msg.key, ctx); d != nil {
-			m.activeFlow = d.New(ctx)
+	// --- Flow lifecycle: end (D-08) ---
+	case endFlowMsg:
+		m.activeFlow = nil
+		return m, nil
+
+	// --- Modal result: route ONLY to activeFlow (D-03) ---
+	case modalResult:
+		if m.activeFlow != nil {
+			return m, m.activeFlow.Update(msg)
 		}
 		return m, nil
+
+	// --- Global tick (D-07): advance message TTL + re-issue tick ---
+	case tickMsg:
+		m.messages.Tick()
+		cmds := m.broadcast(msg)
+		cmds = append(cmds, tea.Tick(time.Second, func(t time.Time) tea.Msg { return tickMsg(t) }))
+		return m, tea.Batch(cmds...)
 
 	// --- Domain messages: broadcast to all live models ---
 	case secretAddedMsg, secretDeletedMsg, secretRestoredMsg, secretModifiedMsg,
 		secretMovedMsg, secretReorderedMsg, folderStructureChangedMsg,
 		vaultSavedMsg, vaultReloadedMsg, vaultClosedMsg, vaultChangedMsg:
-		var cmds []tea.Cmd
-		for _, child := range m.liveModels() {
-			if cmd := child.Update(msg); cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-		}
-		return m, tea.Batch(cmds...)
+		return m, tea.Batch(m.broadcast(msg)...)
 
-	// --- Input: apply dispatch priority ---
+	// --- Keyboard input: D-09 dispatch order ---
 	case tea.KeyPressMsg:
+		m.messages.HandleInput()
 		m.lastActionAt = time.Now()
-		return m.dispatchKey(msg)
-	}
+		key := msg.String()
+		inFlowOrModal := m.activeFlow != nil || len(m.modals) > 0
 
-	return m, nil
-}
-
-// dispatchKey applies the D-06 priority rules for keyboard events.
-func (m *rootModel) dispatchKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	key := msg.String()
-
-	// Priority 1: Global shortcuts — always intercepted first
-	switch key {
-	case "ctrl+q":
-		if m.mgr != nil && m.mgr.IsModified() {
-			// Unsaved changes: push confirmation modal
-			cmd := NewConfirm(
-				"You have unsaved changes. Quit anyway?",
-				tea.Quit,
-				nil,
-			)
+		// 1. ActionManager.Dispatch - handles ScopeGlobal and ScopeLocal
+		if cmd := m.actions.Dispatch(key, inFlowOrModal); cmd != nil {
 			return m, cmd
 		}
-		return m, tea.Quit
-
-	case "?":
-		// Push help modal
-		help := newHelpModal(m.actions)
-		help.SetSize(m.width, m.height)
-		m.modals = append(m.modals, help)
+		// 2. Topmost modal receives input
+		if len(m.modals) > 0 {
+			return m, m.modals[len(m.modals)-1].Update(msg)
+		}
+		// 3. Active flow (fallback - flow without modal)
+		if m.activeFlow != nil {
+			return m, m.activeFlow.Update(msg)
+		}
+		// 4. Active work-area child
+		if child := m.activeChild(); child != nil {
+			return m, child.Update(msg)
+		}
 		return m, nil
 	}
 
-	// Priority 2: Active flow receives input
-	if m.activeFlow != nil {
-		cmd := m.activeFlow.Update(msg)
-		return m, cmd
-	}
-
-	// Priority 3: Topmost modal receives input
-	if len(m.modals) > 0 {
-		top := m.modals[len(m.modals)-1]
-		cmd := top.Update(msg)
-		return m, cmd
-	}
-
-	// Priority 4: Flow dispatch via FlowRegistry (and child flows)
-	ctx := m.buildFlowContext()
-	// Check child flows first (escape hatch), then global registry
-	var matched flowDescriptor
-	if child := m.activeChild(); child != nil {
-		for _, fd := range child.ChildFlows() {
-			if fd.Key() == key && fd.IsApplicable(ctx) {
-				matched = fd
-				break
-			}
-		}
-	}
-	if matched == nil {
-		matched = m.flows.ForKey(key, ctx)
-	}
-	if matched != nil {
-		m.activeFlow = matched.New(ctx)
-		cmd := m.activeFlow.Update(msg)
-		return m, cmd
-	}
-
-	// Priority 5: Active base child model
-	if child := m.activeChild(); child != nil {
-		cmd := child.Update(msg)
-		return m, cmd
-	}
-
 	return m, nil
 }
 
-// buildFlowContext assembles FlowContext from rootModel + active child state.
-func (m *rootModel) buildFlowContext() FlowContext {
-	ctx := FlowContext{}
-	if m.mgr != nil {
-		ctx.VaultOpen = !m.mgr.IsLocked()
-		ctx.VaultDirty = m.mgr.IsModified()
+// broadcast sends msg to all live work-area children and all active modals.
+func (m *rootModel) broadcast(msg tea.Msg) []tea.Cmd {
+	var cmds []tea.Cmd
+	for _, c := range m.liveWorkChildren() {
+		if cmd := c.Update(msg); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	}
-	if child := m.activeChild(); child != nil {
-		childCtx := child.Context()
-		ctx.FocusedFolder = childCtx.FocusedFolder
-		ctx.FocusedSecret = childCtx.FocusedSecret
-		ctx.SecretOpen = childCtx.SecretOpen
-		ctx.FocusedField = childCtx.FocusedField
-		ctx.FocusedTemplate = childCtx.FocusedTemplate
-		ctx.Mode = childCtx.Mode
+	for _, modal := range m.modals {
+		if cmd := modal.Update(msg); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	}
-	return ctx
+	return cmds
 }
 
-// activeChild returns the single "base" child model for the current workArea
-// (not modals). Returns nil if none is mounted.
+// liveWorkChildren returns all non-nil work-area children as []childModel.
+// Modals are NOT included - they are iterated via m.modals separately.
+// Uses explicit nil checks on concrete pointer fields to avoid typed-nil trap.
+func (m *rootModel) liveWorkChildren() []childModel {
+	var live []childModel
+	if m.welcome != nil        { live = append(live, m.welcome) }
+	if m.vaultTree != nil      { live = append(live, m.vaultTree) }
+	if m.secretDetail != nil   { live = append(live, m.secretDetail) }
+	if m.templateList != nil   { live = append(live, m.templateList) }
+	if m.templateDetail != nil { live = append(live, m.templateDetail) }
+	if m.settings != nil       { live = append(live, m.settings) }
+	return live
+}
+
+// activeChild returns the single base child model for the current workArea.
 func (m *rootModel) activeChild() childModel {
 	switch m.area {
-	case workAreaPreVault:
-		if m.preVault != nil {
-			return m.preVault
-		}
+	case workAreaWelcome:
+		if m.welcome != nil { return m.welcome }
 	case workAreaVault:
-		// Primary focus child: vaultTree (left panel)
-		if m.vaultTree != nil {
-			return m.vaultTree
-		}
+		if m.vaultTree != nil { return m.vaultTree }
 	case workAreaTemplates:
-		if m.templateList != nil {
-			return m.templateList
-		}
+		if m.templateList != nil { return m.templateList }
 	case workAreaSettings:
-		if m.settings != nil {
-			return m.settings
-		}
+		if m.settings != nil { return m.settings }
 	}
 	return nil
 }
 
-// liveModels returns all non-nil child models (work area + modals) as a
-// flat []childModel slice. Uses explicit nil checks on concrete pointer
-// fields — never stores as interface to avoid the typed-nil trap.
-func (m *rootModel) liveModels() []childModel {
-	var live []childModel
-	if m.preVault != nil {
-		live = append(live, m.preVault)
-	}
-	if m.vaultTree != nil {
-		live = append(live, m.vaultTree)
-	}
-	if m.secretDetail != nil {
-		live = append(live, m.secretDetail)
-	}
-	if m.templateList != nil {
-		live = append(live, m.templateList)
-	}
-	if m.templateDetail != nil {
-		live = append(live, m.templateDetail)
-	}
-	if m.settings != nil {
-		live = append(live, m.settings)
-	}
-	for _, modal := range m.modals {
-		live = append(live, modal)
-	}
-	return live
-}
-
 // View satisfies tea.Model. Composes the full frame and overlays any active modal.
-// Returns tea.View (not string) — critical for Bubble Tea v2.
 func (m *rootModel) View() tea.View {
 	content := m.renderFrame()
 
-	// Overlay topmost modal if stack is non-empty
 	if len(m.modals) > 0 {
 		top := m.modals[len(m.modals)-1]
-		content = top.View()
+		content = lipgloss.Place(m.width, m.height,
+			lipgloss.Center, lipgloss.Center, top.View())
 	}
 
 	v := tea.NewView(content)
@@ -331,8 +256,22 @@ func (m *rootModel) View() tea.View {
 	return v
 }
 
+// renderShortcuts renders a command bar from modal shortcuts.
+func renderShortcuts(shortcuts []Shortcut, width int) string {
+	if len(shortcuts) == 0 {
+		return ""
+	}
+	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("11")).Bold(true)
+	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	var parts []string
+	for _, s := range shortcuts {
+		parts = append(parts, keyStyle.Render(s.Key)+" "+labelStyle.Render(s.Label))
+	}
+	return "  " + strings.Join(parts, sepStyle.Render("  |  ")+"  ")
+}
+
 // renderFrame composes the base frame zones: header + message bar + work area + command bar.
-// Phase 5: placeholder styles; real visual design in Phase 6+.
 func (m *rootModel) renderFrame() string {
 	if m.width == 0 || m.height == 0 {
 		return "Initializing..."
@@ -343,7 +282,6 @@ func (m *rootModel) renderFrame() string {
 	cmdBarStyle := lipgloss.NewStyle().Width(m.width).Background(lipgloss.Color("236"))
 	workAreaStyle := lipgloss.NewStyle().Width(m.width)
 
-	// Fixed zone heights
 	const headerH = 1
 	const msgBarH = 1
 	const cmdBarH = 1
@@ -364,15 +302,19 @@ func (m *rootModel) renderFrame() string {
 	header := headerStyle.Render("  Abditum  " + vaultName + dirty)
 
 	// Message bar
-	msgBar := msgBarStyle.Render("  " + m.messages.Current())
+	var msgText string
+	if msg := m.messages.Current(); msg != nil {
+		msgText = msg.Text
+	}
+	msgBar := msgBarStyle.Render("  " + msgText)
 
 	// Work area: delegate to active child
 	var workContent string
 	switch m.area {
-	case workAreaPreVault:
-		if m.preVault != nil {
-			m.preVault.SetSize(m.width, workH)
-			workContent = m.preVault.View()
+	case workAreaWelcome:
+		if m.welcome != nil {
+			m.welcome.SetSize(m.width, workH)
+			workContent = m.welcome.View()
 		}
 	case workAreaVault:
 		workContent = m.renderVaultArea(workH)
@@ -386,13 +328,19 @@ func (m *rootModel) renderFrame() string {
 	}
 	workArea := workAreaStyle.Height(workH).Render(workContent)
 
-	// Command bar
-	cmdBar := cmdBarStyle.Render(m.actions.RenderCommandBar(m.width))
+	// Command bar: use modal shortcuts when modal active
+	var cmdBarContent string
+	if len(m.modals) > 0 {
+		cmdBarContent = renderShortcuts(m.modals[len(m.modals)-1].Shortcuts(), m.width)
+	} else {
+		cmdBarContent = m.actions.RenderCommandBar(m.width)
+	}
+	cmdBar := cmdBarStyle.Render(cmdBarContent)
 
 	return strings.Join([]string{header, msgBar, workArea, cmdBar}, "\n")
 }
 
-// renderVaultArea renders workAreaVault: vaultTree (left) + secretDetail (right) side by side.
+// renderVaultArea renders workAreaVault: vaultTree (left) + secretDetail (right).
 func (m *rootModel) renderVaultArea(workH int) string {
 	halfW := m.width / 2
 	if m.vaultTree != nil {
@@ -402,8 +350,8 @@ func (m *rootModel) renderVaultArea(workH int) string {
 		m.secretDetail.SetSize(m.width-halfW, workH)
 	}
 
-	left := "[vault tree — Phase 7]"
-	right := "[secret detail — Phase 8]"
+	left := "[vault tree - Phase 7]"
+	right := "[secret detail - Phase 8]"
 	if m.vaultTree != nil {
 		left = m.vaultTree.View()
 	}
@@ -426,8 +374,8 @@ func (m *rootModel) renderTemplatesArea(workH int) string {
 		m.templateDetail.SetSize(m.width-halfW, workH)
 	}
 
-	left := "[template list — Phase 8]"
-	right := "[template detail — Phase 8]"
+	left := "[template list - Phase 8]"
+	right := "[template detail - Phase 8]"
 	if m.templateList != nil {
 		left = m.templateList.View()
 	}
@@ -442,14 +390,12 @@ func (m *rootModel) renderTemplatesArea(workH int) string {
 
 // enterVault transitions to workAreaVault, mounts the vault children, and
 // starts the global 1-second tick. Called by domain message handlers in Phase 6+.
-// Phase 5: exported for testing; not called by any flow yet.
 func (m *rootModel) enterVault() tea.Cmd {
 	m.area = workAreaVault
-	m.preVault = nil // GC old model
+	m.welcome = nil // GC old model
 	m.vaultTree = newVaultTreeModel(m.mgr, m.actions, m.messages)
 	m.secretDetail = newSecretDetailModel(m.mgr, m.actions, m.messages)
 	m.vaultTree.SetSize(m.width/2, m.height-4)
 	m.secretDetail.SetSize(m.width-m.width/2, m.height-4)
-	// Start global tick
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tickMsg(t) })
 }

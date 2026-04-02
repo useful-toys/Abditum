@@ -6,9 +6,9 @@ import "time"
 type workArea int
 
 const (
-	workAreaPreVault  workArea = iota // 0: welcome screen (ASCII art background)
-	workAreaVault                     // 1: vault open — tree + detail side by side
-	workAreaTemplates                 // 2: template editor — list + detail side by side
+	workAreaWelcome   workArea = iota // 0: welcome screen (ASCII art background)
+	workAreaVault                     // 1: vault open - tree + detail side by side
+	workAreaTemplates                 // 2: template editor - list + detail side by side
 	workAreaSettings                  // 3: settings screen
 )
 
@@ -16,8 +16,8 @@ const (
 // The global tick starts only after the vault is opened (workAreaVault).
 type tickMsg time.Time
 
-// Domain message types — broadcast to all live models on relevant vault events.
-// Children that don't care about a type simply ignore it via default case.
+// Domain message types - broadcast to all live models on relevant vault events.
+// Children that do not care about a type simply ignore it via default case.
 
 // secretAddedMsg is sent when a secret is created or duplicated.
 type secretAddedMsg struct{ id string }
@@ -45,7 +45,6 @@ type secretReorderedMsg struct{}
 type folderStructureChangedMsg struct{}
 
 // vaultSavedMsg is sent when the vault is written to disk.
-// After this, soft-deleted secrets are removed from memory.
 type vaultSavedMsg struct{}
 
 // vaultReloadedMsg is sent on full reload from disk (all children reset state).
@@ -58,9 +57,3 @@ type vaultClosedMsg struct{}
 // vaultChangedMsg is a generic fallback when the specific mutation type
 // is not relevant to broadcast.
 type vaultChangedMsg struct{}
-
-// pushModalMsg is emitted by dialog factories; rootModel appends the modal
-// to its stack on receiving this message.
-type pushModalMsg struct {
-	modal *modalModel
-}

@@ -1,98 +1,157 @@
 package tui
 
-import "charm.land/lipgloss/v2"
+import (
+	"strings"
 
-// Action represents a single registered keyboard action shown in the command bar or help.
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+)
+
+// ActionScope controls when an action is eligible for dispatch.
+type ActionScope int
+
+const (
+	ScopeLocal  ActionScope = iota // eligible only when no flow or modal is active
+	ScopeGlobal                    // always eligible - even during flows and modals
+)
+
+// Action is the central unit of keyboard interaction (D-05).
+// Keys[0] is shown in the command bar. All keys in Keys trigger the action.
+// Enabled and Handler are closures over the registering child.
 type Action struct {
-	Key         string // keyboard shortcut string (e.g., "ctrl+q", "?")
-	Label       string // short display label for command bar
-	Description string // longer description for help overlay
-	Group       string // grouping label (e.g., "Global", "Vault", "Navigation")
-	Priority    int    // higher priority shown first in command bar; 0 = default
-	HideFromBar bool   // if true, excluded from Visible() (command bar) but included in All() (help modal)
+	Keys        []string
+	Label       string
+	Description string
+	Group       string
+	Scope       ActionScope
+	Enabled     func() bool
+	Handler     func() tea.Cmd
 }
 
-// ActionManager is the centralized registry of currently available actions.
-// It is a shared mutable object: rootModel and all children call Register/Clear
-// on it; only rootModel.View() reads from it via Visible() and All().
-//
-// ActionManager does NOT know about Bubble Tea internals — it holds no tea.Cmd
-// or messages. It is queried synchronously from View() only.
-//
-// Phase 5: stub implementation — Visible() returns a flat slice, no display-width
-// awareness yet. Full priority/grouping logic added in later phases.
+// ActionManager is the owner-tracked, dispatch-capable action registry (D-06).
 type ActionManager struct {
-	actions []Action
+	owners      []any
+	byOwner     map[any][]Action
+	activeOwner any
 }
 
 // NewActionManager creates a new, empty ActionManager.
 func NewActionManager() *ActionManager {
-	return &ActionManager{}
+	return &ActionManager{byOwner: make(map[any][]Action)}
 }
 
-// Register adds an action to the registry. Duplicate keys are allowed
-// (the latest registration wins display priority when groups are merged).
-func (a *ActionManager) Register(action Action) {
-	a.actions = append(a.actions, action)
+// Register adds actions for the given owner.
+func (a *ActionManager) Register(owner any, actions ...Action) {
+	if _, exists := a.byOwner[owner]; !exists {
+		a.owners = append(a.owners, owner)
+	}
+	a.byOwner[owner] = append(a.byOwner[owner], actions...)
 }
 
-// ClearGroup removes all actions belonging to the given group.
-// Children call this when they deactivate, passing their group name.
-func (a *ActionManager) ClearGroup(group string) {
-	filtered := a.actions[:0]
-	for _, act := range a.actions {
-		if act.Group != group {
-			filtered = append(filtered, act)
+// ClearOwned removes all actions registered for owner.
+func (a *ActionManager) ClearOwned(owner any) {
+	delete(a.byOwner, owner)
+	filtered := a.owners[:0]
+	for _, o := range a.owners {
+		if o != owner {
+			filtered = append(filtered, o)
 		}
 	}
-	a.actions = filtered
+	a.owners = filtered
+	if a.activeOwner == owner {
+		a.activeOwner = nil
+	}
 }
 
-// Visible returns a prioritized subset of registered actions for the command bar.
-// Actions with HideFromBar == true are excluded.
-// Phase 5: returns visible actions sorted by Priority descending (flat list).
-// Later phases: add display-width awareness and truncation.
+// SetActiveOwner prioritizes actions from the given owner during Dispatch.
+func (a *ActionManager) SetActiveOwner(owner any) {
+	a.activeOwner = owner
+}
+
+// Dispatch finds the first eligible action matching key and executes its Handler.
+func (a *ActionManager) Dispatch(key string, inFlowOrModal bool) tea.Cmd {
+	var ordered []any
+	if a.activeOwner != nil {
+		ordered = append(ordered, a.activeOwner)
+	}
+	for _, o := range a.owners {
+		if o != a.activeOwner {
+			ordered = append(ordered, o)
+		}
+	}
+
+	for _, owner := range ordered {
+		for _, act := range a.byOwner[owner] {
+			if act.Scope == ScopeLocal && inFlowOrModal {
+				continue
+			}
+			if act.Enabled != nil && !act.Enabled() {
+				continue
+			}
+			for _, k := range act.Keys {
+				if k == key {
+					return act.Handler()
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// Visible returns actions where Enabled() is true, for the command bar.
 func (a *ActionManager) Visible() []Action {
 	var result []Action
-	for _, act := range a.actions {
-		if !act.HideFromBar {
-			result = append(result, act)
+	seen := make(map[string]bool)
+
+	var ordered []any
+	if a.activeOwner != nil {
+		ordered = append(ordered, a.activeOwner)
+	}
+	for _, o := range a.owners {
+		if o != a.activeOwner {
+			ordered = append(ordered, o)
 		}
 	}
-	// Simple insertion sort by Priority descending (small slice, no import needed).
-	for i := 1; i < len(result); i++ {
-		for j := i; j > 0 && result[j].Priority > result[j-1].Priority; j-- {
-			result[j], result[j-1] = result[j-1], result[j]
+
+	for _, owner := range ordered {
+		for _, act := range a.byOwner[owner] {
+			if act.Enabled != nil && !act.Enabled() {
+				continue
+			}
+			key := strings.Join(act.Keys, ",")
+			if !seen[key] {
+				seen[key] = true
+				result = append(result, act)
+			}
 		}
 	}
 	return result
 }
 
-// All returns all registered actions, grouped. Used by the help overlay.
+// All returns all registered actions in registration order, for the help overlay.
 func (a *ActionManager) All() []Action {
-	result := make([]Action, len(a.actions))
-	copy(result, a.actions)
+	var result []Action
+	for _, owner := range a.owners {
+		result = append(result, a.byOwner[owner]...)
+	}
 	return result
 }
 
-// RenderCommandBar renders the command bar line from visible actions.
-// Placeholder style: "  key  label  |  key  label  ..."
+// RenderCommandBar renders the command bar from currently visible actions.
 func (a *ActionManager) RenderCommandBar(width int) string {
-	actions := a.Visible()
-	if len(actions) == 0 {
+	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("11")).Bold(true)
+	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+
+	var parts []string
+	for _, act := range a.Visible() {
+		if len(act.Keys) == 0 {
+			continue
+		}
+		parts = append(parts, keyStyle.Render(act.Keys[0])+" "+labelStyle.Render(act.Label))
+	}
+	if len(parts) == 0 {
 		return ""
 	}
-	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("11")) // yellow
-	var parts []string
-	for _, act := range actions {
-		parts = append(parts, keyStyle.Render(act.Key)+"  "+act.Label)
-	}
-	bar := ""
-	for i, p := range parts {
-		if i > 0 {
-			bar += "  │  "
-		}
-		bar += p
-	}
-	return lipgloss.NewStyle().Width(width).Render(bar)
+	return "  " + strings.Join(parts, sepStyle.Render("  |  ")+"  ")
 }

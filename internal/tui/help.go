@@ -10,17 +10,13 @@ import (
 
 // helpModal is the global keyboard shortcut reference overlay.
 // It is pushed onto the modal stack when the user presses "?".
-// It reads ActionManager.All() to show all currently registered actions,
-// grouped by their Group field.
-// Dismissed via ESC or "?" — rootModel pops it from the stack on popModalMsg.
+// Dismissed via ESC or "?".
 type helpModal struct {
 	actions *ActionManager
-	width   int
-	height  int
 }
 
-// Compile-time assertion: helpModal satisfies childModel.
-var _ childModel = &helpModal{}
+// Compile-time assertion: helpModal satisfies modalView.
+var _ modalView = &helpModal{}
 
 // newHelpModal creates a new help overlay modal.
 func newHelpModal(actions *ActionManager) *helpModal {
@@ -28,7 +24,6 @@ func newHelpModal(actions *ActionManager) *helpModal {
 }
 
 // Update handles keyboard input for the help modal.
-// ESC or "?" dismisses the overlay by emitting popModalMsg.
 func (m *helpModal) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
@@ -40,41 +35,36 @@ func (m *helpModal) Update(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
-// View renders the keyboard shortcut reference box, centered on the terminal.
-// It calls ActionManager.All() to list all currently registered actions.
+// View renders the keyboard shortcut reference box.
+// Returns only the box - rootModel positions it via lipgloss.Place.
 func (m *helpModal) View() string {
 	boxW := 60
-	if m.width > 0 && m.width-4 < boxW {
-		boxW = m.width - 4
-	}
 
 	allActions := m.actions.All()
 	content := m.buildContent(allActions)
 
-	box := lipgloss.NewStyle().
+	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("62")).
 		Padding(0, 1).
 		Width(boxW).
 		Render(content)
+}
 
-	if m.width == 0 || m.height == 0 {
-		return box
-	}
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box)
+// Shortcuts returns the dismiss shortcut for the command bar.
+func (m *helpModal) Shortcuts() []Shortcut {
+	return []Shortcut{{Key: "esc", Label: "Close"}}
 }
 
 // buildContent formats the action list into a readable shortcut reference.
-// Actions are grouped by their Group field; groups are displayed in the order
-// they first appear.
 func (m *helpModal) buildContent(actions []Action) string {
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("62"))
 	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
 	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 
 	var b strings.Builder
-	b.WriteString(titleStyle.Render("⌨  Keyboard Shortcuts") + "\n")
-	b.WriteString(sepStyle.Render(strings.Repeat("─", 50)) + "\n")
+	b.WriteString(titleStyle.Render("  Keyboard Shortcuts") + "\n")
+	b.WriteString(sepStyle.Render(strings.Repeat("-", 50)) + "\n")
 
 	if len(actions) == 0 {
 		b.WriteString(sepStyle.Render("  No actions registered") + "\n")
@@ -82,6 +72,9 @@ func (m *helpModal) buildContent(actions []Action) string {
 		currentGroup := ""
 		groupStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("14"))
 		for _, act := range actions {
+			if len(act.Keys) == 0 {
+				continue
+			}
 			if act.Group != currentGroup {
 				currentGroup = act.Group
 				if currentGroup != "" {
@@ -89,26 +82,10 @@ func (m *helpModal) buildContent(actions []Action) string {
 				}
 			}
 			b.WriteString(fmt.Sprintf("  %s  %s\n",
-				keyStyle.Render(act.Key), act.Description))
+				keyStyle.Render(act.Keys[0]), act.Description))
 		}
 	}
 
 	b.WriteString("\n" + sepStyle.Render("  Esc or ?  close this help") + "\n")
 	return b.String()
-}
-
-// SetSize stores terminal dimensions for centered placement.
-func (m *helpModal) SetSize(w, h int) {
-	m.width = w
-	m.height = h
-}
-
-// Context returns an empty FlowContext — help modal has no navigation state.
-func (m *helpModal) Context() FlowContext {
-	return FlowContext{}
-}
-
-// ChildFlows returns nil — help modal has no child-specific flows.
-func (m *helpModal) ChildFlows() []flowDescriptor {
-	return nil
 }

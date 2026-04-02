@@ -2,144 +2,219 @@ package tui
 
 import (
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 )
 
-// TestRootModelInit verifies rootModel starts in the correct initial state.
+// --- Test stubs ---
+
+// stubModal implements modalView for tests.
+type stubModal struct {
+	updateCalls   int
+	setSizeCalled bool
+	received      tea.Msg
+}
+
+func (s *stubModal) Update(msg tea.Msg) tea.Cmd {
+	s.updateCalls++
+	s.received = msg
+	return nil
+}
+func (s *stubModal) View() string         { return "stub" }
+func (s *stubModal) Shortcuts() []Shortcut { return nil }
+
+// stubFlow implements flowHandler for tests.
+type stubFlow struct {
+	initCalled   bool
+	updateCalled bool
+	received     tea.Msg
+}
+
+func (f *stubFlow) Init() tea.Cmd {
+	f.initCalled = true
+	return nil
+}
+func (f *stubFlow) Update(msg tea.Msg) tea.Cmd {
+	f.updateCalled = true
+	f.received = msg
+	return nil
+}
+
+// stubResult implements modalResult for routing tests.
+type stubResult struct{}
+
+func (stubResult) isModalResult() {}
+
+// --- Tests ---
+
+// TestRootModelInit verifies rootModel starts in the correct initial state (D-11).
 func TestRootModelInit(t *testing.T) {
 	m := newRootModel(nil, "")
-
 	if m == nil {
 		t.Fatal("newRootModel returned nil")
 	}
-	if m.area != workAreaPreVault {
-		t.Errorf("expected workAreaPreVault, got %d", m.area)
+	if m.area != workAreaWelcome {
+		t.Errorf("expected workAreaWelcome, got %d", m.area)
 	}
-	if m.preVault == nil {
-		t.Error("preVault should be non-nil after construction")
+	if m.welcome == nil {
+		t.Error("welcomeModel should be non-nil after construction")
 	}
 	if len(m.modals) != 0 {
 		t.Errorf("expected 0 modals, got %d", len(m.modals))
 	}
 	if cmd := m.Init(); cmd != nil {
-		t.Error("Init() must return nil — tick must not start before workAreaVault")
+		t.Error("Init() must return nil - tick must not start before workAreaVault")
 	}
 }
 
-// TestModalStack_PushPop verifies the modal stack grows and shrinks correctly.
+// TestModalStack_PushPop verifies modal stack grows/shrinks correctly.
 func TestModalStack_PushPop(t *testing.T) {
 	m := newRootModel(nil, "")
 
-	modal1 := newModal("title1", "body1", nil, nil)
-	modal2 := newModal("title2", "body2", nil, nil)
+	modal1 := &stubModal{}
+	modal2 := &stubModal{}
 
-	// Push first modal
 	m.Update(pushModalMsg{modal: modal1})
 	if len(m.modals) != 1 {
 		t.Errorf("after push 1: expected 1 modal, got %d", len(m.modals))
 	}
 
-	// Push second modal
 	m.Update(pushModalMsg{modal: modal2})
 	if len(m.modals) != 2 {
 		t.Errorf("after push 2: expected 2 modals, got %d", len(m.modals))
 	}
 
-	// Pop one
 	m.Update(popModalMsg{})
 	if len(m.modals) != 1 {
 		t.Errorf("after pop 1: expected 1 modal, got %d", len(m.modals))
 	}
 
-	// Pop all
 	m.Update(popModalMsg{})
 	if len(m.modals) != 0 {
 		t.Errorf("after pop 2: expected 0 modals, got %d", len(m.modals))
 	}
 
-	// Extra pop on empty stack must not panic
+	// Extra pop on empty stack must not panic.
 	m.Update(popModalMsg{})
 	if len(m.modals) != 0 {
 		t.Errorf("after extra pop: expected 0 modals, got %d", len(m.modals))
 	}
 }
 
-// TestLiveModels_TypedNilSafety verifies that nil concrete pointer fields
-// do NOT appear in liveModels() as typed-nil interface values.
-func TestLiveModels_TypedNilSafety(t *testing.T) {
+// TestLiveWorkChildren_NilSafety verifies that nil concrete pointer fields do not appear
+// as typed-nil interface values in liveWorkChildren() (Go typed-nil trap prevention).
+func TestLiveWorkChildren_NilSafety(t *testing.T) {
 	m := newRootModel(nil, "")
 
-	// Nil out preVault (only active child at this point)
-	m.preVault = nil
-	live := m.liveModels()
+	// Nil out the only active child.
+	m.welcome = nil
+	live := m.liveWorkChildren()
 	if len(live) != 0 {
-		t.Errorf("expected 0 live models after nil'ing preVault, got %d", len(live))
+		t.Errorf("expected 0 live children after nil'ing welcome, got %d", len(live))
 	}
 
-	// Restore preVault
-	m.preVault = newPreVaultModel(m.actions)
-	live = m.liveModels()
+	// Restore welcome.
+	m.welcome = newWelcomeModel(m.actions)
+	live = m.liveWorkChildren()
 	if len(live) != 1 {
-		t.Errorf("expected 1 live model after restoring preVault, got %d", len(live))
+		t.Errorf("expected 1 live child after restoring welcome, got %d", len(live))
 	}
 
-	// Verify none of the returned interfaces are nil (typed-nil check)
+	// None of the returned interfaces must be nil (typed-nil trap).
 	for i, child := range live {
 		if child == nil {
-			t.Errorf("liveModels()[%d] is nil interface — typed-nil trap!", i)
+			t.Errorf("liveWorkChildren()[%d] is nil interface - typed-nil trap!", i)
 		}
 	}
 }
 
-// TestDispatchPriority_CtrlQ verifies ctrl+Q is intercepted before any child.
-func TestDispatchPriority_CtrlQ(t *testing.T) {
-	m := newRootModel(nil, "") // nil mgr → IsModified() not called (mgr nil check in dispatchKey)
+// TestStartEndFlow verifies startFlowMsg sets activeFlow and calls Init(),
+// and endFlowMsg clears activeFlow (D-08).
+func TestStartEndFlow(t *testing.T) {
+	m := newRootModel(nil, "")
+	flow := &stubFlow{}
 
-	// Simulate ctrl+q key press
-	_, cmd := m.Update(makeKeyPress("ctrl+q"))
-	if cmd == nil {
-		t.Error("ctrl+q should return a non-nil Cmd (tea.Quit or confirm dialog)")
+	if m.activeFlow != nil {
+		t.Fatal("expected activeFlow == nil initially")
+	}
+
+	m.Update(startFlowMsg{flow: flow})
+
+	if m.activeFlow == nil {
+		t.Fatal("activeFlow should be set after startFlowMsg")
+	}
+	if !flow.initCalled {
+		t.Error("Init() should be called immediately after startFlowMsg")
+	}
+
+	m.Update(endFlowMsg{})
+
+	if m.activeFlow != nil {
+		t.Error("activeFlow should be nil after endFlowMsg")
 	}
 }
 
-// TestWindowSizeMsg_PropagatesToChildren verifies SetSize is called on live children.
-func TestWindowSizeMsg_PropagatesToChildren(t *testing.T) {
+// TestModalResultRouting verifies that modalResult messages route exclusively
+// to activeFlow and are silently dropped when no flow is active (D-03).
+func TestModalResultRouting(t *testing.T) {
 	m := newRootModel(nil, "")
+	flow := &stubFlow{}
+	result := stubResult{}
+
+	// With no active flow, modalResult should be silently dropped (no panic).
+	m.Update(result)
+
+	// Set active flow.
+	m.Update(startFlowMsg{flow: flow})
+	flow.initCalled = false // reset tracking
+
+	// Send modalResult - should reach flow.Update.
+	m.Update(result)
+	if !flow.updateCalled {
+		t.Error("activeFlow.Update should be called when modalResult is dispatched to it")
+	}
+	if flow.received != result {
+		t.Error("activeFlow.Update received wrong message")
+	}
+}
+
+// TestWindowSizeMsg_NoModalSetSize verifies that modals do NOT receive SetSize
+// when tea.WindowSizeMsg is processed (modals are position-unaware per D-02).
+func TestWindowSizeMsg_NoModalSetSize(t *testing.T) {
+	m := newRootModel(nil, "")
+	modal := &stubModal{}
+
+	// Push a modal onto the stack.
+	m.Update(pushModalMsg{modal: modal})
+	if len(m.modals) != 1 {
+		t.Fatal("expected modal on stack")
+	}
+
+	// Send window size message.
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 
+	// The modal must NOT have received the WindowSizeMsg.
+	// WindowSizeMsg is handled by rootModel directly via liveWorkChildren().
+	if modal.updateCalls > 0 {
+		t.Errorf("modal.Update() was called %d time(s) on WindowSizeMsg - modals must not receive SetSize", modal.updateCalls)
+	}
 	if m.width != 80 || m.height != 24 {
 		t.Errorf("rootModel size not updated: got %dx%d", m.width, m.height)
 	}
-	// preVault should have received the size (full width is passed via liveModels + SetSize)
-	if m.preVault != nil && m.preVault.width != 80 {
-		// Note: height passed to child via SetSize in liveModels broadcast,
-		// but renderFrame also calls SetSize(m.width, workH) on preVault.
-		// In WindowSizeMsg handling, SetSize(msg.Width, msg.Height) is called via liveModels.
-		t.Errorf("preVault width not updated: got %d", m.preVault.width)
-	}
+	_ = time.Now() // keep time import
 }
 
-// makeKeyPress creates a tea.KeyPressMsg that String() returns the given key string.
-// Supports common key combinations used in rootModel dispatch.
+// makeKeyPress creates a tea.KeyPressMsg for testing.
 func makeKeyPress(key string) tea.KeyPressMsg {
 	switch key {
 	case "ctrl+q":
-		// tea.KeyPressMsg is type alias for tea.Key
-		// Code = 'q', Mod = ModCtrl → String() returns "ctrl+q"
 		return tea.KeyPressMsg{Code: 'q', Mod: tea.ModCtrl}
-	case "ctrl+c":
-		return tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl}
-	case "enter":
-		return tea.KeyPressMsg{Code: tea.KeyEnter}
-	case "esc":
-		return tea.KeyPressMsg{Code: tea.KeyEsc}
 	case "?":
-		return tea.KeyPressMsg{Code: '?', Text: "?"}
+		return tea.KeyPressMsg{Code: '?'}
 	default:
-		// For single character keys, set both Code and Text
 		if len(key) == 1 {
-			return tea.KeyPressMsg{Code: rune(key[0]), Text: key}
+			return tea.KeyPressMsg{Code: rune(key[0])}
 		}
 		return tea.KeyPressMsg{}
 	}
