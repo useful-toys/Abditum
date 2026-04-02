@@ -243,7 +243,11 @@ type Theme struct {
 - `childModel` interface **does NOT grow** a `SetTheme` method — avoid interface churn. Instead, `rootModel` calls a package-level helper `applyTheme(child childModel, t *Theme)` that does a type-switch over the known concrete types. Each concrete modal/child has its own `theme *Theme` field updated directly.
 
 **F12 global shortcut — theme toggle:**
-- Registered in `rootModel` via `ActionManager` at startup: `Action{Key: "f12", Label: "Tema", Description: "Alternar tema (Tokyo Night ↔ Cyberpunk)", Group: "Global", Priority: 80}`
+- Registered in `rootModel` via `ActionManager` at startup with **`HideFromBar: true`**:
+  ```go
+  Action{Key: "f12", Label: "Tema", Description: "Alternar tema (Tokyo Night ↔ Cyberpunk)", Group: "Global", Priority: 80, HideFromBar: true}
+  ```
+- `HideFromBar: true` means `ActionManager.Visible()` omits it from the command bar, but `ActionManager.All()` still includes it — so it will appear in the Help modal when that is implemented
 - Intercepted in `rootModel.Update()` at the global shortcut step (D-06 priority 1), **before** flow or modal dispatch — toggles theme even while a modal is open
 - On toggle: flip `m.theme` pointer between the two instances; call `applyTheme` on all live children and modals; `RenderLogo()` is called with the new theme on next `View()`; no Cmd needed (re-render is automatic)
 

@@ -9,6 +9,7 @@ type Action struct {
 	Description string // longer description for help overlay
 	Group       string // grouping label (e.g., "Global", "Vault", "Navigation")
 	Priority    int    // higher priority shown first in command bar; 0 = default
+	HideFromBar bool   // if true, excluded from Visible() (command bar) but included in All() (help modal)
 }
 
 // ActionManager is the centralized registry of currently available actions.
@@ -48,12 +49,16 @@ func (a *ActionManager) ClearGroup(group string) {
 }
 
 // Visible returns a prioritized subset of registered actions for the command bar.
-// Phase 5: returns all actions sorted by Priority descending (flat list).
+// Actions with HideFromBar == true are excluded.
+// Phase 5: returns visible actions sorted by Priority descending (flat list).
 // Later phases: add display-width awareness and truncation.
 func (a *ActionManager) Visible() []Action {
-	// Return copy sorted by priority (higher first).
-	result := make([]Action, len(a.actions))
-	copy(result, a.actions)
+	var result []Action
+	for _, act := range a.actions {
+		if !act.HideFromBar {
+			result = append(result, act)
+		}
+	}
 	// Simple insertion sort by Priority descending (small slice, no import needed).
 	for i := 1; i < len(result); i++ {
 		for j := i; j > 0 && result[j].Priority > result[j-1].Priority; j-- {
