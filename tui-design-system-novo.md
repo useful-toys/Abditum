@@ -403,7 +403,7 @@ Regras da moldura:
 - **Borda e título** usam o mesmo token — definido pela tabela de tipos semânticos
 - **Ações internas** (revelar senha, alternar campo, expandir diretório) aparecem exclusivamente na barra de comandos — não na borda do diálogo
 - **Teclas de navegação** (↑↓, →, ←, Tab) são de conhecimento amplo e não aparecem na borda
-- A **barra de comandos** espelha as ações de confirmação/cancelamento e acrescenta as ações internas e de navegação do diálogo
+- A **barra de comandos** exibe apenas as ações internas do diálogo (ex: Tab entre campos, revelar senha). Ações de confirmação e cancelamento já estão na borda inferior do diálogo — não são duplicadas na barra
 
 **Diálogos de decisão (confirmação e reconhecimento):**
 
@@ -560,7 +560,23 @@ Cada tecla pertence a exatamente um escopo. Escopos mais específicos sobrepõem
 | `F12` | Alternar tema (Tokyo Night ↔ Cyberpunk) | [Temas](#temas) |
 | `?` | Abrir modal de Ajuda | — |
 
+**Teclas de área de trabalho (definidas neste documento):**
+
+| Tecla | Ação | Condição |
+|---|---|---|
+| `F1` | Modo Cofre (aba) | Só com cofre aberto |
+| `F2` | Modo Modelos (aba) | Só com cofre aberto |
+| `F3` | Modo Config (aba) | Só com cofre aberto |
+
 > O mapeamento de F-keys por contexto funcional (segredos, pastas, modelos, cofre) é definido na especificação de telas.
+
+**Ações ocultas da barra de comandos:**
+
+Algumas ações globais não aparecem na barra de comandos — são registradas no ActionManager com o atributo "oculto da barra". Essas ações contínuam disponíveis por teclado e aparecem no modal de Ajuda (`?`).
+
+| Tecla | Ação | Justificativa |
+|---|---|---|
+| `F12` | Alternar tema | Ação pontual, sem necessidade de visibilidade permanente |
 
 ---
 
