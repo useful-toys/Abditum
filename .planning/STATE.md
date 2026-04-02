@@ -44,7 +44,7 @@ Plans executed:
 - ✓ 05-04: rootModel — sole tea.Model, workArea state machine, modal stack, FlowRegistry, frame compositor
 - ✓ 05-05: main.go TUI bootstrap + NewRootModel export + 5 rootModel unit tests
 
-**Next:** Phase 06 (Welcome Screen + Vault Create/Open flows)
+**Next:** Phase 05.1 (TUI scaffold root model fix — realinhamento com tui-elm-architecture.md)
 
 ## Accumulated Context
 
