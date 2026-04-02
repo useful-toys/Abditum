@@ -208,7 +208,7 @@ A interface é dividida em quatro zonas empilhadas verticalmente:
 |---|---|---|
 | **Cabeçalho** | 2 linhas | Nome da app, nome do cofre, indicador não salvo, abas de modo |
 | **Área de trabalho** | Restante | Conteúdo do modo ativo (cofre, modelos, configurações, boas-vindas) |
-| **Barra de mensagens** | Sobreposta | Mensagens de feedback sobre a última linha da área de trabalho — não reserva linha própria |
+| **Barra de mensagens** | 1 linha | Borda separadora `─` com mensagem embutida — quando há mensagem, o texto substitui o trecho central da borda |
 | **Barra de comandos** | 1 linha | Ações do contexto ativo |
 
 ### Proporções de painel
@@ -239,16 +239,55 @@ Quando a mensagem do diálogo excede o espaço disponível, o dimensionamento se
 1. **Largura cresce** até o máximo (70 colunas ou 80% do terminal, o menor)
 2. **Word-wrap** — a mensagem quebra em linhas respeitando limites de palavra
 3. **Altura cresce** até o máximo (80% da altura do terminal)
-4. Se ainda exceder, **scroll vertical** com indicadores `↑ mais` / `↓ mais` em `text.secondary` e navegação por `↑↓`
+4. Se ainda exceder, **scroll vertical** — ver [Scroll em diálogos](#scroll-em-diálogos) abaixo
 
 O diálogo nunca ultrapassa os limites de largura e altura máximos. A mensagem sempre inicia sem scroll — o conteúdo é totalmente visível quando possível.
+
+### Scroll em diálogos
+
+Padrão transversal — aplica-se a qualquer diálogo ou componente modal cujo conteúdo excede a área visível.
+
+**Indicadores visuais — borda direita:**
+
+Quando há conteúdo fora da viewport, a borda direita comunica direção e posição do scroll usando três elementos:
+
+- **Setas** (`↑` / `↓`) — substituem o primeiro e/ou último `│` da borda direita para indicar que há conteúdo acima/abaixo
+- **Thumb** (`■`) — um único `│` é substituído por `■` para indicar a posição relativa no conteúdo. Posição calculada: `round(scroll_offset / max_scroll × (linhas_borda - 1))`
+
+| Posição do scroll | Borda direita (primeiro `│`) | Borda direita (último `│`) | Thumb `■` |
+|---|---|---|---|
+| Topo (mais conteúdo abaixo) | `│` (normal) | `↓` | Próximo ao topo |
+| Meio (conteúdo acima e abaixo) | `↑` | `↓` | Proporcional à posição |
+| Final (mais conteúdo acima) | `↑` | `│` (normal) | Próximo à base |
+| Sem scroll (tudo visível) | `│` (normal) | `│` (normal) | Não aparece |
+
+> **Prioridade de renderização:** se o thumb `■` coincide com a posição de uma seta (`↑`/`↓`), a seta prevalece — a direção é mais importante que a posição.
+
+| Elemento | Token | Atributo |
+|---|---|---|
+| Seta de scroll (`↑` / `↓`) | `text.secondary` | — |
+| Thumb de posição (`■`) | `text.secondary` | — |
+
+**Navegação:**
+
+| Tecla | Efeito |
+|---|---|
+| `↑` / `↓` | Move uma linha |
+| `PgUp` / `PgDn` | Move uma página (viewport − 1 linhas) |
+| `Home` / `End` | Vai ao início / fim do conteúdo |
+
+> As bordas superior e inferior do diálogo (título, ações) permanecem intactas — o scroll afeta apenas o conteúdo interno.
 
 ### Barra de mensagens
 
 | Parâmetro | Valor |
 |---|---|
-| Largura | ~95% da largura do terminal |
+| Altura | 1 linha fixa entre área de trabalho e barra de comandos |
+| Anatomia | Borda `─` contínua; mensagem embutida após 2 espaços de padding esquerdo |
+| Largura da borda | 100% da largura do terminal |
+| Largura do texto | Largura do terminal − 2 (padding) − 2 (`─` direita mínima) |
 | Truncamento | Com `…` quando o texto exceder o espaço disponível |
+| Sem mensagem | Borda `─` contínua (separador visual permanente) |
 
 ---
 
@@ -289,7 +328,8 @@ O contexto de uso detalhado de cada símbolo está na seção onde ele é consum
 | `?` | Atalho de ajuda | 1 | Basic Latin |
 | `◐ ◓ ◑ ◒` | Spinner de atividade | 1 | Geometric Shapes |
 | `▌` | Cursor de campo | 1 | Block Elements |
-| `↑` `↓` | Indicação de scroll | 1 | Arrows |
+| `↑` `↓` | Indicação de scroll (direção) | 1 | Arrows |
+| `■` | Thumb de scroll (posição) | 1 | Geometric Shapes |
 | `─` `│` | Separadores | 1 | Box Drawing |
 | `·` | Separador do cabeçalho | 1 | Latin Supplement |
 | `╭╮╰╯` | Cantos arredondados | 1 | Box Drawing |
@@ -557,6 +597,7 @@ Cada tecla pertence a exatamente um escopo. Escopos mais específicos sobrepõem
 | `↑` `↓` | Navegação direcional em listas e árvores | [Foco e Navegação](#foco-e-navegação) |
 | `←` `→` | Expandir/recolher pastas; alternar opções em diálogos | [Foco e Navegação](#foco-e-navegação) |
 | `Home` / `End` | Primeiro / último item visível | [Foco e Navegação](#foco-e-navegação) |
+| `PgUp` / `PgDn` | Scroll por página (viewport − 1) em conteúdo com scroll | [Scroll em diálogos](#scroll-em-diálogos) |
 | `F12` | Alternar tema (Tokyo Night ↔ Cyberpunk) | [Temas](#temas) |
 | `?` | Abrir modal de Ajuda | — |
 
