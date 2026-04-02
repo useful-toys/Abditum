@@ -35,6 +35,8 @@ Quando algo é específico de uma tela ou componente (ex: quais campos o diálog
   - [Cabeçalho](#cabeçalho)
   - [Barra de Mensagens](#barra-de-mensagens)
   - [Barra de Comandos](#barra-de-comandos)
+- [Telas](#telas)
+  - [Boas-vindas](#boas-vindas)
 
 ---
 
@@ -599,7 +601,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 
 ### Help
 
-**Contexto de uso:** lista todas as ações do ActionManager, agrupadas. Acionado por `?` em qualquer contexto.
+**Contexto de uso:** lista todas as ações do ActionManager, agrupadas. Acionado por `F1` em qualquer contexto.
 **Token de borda:** `border.default` (diálogo de consulta, não recebe entrada de texto)
 **Dimensionamento:** largura máxima do DS; altura até 80% do terminal. Scroll quando o conteúdo excede a viewport.
 
@@ -624,7 +626,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 │  Cofre                                                           │
 │  ^S          Salvar cofre                                        │
 │  F5          Sair (salva se necessário)                          │
-│  ?           Esta ajuda                                          │
+│  F1          Esta ajuda                                          │
 │                                                                  │
 ╰──────────────────────────────────────────────────── Esc Fechar ──╯
 ```
@@ -658,7 +660,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 │  Cofre                                                           │
 │  ^S          Salvar cofre                                        │
 │  F5          Sair (salva se necessário)                          │
-│  ?           Esta ajuda                                          ↓
+│  F1          Esta ajuda                                          ↓
 ╰──────────────────────────────────────────────────── Esc Fechar ──╯
 ```
 
@@ -682,15 +684,15 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 |---|---|---|
 | Conteúdo | sem scroll | Todas as ações cabem na viewport |
 | Conteúdo | com scroll | Ações excedem a viewport — indicadores `↑`/`↓` e thumb `■` na borda direita (ver [DS — Scroll em diálogos](tui-design-system-novo.md#scroll-em-diálogos)) |
-| `?` na barra de comandos | oculto (`HideFromBar`) | Enquanto o Help estiver aberto |
+| `F1` na barra de comandos | oculto (`HideFromBar`) | Enquanto o Help estiver aberto |
 | Barra de comandos | vazia | Help não registra ações internas na barra |
 
 #### Eventos
 
 | Evento | Efeito |
 |---|---|
-| `?` pressionado (qualquer contexto) | Abre o modal; barra de comandos fica vazia; `?` oculto |
-| `Esc` | Fecha o modal; `?` volta visível na barra |
+| `F1` pressionado (qualquer contexto) | Abre o modal; barra de comandos fica vazia; `F1` oculto |
+| `Esc` | Fecha o modal; `F1` volta visível na barra |
 | `↑` / `↓` | Scroll por linha (se conteúdo excede viewport) |
 | `PgUp` / `PgDn` | Scroll por página (viewport − 1 linhas) |
 | `Home` / `End` | Vai ao início / fim do conteúdo |
@@ -882,7 +884,7 @@ O radical `meu-cofre-pessoal` foi truncado para `meu-cofre-pessoa…`.
 | Cofre fechado / bloqueado | Desaparece nome do cofre e abas; volta ao estado boas-vindas |
 | Alteração em memória (`IsDirty() = true`) | Aparece `•` em `semantic.warning` |
 | Salvamento bem-sucedido (`IsDirty() = false`) | Desaparece `•` |
-| Navegação entre modos (`F1` Cofre / `F2` Modelos / `F3` Config, ou clique) | Aba ativa muda; nova aba suspensa na linha separadora |
+| Navegação entre modos (`F2` Cofre / `F3` Modelos / `F4` Config, ou clique) | Aba ativa muda; nova aba suspensa na linha separadora |
 | Terminal redimensionado | Nome do cofre recalcula truncamento |
 
 ---
@@ -890,7 +892,7 @@ O radical `meu-cofre-pessoal` foi truncado para `meu-cofre-pessoa…`.
 #### Comportamento
 
 - **Abas clicáveis** — mouse troca o modo ativo ao clicar no texto ou na borda da aba (área de hit inclui linhas 1 e 2 da aba)
-- **Navegação por teclado** — `F1` Cofre, `F2` Modelos, `F3` Config (escopo Área de trabalho — só ativas com cofre aberto)
+- **Navegação por teclado** — `F2` Cofre, `F3` Modelos, `F4` Config (escopo Área de trabalho — só ativas com cofre aberto)
 - **Indicador dirty** — aparece/desaparece imediatamente conforme `IsDirty()`, sem animação
 - **Truncamento dinâmico** — recalculado a cada renderização (resize do terminal, mudança de modo ativo, cofre aberto/fechado)
 
@@ -908,18 +910,18 @@ O radical `meu-cofre-pessoal` foi truncado para `meu-cofre-pessoa…`.
 
 #### Anatomia
 
-Cada ação na barra segue o formato: **TECLA Label** — tecla em `accent.primary` **bold**, label em `text.primary`. Ações separadas por `·` em `text.secondary`. A ação `?` (Ajuda) é âncora fixa na extrema direita.
+Cada ação na barra segue o formato: **TECLA Label** — tecla em `accent.primary` **bold**, label em `text.primary`. Ações separadas por `·` em `text.secondary`. A ação `F1` (Ajuda) é âncora fixa na extrema direita.
 
 **Estado normal:**
 
 ```
-  F21 Novo · F22 Editar · F23 Excluir · ^S Salvar                                   ?
+  F21 Novo · F22 Editar · F23 Excluir · ^S Salvar                              F1 Ajuda
 ```
 
 **Com ação desabilitada (nenhum segredo selecionado):**
 
 ```
-  F21 Novo · F22 Editar · F23 Excluir · ^S Salvar                                   ?
+  F21 Novo · F22 Editar · F23 Excluir · ^S Salvar                              F1 Ajuda
 ```
 
 `F23 Excluir` em `text.disabled` + dim. Permanece visível na posição — não colapsa.
@@ -927,7 +929,7 @@ Cada ação na barra segue o formato: **TECLA Label** — tecla em `accent.prima
 **Durante diálogo ativo (apenas ações internas):**
 
 ```
-  Tab Campos · F5 Revelar                                                            ?
+  Tab Campos · F5 Revelar                                                    F1 Ajuda
 ```
 
 Ações do ActionManager ficam ocultas. A barra mostra apenas as ações internas do diálogo do topo da pilha. Ações de confirmação/cancelamento (`Enter`/`Esc`) já estão na borda do diálogo — não são duplicadas na barra.
@@ -935,10 +937,10 @@ Ações do ActionManager ficam ocultas. A barra mostra apenas as ações interna
 **Espaço restrito:**
 
 ```
-  F21 Novo                                                                           ?
+  F21 Novo                                                                    F1 Ajuda
 ```
 
-Ações de menor prioridade são ocultadas quando não há espaço. `?` permanece sempre visível — é via Help que o usuário descobre as ações ocultas.
+Ações de menor prioridade são ocultadas quando não há espaço. `F1` permanece sempre visível — é via Help que o usuário descobre as ações ocultas.
 
 ---
 
@@ -950,7 +952,7 @@ Ações de menor prioridade são ocultadas quando não há espaço. `?` permanec
 | Label da ação (ex: `Novo`) | `text.primary` | — |
 
 | Separador `·` | `text.secondary` | — |
-| `?` (Ajuda) | `accent.primary` | **bold** |
+| `F1` (Ajuda) | `accent.primary` | **bold** |
 
 ---
 
@@ -988,11 +990,11 @@ Além destes:
 
 #### Comportamento
 
-- **Âncora `?`** — reserva espaço fixo na extrema direita. O cálculo de espaço disponível desconta `?` antes de distribuir as demais ações
+- **Âncora `F1`** — reserva espaço fixo na extrema direita. O cálculo de espaço disponível desconta `F1 Ajuda` antes de distribuir as demais ações
 - **Ações desabilitadas desaparecem da barra** — `Enabled = false` remove a ação da barra (não fica exibida como dim). A ação continua listada no Help
-- **Diálogos de decisão** (confirmação/reconhecimento) — tipicamente não têm ações internas; a barra pode ficar vazia (apenas `?`) enquanto o diálogo estiver aberto
+- **Diálogos de decisão** (confirmação/reconhecimento) — tipicamente não têm ações internas; a barra pode ficar vazia (apenas `F1 Ajuda`) enquanto o diálogo estiver aberto
 - **Diálogos funcionais** (PasswordEntry, FilePicker etc.) — registram ações internas (Tab entre campos, revelar senha, etc.) que aparecem na barra
-- **Truncamento** — se mesmo a ação de maior prioridade + `?` não cabem, a barra mostra apenas `?`
+- **Truncamento** — se mesmo a ação de maior prioridade + `F1 Ajuda` não cabem, a barra mostra apenas `F1 Ajuda`
 
 ---
 
@@ -1075,7 +1077,7 @@ Os tokens de cada tipo de mensagem são definidos no [DS — Mensagens](tui-desi
 |---|---|---|
 | Borda | visível (sem texto) | Nenhuma mensagem ativa |
 | Borda + mensagem | visível (texto embutido) | Mensagem ativa — tipo governa símbolo, cor e atributo |
-| Texto | truncado com `…` | Mensagem excede ~95% da largura do terminal |
+| Texto | truncado com `…` | Mensagem excede largura disponível (terminal − 2 padding − 2 borda mínima) |
 
 #### Eventos
 
@@ -1102,12 +1104,81 @@ Os tokens de cada tipo de mensagem são definidos no [DS — Mensagens](tui-desi
 
 ---
 
-<!-- SEÇÕES FUTURAS — a preencher pela equipe -->
-
-<!--
 ## Telas
 
 ### Boas-vindas
+
+**Trigger:** Aplicação inicia sem cofre aberto, ou após fechar/bloquear cofre.  
+**Interação:** Nenhuma — tela estática. Toda ação disponível via barra de comandos.
+
+**Wireframe (área de trabalho — terminal 80 × 24):**
+
+```
+                                                                                
+                                                                                
+                                                                                
+                   ___    __        ___ __                                      
+                  /   |  / /_  ____/ (_) /___  ______ ___                       
+                 / /| | / __ \/ __  / / __/ / / / __ `__ \                     
+                / ___ |/ /_/ / /_/ / / /_/ /_/ / / / / / /                     
+               /_/  |_/_.___/\__,_/_/\__/\__,_/_/ /_/ /_/                      
+                                                                                
+                             v0.1.0                                             
+                                                                                
+                                                                                
+```
+
+> Logo e versão centralizados via `lipgloss.Place()`. As linhas do logo recebem as cores do [DS — Gradiente do logo](tui-design-system-novo.md#gradiente-do-logo) — não representável neste wireframe monocromático.
+
+#### Tokens
+
+| Elemento | Token | Atributo |
+|---|---|---|
+| Logo — linha 1 | DS — [Gradiente do logo](tui-design-system-novo.md#gradiente-do-logo) linha 1 | — |
+| Logo — linha 2 | DS — Gradiente do logo linha 2 | — |
+| Logo — linha 3 | DS — Gradiente do logo linha 3 | — |
+| Logo — linha 4 | DS — Gradiente do logo linha 4 | — |
+| Logo — linha 5 | DS — Gradiente do logo linha 5 | — |
+| Versão (ex: `v0.1.0`) | `text.secondary` | — |
+
+> As cores do logo não são tokens nomeados — são os valores hexadecimais da tabela de gradiente do DS, aplicados por linha conforme o tema ativo.
+
+#### Estados dos componentes
+
+| Componente | Estado | Condição |
+|---|---|---|
+| Logo + versão | visível, centralizado | Tela ativa |
+| Cabeçalho | sem abas | Nenhum cofre aberto — ver [Cabeçalho — Sem cofre](#sem-cofre-boas-vindas) |
+
+#### Mensagens
+
+| Contexto | Tipo | Texto |
+|---|---|---|
+| Tela entra em exibição | Dica de uso | `• Abra ou crie um cofre para começar` |
+
+#### Eventos
+
+| Evento | Efeito |
+|---|---|
+| Aplicação inicia sem cofre | Modo boas-vindas exibido |
+| Cofre fechado | Tela boas-vindas exibida |
+| Cofre bloqueado | Tela boas-vindas exibida; arquivo permanece em disco, requer nova autenticação |
+| Terminal redimensionado | Logo e versão recentralizados |
+
+#### Comportamento
+
+- Logo e versão centralizados horizontal e verticalmente na área de trabalho via `lipgloss.Place()`
+- As cores do logo acompanham o tema ativo — mudam instantaneamente com `F12`
+- O cabeçalho não exibe abas neste modo (ver [Cabeçalho — Sem cofre](#sem-cofre-boas-vindas))
+- **Versão dinâmica** — o texto exibido vem da string injetada em tempo de build via `-ldflags "-X main.version=$(git describe --tags --always)"`. Em builds locais sem tag, exibe `dev`. O valor **nunca** é hardcoded no fonte
+
+---
+
+<!-- SEÇÕES FUTURAS — a preencher pela equipe -->
+
+<!--
+## Telas (continuação)
+
 ### Modo Cofre
 ### Modo Modelos
 ### Modo Configurações
