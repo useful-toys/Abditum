@@ -19,7 +19,7 @@ Quando algo é específico de uma tela ou componente (ex: quais campos o diálog
 ## Sumário
 
 - [Diálogos de Decisão](#diálogos-de-decisão)
-  - [Matriz Intenção × Severidade](#matriz-intenção--severidade)
+  - [Referência Visual por Severidade](#referência-visual-por-severidade)
   - [Exemplo: Confirmação × Destrutivo — Excluir segredo](#exemplo-confirmação--destrutivo--excluir-segredo)
   - [Exemplo: Confirmação × Neutro — Alterações não salvas](#exemplo-confirmação--neutro--alterações-não-salvas)
   - [Exemplo: Reconhecimento × Informativo — Conflito detectado](#exemplo-reconhecimento--informativo--conflito-detectado)
@@ -28,26 +28,45 @@ Quando algo é específico de uma tela ou componente (ex: quais campos o diálog
   - [PasswordEntry](#passwordentry)
   - [PasswordCreate](#passwordcreate)
   - [FilePicker](#filepicker)
+    - [FilePicker — Modo Open](#filepicker--modo-open)
+    - [FilePicker — Modo Save](#filepicker--modo-save)
   - [Help](#help)
+- [Componentes](#componentes)
+  - [Cabeçalho](#cabeçalho)
 
 ---
 
 ## Diálogos de Decisão
 
-Todos os diálogos de decisão seguem a anatomia comum e o modelo bidimensional (Intenção × Severidade) definidos no [design system — Sobreposição](tui-design-system-novo.md#sobreposição). Esta seção define a matriz genérica e apresenta wireframes ilustrativos de combinações típicas.
+Todos os diálogos de decisão seguem a anatomia comum e o modelo bidimensional (Intenção × Severidade) definidos no [design system — Sobreposição](tui-design-system-novo.md#sobreposição). Esta seção define a tabela de referência visual completa e apresenta wireframes ilustrativos de combinações típicas.
 
 ---
 
-### Matriz Intenção × Severidade
+### Referência Visual por Severidade
 
-A tabela abaixo mostra como cada combinação se manifesta visualmente. Nem todas as combinações são igualmente comuns — as marcadas com **★** aparecem nos wireframes illustrativos abaixo.
+A severidade governa **todo** o tratamento visual da moldura. A intenção define apenas a barra de ações (múltiplas opções vs. `Enter OK`). A tabela abaixo é a referência completa — qualquer diálogo de decisão pode ser estilizado a partir dela, sem consultar os exemplos.
 
-| | Destrutivo (`⚠`) | Erro (`✗`) | Alerta (`⚠`) | Informativo (`ℹ`) | Neutro (—) |
+| Severidade | Símbolo | Token: borda e título | Token: tecla default | Token: demais ações | Título: atributo |
 |---|---|---|---|---|---|
-| **Confirmação** | ★ Excluir item, sobrescrever arquivo | Raro (tentar novamente?) | Ação com efeito colateral | Confirmar operação longa | ★ Salvar/descartar/voltar |
-| **Reconhecimento** | Ação executada e irreversível | ★ Falha ao abrir cofre | Operação parcialmente bem-sucedida | ★ Conflito detectado | Operação concluída |
+| **Destrutivo** | `⚠` | `semantic.warning` | `semantic.error` | `semantic.warning` | **bold** |
+| **Erro** | `✗` | `semantic.error` | `accent.primary` | `semantic.error` | **bold** |
+| **Alerta** | `⚠` | `semantic.warning` | `accent.primary` | `semantic.warning` | **bold** |
+| **Informativo** | `ℹ` | `semantic.info` | `accent.primary` | `semantic.info` | **bold** |
+| **Neutro** | — | `border.focused` | `accent.primary` | `border.focused` | **bold** |
 
-**Como ler a matriz:** cada célula descreve o *cenário típico* — não o conteúdo literal do diálogo. O tratamento visual (borda, símbolo, cor da tecla) é determinado exclusivamente pela severidade; a intenção define a barra de ações (múltiplas opções vs. apenas OK).
+**Barra de ações por intenção:**
+
+| Intenção | Ação default (esquerda) | Ações intermediárias | Ação cancelar (direita) |
+|---|---|---|---|
+| **Confirmação** | Tecla + label em **bold**, token da tecla default | Tecla + label na cor da borda | `Esc` + label na cor da borda |
+| **Reconhecimento** | `Enter OK` em **bold**, token `accent.primary` | — | — (`Esc` fecha, equivalente a OK) |
+
+**Regras derivadas (recordatório):**
+
+- Borda e título usam o **mesmo** token
+- Tecla default sempre em **bold**; demais ações sem bold
+- Símbolo precede o título na borda superior; Neutro não usa símbolo
+- Mensagem interna em `text.primary`; nomes de itens referenciados em **bold**
 
 ---
 
@@ -161,30 +180,87 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 
 **Contexto de uso:** entrada de senha para abrir cofre.
 **Token de borda:** `border.focused`
+**Largura fixa:** 50 colunas
+
+> Nos wireframes abaixo, `░` representa a área com fundo `surface.input` (campo de entrada). Na implementação real, o campo é uma área de fundo rebaixado sem hachura — conforme definido em [Campos de entrada de texto](tui-design-system-novo.md#foco-e-navegação).
+
+**Estado inicial (campo vazio — ação default bloqueada):**
 
 ```
-╭── Senha mestra ─────────────────╮
-│                                  │
-│  Senha                           │  ← label em text.secondary
-│  ••••••••••▌                     │  ← texto mascarado + cursor
-│                                  │
-│  Tentativa 2 de 5                │  ← contador em text.secondary
-╰── Enter Confirmar ──────── Esc Cancelar ╯
+╭── Senha mestra ────────────────────────────╮
+│                                            │
+│  Senha                                     │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│                                            │
+╰── Enter Confirmar ──────────── Esc Cancelar ╯
+       ↑ text.disabled (bloqueado)
+```
+
+**Estado com digitação (ação default ativa):**
+
+```
+╭── Senha mestra ────────────────────────────╮
+│                                            │
+│  Senha                                     │
+│  ░••••••••▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│                                            │
+╰── Enter Confirmar ──────────── Esc Cancelar ╯
+       ↑ accent.primary + bold (desbloqueado)
+```
+
+**Estado com contador de tentativas (a partir da 2ª):**
+
+```
+╭── Senha mestra ────────────────────────────╮
+│                                            │
+│  Senha                                     │
+│  ░••••••••▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│                                            │
+│  Tentativa 2 de 5                          │
+╰── Enter Confirmar ──────────── Esc Cancelar ╯
 ```
 
 | Elemento | Token | Atributo |
 |---|---|---|
 | Título `Senha mestra` | `text.primary` | **bold** |
-| Label `Senha` | `text.secondary` | — |
-| Máscara `••••••••••` | `text.secondary` | — |
+| Label `Senha` | `accent.primary` | **bold** (campo ativo, sempre — diálogo de campo único) |
+| Área do campo `░` | `surface.input` | — |
+| Placeholder (antes de digitar) | `text.secondary` | *italic* |
+| Máscara `••••••••` | `text.secondary` | — |
 | Cursor `▌` | `text.primary` | — |
 | Contador `Tentativa 2 de 5` | `text.secondary` | — |
-| Fundo do campo | `surface.input` | — |
+| Ação default (bloqueada) | `text.disabled` | — |
+| Ação default (desbloqueada) | `accent.primary` | **bold** |
+
+**Estados dos componentes:**
+
+| Componente | Estado | Condição |
+|---|---|---|
+| Campo `Senha` | sempre visível, sempre com foco | Diálogo de campo único |
+| Contador de tentativas | visível | Tentativa atual ≥ 2 |
+| Contador de tentativas | oculto | Primeira tentativa |
+| Ação `Enter Confirmar` | bloqueada (`text.disabled`) | Campo `Senha` vazio |
+| Ação `Enter Confirmar` | ativa (`accent.primary` **bold**) | Campo `Senha` não vazio |
+| Ação `Esc Cancelar` | sempre ativa | — |
+
+**Mensagens:**
+
+| Contexto | Tipo | Texto |
+|---|---|---|
+| Diálogo abre / foco no campo (vazio ou válido) | Dica de campo | `• Digite a senha para desbloquear o cofre` |
+| `Enter` → senha incorreta | Erro (5s) | `✗ Senha incorreta` |
+| Diálogo fecha (confirmação ou cancelamento) | — | Barra limpa *(orquestrador assume)* |
 
 **Comportamento:**
 - Máscara de comprimento fixo (8 `•`) — não revela o tamanho real da senha
-- Contador aparece a partir da segunda tentativa
 - Campo único — `Tab` não faz nada dentro deste diálogo
+
+**Transições especiais:**
+
+| Evento | Efeito |
+|---|---|
+| `Enter` com senha incorreta | Campo limpo; ação default volta para `text.disabled`; contador incrementado |
+| Tentativas esgotadas | Diálogo fecha automaticamente |
 
 ---
 
@@ -192,17 +268,55 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 
 **Contexto de uso:** criação de senha (ao criar cofre ou alterar senha mestra).
 **Token de borda:** `border.focused`
+**Largura fixa:** 50 colunas
+
+**Estado inicial (foco no primeiro campo — ação default bloqueada):**
 
 ```
-╭── Definir senha mestra ─────────╮
-│                                  │
-│  Nova senha                      │  ← label em accent.primary (campo ativo)
-│  ••••••••••▌                     │  ← texto mascarado + cursor
-│                                  │
-│  Confirmação                     │  ← label em text.secondary (campo inativo)
-│                                  │
-│  Força: ████████░░ Boa           │  ← medidor de força
-╰── Enter Confirmar ──────── Esc Cancelar ╯
+╭── Definir senha mestra ───────────────────╮
+│                                            │
+│  Nova senha                                │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│                                            │
+│  Confirmação                               │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│                                            │
+╰── Enter Confirmar ──────────── Esc Cancelar ╯
+       ↑ text.disabled (bloqueado)
+```
+
+**Estado com digitação (primeiro campo ativo, medidor aparece — ação ainda bloqueada):**
+
+```
+╭── Definir senha mestra ───────────────────╮
+│                                            │
+│  Nova senha                                │
+│  ░••••••••▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│                                            │
+│  Confirmação                               │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│                                            │
+│  Força: ████████░░ Boa                     │
+│                                            │
+╰── Enter Confirmar ──────────── Esc Cancelar ╯
+       ↑ text.disabled (2º campo vazio)
+```
+
+**Estado com ambos campos preenchidos (ação default desbloqueada):**
+
+```
+╭── Definir senha mestra ───────────────────╮
+│                                            │
+│  Nova senha                                │
+│  ░••••••••░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│                                            │
+│  Confirmação                               │
+│  ░••••▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│                                            │
+│  Força: ████████░░ Boa                     │
+│                                            │
+╰── Enter Confirmar ──────────── Esc Cancelar ╯
+       ↑ accent.primary + bold (desbloqueado)
 ```
 
 | Elemento | Token | Atributo |
@@ -210,18 +324,52 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 | Título `Definir senha mestra` | `text.primary` | **bold** |
 | Label do campo ativo | `accent.primary` | **bold** |
 | Label do campo inativo | `text.secondary` | — |
+| Área do campo `░` | `surface.input` | — |
+| Placeholder (antes de digitar) | `text.secondary` | *italic* |
 | Máscara | `text.secondary` | — |
 | Cursor `▌` | `text.primary` | — |
 | Medidor — preenchido | `semantic.success` ou `semantic.warning` | — |
 | Medidor — vazio | `text.disabled` | — |
 | Label de força `Boa` / `Forte` | `semantic.success` | — |
 | Label de força `Fraca` | `semantic.warning` | — |
-| Fundo dos campos | `surface.input` | — |
+| Ação default (bloqueada) | `text.disabled` | — |
+| Ação default (desbloqueada) | `accent.primary` | **bold** |
+
+**Estados dos componentes:**
+
+| Componente | Estado | Condição |
+|---|---|---|
+| Campo `Nova senha` | sempre visível | — |
+| Campo `Confirmação` | sempre visível | — |
+| Medidor de força | visível | Campo `Nova senha` não vazio |
+| Medidor de força | oculto | Campo `Nova senha` vazio |
+| Linha em branco antes do medidor | visível | Medidor visível |
+| Ação `Enter Confirmar` | bloqueada (`text.disabled`) | Campo `Nova senha` vazio **ou** campo `Confirmação` vazio |
+| Ação `Enter Confirmar` | ativa (`accent.primary` **bold**) | Ambos os campos não vazios |
+| Ação `Esc Cancelar` | sempre ativa | — |
+
+> **Nota:** a verificação de igualdade entre as senhas ocorre **no momento do Enter** — não bloqueia a ação default. Se as senhas divergem, o erro é comunicado e o campo de confirmação é limpo.
+
+**Mensagens:**
+
+| Contexto | Tipo | Texto |
+|---|---|---|
+| Diálogo abre / foco em `Nova senha` (vazio ou válido) | Dica de campo | `• A senha mestra protege todo o cofre — use 12+ caracteres` |
+| Foco em `Confirmação` (vazio ou válido) | Dica de campo | `• Redigite a senha para confirmar` |
+| Foco em campo com erro prévio de divergência | Erro (5s) | `✗ As senhas não conferem — digite novamente` |
+| `Enter` → senhas divergentes | Erro (5s) | `✗ As senhas não conferem — digite novamente` |
+| Diálogo fecha (confirmação ou cancelamento) | — | Barra limpa *(orquestrador assume)* |
 
 **Comportamento:**
 - `Tab` alterna entre os campos `Nova senha` e `Confirmação`
 - Medidor de força atualizado a cada tecla no campo `Nova senha`
-- Se as senhas não conferem ao confirmar, borda do campo Confirmação muda para `semantic.error`
+- Máscara de comprimento fixo (8 `•`) — não revela o tamanho real da senha
+
+**Transições especiais:**
+
+| Evento | Efeito |
+|---|---|
+| `Enter` com senhas divergentes | Foco move para `Confirmação`; campo `Confirmação` limpo; ação default volta para `text.disabled` |
 
 ---
 
@@ -229,38 +377,221 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 
 **Contexto de uso:** abrir ou salvar arquivo do cofre.
 **Token de borda:** `border.focused`
+**Dimensionamento:** largura máxima do DS (70 colunas ou 80% do terminal, o menor); altura 80% do terminal. Proporção árvore/arquivos ~40/60.
+**Diretório inicial:** CWD do processo.
+**Filtro fixo:** apenas arquivos `*.abditum` são exibidos no painel de arquivos. Não há campo de filtro editável.
+
+O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e condições distintos. Ambos compartilham a mesma anatomia de painéis.
+
+> Nos wireframes abaixo, `░` representa áreas com fundo `surface.input` (campos de entrada).
+
+---
+
+#### FilePicker — Modo Open
+
+**Título:** `Abrir cofre`
+**Objetivo:** selecionar um arquivo `.abditum` existente.
+
+**Wireframe (arquivo selecionado — ação default ativa):**
 
 ```
 ╭── Abrir cofre ───────────────────────────────────────────────────╮
-│  ── Diretórios ──────────────┬── /home/usuario/cofres ────────── │
-│  ▸ /                         │  cofre.abditum                    │
-│    ▾ usuario/                │  pessoal.abditum                  │
-│      ► cofres/               │  trabalho.abditum                 │
-│      Documents/              │                                   │
-│  ────────────────────────────┴────────────────────────────────── │
-│  Nome do arquivo               ← só no modo save                │
-│  meu-cofre▌                    ← campo de nome com cursor       │
-╰── Enter Selecionar ─────── Esc Cancelar ╯
+│  Caminho: /home/usuario/projetos/abditum                         │
+├─ Estrutura ──────────────────┬─ Arquivos ────────────────────────┤
+│  ▶ /                         │  ● database.abditum   25.8 MB 1h │
+│    ▼ usuario/                │  ● config.abditum      1.2 KB 3d │
+│      ▶ documentos/           │  ● backup.abditum     18.4 MB 1s │
+│      ▼ projetos/             │                                   │
+│        ▶ site/               │                                   │
+│        ▼ abditum/            │                                   │
+│          ▶ docs/             │                                   │
+│          ▶ src/              │                                   │
+│        ▶ outros/             │                                   │
+│      ▶ downloads/            │                                   │
+│                              │                                   │
+╰── Enter Abrir ────────────────────────────────────── Esc Cancelar ╯
+       ↑ accent.primary + bold (desbloqueado)
+```
+
+**Wireframe (nenhum arquivo — ação default bloqueada):**
+
+```
+╭── Abrir cofre ───────────────────────────────────────────────────╮
+│  Caminho: /home/usuario/documentos                               │
+├─ Estrutura ──────────────────┬─ Arquivos ────────────────────────┤
+│  ▶ /                         │                                   │
+│    ▼ usuario/                │  Nenhum arquivo .abditum          │
+│      ▼ documentos/           │  neste diretório                  │
+│        ▶ fotos/              │                                   │
+│        ▶ textos/             │                                   │
+│                              │                                   │
+╰── Enter Abrir ────────────────────────────────────── Esc Cancelar ╯
+       ↑ text.disabled (bloqueado)
 ```
 
 | Elemento | Token | Atributo |
 |---|---|---|
-| Título (ex: `Abrir cofre`) | `text.primary` | **bold** |
-| Separadores internos | `border.default` | — |
-| Header de coluna (`Diretórios`, caminho) | `text.secondary` | — |
-| Pasta selecionada (`► cofres/`) | `accent.primary` | **bold** |
-| Pastas normais | `text.primary` | — |
-| Nomes de pastas (ícone) | `accent.secondary` | — |
-| Arquivos `.abditum` | `text.primary` | — |
-| Label `Nome do arquivo` | `text.secondary` | — |
-| Campo de nome | `surface.input` | — |
+| Título `Abrir cofre` | `text.primary` | **bold** |
+| Header `Estrutura` | `text.secondary` | **bold** |
+| Header `Arquivos` | `text.secondary` | **bold** |
+| Separadores internos (`├`, `┬`, `┴`, `─`, `│`) | `border.default` | — |
+| Pasta selecionada na árvore | `accent.primary` | **bold** |
+| Pasta não selecionada | `text.primary` | — |
+| Indicador de pasta (`▶` recolhida, `▼` expandida) | `accent.secondary` | — |
+| Arquivo selecionado no painel de arquivos | `special.highlight` (fundo) + `text.primary` | **bold** |
+| Arquivo não selecionado | `text.primary` | — |
+| Indicador de arquivo `●` | `text.secondary` | — |
+| Metadados (tamanho, data relativa) | `text.secondary` | — |
+| Texto `Nenhum arquivo .abditum` | `text.secondary` | — |
+| Rótulo `Caminho:` | `text.secondary` | — |
+| Valor do caminho | `text.primary` | — |
+| Ação default (bloqueada) | `text.disabled` | — |
+| Ação default (desbloqueada) | `accent.primary` | **bold** |
+
+**Estados dos componentes:**
+
+| Componente | Estado | Condição |
+|---|---|---|
+| Painel `Estrutura` (árvore) | sempre visível | — |
+| Painel `Arquivos` (lista) | conteúdo visível | Pasta selecionada contém arquivos `.abditum` |
+| Painel `Arquivos` (lista) | texto vazio | Pasta selecionada **não** contém arquivos `.abditum` |
+| Rótulo `Caminho` | sempre visível, somente leitura | Atualiza ao navegar na árvore |
+| Arquivo pré-selecionado no painel | selecionado | Primeiro `.abditum` da pasta, automaticamente ao entrar na pasta |
+| Ação `Enter Abrir` | bloqueada (`text.disabled`) | Nenhum arquivo `.abditum` selecionado (pasta sem arquivos ou foco na árvore sem seleção à direita) |
+| Ação `Enter Abrir` | ativa (`accent.primary` **bold**) | Um arquivo `.abditum` está selecionado no painel de arquivos |
+| Ação `Esc Cancelar` | sempre ativa | — |
+
+**Mensagens:**
+
+| Contexto | Tipo | Texto |
+|---|---|---|
+| Diálogo abre / foco na árvore | Dica de campo | `• Navegue pelas pastas e selecione um cofre` |
+| Foco no painel de arquivos (com seleção) | Dica de campo | `• Enter para abrir o cofre selecionado` |
+| Foco no painel de arquivos (painel vazio) | Dica de campo | `• Nenhum cofre neste diretório — navegue para outra pasta` |
+| Diálogo fecha | — | Barra limpa *(orquestrador assume)* |
 
 **Comportamento:**
-- Painel esquerdo: árvore de diretórios navegável com `↑↓←→`
-- Painel direito: lista de arquivos no diretório selecionado
-- `Tab` alterna entre painel de diretórios, lista de arquivos e campo de nome (modo save)
-- No modo open: campo de nome ausente; `Enter` sobre arquivo seleciona-o
-- No modo save: campo de nome presente; `.abditum` adicionado automaticamente se omitido
+
+- `Tab` alterna entre árvore e painel de arquivos (2 stops)
+- Na árvore: `↑↓` navega entre pastas; `→` ou `Enter` expande pasta recolhida; `←` recolhe pasta expandida; `Enter` em pasta expandida recolhe
+- No painel de arquivos: `↑↓` navega entre arquivos; `Enter` confirma seleção (equivale à ação default)
+- Ao expandir pasta na árvore, o painel de arquivos atualiza para mostrar os `.abditum` daquela pasta; primeiro arquivo pré-selecionado automaticamente
+- Rótulo `Caminho` atualiza ao navegar na árvore
+
+**Transições especiais:**
+
+| Evento | Efeito |
+|---|---|
+| Navegar para pasta sem `.abditum` | Painel de arquivos mostra texto vazio; ação default muda para `text.disabled` |
+| Navegar para pasta com `.abditum` | Primeiro arquivo pré-selecionado; ação default muda para `accent.primary` **bold** |
+| `Enter` no painel de arquivos | Diálogo fecha com o arquivo selecionado |
+
+---
+
+#### FilePicker — Modo Save
+
+**Título:** `Salvar cofre`
+**Objetivo:** escolher diretório e nome para salvar o arquivo do cofre.
+
+**Wireframe (campo nome preenchido — ação default ativa):**
+
+```
+╭── Salvar cofre ──────────────────────────────────────────────────╮
+│  Caminho: /home/usuario/projetos/abditum                         │
+├─ Estrutura ──────────────────┬─ Arquivos ────────────────────────┤
+│  ▶ /                         │  ● database.abditum   25.8 MB 1h │
+│    ▼ usuario/                │  ● config.abditum      1.2 KB 3d │
+│      ▼ projetos/             │                                   │
+│        ▼ abditum/            │                                   │
+│          ▶ docs/             │                                   │
+│                              │                                   │
+├──────────────────────────────┴───────────────────────────────────┤
+│  Nome do arquivo                                                 │
+│  ░meu-cofre▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+╰── Enter Salvar ───────────────────────────────────── Esc Cancelar ╯
+       ↑ accent.primary + bold (desbloqueado)
+```
+
+**Wireframe (campo nome vazio — ação default bloqueada):**
+
+```
+╭── Salvar cofre ──────────────────────────────────────────────────╮
+│  Caminho: /home/usuario/projetos                                 │
+├─ Estrutura ──────────────────┬─ Arquivos ────────────────────────┤
+│  ▶ /                         │  ● database.abditum   25.8 MB 1h │
+│    ▼ usuario/                │                                   │
+│      ▼ projetos/             │                                   │
+│                              │                                   │
+├──────────────────────────────┴───────────────────────────────────┤
+│  Nome do arquivo                                                 │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+╰── Enter Salvar ───────────────────────────────────── Esc Cancelar ╯
+       ↑ text.disabled (bloqueado)
+```
+
+| Elemento | Token | Atributo |
+|---|---|---|
+| Título `Salvar cofre` | `text.primary` | **bold** |
+| Header `Estrutura` | `text.secondary` | **bold** |
+| Header `Arquivos` | `text.secondary` | **bold** |
+| Separadores internos | `border.default` | — |
+| Pasta selecionada na árvore | `accent.primary` | **bold** |
+| Pasta não selecionada | `text.primary` | — |
+| Indicador de pasta (`▶`/`▼`) | `accent.secondary` | — |
+| Arquivo existente | `text.primary` | — |
+| Indicador de arquivo `●` | `text.secondary` | — |
+| Metadados | `text.secondary` | — |
+| Rótulo `Caminho:` | `text.secondary` | — |
+| Valor do caminho | `text.primary` | — |
+| Label `Nome do arquivo` (campo ativo) | `accent.primary` | **bold** |
+| Label `Nome do arquivo` (campo inativo) | `text.secondary` | — |
+| Área do campo `░` | `surface.input` | — |
+| Placeholder | `text.secondary` | *italic* |
+| Cursor `▌` | `text.primary` | — |
+| Ação default (bloqueada) | `text.disabled` | — |
+| Ação default (desbloqueada) | `accent.primary` | **bold** |
+
+**Estados dos componentes:**
+
+| Componente | Estado | Condição |
+|---|---|---|
+| Painel `Estrutura` (árvore) | sempre visível | — |
+| Painel `Arquivos` (lista) | conteúdo visível | Pasta selecionada contém arquivos `.abditum` |
+| Painel `Arquivos` (lista) | texto vazio | Pasta selecionada **não** contém arquivos `.abditum` |
+| Rótulo `Caminho` | sempre visível, somente leitura | Atualiza ao navegar na árvore |
+| Campo `Nome do arquivo` | sempre visível | — |
+| Extensão `.abditum` | adicionada automaticamente | Se o nome digitado não termina em `.abditum` |
+| Ação `Enter Salvar` | bloqueada (`text.disabled`) | Campo `Nome do arquivo` vazio |
+| Ação `Enter Salvar` | ativa (`accent.primary` **bold**) | Campo `Nome do arquivo` não vazio |
+| Ação `Esc Cancelar` | sempre ativa | — |
+
+> **Nota:** a validação de sobrescrita (arquivo já existe) é responsabilidade do fluxo que chamou o FilePicker, não do diálogo. O picker retorna o caminho completo; o fluxo abre diálogo de Confirmação × Destrutivo se necessário.
+
+**Mensagens:**
+
+| Contexto | Tipo | Texto |
+|---|---|---|
+| Diálogo abre / foco na árvore | Dica de campo | `• Navegue pelas pastas e escolha onde salvar` |
+| Foco no painel de arquivos | Dica de campo | `• Arquivos existentes neste diretório` |
+| Foco no campo `Nome do arquivo` (vazio) | Dica de campo | `• Digite o nome do arquivo — .abditum será adicionado automaticamente` |
+| Foco no campo `Nome do arquivo` (preenchido) | Dica de campo | `• Enter para salvar o cofre` |
+| Diálogo fecha | — | Barra limpa *(orquestrador assume)* |
+
+**Comportamento:**
+
+- `Tab` alterna entre árvore, painel de arquivos e campo de nome (3 stops)
+- Navegação na árvore e painel de arquivos idêntica ao modo Open
+- No painel de arquivos: selecionar um arquivo existente **copia o nome** para o campo `Nome do arquivo` (facilita sobrescrever)
+- Ao navegar na árvore, o campo `Nome do arquivo` **não é limpo** — preserva o nome digitado
+- Extensão `.abditum` é adicionada silenciosamente ao caminho de retorno, sem alterar o texto exibido no campo
+
+**Transições especiais:**
+
+| Evento | Efeito |
+|---|---|
+| Selecionar arquivo existente no painel | Nome copiado para campo `Nome do arquivo`; ação default muda para `accent.primary` **bold** |
+| Limpar campo `Nome do arquivo` | Ação default volta para `text.disabled` |
+| `Enter` com campo preenchido | Diálogo fecha com caminho completo (diretório + nome + `.abditum`) |
 
 ---
 
@@ -299,6 +630,194 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 
 ---
 
+## Componentes
+
+### Cabeçalho
+
+**Responsabilidade:** contexto global — qual aplicação, qual cofre, se há alterações pendentes e qual modo está ativo na área de trabalho.
+**Posição:** linhas 1–2 da tela (zona Cabeçalho do [DS — Dimensionamento](tui-design-system-novo.md#dimensionamento-e-layout)).
+**Altura fixa:** 2 linhas.
+
+**Anatomia:**
+
+| Linha | Papel | Conteúdo |
+|---|---|---|
+| **1 — Título** | Contexto + navegação | Nome da app, `·` separador, nome do cofre, `•` dirty, abas de modo à direita |
+| **2 — Separadora** | Divisa cabeçalho ↔ área de trabalho | Linha `─` full-width; a aba ativa "pousa" nesta linha via `╯ Texto ╰` |
+
+**Dois estados estruturais:**
+
+| Estado | Linha 1 | Linha 2 | Abas |
+|---|---|---|---|
+| Sem cofre (boas-vindas) | Apenas nome da app | Separador simples, sem conectores | Ocultas |
+| Cofre aberto | Nome da app `·` cofre `•` + abas | Separador com aba ativa suspensa | Visíveis (3) |
+
+---
+
+#### Sem cofre (Boas-vindas)
+
+> Wireframes ilustrativos a 80 colunas. A largura real acompanha o terminal.
+
+```
+  Abditum
+──────────────────────────────────────────────────────────────────────────────────
+```
+
+Sem nome de cofre, sem indicador dirty, sem abas. A linha separadora é contínua.
+
+---
+
+#### Cofre aberto — anatomia base
+
+> Estado impossível em operação normal (sempre há um modo ativo). Mostrado para ilustrar a posição de todos os elementos antes de qualquer aba estar ativa.
+
+**Sem alterações:**
+
+```
+  Abditum  ·  cofre.abditum               ╭ Cofre ╮  ╭ Modelos ╮  ╭ Configurações ╮
+──────────────────────────────────────────────────────────────────────────────────
+```
+
+**Com alterações não salvas:**
+
+```
+  Abditum  ·  cofre.abditum  •            ╭ Cofre ╮  ╭ Modelos ╮  ╭ Configurações ╮
+──────────────────────────────────────────────────────────────────────────────────
+```
+
+O `•` aparece imediatamente após o nome do cofre, em `semantic.warning`. Desaparece após salvamento bem-sucedido.
+
+---
+
+#### Modo Cofre ativo
+
+```
+  Abditum  ·  cofre.abditum  •        ╭───────╮  ╭ Modelos ╮  ╭ Configurações ╮
+─────────────────────────────────────╯ Cofre ╰────────────────────────────────────
+```
+
+A aba ativa na linha 1 substitui o texto por `─` (`╭───────╮`), mantendo a mesma largura da versão inativa (`╭ Cofre ╮`). Na linha 2, o texto desce para o gap entre `╯` e `╰`, que se alinham verticalmente com `╭` e `╮` da linha 1 — conectando visualmente a aba à área de trabalho abaixo.
+
+---
+
+#### Modo Modelos ativo
+
+```
+  Abditum  ·  cofre.abditum            ╭ Cofre ╮  ╭─────────╮  ╭ Configurações ╮
+────────────────────────────────────────────────╯ Modelos ╰──────────────────────
+```
+
+---
+
+#### Modo Configurações ativo
+
+```
+  Abditum  ·  cofre.abditum            ╭ Cofre ╮  ╭ Modelos ╮  ╭────────────────╮
+──────────────────────────────────────────────────────────────╯ Configurações ╰
+```
+
+A aba mais à direita pode encostar na borda do terminal — `╰` ocupa a última coluna, sem `─` posterior.
+
+---
+
+#### Mecânica visual da aba ativa
+
+A transformação de aba inativa → ativa ocorre em duas linhas simultâneas:
+
+| Linha | Aba inativa | Aba ativa |
+|---|---|---|
+| **1** | `╭ Texto ╮` (borda + texto) | `╭──────╮` (borda + preenchimento `─`) |
+| **2** | `─────────` (separador contínuo) | `╯ Texto ╰` (gap com texto sobre `special.highlight`) |
+
+Regras de alinhamento:
+
+- A largura total da aba é **idêntica** nos estados ativo e inativo
+- `╯` alinha-se verticalmente com `╭` da linha acima
+- `╰` alinha-se verticalmente com `╮` da linha acima
+- O conteúdo entre `╯` e `╰` (espaço + texto + espaço) tem fundo `special.highlight`
+- As bordas `╭╮╯╰` e o preenchimento `─` usam sempre `border.default`, independente do estado
+
+---
+
+#### Truncamento do nome do cofre
+
+O espaço disponível para o nome do arquivo é limitado — as abas ocupam largura fixa à direita. O componente calcula o espaço em tempo real.
+
+**Fórmula:**
+
+```
+prefixo  = "  Abditum  ·  "                           (14 colunas)
+dirty    = "  •"  se IsDirty(), ou ""                 (3 ou 0 colunas)
+abas     = bloco de abas + espaços entre elas         (largura fixa, ~42 colunas)
+padding  = mín. 1 coluna entre nome/dirty e abas
+
+disponível = largura_terminal − prefixo − dirty − abas − padding
+```
+
+**Algoritmo:**
+
+1. Se o nome completo cabe → exibir como está
+2. Se não cabe → truncar o radical (parte antes de `.abditum`), preservar a extensão:
+   `{radical[0..n]}….abditum` onde `n` é calculado para caber no espaço disponível
+3. Se nem `….abditum` (9 colunas) cabe → exibir apenas `…`
+
+**Prioridade de cessão de espaço:**
+
+| Prioridade | Elemento | Comportamento |
+|---|---|---|
+| 1ª (cede primeiro) | Nome do cofre | Truncado conforme algoritmo acima |
+| 2ª | Separador `·` e indicador `•` | Preservados enquanto houver espaço |
+| 3ª (nunca cede) | Abas | Largura fixa, nunca truncadas |
+
+**Wireframe — nome truncado (terminal ~80 colunas, modo Cofre):**
+
+```
+  Abditum  ·  meu-cofre-pe….abditum  •  ╭───────╮  ╭ Modelos ╮  ╭ Configurações ╮
+──────────────────────────────────────╯ Cofre ╰────────────────────────────────────
+```
+
+O radical `meu-cofre-pessoal` foi truncado para `meu-cofre-pe…`, mantendo `.abditum` legível.
+
+---
+
+#### Tokens
+
+| Elemento | Token | Atributo |
+|---|---|---|
+| `Abditum` (nome da app) | `accent.primary` | **bold** |
+| `·` separador nome/cofre | `border.default` | — |
+| `cofre.abditum` (nome do arquivo) | `text.secondary` | — |
+| `•` indicador não salvo | `semantic.warning` | — |
+| Bordas das abas (`╭╮╯╰─`) — ativa e inativa | `border.default` | — |
+| Aba ativa — fundo (gap entre `╯` e `╰`) | `special.highlight` | — |
+| Aba ativa — texto | `accent.primary` | **bold** |
+| Aba inativa — texto | `text.secondary` | — |
+| Linha separadora | `border.default` | — |
+
+---
+
+#### Eventos
+
+| Evento | Mudança visual |
+|---|---|
+| Cofre aberto com sucesso | Aparece `·` nome do cofre e as 3 abas |
+| Cofre fechado / bloqueado | Desaparece nome do cofre e abas; volta ao estado boas-vindas |
+| Alteração em memória (`IsDirty() = true`) | Aparece `•` em `semantic.warning` |
+| Salvamento bem-sucedido (`IsDirty() = false`) | Desaparece `•` |
+| Navegação entre modos (F-key ou clique) | Aba ativa muda; nova aba suspensa na linha separadora |
+| Terminal redimensionado | Nome do cofre recalcula truncamento |
+
+---
+
+#### Comportamento
+
+- **Abas clicáveis** — mouse troca o modo ativo ao clicar no texto ou na borda da aba (área de hit inclui linhas 1 e 2 da aba)
+- **Navegação por teclado** — F-keys (a definir no mapa de teclas) alternam entre modos
+- **Indicador dirty** — aparece/desaparece imediatamente conforme `IsDirty()`, sem animação
+- **Truncamento dinâmico** — recalculado a cada renderização (resize do terminal, mudança de modo ativo, cofre aberto/fechado)
+
+---
+
 <!-- SEÇÕES FUTURAS — a preencher pela equipe -->
 
 <!--
@@ -311,7 +830,6 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 
 ## Componentes
 
-### Cabeçalho
 ### Barra de Comandos
 ### Painel Esquerdo: Árvore
 ### Painel Direito: Detalhe do Segredo

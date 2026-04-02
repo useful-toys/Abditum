@@ -10,6 +10,7 @@ This phase delivers the first end-to-end user flows: creating a new vault and op
 
 This phase implements:
 - `preVaultModel` upgraded with action key hints (keys already registered in FlowRegistry from Phase 5)
+- **`headerModel`** — new component implementing the 2-line header; two structural states: `stateNoVault` (welcome) and `stateVaultOpen` (vault open with 3 mode tabs); renders app name, `·` separator, vault name (truncated), `•` dirty indicator, and tab strip with the active tab suspended on the separator line; `rootModel` passes it the current vault name, dirty state, and active workArea on every render
 - `filePickerModal` — new modal struct for selecting or saving vault files (tree + file panel, Open and Save modes), used by both flows
 - `passwordEntryModal` — new modal struct for vault-open password input (single field, attempt counter up to 5)
 - `passwordCreateModal` — new modal struct for vault-create password input (two fields, Tab navigation, inline strength meter)
@@ -28,11 +29,48 @@ This phase does NOT implement:
 - Security timers, clipboard, lock/exit flows (Phase 10)
 - Any new workArea transition beyond `workAreaPreVault → workAreaVault` (and back on error)
 - Theme persistence to disk (saved in settings — Phase 9); Phase 6 default is Tokyo Night, F12 toggles in-memory only
+- Tab navigation between modes (the tab strip is rendered but mode-switching F-keys are Phase 7+ scope)
 
 </domain>
 
 <decisions>
 ## Implementation Decisions
+
+### Header Component
+
+**D-12: `headerModel` — 2-line component with two structural states**
+
+The header is implemented as a standalone struct (not a `childModel` — it never receives raw `tea.Msg`). `rootModel` calls `headerModel.Render(width int) string` from its `renderFrame()` method, passing current state.
+
+**Inputs at render time (passed by rootModel):**
+- `width int` — current terminal width
+- `vaultName string` — radical of vault filename (no `.abditum` extension); empty string = no vault
+- `isDirty bool` — unsaved changes present
+- `activeArea workArea` — current work area (determines active tab)
+
+**State 1 — No vault (welcome):**
+```
+  Abditum
+────────────────────────────────────────────────────────────────────────────────
+```
+- Line 1: `  Abditum` — app name in `accent.primary` bold
+- Line 2: full-width `─` separator in `border.default`; no tab connectors
+
+**State 2 — Vault open:**
+```
+  Abditum · cofre •                         ╭───────╮  ╭ Modelos ╮  ╭ Config ╮
+─────────────────────────────────────────╯ Cofre ╰────────────────
+```
+- `·` separator: `border.default`
+- Vault name (radical only, truncated with `…` per spec algorithm): `text.secondary`
+- `•` dirty indicator: `semantic.warning`; hidden when `!isDirty`
+- Tab text inactive: `text.secondary`; active: `accent.primary` bold on `special.highlight` background
+- Tab borders (`╭╮╯╰─`): `border.default` in both states
+- Separator line: `border.default`
+
+**Tabs:** Cofre (`workAreaVault`), Modelos (`workAreaTemplates`), Config (`workAreaSettings`). In Phase 6, only `workAreaVault` is reachable — the other tabs render in inactive style but are non-functional until Phase 7+.
+
+**File layout:** `header.go` — new file in `internal/tui/`
 
 ### Welcome Screen — Action Model
 
@@ -264,6 +302,7 @@ type Theme struct {
 
 New files in `internal/tui/`:
 - `theme.go` — `Theme` struct, `ThemeTokyoNight` and `ThemeCyberpunk` instances, `applyTheme()` helper
+- `header.go` — `headerModel` struct, `Render(width, vaultName, isDirty, activeArea)` method
 - `filepicker.go` — `filePickerModal` struct + `FilePickerModeOpen`/`FilePickerModeSave` consts
 - `passwordentry.go` — `passwordEntryModal` struct
 - `passwordcreate.go` — `passwordCreateModal` struct
@@ -273,7 +312,7 @@ Modified files in `internal/tui/`:
 - `flow_create_vault.go` — full implementation of `createVaultFlow` (replacing stub)
 - `prevault.go` — `View()` updated to render action hints beneath logo; receives `*Theme`
 - `ascii.go` — `RenderLogo(t *Theme) string` signature update; uses `t.LogoGradient`
-- `root.go` — `Init()` updated to trigger CLI fast-path; `theme *Theme` field added; F12 global shortcut; `applyTheme` calls on toggle
+- `root.go` — `Init()` updated to trigger CLI fast-path; `theme *Theme` field added; `header *headerModel` field added; F12 global shortcut; `applyTheme` calls on toggle
 - `state.go` — new message types from D-09 added
 - `dialogs.go` — new factory helpers: `NewRecognitionError(title, text)`, `NewOverwriteConfirm(name, onConfirm, onCancel)`
 
@@ -296,6 +335,7 @@ Modified files in `internal/tui/`:
 **Downstream agents MUST read these before planning or implementing.**
 
 ### UI/UX Specification
+- `tui-specification-novo.md` §Componentes/Cabeçalho — **full header spec**: 2-line anatomy, both structural states (no vault / vault open), all 4 mode-tab wireframes (Cofre, Modelos, Config, base), tab mechanics (line 1↔2 visual transformation), truncation algorithm, token table, event table
 - `tui-specification-novo.md` §PasswordEntry — exact wireframes, token table, state table, message table, behavior rules for the vault-open password dialog
 - `tui-specification-novo.md` §PasswordCreate — same for vault-create password dialog (two fields, Tab, strength meter)
 - `tui-specification-novo.md` §FilePicker — both Open and Save mode wireframes, element token tables, state tables, message tables, keyboard navigation rules
