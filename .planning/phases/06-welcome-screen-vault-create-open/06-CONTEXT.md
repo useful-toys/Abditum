@@ -17,12 +17,17 @@ This phase implements:
 - `createVaultFlow.Update()` fully implemented: FilePicker(Save) → PasswordCreate → Manager.Create → storage.Save → emit domain message
 - CLI path fast-path: if `initialPath` non-empty at startup, `openVaultFlow` skips FilePicker and goes straight to PasswordEntry
 - `dialogs.go` extended with new factory helpers for the Phase 6 error dialogs
+- **Theme infrastructure**: `Theme` struct with all token values, two theme instances (`ThemeTokyoNight`, `ThemeCyberpunk`), `theme.go` new file; `rootModel` holds active theme and broadcasts on toggle
+- **F12 global shortcut**: toggles active theme in-memory; immediate re-render; registered in `ActionManager` alongside `ctrl+q` and `?`
+- `RenderLogo()` in `ascii.go` updated to accept a `Theme` and use per-theme gradient colors
+- All new modals (`filePickerModal`, `passwordEntryModal`, `passwordCreateModal`) receive `*Theme` at construction and use it for all `lipgloss` color values
 
 This phase does NOT implement:
 - Vault tree display or secret navigation (Phase 7)
 - Save / Save As / Discard / Change Password / Export / Import (Phase 9)
 - Security timers, clipboard, lock/exit flows (Phase 10)
 - Any new workArea transition beyond `workAreaPreVault → workAreaVault` (and back on error)
+- Theme persistence to disk (saved in settings — Phase 9); Phase 6 default is Tokyo Night, F12 toggles in-memory only
 
 </domain>
 
@@ -195,11 +200,66 @@ type flowCancelledMsg struct{}
 
 These are in addition to the existing message taxonomy from Phase 5 (D-07).
 
+### Theme System
+
+**D-11: `Theme` struct as the single source of all color token values; passed to every child**
+
+```go
+// Theme holds all design-system color token values for one palette.
+type Theme struct {
+    // Surfaces
+    SurfaceBase   lipgloss.Color
+    SurfaceRaised lipgloss.Color
+    SurfaceInput  lipgloss.Color
+    // Text
+    TextPrimary   lipgloss.Color
+    TextSecondary lipgloss.Color
+    TextDisabled  lipgloss.Color
+    TextLink      lipgloss.Color
+    // Borders
+    BorderDefault lipgloss.Color
+    BorderFocused lipgloss.Color
+    // Interaction
+    AccentPrimary   lipgloss.Color
+    AccentSecondary lipgloss.Color
+    // Semantics
+    SemanticSuccess lipgloss.Color
+    SemanticWarning lipgloss.Color
+    SemanticError   lipgloss.Color
+    SemanticInfo    lipgloss.Color
+    SemanticOff     lipgloss.Color
+    // Specials
+    SpecialMuted     lipgloss.Color
+    SpecialHighlight lipgloss.Color
+    SpecialMatch     lipgloss.Color
+    // Logo gradient (5 lines)
+    LogoGradient [5]lipgloss.Color
+}
+```
+
+- Two package-level instances: `ThemeTokyoNight` and `ThemeCyberpunk` — values taken verbatim from `tui-design-system-novo.md` §Paleta de Cores and §Gradiente do logo
+- `rootModel` gets a `theme *Theme` field. Default at startup: `ThemeTokyoNight`.
+- `rootModel` passes `theme` to every child at construction (same pattern as `actions *ActionManager` and `messages *MessageManager`). When theme toggles, `rootModel` updates `m.theme` and calls `SetTheme(t *Theme)` on all live children; modals in the stack also receive `SetTheme`.
+- `childModel` interface **does NOT grow** a `SetTheme` method — avoid interface churn. Instead, `rootModel` calls a package-level helper `applyTheme(child childModel, t *Theme)` that does a type-switch over the known concrete types. Each concrete modal/child has its own `theme *Theme` field updated directly.
+
+**F12 global shortcut — theme toggle:**
+- Registered in `rootModel` via `ActionManager` at startup: `Action{Key: "f12", Label: "Tema", Description: "Alternar tema (Tokyo Night ↔ Cyberpunk)", Group: "Global", Priority: 80}`
+- Intercepted in `rootModel.Update()` at the global shortcut step (D-06 priority 1), **before** flow or modal dispatch — toggles theme even while a modal is open
+- On toggle: flip `m.theme` pointer between the two instances; call `applyTheme` on all live children and modals; `RenderLogo()` is called with the new theme on next `View()`; no Cmd needed (re-render is automatic)
+
+**`RenderLogo()` becomes theme-aware:**
+- Signature changes to `RenderLogo(t *Theme) string`
+- Uses `t.LogoGradient[i]` for each of the 5 lines instead of hardcoded hex values
+- All callers (`preVaultModel.View()`, any future screen showing the logo) pass the current theme
+
+**Theme persistence:** not in Phase 6. Default is always Tokyo Night at startup. Persisting the user's choice to the vault settings file is Phase 9 scope.
+
 ### File Layout
 
 **D-10: New files added in Phase 6**
 
 New files in `internal/tui/`:
+- `theme.go` — `Theme` struct, `ThemeTokyoNight` and `ThemeCyberpunk` instances, `applyTheme()` helper
 - `filepicker.go` — `filePickerModal` struct + `FilePickerModeOpen`/`FilePickerModeSave` consts
 - `passwordentry.go` — `passwordEntryModal` struct
 - `passwordcreate.go` — `passwordCreateModal` struct
@@ -207,8 +267,9 @@ New files in `internal/tui/`:
 Modified files in `internal/tui/`:
 - `flow_open_vault.go` — full implementation of `openVaultFlow` (replacing stub)
 - `flow_create_vault.go` — full implementation of `createVaultFlow` (replacing stub)
-- `prevault.go` — `View()` updated to render action hints beneath logo
-- `root.go` — `Init()` updated to trigger CLI fast-path
+- `prevault.go` — `View()` updated to render action hints beneath logo; receives `*Theme`
+- `ascii.go` — `RenderLogo(t *Theme) string` signature update; uses `t.LogoGradient`
+- `root.go` — `Init()` updated to trigger CLI fast-path; `theme *Theme` field added; F12 global shortcut; `applyTheme` calls on toggle
 - `state.go` — new message types from D-09 added
 - `dialogs.go` — new factory helpers: `NewRecognitionError(title, text)`, `NewOverwriteConfirm(name, onConfirm, onCancel)`
 
@@ -221,6 +282,7 @@ Modified files in `internal/tui/`:
 - `pwdEnteredMsg.password` lifetime management — flow should zero the slice after storage.Load returns, regardless of success or failure
 - Whether `openVaultFlow` and `createVaultFlow` own their modal structs as fields (for state continuity across Update calls) or recreate them on each flow state transition
 - Whether to use `charm.land/bubbles/v2/key` key bindings inside the new modal types — existing codebase uses string matching directly; key.Binding adds self-documenting structure but is not required for correctness
+- Exact F12 key constant in Bubble Tea v2 — researcher to verify (`tea.KeyF12`? or string `"f12"`?)
 
 </decisions>
 
@@ -234,7 +296,10 @@ Modified files in `internal/tui/`:
 - `tui-specification-novo.md` §PasswordCreate — same for vault-create password dialog (two fields, Tab, strength meter)
 - `tui-specification-novo.md` §FilePicker — both Open and Save mode wireframes, element token tables, state tables, message tables, keyboard navigation rules
 - `tui-specification-novo.md` §Diálogos de Decisão — Recognition × Error and Confirmation × Destructive patterns used for error modals and overwrite confirmation
-- `tui-design-system-novo.md` §Paleta de Cores — all color tokens referenced in the spec
+- `tui-design-system-novo.md` §Paleta de Cores — **all token values for both Tokyo Night and Cyberpunk themes**; hex values must be transcribed verbatim into `ThemeTokyoNight` and `ThemeCyberpunk`
+- `tui-design-system-novo.md` §Gradiente do logo — 5-line logo gradient colors per theme; goes into `Theme.LogoGradient`
+- `tui-design-system-novo.md` §Temas — F12 global toggle behaviour, Settings persistence (Phase 9)
+- `tui-design-system-novo.md` §Mapa de Teclas — F12 is global scope (overrides all other scopes); `ActionManager` registration rules
 - `tui-design-system-novo.md` §Sobreposição — modal anatomy and overlay rules
 - `tui-design-system-novo.md` §Dimensionamento e Layout — dialog sizing rules (50-col for password dialogs, 70-col max for FilePicker)
 
@@ -274,7 +339,7 @@ Modified files in `internal/tui/`:
 - `internal/tui/modal.go` — `modalModel`, `pushModalMsg`, `popModalMsg` push/pop helpers
 - `internal/tui/state.go` — tick machinery, existing domain message types
 - `internal/tui/root.go` — `rootModel.Init()` currently returns nil; needs CLI fast-path cmd here
-- `internal/tui/ascii.go` — `RenderLogo()` for welcome screen
+- `internal/tui/ascii.go` — `RenderLogo()` will become `RenderLogo(t *Theme)` in Phase 6
 - `charm.land/bubbles/v2/textinput` — `EchoMode`, `EchoCharacter` for masked password fields (confirmed in tui-architecture.md §6)
 - `charm.land/bubbles/v2/filepicker` — single-panel file picker component; evaluate suitability for two-panel spec
 
@@ -302,7 +367,8 @@ Modified files in `internal/tui/`:
 - Strength meter format: `Força: ████████░░ Boa` — filled blocks (`█`) use `semantic.success` or `semantic.warning`, empty blocks (`░`) use `text.disabled`, label (`Boa`/`Forte`/`Fraca`) follows same semantic token
 - Password masks use fixed 8 `•` characters regardless of actual password length — does not leak length
 - Attempt counter format: `Tentativa 2 de 5` — hidden on first attempt, visible from second onward; uses `text.secondary`
-- On vault open success, `rootModel` transitions to `workAreaVault` — `vaultTree` and `secretDetail` child models are allocated, `preVault` is set to nil
+- On vault open success, `rootModel` transitions to `workAreaVault` — `vaultTree` and `secretDetail` child models are allocated with the current `*Theme`, `preVault` is set to nil
+- Theme toggle is visible immediately at any screen — changing theme while FilePicker or PasswordEntry modal is open updates that modal's colors on the next render cycle
 
 </specifics>
 
