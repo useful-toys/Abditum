@@ -325,7 +325,7 @@ O contexto de uso detalhado de cada símbolo está na seção onde ele é consum
 | `ℹ` | Informação | 1 | Letterlike Symbols |
 | `⚠` | Alerta / aviso | 1 | Misc. Symbols |
 | `✗` | Erro | 1 | Dingbats |
-| `?` | Atalho de ajuda | 1 | Basic Latin |
+| `F1` | Atalho de ajuda | — | tecla de função |
 | `◐ ◓ ◑ ◒` | Spinner de atividade | 1 | Geometric Shapes |
 | `▌` | Cursor de campo | 1 | Block Elements |
 | `↑` `↓` | Indicação de scroll (direção) | 1 | Arrows |
@@ -599,21 +599,21 @@ Cada tecla pertence a exatamente um escopo. Escopos mais específicos sobrepõem
 | `Home` / `End` | Primeiro / último item visível | [Foco e Navegação](#foco-e-navegação) |
 | `PgUp` / `PgDn` | Scroll por página (viewport − 1) em conteúdo com scroll | [Scroll em diálogos](#scroll-em-diálogos) |
 | `F12` | Alternar tema (Tokyo Night ↔ Cyberpunk) | [Temas](#temas) |
-| `?` | Abrir modal de Ajuda | — |
+| `F1` | Abrir modal de Ajuda | — |
 
 **Teclas de área de trabalho (definidas neste documento):**
 
 | Tecla | Ação | Condição |
 |---|---|---|
-| `F1` | Modo Cofre (aba) | Só com cofre aberto |
-| `F2` | Modo Modelos (aba) | Só com cofre aberto |
-| `F3` | Modo Config (aba) | Só com cofre aberto |
+| `F2` | Modo Cofre (aba) | Só com cofre aberto |
+| `F3` | Modo Modelos (aba) | Só com cofre aberto |
+| `F4` | Modo Config (aba) | Só com cofre aberto |
 
 > O mapeamento de F-keys por contexto funcional (segredos, pastas, modelos, cofre) é definido na especificação de telas.
 
 **Ações ocultas da barra de comandos:**
 
-Algumas ações globais não aparecem na barra de comandos — são registradas no ActionManager com o atributo "oculto da barra". Essas ações contínuam disponíveis por teclado e aparecem no modal de Ajuda (`?`).
+Algumas ações globais não aparecem na barra de comandos — são registradas no ActionManager com o atributo "oculto da barra". Essas ações contínuam disponíveis por teclado e aparecem no modal de Ajuda (`F1`).
 
 | Tecla | Ação | Justificativa |
 |---|---|---|
