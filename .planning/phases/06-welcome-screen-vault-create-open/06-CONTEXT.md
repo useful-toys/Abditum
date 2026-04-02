@@ -86,13 +86,14 @@ Unlike the generic `modalModel` from Phase 5 (which handles simple push/pop with
    - Implements DS/spec exactly: two-panel layout (Estrutura ~40% / Arquivos ~60%), `border.focused` border, path header, file filter `*.abditum`, auto-select first file on directory navigation
    - Emits `filePickedMsg{path string}` on confirm; `flowCancelledMsg{}` on ESC
    - `Tab` cycles focus between tree panel → file panel → filename field (Save mode only)
-   - Directory tree traversal: `os.ReadDir` (no third-party library); no symlink recursion; shows all directories, filters files to `*.abditum` only
+   - **`charm.land/bubbles/v2/filepicker` exists** (`fp.AllowedTypes`, `fp.CurrentDirectory`) but provides a **single-panel** layout that does not match the two-panel spec. Researcher must assess whether it can be wrapped to produce the required layout or whether a custom implementation using `os.ReadDir` is needed. If the bubbles component cannot satisfy the spec's two-panel structure, build custom.
+   - Directory tree traversal (if custom): `os.ReadDir`; no symlink recursion; shows all directories, filters files to `*.abditum` only
    - Displays relative dates (e.g., `1h`, `3d`) and sizes in human-readable form
    - **Spec reference:** `tui-specification-novo.md` §FilePicker (both modes)
 
 2. **`passwordEntryModal`** (`passwordentry.go` — new file)
    - Fixed width: 50 columns; border token: `border.focused`
-   - State: password `textinput` (masked, echo off), attempt counter `int`, max attempts: **5**
+   - State: password `textinput` (masked, `EchoMode = textinput.EchoPassword`, `EchoCharacter = '•'`), attempt counter `int`, max attempts: **5**
    - Counter line (`Tentativa N de 5`) is **hidden on attempt 1**, shown from attempt 2 onward
    - Action default (`Enter Confirmar`) blocked when field empty; unlocked when non-empty
    - On wrong password: field cleared, counter incremented, action default locked again
@@ -106,7 +107,7 @@ Unlike the generic `modalModel` from Phase 5 (which handles simple push/pop with
 
 3. **`passwordCreateModal`** (`passwordcreate.go` — new file)
    - Fixed width: 50 columns; border token: `border.focused`
-   - State: two `textinput` fields (masked), focused field index (`0` = Nova senha, `1` = Confirmação)
+   - State: two `textinput` fields (both `EchoMode = textinput.EchoPassword`, `EchoCharacter = '•'`), focused field index (`0` = Nova senha, `1` = Confirmação)
    - `Tab` toggles between fields
    - Strength meter row is **hidden when field 1 empty**, appears when field 1 has content; renders `Força: ████████░░ Boa` or `Força: ████░░░░░░ Fraca` using `semantic.success`/`semantic.warning`
    - Password strength calls `crypto.EvaluatePasswordStrength` on every keystroke in field 1
@@ -214,11 +215,12 @@ Modified files in `internal/tui/`:
 ### Agent's Discretion
 
 - Exact Go struct field counts and constructor signatures for the 3 new modal types
-- Whether `filePickerModal` uses `charm.land/bubbles/v2` filepicker component or a custom implementation — investigate if bubbles v2 includes a file picker; if not, build from scratch using `os.ReadDir`
-- Exact `storage.Probe()` API (or equivalent) needed for CLI fast-path validation — researcher to check if storage package exposes a header-only read
+- `filePickerModal` implementation strategy: `charm.land/bubbles/v2/filepicker` exists but is single-panel — researcher must determine if it can be wrapped to produce the two-panel spec layout or whether a custom `os.ReadDir`-based implementation is required
+- Exact `storage.Probe()` API (or equivalent) needed for CLI fast-path validation — researcher to check if storage package exposes a header-only read; if not, `storage.Load` with a dummy password will always return `ErrAuthFailed` (which is sufficient to distinguish "recognizable vault" from "not a vault")
 - Scroll implementation inside FilePicker panels (how many rows are visible vs. total)
 - `pwdEnteredMsg.password` lifetime management — flow should zero the slice after storage.Load returns, regardless of success or failure
 - Whether `openVaultFlow` and `createVaultFlow` own their modal structs as fields (for state continuity across Update calls) or recreate them on each flow state transition
+- Whether to use `charm.land/bubbles/v2/key` key bindings inside the new modal types — existing codebase uses string matching directly; key.Binding adds self-documenting structure but is not required for correctness
 
 </decisions>
 
@@ -253,6 +255,12 @@ Modified files in `internal/tui/`:
 - `.planning/phases/05-tui-scaffold-root-model/05-CONTEXT.md` §D-10 — modal stack mechanics (`pushModalMsg`/`popModalMsg`)
 - `.planning/phases/05-tui-scaffold-root-model/05-CONTEXT.md` §D-15 — file layout conventions
 
+### Component Research
+- `.planning/research/tui-architecture.md` §14 — `bubbles/filepicker` exists (`fp.AllowedTypes`, `fp.CurrentDirectory`); single-panel — evaluate for wrapping vs. custom
+- `.planning/research/tui-architecture.md` §6 — `textinput.EchoPassword` + `EchoCharacter` confirmed for masked password fields
+- `.planning/research/tui-architecture.md` §2 — Bubble Tea v2 API: `tea.KeyPressMsg`, `msg.Code`, `msg.Text`, `msg.Mod.Contains(tea.ModCtrl)` for key handling in new modals
+- `.planning/research/tui-architecture.md` §9 — `lipgloss.Place()` confirmed for modal overlay centering (already used in Phase 5)
+
 </canonical_refs>
 
 <code_context>
@@ -267,6 +275,8 @@ Modified files in `internal/tui/`:
 - `internal/tui/state.go` — tick machinery, existing domain message types
 - `internal/tui/root.go` — `rootModel.Init()` currently returns nil; needs CLI fast-path cmd here
 - `internal/tui/ascii.go` — `RenderLogo()` for welcome screen
+- `charm.land/bubbles/v2/textinput` — `EchoMode`, `EchoCharacter` for masked password fields (confirmed in tui-architecture.md §6)
+- `charm.land/bubbles/v2/filepicker` — single-panel file picker component; evaluate suitability for two-panel spec
 
 ### Established Patterns
 - Charm v2 APIs: `View()` returns `string` (childModel), `tea.KeyPressMsg` for key events, `tea.View` only from `rootModel.View()`
