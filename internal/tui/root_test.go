@@ -219,3 +219,64 @@ func makeKeyPress(key string) tea.KeyPressMsg {
 		return tea.KeyPressMsg{}
 	}
 }
+
+// TestStartFlow_ClearsOrphanModals verifies that startFlowMsg resets the modal stack,
+// preventing orphan modals from a previous flow leaking into the new one (D-08).
+func TestStartFlow_ClearsOrphanModals(t *testing.T) {
+	m := newRootModel(nil, "")
+	m.Update(pushModalMsg{modal: &stubModal{}})
+	m.Update(pushModalMsg{modal: &stubModal{}})
+	if len(m.modals) != 2 {
+		t.Fatal("precondition: expected 2 modals on stack")
+	}
+
+	flow := &stubFlow{}
+	m.Update(startFlowMsg{flow: flow})
+
+	if len(m.modals) != 0 {
+		t.Errorf("startFlowMsg must clear orphan modals: expected 0, got %d", len(m.modals))
+	}
+}
+
+// TestBroadcast_ReachesModals verifies that domain messages sent through the
+// broadcast path are forwarded to active modals in addition to work-area children.
+func TestBroadcast_ReachesModals(t *testing.T) {
+	m := newRootModel(nil, "")
+	modal := &stubModal{}
+	m.Update(pushModalMsg{modal: modal})
+
+	m.Update(vaultSavedMsg{})
+
+	if modal.updateCalls == 0 {
+		t.Error("modals must receive broadcast domain messages")
+	}
+}
+
+// TestD09_ActionManagerBeforeModal verifies that a ScopeGlobal action registered
+// on ActionManager fires BEFORE the topmost modal receives the key (D-09 priority #1 > #2).
+func TestD09_ActionManagerBeforeModal(t *testing.T) {
+	m := newRootModel(nil, "")
+	modal := &stubModal{}
+	m.Update(pushModalMsg{modal: modal})
+
+	// "?" is registered by newRootModel as ScopeGlobal.
+	// ActionManager must consume it; the modal must never see the key.
+	m.Update(makeKeyPress("?"))
+
+	if modal.received != nil {
+		t.Error("D-09: ActionManager must consume ScopeGlobal key before topmost modal receives it")
+	}
+}
+
+// TestKeyPress_CallsHandleInput verifies that messages.HandleInput is called for
+// every KeyPressMsg, even when no registered action matches the key.
+func TestKeyPress_CallsHandleInput(t *testing.T) {
+	m := newRootModel(nil, "")
+	m.messages.Show(MsgHint, "dismiss me", 0, true) // clearOnInput=true
+
+	m.Update(makeKeyPress("z")) // unknown key, no action registered
+
+	if m.messages.Current() != nil {
+		t.Error("messages.HandleInput() must be called on every KeyPressMsg, including unhandled keys")
+	}
+}
