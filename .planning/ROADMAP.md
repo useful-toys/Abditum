@@ -1,4 +1,4 @@
-# Roadmap: Abditum
+﻿# Roadmap: Abditum
 
 **Milestone:** v1.0
 **Goal:** Ship a security-auditable, offline, single-binary Go TUI password manager with AES-256-GCM encryption, atomic persistence, and a keyboard-driven Bubble Tea interface.
@@ -186,15 +186,20 @@ Plans:
 
 ---
 
-### Phase 05.2: tui-scaffold-root-model-test (INSERTED)
+### Phase 05.2: tui-scaffold-message-arch (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Refactor the message bar and command bar architecture — split MsgKind, export RenderMessageBar, extend Action with Priority/HideFromBar/Group-as-int, rewrite RenderCommandBar with spec-correct tokens and F1 right anchor — and validate the full system with a standalone `cmd/poc-mensagens` PoC binary.
+
+**Requirements:** 05.2-MSG-01, 05.2-ACT-01, 05.2-INT-01, 05.2-POC-01
+
 **Depends on:** Phase 5
-**Plans:** 0 plans
+
+**Plans:** 3 plans in 2 waves
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 05.2 to break down)
+- [ ] 05.2-01-PLAN.md — messages.go: MsgKind split (MsgInfo→MsgSuccess, new MsgInfo), export TickMsg and RenderMessageBar; messages_test.go: rename MsgInfo→MsgSuccess
+- [ ] 05.2-02-PLAN.md — actions.go: Action.Group int+Priority+HideFromBar, Visible() sort, RegisterGroupLabel, RenderCommandBar spec rewrite; root.go: f1 key+Group 1+Priority; help.go: int grouping with labels
+- [ ] 05.2-03-PLAN.md — cmd/poc-mensagens: standalone PoC binary with all 15 actions, live tick, RenderMessageBar+RenderCommandBar demonstration
 
 ### Phase 05.1: 05-tui-scaffold-root-model-fix (INSERTED)
 
@@ -462,3 +467,4 @@ Plans:
 | 10 | VAULT-11�14, QUERY-04�05 | 6 |
 | 11 | CI-02, COMPAT-02 | 2 |
 | **Total** | | **60** |
+
