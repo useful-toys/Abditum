@@ -16,7 +16,7 @@ func TestMessageManager_InitiallyEmpty(t *testing.T) {
 // Current() returns it with the correct fields.
 func TestMessageManager_ShowAndCurrent(t *testing.T) {
 	mm := NewMessageManager()
-	mm.Show(MsgInfo, "hello", 5, false)
+	mm.Show(MsgSuccess, "hello", 5, false)
 
 	curr := mm.Current()
 	if curr == nil {
@@ -25,15 +25,15 @@ func TestMessageManager_ShowAndCurrent(t *testing.T) {
 	if curr.Text != "hello" {
 		t.Errorf("expected text %q, got %q", "hello", curr.Text)
 	}
-	if curr.Kind != MsgInfo {
-		t.Errorf("expected kind MsgInfo, got %v", curr.Kind)
+	if curr.Kind != MsgSuccess {
+		t.Errorf("expected kind MsgSuccess, got %v", curr.Kind)
 	}
 }
 
 // TestMessageManager_Clear removes the current message immediately.
 func TestMessageManager_Clear(t *testing.T) {
 	mm := NewMessageManager()
-	mm.Show(MsgInfo, "x", 0, false)
+	mm.Show(MsgSuccess, "x", 0, false)
 	mm.Clear()
 	if mm.Current() != nil {
 		t.Error("Current() must be nil after Clear()")
@@ -44,7 +44,7 @@ func TestMessageManager_Clear(t *testing.T) {
 // clears the message when it reaches zero.
 func TestMessageManager_Tick_ExpiresByTTL(t *testing.T) {
 	mm := NewMessageManager()
-	mm.Show(MsgInfo, "expire-me", 2, false) // TTL = 2 ticks
+	mm.Show(MsgSuccess, "expire-me", 2, false) // TTL = 2 ticks
 
 	mm.Tick()
 	if mm.Current() == nil {
@@ -96,6 +96,19 @@ func TestMessageManager_HandleInput_ClearOnInput(t *testing.T) {
 	mm.HandleInput()
 	if mm.Current() != nil {
 		t.Error("message with clearOnInput=true must be cleared by HandleInput()")
+	}
+}
+
+// TestMessageManager_MsgKindDistinct verifies MsgSuccess and MsgInfo are distinct values.
+func TestMessageManager_MsgKindDistinct(t *testing.T) {
+	if MsgSuccess == MsgInfo {
+		t.Error("MsgSuccess and MsgInfo must be distinct MsgKind values")
+	}
+	mm := NewMessageManager()
+	mm.Show(MsgInfo, "neutral", 3, false)
+	curr := mm.Current()
+	if curr == nil || curr.Kind != MsgInfo {
+		t.Error("Show(MsgInfo, ...) must store MsgInfo kind")
 	}
 }
 

@@ -1,16 +1,26 @@
 package tui
 
-import "time"
+import (
+	"strings"
+	"time"
+
+	"charm.land/lipgloss/v2"
+)
+
+// TickMsg is sent every second by models that need to drive MessageManager.Tick().
+// Define locally in each model's Init() via: tea.Tick(time.Second, func(t time.Time) tea.Msg { return TickMsg(t) })
+type TickMsg time.Time
 
 // MsgKind classifies the semantic type of a status bar message.
 type MsgKind int
 
 const (
-	MsgInfo  MsgKind = iota // operation completed successfully
-	MsgWarn                  // attention - imminent lock, external conflict
-	MsgError                 // failure - save failed, corruption
-	MsgBusy                  // operation in progress - spinner animation (no TTL)
-	MsgHint                  // contextual explanation - field description
+	MsgSuccess MsgKind = iota // operação concluída — #9ece6a, TTL 3s default
+	MsgInfo                   // informação neutra — #7dcfff, TTL 3s default
+	MsgWarn                   // atenção — #e0af68, permanente, clearOnInput
+	MsgError                  // falha — #f7768e + bold, TTL 5s default
+	MsgBusy                   // spinner — #7aa2f7, permanente
+	MsgHint                   // dica contextual — #565f89 + italic, permanente
 )
 
 // DisplayMessage is the read-only view of the current message for rootModel.View().
@@ -97,4 +107,62 @@ func (m *MessageManager) HandleInput() {
 	if m.current != nil && m.current.clearOnInput {
 		m.current = nil
 	}
+}
+
+// RenderMessageBar renders the message bar (1 line) with full-width continuous border.
+// When msg == nil, renders a plain border line. Exported for PoC and rootModel use.
+// Anatomy when msg != nil: ── <symbol> <text> ─...─  (fills to width)
+func RenderMessageBar(msg *DisplayMessage, width int) string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#414868"))
+	borderChar := "─"
+
+	if msg == nil || width <= 0 {
+		if width <= 0 {
+			return ""
+		}
+		return borderStyle.Render(strings.Repeat(borderChar, width))
+	}
+
+	// spinner frames in display order: ◐ ◓ ◒ ◑
+	spinnerFrames := []string{"◐", "◓", "◒", "◑"}
+
+	var symbol string
+	var symStyle lipgloss.Style
+	switch msg.Kind {
+	case MsgSuccess:
+		symbol = "✓"
+		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#9ece6a"))
+	case MsgInfo:
+		symbol = "ℹ"
+		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7dcfff"))
+	case MsgWarn:
+		symbol = "⚠"
+		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#e0af68"))
+	case MsgError:
+		symbol = "✗"
+		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#f7768e")).Bold(true)
+	case MsgBusy:
+		symbol = spinnerFrames[msg.Frame%4]
+		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	default: // MsgHint
+		symbol = "•"
+		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89")).Italic(true)
+	}
+
+	// Prefix: "── " (2 border chars + space = 3 visible chars)
+	prefix := borderStyle.Render("──") + " "
+	// Content: styled symbol + space + plain text
+	content := symStyle.Render(symbol) + " " + msg.Text
+	// Suffix start: " ─" (1 space + 1 border = 2 visible chars)
+	suffixStart := " " + borderStyle.Render(borderChar)
+
+	// Calculate fill: width minus all visible chars
+	visibleSoFar := lipgloss.Width(prefix) + lipgloss.Width(content) + lipgloss.Width(suffixStart)
+	fillLen := width - visibleSoFar
+	if fillLen < 0 {
+		fillLen = 0
+	}
+	fill := borderStyle.Render(strings.Repeat(borderChar, fillLen))
+
+	return prefix + content + suffixStart + fill
 }
