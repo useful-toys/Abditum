@@ -1187,8 +1187,8 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 | Segredo recém-criado | prefixo `✦` em `semantic.warning` + texto `semantic.warning` | Criado em memória, ainda não salvo em disco |
 | Segredo modificado | prefixo `✎` em `semantic.warning` + texto `semantic.warning` | Editado em memória, ainda não salvo em disco |
 | Segredo marcado para exclusão | prefixo `✗` em `semantic.warning` + texto `semantic.warning` + ~~strikethrough~~ | Marcado para exclusão, ainda não salvo |
-| `<╡` no separador | visível | Segredo aberto no painel direito |
-| `<╡` no separador | ausente — `│` normal | Nenhum segredo aberto no painel direito |
+| `<╡` no separador | visível | Foco da árvore está sobre um segredo |
+| `<╡` no separador | ausente — `│` normal | Nenhum segredo exibido no painel direito |
 | `↑`/`↓`/`■` no `│` | visível | Conteúdo excede a área visível do painel |
 | Painel esquerdo | placeholder "Cofre vazio" à direita | Cofre sem nenhum segredo |
 
@@ -1198,18 +1198,17 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 | Contexto | Tipo | Texto |
 |---|---|---|
-| Painel recebe foco | Dica de campo | `• ↑↓ para navegar · Enter para abrir no painel direito` |
+| Painel recebe foco | Dica de campo | `• ↑↓ para navegar` |
 | `★ Favoritos` (a pasta) selecionada | Dica de campo | `• Pasta virtual — segredos permanecem na localização original` |
-| Segredo marcado para exclusão selecionado | Dica de campo | `• F24 para cancelar a exclusão` |
-| Segredo modificado selecionado | Dica de campo | `• Alterações não salvas — ^S para salvar` |
 
 #### Eventos
 
 | Evento | Efeito |
 |---|---|
-| Navegar anterior/próximo | Cursor move para o item anterior/próximo visível |
+| Foco move para segredo | Painel direito atualizado com o detalhe do segredo; `<╡` aparece no separador na linha do segredo |
+| Foco move para pasta | Painel direito mantém o último segredo exibido (sem alteração); `<╡` permanece na posição anterior |
+| Foco move para item anterior/próximo | Cursor move para o item anterior/próximo visível |
 | Expandir/recolher pasta | Expande/recolhe a pasta |
-| Abrir segredo | Abre detalhe no painel direito; `<╡` aparece no separador |
 | Recolher pasta expandida | Recolhe a pasta |
 | Subir para pasta pai | Cursor vai para a pasta pai do item atual |
 | Alternar foco para o próximo painel | Foco → painel direito |
@@ -1217,15 +1216,21 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 | Ir ao primeiro / último item | Cursor vai ao primeiro / último item visível |
 | Scroll por página | Scroll por página (viewport − 1 linhas) |
 | Favoritar/desfavoritar segredo | `★` prefixo aparece/some no segredo; `★ Favoritos` aparece/some conforme contagem total |
-| Novo segredo criado | Prefixo `✦`, texto `semantic.warning`; segredo aparece na posição criada até ser salvo |
+| Ação "Novo segredo" acionada (foco em pasta) | Novo segredo com nome `<novo>` inserido no final da pasta em foco; foco salta para o novo segredo; contadores das pastas na hierarquia atualizados |
+| Ação "Novo segredo" acionada (foco em segredo) | Novo segredo com nome `<novo>` inserido abaixo do segredo em foco; foco salta para o novo segredo; contadores das pastas na hierarquia atualizados |
 | Segredo editado | Prefixo `✎`, texto `semantic.warning`; substituído por prefixo original após salvar bem-sucedido |
-| Marcar segredo para exclusão | Prefixo `✗`, texto `semantic.warning` + strikethrough; se o segredo era favoritado, desaparece de `★ Favoritos` |
-| Cancelar exclusão | Estado de exclusão removido; prefixo original restaurado |
+| Nome do segredo alterado no painel de detalhes | Nome atualizado no nó da árvore imediatamente |
+| Marcar segredo para exclusão | Prefixo `✗`, texto `semantic.warning` + strikethrough; contadores das pastas na hierarquia atualizados; se o segredo era favoritado, desaparece de `★ Favoritos` |
+| Cancelar exclusão | Estado de exclusão removido; prefixo original restaurado; contadores restaurados |
+| Segredo reordenado (resultado de ação externa) | Foco salta para a nova posição do segredo na árvore |
+| Segredo movido para outra pasta (resultado de ação externa) | Foco salta para a nova posição do segredo na árvore; contadores das pastas afetadas atualizados |
 | Conteúdo ultrapassa área visível | `↑`/`↓`/`■` aparecem no `│` |
 
 #### Comportamento
 
 - **Seleção apenas por cor** — não há símbolo de cursor. A seleção é indicada exclusivamente pelo fundo `special.highlight`. Os prefixos (`▼ ▶ ▷ ● ★ ✦ ✎ ✗`) são estruturais e não mudam com a seleção
+- **Detalhe automático** — o painel direito exibe o segredo que está com foco na árvore. Quando o foco está sobre uma pasta, o painel mantém o último segredo exibido. O detalhe não precisa ser "aberto" — é atualizado continuamente conforme o foco se move
+- **Nome inicial de novo segredo** — `<novo>`; é o nome provisório que aparece no nó até que o usuário edite o campo Nome no painel de detalhes
 - **Segredos com alterações pendentes** — três prefixos indicam estado não salvo, todos em `semantic.warning` (mesma semântica do `•` dirty no cabeçalho): `✦` recém-criado, `✎` modificado, `✗` marcado para exclusão (+ strikethrough). Todos desaparecem após `^S` bem-sucedido
 - **`★ Favoritos` — posição e comportamento** — quando visível, é sempre o primeiro item da lista; se comporta como pasta normal (`▼/▶`); itens internos são atalhos para os segredos originais (os segredos permanecem na hierarquia de origem)
 - **Favorito com estado dirty** — o prefixo dirty (`✦`, `✎`, `✗`) substitui o `★` dentro de `★ Favoritos`; o `★` só aparece como prefixo quando o segredo está limpo. Prioridade de prefixo: `✗` > `✎` > `✦` > `★` > `●`. Segredo marcado para exclusão some imediatamente de `★ Favoritos` — permanece na hierarquia de origem com prefixo `✗`
