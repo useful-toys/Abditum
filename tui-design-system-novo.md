@@ -519,6 +519,8 @@ A aplicação comunica feedback ao usuário por meio de uma mensagem exibida na 
 | Dica de campo | `•` | `text.secondary` | *italic* |
 | Dica de uso | `•` | `text.secondary` | *italic* |
 
+> **Token se aplica à mensagem inteira** — símbolo e texto usam o mesmo token de cor. Não há distinção de cor entre o símbolo e o conteúdo textual dentro de uma mesma mensagem.
+
 **Ciclo de vida:**
 
 O ciclo de vida de cada mensagem é controlado pelo orquestrador que a emite. A tabela abaixo define os **defaults recomendados** — o caller pode sobrescrever TTL e trigger de dismissal conforme o contexto.
