@@ -1005,7 +1005,7 @@ Além destes:
 **Responsabilidade:** comunicar feedback ao usuário — sucesso, erro, aviso, progresso, dicas.
 **Posição:** 1 linha fixa entre a área de trabalho e a barra de comandos (zona Barra de mensagens do [DS — Dimensionamento](tui-design-system-novo.md#dimensionamento-e-layout)).
 **Altura fixa:** 1 linha.
-**Anatomia:** borda `─` contínua na largura total do terminal. Quando há mensagem, o texto (símbolo + conteúdo) começa com 2 espaços de padding à esquerda (alinhado com o texto do cabeçalho), seguido de `─` até o fim da linha.
+**Anatomia:** borda `─` contínua na largura total do terminal. Quando há mensagem, o texto (símbolo + `·` espaço + conteúdo) começa com 2 espaços de padding à esquerda (alinhado com o texto do cabeçalho), seguido de `─` até o fim da linha. O espaço entre símbolo e texto é sempre exatamente 1 caractere.
 
 **Wireframe (sem mensagem — borda separadora):**
 

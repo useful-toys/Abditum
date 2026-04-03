@@ -505,6 +505,8 @@ A aplicação comunica feedback ao usuário por meio de uma mensagem exibida na 
 
 **Largura:** ~95% da largura do terminal. Trunca com `…` se necessário.
 
+**Formato:** `<símbolo> <texto>` — exatamente 1 espaço entre o símbolo e o início do texto. O símbolo ocupa sempre 1 coluna; o espaço seguinte é fixo e não varia por tipo de mensagem.
+
 **Tipos de mensagem:**
 
 | Tipo | Símbolo | Token | Atributo |
