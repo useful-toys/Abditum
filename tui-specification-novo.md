@@ -1220,7 +1220,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 | Evento | Efeito na árvore |
 |---|---|
-| Avançar sobre pasta recolhida (`▶`) | Pasta expandida; filhos tornam-se visíveis; prefixo `▶` → `▼`; foco permanece na pasta |
+| Avançar sobre pasta recolhida (`▶`) | Pasta expandida; filhos tornam-se visíveis; prefixo `▶` → `▼`; foco salta para o primeiro filho visível (subpasta ou segredo) |
 | Avançar sobre pasta expandida (`▼`) | Foco desce para o primeiro filho da pasta |
 | Avançar sobre pasta vazia (`▷`) | Sem efeito — pasta vazia não tem filhos para expandir |
 | Avançar sobre segredo | Sem efeito de navegação na árvore — painel direito já exibe o detalhe pelo foco |
@@ -1285,7 +1285,6 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 |---|---|
 | Segredo marcado para exclusão | Prefixo → `✗`; texto `semantic.warning` + strikethrough; contador da pasta e ancestrais −1; se favoritado, some de `★ Favoritos` |
 | Exclusão cancelada (restauração) | Prefixo original restaurado (`●`, `★`, `✦` ou `✎`); texto normal; contador da pasta e ancestrais +1; se era favoritado, volta a `★ Favoritos` |
-| Salvo com sucesso | Nós com `✗` removidos fisicamente; prefixos `✦` e `✎` voltam ao prefixo de estado limpo (`●` ou `★`) |
 
 **Segredo — favorito:**
 
@@ -1326,6 +1325,15 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 | Pasta excluída (sem conflitos de nome) | Nó da pasta removido; subpastas e segredos promovidos ao pai na posição da pasta excluída; contadores do pai recalculados; foco vai para o primeiro filho promovido (ou para o pai, se pasta era vazia) |
 | Pasta excluída (com conflitos de nome) | Idem acima; segredos com conflito de nome exibidos com nome renomeado (sufixo `(N)`); barra de mensagens exibe alerta com lista de renomeações |
 
+**Cofre — persistência:**
+
+| Evento | Efeito na árvore |
+|---|---|
+| Salvo com sucesso (mesmo arquivo) | Nós `✗` removidos fisicamente da árvore; prefixos `✦` e `✎` voltam a `●` ou `★` conforme o flag `favorito`; contadores recalculados; foco permanece no item atual |
+| Salvo como (arquivo diferente) | Efeitos idênticos ao salvar com sucesso — a árvore não distingue o destino do arquivo |
+| Salvo com outra senha | Efeitos idênticos ao salvar com sucesso — a árvore não conhece a chave de cifragem |
+| Reverter alterações (recarregar do disco) | Árvore completamente reconstruída a partir do arquivo em disco: nós `✦` removidos (não existem no disco); nós `✎` voltam ao nome e prefixo originais (`●` ou `★`); nós `✗` voltam ao prefixo original (`●` ou `★`); contadores recalculados; se o item em foco ainda existe, foco permanece nele; se o item em foco era `✦` (deixou de existir), foco vai para a pasta pai; `★ Favoritos` reconstruída a partir dos dados do disco |
+
 #### Comportamento
 
 - **Seleção apenas por cor** — não há símbolo de cursor. A seleção é indicada exclusivamente pelo fundo `special.highlight`. Os prefixos (`▼ ▶ ▷ ● ★ ✦ ✎ ✗`) são estruturais e não mudam com a seleção
@@ -1336,7 +1344,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 - **Favorito com estado dirty** — o prefixo dirty (`✦`, `✎`, `✗`) substitui o `★` dentro de `★ Favoritos`; o `★` só aparece como prefixo quando o segredo está limpo. Prioridade de prefixo: `✗` > `✎` > `✦` > `★` > `●`. Segredo marcado para exclusão some imediatamente de `★ Favoritos` — permanece na hierarquia de origem com prefixo `✗`
 - **Navegação linear ignora expand/collapse** — `↑`/`↓` navegam apenas entre itens *visíveis*; filhos de pastas recolhidas são invisíveis e portanto pulados
 - **`→` sobre segredo é no-op** — segredos são folhas; avançar sobre eles não tem efeito (o detalhe já foi atualizado ao receber foco)
-- **`←` tem dois comportamentos** — sobre pasta expandida, recolhe a pasta sem mover o foco; sobre qualquer outro item (pasta recolhida, pasta vazia, segredo), sobe o foco para a pasta pai. Sobre a pasta raiz expandida, apenas recolhe
+- **`←` tem dois comportamentos** — sobre pasta expandida, recolhe a pasta e foco permanece na pasta; sobre qualquer outro item (pasta recolhida, pasta vazia, segredo), sobe o foco para a pasta pai. Sobre a pasta raiz expandida, apenas recolhe
 - **Foco ao retornar ao painel** — ao receber foco via Tab, o cursor restaura a posição anterior (não vai ao topo)
 - **Scroll automático** — o viewport se ajusta automaticamente para manter o item em foco visível; nunca há item em foco fora da área visível
 - **Scroll no separador** — segue o padrão DS: `↑`/`↓`/`■` aparecem no `│` (borda direita do painel); `<╡` tem prioridade sobre `■` em caso de coincidência (ver [DS — Scroll em diálogos](tui-design-system-novo.md#scroll-em-diálogos))
