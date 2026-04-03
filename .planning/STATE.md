@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 6
+current_phase: 06
 status: planning
-last_updated: "2026-04-01T06:27:13.229Z"
+last_updated: "2026-04-03T20:45:12.587Z"
 progress:
-  total_phases: 12
-  completed_phases: 6
-  total_plans: 23
-  completed_plans: 23
+  total_phases: 14
+  completed_phases: 8
+  total_plans: 28
+  completed_plans: 28
 ---
 
 # Project State — Abditum
 
 **Last updated:** 2026-04-01T03:03:16Z
-**Current phase:** 6
+**Current phase:** 06
 **Milestone:** v1.0
 
 ## Status
@@ -49,7 +49,8 @@ Plans executed:
 ## Accumulated Context
 
 ### Roadmap Evolution
-- Phase 05.2 inserted after Phase 5: tui-scaffold-root-model-test (INSERTED)
+
+- Phase 05.2 inserted after Phase 5: tui-scaffold-message-arch (INSERTED)
 
 - Phase 04.1 inserted after Phase 04: Refinamento da camada de domínio — encapsulamento e versioning (INSERTED)
 

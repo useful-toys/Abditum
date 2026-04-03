@@ -194,12 +194,12 @@ Plans:
 
 **Depends on:** Phase 5
 
-**Plans:** 3 plans in 2 waves
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 05.2-01-PLAN.md — messages.go: MsgKind split (MsgInfo→MsgSuccess, new MsgInfo), export TickMsg and RenderMessageBar; messages_test.go: rename MsgInfo→MsgSuccess
-- [ ] 05.2-02-PLAN.md — actions.go: Action.Group int+Priority+HideFromBar, Visible() sort, RegisterGroupLabel, RenderCommandBar spec rewrite; root.go: f1 key+Group 1+Priority; help.go: int grouping with labels
-- [ ] 05.2-03-PLAN.md — cmd/poc-mensagens: standalone PoC binary with all 15 actions, live tick, RenderMessageBar+RenderCommandBar demonstration
+- [x] 05.2-01-PLAN.md — messages.go: MsgKind split (MsgInfo→MsgSuccess, new MsgInfo), export TickMsg and RenderMessageBar; messages_test.go: rename MsgInfo→MsgSuccess
+- [x] 05.2-02-PLAN.md — actions.go: Action.Group int+Priority+HideFromBar, Visible() sort, RegisterGroupLabel, RenderCommandBar spec rewrite; root.go: f1 key+Group 1+Priority; help.go: int grouping with labels
+- [x] 05.2-03-PLAN.md — cmd/poc-mensagens: standalone PoC binary with all 15 actions, live tick, RenderMessageBar+RenderCommandBar demonstration
 
 ### Phase 05.1: 05-tui-scaffold-root-model-fix (INSERTED)
 

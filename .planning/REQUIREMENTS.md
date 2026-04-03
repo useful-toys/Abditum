@@ -133,11 +133,11 @@
 - **ORPHAN-01**: DetecÃ§Ã£o e oferta de recuperaÃ§Ã£o de `.abditum.tmp`/`.abditum.bak2` ao abrir cofre
 
 
-### Qualidade Arquitetural — Fase 04.1
+### Qualidade Arquitetural ï¿½ Fase 04.1
 
-- [ ] **ARCH-01**: Cofre e Segredo gerenciam seus próprios estados via métodos privados (marcarModificado, marcarModificacao); Manager não acessa campos internos diretamente; deep copy (copiarProfundo, Segredo.copiar, CampoSegredo.copiar) e zeragem de campos sensíveis (zerarValoresSensiveis) delegados a entidades; factory (criarSegredo, duplicarSegredo) define estadoSessao = EstadoIncluido inicial
-- [ ] **ARCH-02**: DeserializarCofre recebe parâmetro ersion uint8; compat fields nas structs *JSON substituem cadeia de transformação JSON?JSON; migrate.go e seus testes removidos
-- [ ] **BUG-01**: AlternarFavoritoSegredo não atualiza segredo.dataUltimaModificacao (favoritar é preferência de navegação, não edição de conteúdo; teste de regressão adicionado em manager_test.go)
+- [ ] **ARCH-01**: Cofre e Segredo gerenciam seus prï¿½prios estados via mï¿½todos privados (marcarModificado, marcarModificacao); Manager nï¿½o acessa campos internos diretamente; deep copy (copiarProfundo, Segredo.copiar, CampoSegredo.copiar) e zeragem de campos sensï¿½veis (zerarValoresSensiveis) delegados a entidades; factory (criarSegredo, duplicarSegredo) define estadoSessao = EstadoIncluido inicial
+- [ ] **ARCH-02**: DeserializarCofre recebe parï¿½metro ersion uint8; compat fields nas structs *JSON substituem cadeia de transformaï¿½ï¿½o JSON?JSON; migrate.go e seus testes removidos
+- [ ] **BUG-01**: AlternarFavoritoSegredo nï¿½o atualiza segredo.dataUltimaModificacao (favoritar ï¿½ preferï¿½ncia de navegaï¿½ï¿½o, nï¿½o ediï¿½ï¿½o de conteï¿½do; teste de regressï¿½o adicionado em manager_test.go)
 ## Out of Scope
 
 | Feature | Reason |
