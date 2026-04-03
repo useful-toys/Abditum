@@ -210,8 +210,8 @@ func makeKeyPress(key string) tea.KeyPressMsg {
 	switch key {
 	case "ctrl+q":
 		return tea.KeyPressMsg{Code: 'q', Mod: tea.ModCtrl}
-	case "?":
-		return tea.KeyPressMsg{Code: '?'}
+	case "f1":
+		return tea.KeyPressMsg{Code: tea.KeyF1}
 	default:
 		if len(key) == 1 {
 			return tea.KeyPressMsg{Code: rune(key[0])}
@@ -259,9 +259,9 @@ func TestD09_ActionManagerBeforeModal(t *testing.T) {
 	modal := &stubModal{}
 	m.Update(pushModalMsg{modal: modal})
 
-	// "?" is registered by newRootModel as ScopeGlobal.
+	// "f1" is registered by newRootModel as ScopeGlobal.
 	// ActionManager must consume it; the modal must never see the key.
-	m.Update(makeKeyPress("?"))
+	m.Update(makeKeyPress("f1"))
 
 	if modal.received != nil {
 		t.Error("D-09: ActionManager must consume ScopeGlobal key before topmost modal receives it")

@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"fmt"
+	"sort"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -22,8 +24,10 @@ type Action struct {
 	Keys        []string
 	Label       string
 	Description string
-	Group       string
+	Group       int         // grouping in Help modal — groups shown in ascending order
 	Scope       ActionScope
+	Priority    int         // higher = further left in command bar; governs truncation order
+	HideFromBar bool        // hidden from command bar; listed in Help modal
 	Enabled     func() bool
 	Handler     func() tea.Cmd
 }
@@ -33,11 +37,28 @@ type ActionManager struct {
 	owners      []any
 	byOwner     map[any][]Action
 	activeOwner any
+	groupLabels map[int]string
 }
 
 // NewActionManager creates a new, empty ActionManager.
 func NewActionManager() *ActionManager {
-	return &ActionManager{byOwner: make(map[any][]Action)}
+	return &ActionManager{
+		byOwner:     make(map[any][]Action),
+		groupLabels: make(map[int]string),
+	}
+}
+
+// RegisterGroupLabel associates a display name with a group int for the Help modal.
+func (a *ActionManager) RegisterGroupLabel(group int, label string) {
+	a.groupLabels[group] = label
+}
+
+// GroupLabel returns the display name for a group, or a fallback string if unregistered.
+func (a *ActionManager) GroupLabel(group int) string {
+	if label, ok := a.groupLabels[group]; ok {
+		return label
+	}
+	return fmt.Sprintf("Group %d", group)
 }
 
 // Register adds actions for the given owner.
@@ -98,7 +119,7 @@ func (a *ActionManager) Dispatch(key string, inFlowOrModal bool) tea.Cmd {
 	return nil
 }
 
-// Visible returns actions where Enabled() is true, for the command bar.
+// Visible returns actions where Enabled() is true and HideFromBar is false, sorted by Priority descending.
 func (a *ActionManager) Visible() []Action {
 	var result []Action
 	seen := make(map[string]bool)
@@ -115,6 +136,9 @@ func (a *ActionManager) Visible() []Action {
 
 	for _, owner := range ordered {
 		for _, act := range a.byOwner[owner] {
+			if act.HideFromBar {
+				continue
+			}
 			if act.Enabled != nil && !act.Enabled() {
 				continue
 			}
@@ -125,6 +149,11 @@ func (a *ActionManager) Visible() []Action {
 			}
 		}
 	}
+
+	// Sort by Priority descending (higher priority = further left in bar)
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Priority > result[j].Priority
+	})
 	return result
 }
 
@@ -138,20 +167,56 @@ func (a *ActionManager) All() []Action {
 }
 
 // RenderCommandBar renders the command bar from currently visible actions.
+// Key token: #7aa2f7 bold. Label token: #a9b1d6. Separator: #565f89.
+// F1 action is right-anchored; all other actions are left-padded with 2 spaces.
 func (a *ActionManager) RenderCommandBar(width int) string {
-	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("11")).Bold(true)
-	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	keyStyle   := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7")).Bold(true)
+	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#a9b1d6"))
+	sepStyle   := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
 
-	var parts []string
-	for _, act := range a.Visible() {
+	visible := a.Visible()
+
+	// Separate F1 anchor from body actions
+	var bodyActions []Action
+	var anchorAction *Action
+	for i := range visible {
+		if len(visible[i].Keys) > 0 && strings.EqualFold(visible[i].Keys[0], "f1") {
+			act := visible[i]
+			anchorAction = &act
+		} else {
+			bodyActions = append(bodyActions, visible[i])
+		}
+	}
+
+	// Build body parts
+	var bodyParts []string
+	for _, act := range bodyActions {
 		if len(act.Keys) == 0 {
 			continue
 		}
-		parts = append(parts, keyStyle.Render(act.Keys[0])+" "+labelStyle.Render(act.Label))
+		part := keyStyle.Render(act.Keys[0]) + " " + labelStyle.Render(act.Label)
+		bodyParts = append(bodyParts, part)
 	}
-	if len(parts) == 0 {
-		return ""
+
+	var body string
+	if len(bodyParts) > 0 {
+		body = "  " + strings.Join(bodyParts, sepStyle.Render(" · "))
 	}
-	return "  " + strings.Join(parts, sepStyle.Render("  |  ")+"  ")
+
+	// No anchor: return body only
+	if anchorAction == nil || len(anchorAction.Keys) == 0 {
+		return body
+	}
+
+	// Build anchor string
+	anchor := keyStyle.Render(anchorAction.Keys[0]) + " " + labelStyle.Render(anchorAction.Label)
+
+	// Position anchor at right edge
+	bodyW  := lipgloss.Width(body)
+	anchorW := lipgloss.Width(anchor)
+	gap := width - bodyW - anchorW
+	if gap < 1 {
+		gap = 1
+	}
+	return body + strings.Repeat(" ", gap) + anchor
 }

@@ -1,4 +1,4 @@
-package tui
+﻿package tui
 
 import (
 	"strings"
@@ -74,10 +74,12 @@ func newRootModel(mgr *vault.Manager, initialPath string) *rootModel {
 	actions.Register(m,
 		Action{
 			Keys:        []string{"ctrl+q"},
-			Label:       "Quit",
-			Description: "Quit Abditum (confirms if unsaved changes)",
-			Group:       "Global",
+			Label:       "Sair",
+			Description: "Sair do Abditum",
+			Group:       1,
 			Scope:       ScopeLocal,
+			Priority:    10,
+			HideFromBar: false,
 			Enabled:     func() bool { return true },
 			Handler: func() tea.Cmd {
 				if m.mgr != nil && m.mgr.IsModified() {
@@ -87,11 +89,13 @@ func newRootModel(mgr *vault.Manager, initialPath string) *rootModel {
 			},
 		},
 		Action{
-			Keys:        []string{"?"},
+			Keys:        []string{"f1"},
 			Label:       "Ajuda",
 			Description: "Mostrar atalhos de teclado",
-			Group:       "Global",
+			Group:       1,
 			Scope:       ScopeGlobal,
+			Priority:    0,
+			HideFromBar: false,
 			Enabled:     func() bool { return true },
 			Handler: func() tea.Cmd {
 				return func() tea.Msg {
@@ -100,6 +104,7 @@ func newRootModel(mgr *vault.Manager, initialPath string) *rootModel {
 			},
 		},
 	)
+	actions.RegisterGroupLabel(1, "Global")
 
 	return m
 }

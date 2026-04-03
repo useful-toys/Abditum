@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -28,7 +29,7 @@ func (m *helpModal) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
-		case "esc", "?":
+		case "esc", "f1":
 			return func() tea.Msg { return popModalMsg{} }
 		}
 	}
@@ -59,8 +60,9 @@ func (m *helpModal) Shortcuts() []Shortcut {
 // buildContent formats the action list into a readable shortcut reference.
 func (m *helpModal) buildContent(actions []Action) string {
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("62"))
-	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
-	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	keyStyle   := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
+	sepStyle   := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	groupStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("14"))
 
 	var b strings.Builder
 	b.WriteString(titleStyle.Render("  Keyboard Shortcuts") + "\n")
@@ -69,23 +71,34 @@ func (m *helpModal) buildContent(actions []Action) string {
 	if len(actions) == 0 {
 		b.WriteString(sepStyle.Render("  No actions registered") + "\n")
 	} else {
-		currentGroup := ""
-		groupStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("14"))
+		// Collect unique groups in sorted order
+		groupSeen := make(map[int]bool)
+		var groupOrder []int
+		grouped := make(map[int][]Action)
 		for _, act := range actions {
-			if len(act.Keys) == 0 {
-				continue
+			if !groupSeen[act.Group] {
+				groupSeen[act.Group] = true
+				groupOrder = append(groupOrder, act.Group)
 			}
-			if act.Group != currentGroup {
-				currentGroup = act.Group
-				if currentGroup != "" {
-					b.WriteString("\n" + groupStyle.Render(currentGroup) + "\n")
+			grouped[act.Group] = append(grouped[act.Group], act)
+		}
+		sort.Ints(groupOrder)
+
+		for _, grp := range groupOrder {
+			label := m.actions.GroupLabel(grp)
+			if label != "" {
+				b.WriteString("\n" + groupStyle.Render(label) + "\n")
+			}
+			for _, act := range grouped[grp] {
+				if len(act.Keys) == 0 {
+					continue
 				}
+				b.WriteString(fmt.Sprintf("  %s  %s\n",
+					keyStyle.Render(act.Keys[0]), act.Description))
 			}
-			b.WriteString(fmt.Sprintf("  %s  %s\n",
-				keyStyle.Render(act.Keys[0]), act.Description))
 		}
 	}
 
-	b.WriteString("\n" + sepStyle.Render("  Esc or ?  close this help") + "\n")
+	b.WriteString("\n" + sepStyle.Render("  Esc or F1  close this help") + "\n")
 	return b.String()
 }
