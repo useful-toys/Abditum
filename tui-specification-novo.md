@@ -1203,28 +1203,83 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 #### Eventos
 
-| Evento | Efeito |
+**Navegação:**
+
+| Evento | Efeito na árvore |
 |---|---|
 | Foco move para segredo | Painel direito atualizado com o detalhe do segredo; `<╡` aparece no separador na linha do segredo |
-| Foco move para pasta | Painel direito mantém o último segredo exibido (sem alteração); `<╡` permanece na posição anterior |
+| Foco move para pasta | Painel direito mantém o último segredo exibido; `<╡` permanece na posição anterior |
 | Foco move para item anterior/próximo | Cursor move para o item anterior/próximo visível |
-| Expandir/recolher pasta | Expande/recolhe a pasta |
-| Recolher pasta expandida | Recolhe a pasta |
-| Subir para pasta pai | Cursor vai para a pasta pai do item atual |
-| Alternar foco para o próximo painel | Foco → painel direito |
-| Alternar foco para o painel anterior | Foco → painel direito (ciclo inverso) |
-| Ir ao primeiro / último item | Cursor vai ao primeiro / último item visível |
-| Scroll por página | Scroll por página (viewport − 1 linhas) |
-| Favoritar/desfavoritar segredo | `★` prefixo aparece/some no segredo; `★ Favoritos` aparece/some conforme contagem total |
-| Ação "Novo segredo" acionada (foco em pasta) | Novo segredo com nome `<novo>` inserido no final da pasta em foco; foco salta para o novo segredo; contadores das pastas na hierarquia atualizados |
-| Ação "Novo segredo" acionada (foco em segredo) | Novo segredo com nome `<novo>` inserido abaixo do segredo em foco; foco salta para o novo segredo; contadores das pastas na hierarquia atualizados |
-| Segredo editado | Prefixo `✎`, texto `semantic.warning`; substituído por prefixo original após salvar bem-sucedido |
-| Nome do segredo alterado no painel de detalhes | Nome atualizado no nó da árvore imediatamente |
-| Marcar segredo para exclusão | Prefixo `✗`, texto `semantic.warning` + strikethrough; contadores das pastas na hierarquia atualizados; se o segredo era favoritado, desaparece de `★ Favoritos` |
-| Cancelar exclusão | Estado de exclusão removido; prefixo original restaurado; contadores restaurados |
-| Segredo reordenado (resultado de ação externa) | Foco salta para a nova posição do segredo na árvore |
-| Segredo movido para outra pasta (resultado de ação externa) | Foco salta para a nova posição do segredo na árvore; contadores das pastas afetadas atualizados |
+| Pasta expandida | Filhos tornam-se visíveis; prefixo muda de `▶` para `▼` |
+| Pasta recolhida | Filhos ocultados; prefixo muda de `▼` para `▶` |
+| Foco sobe para pasta pai | Cursor vai para a pasta pai do item atual |
+| Foco move para o primeiro / último item | Cursor vai ao primeiro / último item visível |
+| Scroll por página | Janela desliza (viewport − 1 linhas); cursor acompanha |
+| Foco alternado para outro painel | `│` muda de `border.focused` para `border.default` |
+| Foco recebido de outro painel | `│` muda de `border.default` para `border.focused` |
 | Conteúdo ultrapassa área visível | `↑`/`↓`/`■` aparecem no `│` |
+
+**Segredo — criação e duplicação:**
+
+| Evento | Efeito na árvore |
+|---|---|
+| Novo segredo criado (foco em pasta) | Nó `✦ <novo>` inserido no final da pasta em foco; foco salta para o novo nó; contador da pasta e ancestrais +1 |
+| Novo segredo criado (foco em segredo) | Nó `✦ <novo>` inserido imediatamente abaixo do segredo em foco; foco salta para o novo nó; contador da pasta e ancestrais +1 |
+| Segredo duplicado | Nó `✦ <nome> (2)` inserido imediatamente abaixo do segredo original; foco salta para o duplicado; contador da pasta e ancestrais +1 |
+
+**Segredo — edição de conteúdo:**
+
+| Evento | Efeito na árvore |
+|---|---|
+| Nome do segredo alterado | Nome do nó atualizado imediatamente; se era `●`, prefixo muda para `✎`; se já era `✦`, permanece `✦` |
+| Campo ou observação editado | Prefixo muda de `●` para `✎` (apenas se `EstadoOriginal`; `✦` permanece `✦`) |
+
+**Segredo — exclusão e restauração:**
+
+| Evento | Efeito na árvore |
+|---|---|
+| Segredo marcado para exclusão | Prefixo → `✗`; texto `semantic.warning` + strikethrough; contador da pasta e ancestrais −1; se favoritado, some de `★ Favoritos` |
+| Exclusão cancelada (restauração) | Prefixo original restaurado (`●`, `★`, `✦` ou `✎`); texto normal; contador da pasta e ancestrais +1; se era favoritado, volta a `★ Favoritos` |
+| Salvo com sucesso | Nós com `✗` removidos fisicamente; prefixos `✦` e `✎` voltam ao prefixo de estado limpo (`●` ou `★`) |
+
+**Segredo — favorito:**
+
+| Evento | Efeito na árvore |
+|---|---|
+| Segredo favoritado | Prefixo `●` → `★` (se limpo); se já era `✦` ou `✎`, prefixo dirty mantido (ver regra de prioridade em Comportamento); `★ Favoritos` aparece se era a primeira marcação; atalho inserido em `★ Favoritos` |
+| Segredo desfavoritado | Prefixo `★` → `●` (se limpo); atalho removido de `★ Favoritos`; `★ Favoritos` desaparece se contagem chegar a 0 |
+
+**Segredo — reordenação e movimentação:**
+
+| Evento | Efeito na árvore |
+|---|---|
+| Segredo subido uma posição na pasta | Nó sobe uma posição dentro da pasta; foco acompanha |
+| Segredo descido uma posição na pasta | Nó desce uma posição dentro da pasta; foco acompanha |
+| Segredo reposicionado para posição específica | Nó move para a nova posição dentro da pasta; foco acompanha |
+| Segredo movido para outra pasta | Nó some da pasta de origem; aparece na pasta destino na posição especificada; foco acompanha o nó na nova posição; contadores de origem (−1) e destino (+1) e respectivos ancestrais atualizados |
+
+**Pasta — criação e renomeação:**
+
+| Evento | Efeito na árvore |
+|---|---|
+| Pasta criada | Nó `▷ <nome>` inserido na posição especificada dentro do pai; foco salta para o novo nó |
+| Pasta renomeada | Nome do nó atualizado imediatamente |
+
+**Pasta — reordenação e movimentação:**
+
+| Evento | Efeito na árvore |
+|---|---|
+| Pasta subida uma posição | Nó sobe uma posição entre os irmãos; foco acompanha |
+| Pasta descida uma posição | Nó desce uma posição entre os irmãos; foco acompanha |
+| Pasta reposicionada para posição específica | Nó move para a nova posição entre os irmãos; foco acompanha |
+| Pasta movida para outro pai | Nó some da posição atual; aparece dentro do novo pai; foco acompanha; hierarquia do novo pai atualizada |
+
+**Pasta — exclusão:**
+
+| Evento | Efeito na árvore |
+|---|---|
+| Pasta excluída (sem conflitos de nome) | Nó da pasta removido; subpastas e segredos promovidos ao pai na posição da pasta excluída; contadores do pai recalculados; foco vai para o primeiro filho promovido (ou para o pai, se pasta era vazia) |
+| Pasta excluída (com conflitos de nome) | Idem acima; segredos com conflito de nome exibidos com nome renomeado (sufixo `(N)`); barra de mensagens exibe alerta com lista de renomeações |
 
 #### Comportamento
 
