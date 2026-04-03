@@ -1205,19 +1205,64 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 **Navegação:**
 
+**Navegação — movimento linear:**
+
 | Evento | Efeito na árvore |
 |---|---|
-| Foco move para segredo | Painel direito atualizado com o detalhe do segredo; `<╡` aparece no separador na linha do segredo |
-| Foco move para pasta | Painel direito mantém o último segredo exibido; `<╡` permanece na posição anterior |
-| Foco move para item anterior/próximo | Cursor move para o item anterior/próximo visível |
-| Pasta expandida | Filhos tornam-se visíveis; prefixo muda de `▶` para `▼` |
-| Pasta recolhida | Filhos ocultados; prefixo muda de `▼` para `▶` |
-| Foco sobe para pasta pai | Cursor vai para a pasta pai do item atual |
-| Foco move para o primeiro / último item | Cursor vai ao primeiro / último item visível |
-| Scroll por página | Janela desliza (viewport − 1 linhas); cursor acompanha |
-| Foco alternado para outro painel | `│` muda de `border.focused` para `border.default` |
-| Foco recebido de outro painel | `│` muda de `border.default` para `border.focused` |
-| Conteúdo ultrapassa área visível | `↑`/`↓`/`■` aparecem no `│` |
+| Cursor desce uma linha | Foco move para o próximo item visível (respeitando expand/collapse); se já está no último item, não move |
+| Cursor sobe uma linha | Foco move para o item anterior visível; se já está no primeiro item, não move |
+| Cursor vai ao primeiro item | Foco move para o topo absoluto da árvore (primeiro item da lista, independente do scroll) |
+| Cursor vai ao último item | Foco move para o último item visível da árvore |
+| Scroll desce uma página | Janela desliza viewport − 1 linhas para baixo; cursor vai para o item no topo da nova janela se estava fora dela |
+| Scroll sobe uma página | Janela desliza viewport − 1 linhas para cima; cursor vai para o item no fundo da nova janela se estava fora dela |
+
+**Navegação — movimento hierárquico:**
+
+| Evento | Efeito na árvore |
+|---|---|
+| Avançar sobre pasta recolhida (`▶`) | Pasta expandida; filhos tornam-se visíveis; prefixo `▶` → `▼`; foco permanece na pasta |
+| Avançar sobre pasta expandida (`▼`) | Foco desce para o primeiro filho da pasta |
+| Avançar sobre pasta vazia (`▷`) | Sem efeito — pasta vazia não tem filhos para expandir |
+| Avançar sobre segredo | Sem efeito de navegação na árvore — painel direito já exibe o detalhe pelo foco |
+| Recuar sobre filho de pasta | Foco sobe para a pasta pai |
+| Recuar sobre pasta expandida | Pasta recolhida; prefixo `▼` → `▶`; foco permanece na pasta |
+| Recuar sobre pasta raiz (`Geral`) recolhida | Sem efeito — sem pai disponível |
+| Recuar sobre pasta raiz (`Geral`) expandida | Pasta recolhida; foco permanece na pasta raiz |
+
+**Navegação — foco entre painéis:**
+
+| Evento | Efeito na árvore |
+|---|---|
+| Foco alternado para painel direito | `│` muda de `border.focused` para `border.default`; barra de comandos exibe ações do painel direito |
+| Foco recebido do painel direito | `│` muda de `border.default` para `border.focused`; barra de comandos exibe ações da árvore; cursor de campo vai para o item que estava com foco quando a árvore perdeu foco |
+
+**Navegação — scroll visual:**
+
+| Evento | Efeito na árvore |
+|---|---|
+| Item em foco sai da área visível (scroll para cima) | Janela rola automaticamente para manter o item em foco visível |
+| Item em foco sai da área visível (scroll para baixo) | Janela rola automaticamente para manter o item em foco visível |
+| Conteúdo total cabe na área visível | Indicadores `↑`/`↓`/`■` desaparecem do `│` |
+| Conteúdo total não cabe na área visível | `↑` aparece se há conteúdo acima; `↓` aparece se há conteúdo abaixo; `■` posicionado proporcionalmente |
+
+**Navegação — mouse:**
+
+| Evento | Efeito na árvore |
+|---|---|
+| Clique em item | Foco move para o item clicado (mesmo efeito de cursor com `↑`/`↓`) |
+| Clique no prefixo `▶` ou `▼` | Pasta expande/recolhe — mesmo efeito de `→`/`←` sobre pasta |
+| Clique no prefixo `▷` | Sem efeito |
+| Scroll do mouse para cima/baixo | Janela desliza; cursor acompanha se sair da área visível |
+| Clique em item dentro de `★ Favoritos` | Foco move para o atalho dentro de `★ Favoritos`; painel direito exibe o segredo referenciado |
+
+**Navegação — `★ Favoritos`:**
+
+| Evento | Efeito na árvore |
+|---|---|
+| Foco entra em `★ Favoritos` (pasta virtual) | Painel direito mantém último segredo exibido; barra exibe dica "Pasta virtual — segredos permanecem na localização original" |
+| `★ Favoritos` expandida | Atalhos dos segredos favoritados tornam-se visíveis; prefixo `▶` → `▼` |
+| `★ Favoritos` recolhida | Atalhos ocultados; prefixo `▼` → `▶` |
+| Foco em atalho dentro de `★ Favoritos` | Painel direito exibe o detalhe do segredo referenciado; `<╡` aparece na linha do atalho |
 
 **Segredo — criação e duplicação:**
 
@@ -1289,6 +1334,11 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 - **Segredos com alterações pendentes** — três prefixos indicam estado não salvo, todos em `semantic.warning` (mesma semântica do `•` dirty no cabeçalho): `✦` recém-criado, `✎` modificado, `✗` marcado para exclusão (+ strikethrough). Todos desaparecem após `^S` bem-sucedido
 - **`★ Favoritos` — posição e comportamento** — quando visível, é sempre o primeiro item da lista; se comporta como pasta normal (`▼/▶`); itens internos são atalhos para os segredos originais (os segredos permanecem na hierarquia de origem)
 - **Favorito com estado dirty** — o prefixo dirty (`✦`, `✎`, `✗`) substitui o `★` dentro de `★ Favoritos`; o `★` só aparece como prefixo quando o segredo está limpo. Prioridade de prefixo: `✗` > `✎` > `✦` > `★` > `●`. Segredo marcado para exclusão some imediatamente de `★ Favoritos` — permanece na hierarquia de origem com prefixo `✗`
+- **Navegação linear ignora expand/collapse** — `↑`/`↓` navegam apenas entre itens *visíveis*; filhos de pastas recolhidas são invisíveis e portanto pulados
+- **`→` sobre segredo é no-op** — segredos são folhas; avançar sobre eles não tem efeito (o detalhe já foi atualizado ao receber foco)
+- **`←` tem dois comportamentos** — sobre pasta expandida, recolhe a pasta sem mover o foco; sobre qualquer outro item (pasta recolhida, pasta vazia, segredo), sobe o foco para a pasta pai. Sobre a pasta raiz expandida, apenas recolhe
+- **Foco ao retornar ao painel** — ao receber foco via Tab, o cursor restaura a posição anterior (não vai ao topo)
+- **Scroll automático** — o viewport se ajusta automaticamente para manter o item em foco visível; nunca há item em foco fora da área visível
 - **Scroll no separador** — segue o padrão DS: `↑`/`↓`/`■` aparecem no `│` (borda direita do painel); `<╡` tem prioridade sobre `■` em caso de coincidência (ver [DS — Scroll em diálogos](tui-design-system-novo.md#scroll-em-diálogos))
 - **Indentação** — 2 espaços por nível de aninhamento
 
