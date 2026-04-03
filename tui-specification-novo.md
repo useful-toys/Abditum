@@ -693,11 +693,11 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 
 | Evento | Efeito |
 |---|---|
-| `F1` pressionado (qualquer contexto) | Abre o modal; barra de comandos fica vazia; `F1` oculto |
-| `Esc` | Fecha o modal; `F1` volta visível na barra |
-| `↑` / `↓` | Scroll por linha (se conteúdo excede viewport) |
-| `PgUp` / `PgDn` | Scroll por página (viewport − 1 linhas) |
-| `Home` / `End` | Vai ao início / fim do conteúdo |
+| Help aberto | Abre o modal; barra de comandos fica vazia; ação de ajuda oculta |
+| Help fechado | Fecha o modal; ação de ajuda volta visível na barra |
+| Scroll por linha | Scroll por linha (se conteúdo excede viewport) |
+| Scroll por página | Scroll por página (viewport − 1 linhas) |
+| Ir ao início / fim | Vai ao início / fim do conteúdo |
 
 #### Comportamento
 
@@ -886,7 +886,7 @@ O radical `meu-cofre-pessoal` foi truncado para `meu-cofre-pessoa…`.
 | Cofre fechado / bloqueado | Desaparece nome do cofre e abas; volta ao estado boas-vindas |
 | Alteração em memória (`IsDirty() = true`) | Aparece `•` em `semantic.warning` |
 | Salvamento bem-sucedido (`IsDirty() = false`) | Desaparece `•` |
-| Navegação entre modos (`F2` Cofre / `F3` Modelos / `F4` Config, ou clique) | Aba ativa muda; nova aba suspensa na linha separadora |
+| Navegação entre modos (Cofre / Modelos / Config) | Aba ativa muda; nova aba suspensa na linha separadora |
 | Terminal redimensionado | Nome do cofre recalcula truncamento |
 
 ---
@@ -981,7 +981,7 @@ Além destes:
 
 | Evento | Mudança na barra |
 |---|---|
-| Troca de foco entre painéis (`Tab` / `Shift+Tab`) | Ações do painel que recebe foco ficam ativas |
+| Troca de foco entre painéis | Ações do painel que recebe foco ficam ativas |
 | Seleção de item na árvore | Ações de item (editar, excluir, revelar) ficam `Enabled = true` — aparecem na barra |
 | Nenhum item selecionado | Ações de item ficam `Enabled = false` — desaparecem da barra |
 | Diálogo aberto (push na pilha) | Troca para ações internas do diálogo |
@@ -1207,20 +1207,20 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 | Evento | Efeito |
 |---|---|
-| `↑` / `↓` | Cursor move para o item anterior/próximo visível |
-| `Enter` ou `→` em pasta | Expande/recolhe a pasta |
-| `Enter` ou `→` em segredo | Abre detalhe no painel direito; `<╡` aparece no separador |
-| `←` em pasta expandida | Recolhe a pasta |
-| `←` em pasta recolhida ou em segredo | Sobe para a pasta pai |
-| `Tab` | Foco → painel direito |
-| `Shift+Tab` | Foco → painel direito (ciclo inverso) |
-| `Home` / `End` | Cursor vai ao primeiro / último item visível |
-| `PgUp` / `PgDn` | Scroll por página (viewport − 1 linhas) |
-| `F18` — Favoritar/desfavoritar | `★` prefixo aparece/some no item; `★ Favoritos` aparece/some conforme contagem total |
-| `F21` — Novo segredo criado | Prefixo `✦`, texto `semantic.warning`; segredo aparece na posição criada até ser salvo |
-| `F22` — Segredo editado | Prefixo `✎`, texto `semantic.warning`; substituido por prefixo original após `^S` bem-sucedido |
-| `F23` — Marcar para exclusão | Prefixo `✗`, texto `semantic.warning` + strikethrough; se o segredo era favoritado, desaparece de `★ Favoritos` |
-| `F24` — Cancelar exclusão | Estado de exclusão removido; prefixo original restaurado |
+| Navegar anterior/próximo | Cursor move para o item anterior/próximo visível |
+| Expandir/recolher pasta | Expande/recolhe a pasta |
+| Abrir segredo | Abre detalhe no painel direito; `<╡` aparece no separador |
+| Recolher pasta expandida | Recolhe a pasta |
+| Subir para pasta pai | Cursor vai para a pasta pai do item atual |
+| Alternar foco para o próximo painel | Foco → painel direito |
+| Alternar foco para o painel anterior | Foco → painel direito (ciclo inverso) |
+| Ir ao primeiro / último item | Cursor vai ao primeiro / último item visível |
+| Scroll por página | Scroll por página (viewport − 1 linhas) |
+| Favoritar/desfavoritar segredo | `★` prefixo aparece/some no segredo; `★ Favoritos` aparece/some conforme contagem total |
+| Novo segredo criado | Prefixo `✦`, texto `semantic.warning`; segredo aparece na posição criada até ser salvo |
+| Segredo editado | Prefixo `✎`, texto `semantic.warning`; substituído por prefixo original após salvar bem-sucedido |
+| Marcar segredo para exclusão | Prefixo `✗`, texto `semantic.warning` + strikethrough; se o segredo era favoritado, desaparece de `★ Favoritos` |
+| Cancelar exclusão | Estado de exclusão removido; prefixo original restaurado |
 | Conteúdo ultrapassa área visível | `↑`/`↓`/`■` aparecem no `│` |
 
 #### Comportamento
@@ -1364,13 +1364,13 @@ Barra de comandos: `F16 Ocultar · F17 Copiar · F22 Editar · F1 Ajuda`
 | Evento | Efeito |
 |---|---|
 | Segredo selecionado na árvore | Conteúdo atualizado; campos revelados re-mascarados; `<╡` aparece no separador |
-| Painel recebe foco (`Tab`) | Cursor de campo aparece no campo anteriormente ativo (ou no primeiro) |
-| `↑` / `↓` com painel em foco | Cursor de campo move para o campo anterior/próximo |
-| `Home` / `End` com painel em foco | Cursor vai ao primeiro / último campo |
-| `PgUp` / `PgDn` com painel em foco | Scroll por página (viewport − 1 linhas) |
-| `F16` — campo sensível em foco | Alterna mascarado ↔ revelado; label da ação na barra muda (`Revelar` ↔ `Ocultar`) |
-| `F17` — qualquer campo em foco | Copia valor para clipboard → MsgSuccess |
-| `Tab` / `Shift+Tab` | Foco → árvore (ciclo) |
+| Painel recebe foco | Cursor de campo aparece no campo anteriormente ativo (ou no primeiro) |
+| Navegar entre campos | Cursor de campo move para o campo anterior/próximo |
+| Ir ao primeiro / último campo | Cursor vai ao primeiro / último campo |
+| Scroll por página | Scroll por página (viewport − 1 linhas) |
+| Revelar/ocultar campo sensível | Alterna mascarado ↔ revelado; label da ação na barra muda (`Revelar` ↔ `Ocultar`) |
+| Copiar campo | Copia valor para clipboard → MsgSuccess |
+| Alternar foco | Foco → árvore (ciclo) |
 | Timeout de reveal expira | Campo volta a ser mascarado silenciosamente (sem mensagem) |
 | Segredo diferente selecionado na árvore | Todos os campos revelados são re-mascarados |
 
