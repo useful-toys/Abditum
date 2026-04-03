@@ -55,7 +55,7 @@ A severidade governa **todo** o tratamento visual da moldura. A intenção defin
 | Severidade | Símbolo | Token: borda e título | Token: tecla default | Token: demais ações | Título: atributo |
 |---|---|---|---|---|---|
 | **Destrutivo** | `⚠` | `semantic.warning` | `semantic.error` | `semantic.warning` | **bold** |
-| **Erro** | `✗` | `semantic.error` | `accent.primary` | `semantic.error` | **bold** |
+| **Erro** | `✕` | `semantic.error` | `accent.primary` | `semantic.error` | **bold** |
 | **Alerta** | `⚠` | `semantic.warning` | `accent.primary` | `semantic.warning` | **bold** |
 | **Informativo** | `ℹ` | `semantic.info` | `accent.primary` | `semantic.info` | **bold** |
 | **Neutro** | — | `border.focused` | `accent.primary` | `border.focused` | **bold** |
@@ -155,12 +155,12 @@ A severidade governa **todo** o tratamento visual da moldura. A intenção defin
 
 ### Exemplo: Reconhecimento × Erro — Falha ao abrir cofre
 
-**Intenção:** Reconhecimento | **Severidade:** Erro (`✗`)
+**Intenção:** Reconhecimento | **Severidade:** Erro (`✕`)
 **Token de borda:** `semantic.error`
 **Ação default:** `Enter OK` — token `accent.primary` + **bold**
 
 ```
-╭── ✗  Falha ao abrir cofre ─────╮
+╭── ✕  Falha ao abrir cofre ─────╮
 │                                  │
 │  O arquivo está corrompido ou    │
 │  não é um cofre válido.          │
@@ -170,7 +170,7 @@ A severidade governa **todo** o tratamento visual da moldura. A intenção defin
 
 | Elemento | Token | Atributo |
 |---|---|---|
-| Borda e título `✗ Falha ao abrir cofre` | `semantic.error` | **bold** (título) |
+| Borda e título `✕ Falha ao abrir cofre` | `semantic.error` | **bold** (título) |
 | Mensagem | `text.primary` | — |
 | `Enter` + label `OK` | `accent.primary` | **bold** |
 
@@ -254,7 +254,7 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 | Contexto | Tipo | Texto |
 |---|---|---|
 | Diálogo abre / foco no campo (vazio ou válido) | Dica de campo | `• Digite a senha para desbloquear o cofre` |
-| `Enter` → senha incorreta | Erro (5s) | `✗ Senha incorreta` |
+| `Enter` → senha incorreta | Erro (5s) | `✕ Senha incorreta` |
 | Diálogo fecha (confirmação ou cancelamento) | — | Barra limpa *(orquestrador assume)* |
 
 **Comportamento:**
@@ -362,8 +362,8 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 |---|---|---|
 | Diálogo abre / foco em `Nova senha` (vazio ou válido) | Dica de campo | `• A senha mestra protege todo o cofre — use 12+ caracteres` |
 | Foco em `Confirmação` (vazio ou válido) | Dica de campo | `• Redigite a senha para confirmar` |
-| Foco em campo com erro prévio de divergência | Erro (5s) | `✗ As senhas não conferem — digite novamente` |
-| `Enter` → senhas divergentes | Erro (5s) | `✗ As senhas não conferem — digite novamente` |
+| Foco em campo com erro prévio de divergência | Erro (5s) | `✕ As senhas não conferem — digite novamente` |
+| `Enter` → senhas divergentes | Erro (5s) | `✕ As senhas não conferem — digite novamente` |
 | Diálogo fecha (confirmação ou cancelamento) | — | Barra limpa *(orquestrador assume)* |
 
 **Comportamento:**
@@ -1023,7 +1023,7 @@ Além destes:
 **Wireframe (erro):**
 
 ```
-── ✗ Falha ao salvar — arquivo em uso por outro processo ───────────────────────
+── ✕ Falha ao salvar — arquivo em uso por outro processo ───────────────────────
    ↑ semantic.error + bold
 ```
 
@@ -1058,7 +1058,7 @@ Além destes:
 **Wireframe (truncamento — mensagem excede largura disponível):**
 
 ```
-── ✗ Erro ao importar arquivo: o formato do arquivo não é compatível com a v… ──
+── ✕ Erro ao importar arquivo: o formato do arquivo não é compatível com a v… ──
    ↑ semantic.error + bold                                            ↑ trunca com …
 ```
 
@@ -1088,7 +1088,7 @@ Os tokens de cada tipo de mensagem são definidos no [DS — Mensagens](tui-desi
 | Operação concluída com sucesso | Exibe `✓` mensagem (`semantic.success`, TTL 2–3s) |
 | Informação neutra | Exibe `ℹ` mensagem (`semantic.info`, TTL 3s) |
 | Condição de alerta (ex: bloqueio iminente) | Exibe `⚠` mensagem (`semantic.warning`, permanente, desaparece com input) |
-| Falha em operação | Exibe `✗` mensagem (`semantic.error` + bold, TTL 5s) |
+| Falha em operação | Exibe `✕` mensagem (`semantic.error` + bold, TTL 5s) |
 | Operação em andamento | Exibe spinner `◐◓◑◒` (`accent.primary`, permanente até sucesso/erro) |
 | Campo recebe foco (diálogo funcional) | Exibe `•` dica de campo (`text.secondary` italic) |
 | Aplicação emite dica proativa | Exibe `•` dica de uso (`text.secondary` italic) |
@@ -1133,7 +1133,7 @@ Os tokens de cada tipo de mensagem são definidos no [DS — Mensagens](tui-desi
 
 ```
     ▼ Sites e Apps     (5)  │
-      ✕ Gmail           <╡      ← special.highlight; `semantic.warning` + strikethrough
+      ✗ Gmail           <╡      ← special.highlight; `semantic.warning` + strikethrough
       ● YouTube              │
 ```
 
@@ -1161,7 +1161,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 | Nome da pasta virtual `★ Favoritos` | `text.primary` | — |
 | Contadores `(n)` | `text.secondary` | — |
 | Nome de item marcado para exclusão | `semantic.warning` | ~~strikethrough~~ |
-| `✕` — prefixo de item marcado para exclusão | `semantic.warning` | — |
+| `✗` — prefixo de item marcado para exclusão | `semantic.warning` | — |
 | Nome de item recém-criado (não salvo) | `semantic.warning` | — |
 | `✦` — prefixo de item recém-criado | `semantic.warning` | — |
 | Nome de item modificado (não salvo) | `semantic.warning` | — |
@@ -1214,16 +1214,16 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 | `F18` — Favoritar/desfavoritar | `★` prefixo aparece/some no item; `★ Favoritos` aparece/some conforme contagem total |
 | `F21` — Novo segredo criado | Prefixo `✦`, texto `semantic.warning`; item aparece na posição criada até ser salvo |
 | `F22` — Segredo editado | Prefixo `✎`, texto `semantic.warning`; substituido por prefixo original após `^S` bem-sucedido |
-| `F23` — Marcar para exclusão | Prefixo `✕`, texto `semantic.warning` + strikethrough; se o item era favoritado, desaparece de `★ Favoritos` |
+| `F23` — Marcar para exclusão | Prefixo `✗`, texto `semantic.warning` + strikethrough; se o item era favoritado, desaparece de `★ Favoritos` |
 | `F24` — Cancelar exclusão | Estado de exclusão removido; prefixo original restaurado |
 | Conteúdo ultrapassa área visível | `↑`/`↓`/`■` aparecem no `│` |
 
 #### Comportamento
 
-- **Seleção apenas por cor** — não há símbolo de cursor. A seleção é indicada exclusivamente pelo fundo `special.highlight`. Os prefixos (`▼ ▶ ▷ ● ★ ✦ ✎ ✕`) são estruturais e não mudam com a seleção
-- **Itens com alterações pendentes** — três prefixos indicam estado não salvo, todos em `semantic.warning` (mesma semântica do `•` dirty no cabeçalho): `✦` recém-criado, `✎` modificado, `✕` marcado para exclusão (+ strikethrough). Todos desaparecem após `^S` bem-sucedido
+- **Seleção apenas por cor** — não há símbolo de cursor. A seleção é indicada exclusivamente pelo fundo `special.highlight`. Os prefixos (`▼ ▶ ▷ ● ★ ✦ ✎ ✗`) são estruturais e não mudam com a seleção
+- **Itens com alterações pendentes** — três prefixos indicam estado não salvo, todos em `semantic.warning` (mesma semântica do `•` dirty no cabeçalho): `✦` recém-criado, `✎` modificado, `✗` marcado para exclusão (+ strikethrough). Todos desaparecem após `^S` bem-sucedido
 - **`★ Favoritos` — posição e comportamento** — quando visível, é sempre o primeiro item da lista; se comporta como pasta normal (`▼/▶`); itens internos são atalhos para os segredos originais (os segredos permanecem na hierarquia de origem)
-- **Favorito marcado para exclusão** — o item some imediatamente de `★ Favoritos` ao ser marcado; permanece na hierarquia de origem com prefixo `✕`
+- **Favorito marcado para exclusão** — o item some imediatamente de `★ Favoritos` ao ser marcado; permanece na hierarquia de origem com prefixo `✗`
 - **Scroll no separador** — segue o padrão DS: `↑`/`↓`/`■` aparecem no `│` (borda direita do painel); `<╡` tem prioridade sobre `■` em caso de coincidência (ver [DS — Scroll em diálogos](tui-design-system-novo.md#scroll-em-diálogos))
 - **Indentação** — 2 espaços por nível de aninhamento
 

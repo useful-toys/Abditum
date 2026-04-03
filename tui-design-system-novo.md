@@ -112,7 +112,7 @@ A paleta é organizada por **papel funcional** — cada papel define *para que* 
 | **Interação** | `accent.primary` | Barra de seleção na lista, cursor de navegação, botão principal de ação | `#7aa2f7` <span style="color:#7aa2f7">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
 | | `accent.secondary` | Ícone de favorito (★), nomes de pastas na navegação de arquivos | `#bb9af7` <span style="color:#bb9af7">██</span> | `#00fff5` <span style="color:#00fff5">██</span> |
 | **Semânticas** | `semantic.success` | Operação concluída com sucesso, configuração ligada (ON) | `#9ece6a` <span style="color:#9ece6a">██</span> | `#05ffa1` <span style="color:#05ffa1">██</span> |
-| | `semantic.warning` | Alerta antes de ação permanente, aviso de bloqueio por tentativas erradas, prefixos de estado dirty (`✦ ✎ ✕`) | `#e0af68` <span style="color:#e0af68">██</span> | `#ffe900` <span style="color:#ffe900">██</span> |
+| | `semantic.warning` | Alerta antes de ação permanente, aviso de bloqueio por tentativas erradas, prefixos de estado dirty (`✦ ✎ ✗`) | `#e0af68` <span style="color:#e0af68">██</span> | `#ffe900` <span style="color:#ffe900">██</span> |
 | | `semantic.error` | Erro de operação, senha incorreta, borda de diálogos destrutivos | `#f7768e` <span style="color:#f7768e">██</span> | `#ff3860` <span style="color:#ff3860">██</span> |
 | | `semantic.info` | Informação contextual | `#7dcfff` <span style="color:#7dcfff">██</span> | `#00b4d8` <span style="color:#00b4d8">██</span> |
 | | `semantic.off` | Configuração desligada (OFF) | `#737aa2` <span style="color:#737aa2">██</span> | `#9999cc` <span style="color:#9999cc">██</span> |
@@ -156,7 +156,7 @@ Em TUI não existem fontes nem tamanhos; a tipografia disponível é o conjunto 
 | Dim / Faint | Amplo | Cor já comunica o estado | Itens desabilitados, conteúdo secundário |
 | *Italic* | Parcial | `text.secondary` já diferencia | Hints, pastas virtuais, textos auxiliares |
 | Underline | Amplo | — | Uso pontual |
-| ~~Strikethrough~~ | Parcial | `✕` + `special.muted` preservam o sentido | Itens marcados para exclusão |
+| ~~Strikethrough~~ | Parcial | `✗` + `special.muted` preservam o sentido | Itens marcados para exclusão |
 | Blink | Inconsistente | Não usar | Nenhum |
 
 ### Combinações previstas
@@ -164,7 +164,7 @@ Em TUI não existem fontes nem tamanhos; a tipografia disponível é o conjunto 
 | Combinação | Uso |
 |---|---|
 | Bold + cor semântica | Título de modal de alerta ou informação |
-| Dim + strikethrough | Item excluído, com `✕` como reforço |
+| Dim + strikethrough | Item excluído, com `✗` como reforço |
 | Italic + `text.secondary` | Hints e textos auxiliares |
 
 > **Regra prática:** `bold` é o único destaque tipográfico realmente confiável. `italic` e ~~strikethrough~~ sempre precisam de reforço visual; `blink` não é usado.
@@ -303,7 +303,7 @@ A escolha de cada símbolo segue restrições práticas do terminal como meio:
 - **Largura previsível.** Todos os símbolos ocupam exatamente 1 coluna terminal, exceto `<╡` (2 colunas, por composição). Símbolos de "largura ambígua" no Unicode (que podem ser renderizados como 1 ou 2 colunas dependendo do locale) são evitados.
 - **Sem emojis.** Emojis ocupam 2 colunas, dependem de fontes coloridas e têm renderização inconsistente entre terminais — especialmente no Windows. São excluídos do inventário.
 - **Sem Nerd Fonts.** Glifos de Nerd Fonts (~U+E000–U+F8FF, Private Use Area) só existem em fontes instaladas pelo usuário. O Abditum não pode assumir que essas fontes estão disponíveis.
-- **Semântica sobre estética.** Cada símbolo é escolhido pelo significado que comunica, não pela aparência. `✕` (exclusão) e `✗` (erro) são visualmente similares mas semanticamente distintos — ambos permanecem no inventário porque servem papéis diferentes.
+- **Semântica sobre estética.** Cada símbolo é escolhido pelo significado que comunica, não pela aparência. `✗` (exclusão) e `✕` (erro) são visualmente similares mas semanticamente distintos — ambos permanecem no inventário porque servem papéis diferentes.
 
 ### Inventário
 
@@ -316,7 +316,7 @@ O contexto de uso detalhado de cada símbolo está na seção onde ele é consum
 | `▷` | Pasta vazia | 1 | Geometric Shapes |
 | `●` | Item folha | 1 | Geometric Shapes |
 | `★` | Favorito | 1 | Misc. Symbols |
-| `✕` | Marcado para exclusão | 1 | Dingbats |
+| `✗` | Marcado para exclusão | 1 | Dingbats |
 | `✦` | Recém-criado (não salvo) | 1 | Dingbats |
 | `✎` | Modificado (não salvo) | 1 | Dingbats |
 | `•` | Indicador contextual (ver nota) | 1 | Latin Supplement |
@@ -324,7 +324,7 @@ O contexto de uso detalhado de cada símbolo está na seção onde ele é consum
 | `✓` | Sucesso | 1 | Dingbats |
 | `ℹ` | Informação | 1 | Letterlike Symbols |
 | `⚠` | Alerta / aviso | 1 | Misc. Symbols |
-| `✗` | Erro | 1 | Dingbats |
+| `✕` | Erro | 1 | Dingbats |
 | `F1` | Atalho de ajuda | — | tecla de função |
 | `◐ ◓ ◑ ◒` | Spinner de atividade | 1 | Geometric Shapes |
 | `▌` | Cursor de campo | 1 | Block Elements |
@@ -352,7 +352,7 @@ Estados visuais definem como o mesmo elemento muda de aparência conforme o cont
 | Normal | `text.primary` sobre `surface.base` |
 | Selecionado | `special.highlight` + **bold** |
 | Desabilitado | `text.disabled` + dim |
-| Marcado para exclusão | `semantic.warning` + `✕` + ~~strikethrough~~ |
+| Marcado para exclusão | `semantic.warning` + `✗` + ~~strikethrough~~ |
 | Recém-criado (não salvo) | `✦` + texto `semantic.warning` |
 | Modificado (não salvo) | `✎` + texto `semantic.warning` |
 | Favorito | `★` em `accent.secondary` |
@@ -415,7 +415,7 @@ Diálogos são classificados por duas dimensões ortogonais. Qualquer intenção
 | Severidade | Símbolo | Token de borda | Token da tecla default | Quando usar |
 |---|---|---|---|---|
 | Destrutivo | `⚠` | `semantic.warning` | `semantic.error` | Ação irreversível ou com perda de dados |
-| Erro | `✗` | `semantic.error` | `accent.primary` | Falha ocorrida, condição irrecuperável |
+| Erro | `✕` | `semantic.error` | `accent.primary` | Falha ocorrida, condição irrecuperável |
 | Alerta | `⚠` | `semantic.warning` | `accent.primary` | Situação importante mas recuperável |
 | Informativo | `ℹ` | `semantic.info` | `accent.primary` | Informação que requer atenção |
 | Neutro | — | `border.focused` | `accent.primary` | Operação rotineira, sem urgência |
@@ -436,7 +436,7 @@ Todo diálogo — de decisão ou funcional — segue a mesma estrutura de moldur
 
 Regras da moldura:
 
-- **Borda superior** contém o título embutido, precedido pelo símbolo de severidade quando aplicável (`⚠`, `ℹ`, `✗`). Severidade Neutro não usa símbolo
+- **Borda superior** contém o título embutido, precedido pelo símbolo de severidade quando aplicável (`⚠`, `ℹ`, `✕`). Severidade Neutro não usa símbolo
 - **Borda inferior** contém apenas ações de confirmação e cancelamento, alinhadas à direita
 - **Ordem das ações:** a ação default (associada a `Enter`) fica sempre na primeira posição (mais à esquerda); a ação de cancelamento (`Esc`) fica sempre na última posição (mais à direita, junto à borda). Em diálogos com 3 ou mais ações, as intermediárias ficam entre default e cancelar
 - **Ação default** (associada a `Enter`): tecla + label em **bold**, coloridos com o token de destaque da severidade (ver tabela de severidades acima) — visualmente distinta das demais
@@ -489,8 +489,8 @@ Ciclo de vida da barra durante um diálogo funcional:
 |---|---|---|
 | Diálogo abre | Dica contextual do primeiro campo com foco | Dica de campo (`•` italic) |
 | Foco entra em campo (branco ou válido) | Dica descritiva sobre o campo | Dica de campo (`•` italic) |
-| Foco entra em campo (com valor inválido) | Mensagem de erro explicando a invalidação | Erro (`✗` bold, TTL 5s) |
-| Tentativa de confirmar com validação falha | Mensagem de erro; diálogo permanece aberto | Erro (`✗` bold, TTL 5s) |
+| Foco entra em campo (com valor inválido) | Mensagem de erro explicando a invalidação | Erro (`✕` bold, TTL 5s) |
+| Tentativa de confirmar com validação falha | Mensagem de erro; diálogo permanece aberto | Erro (`✕` bold, TTL 5s) |
 | Diálogo fecha (confirmação ou cancelamento) | Barra é limpa | — |
 
 > **Separação de responsabilidade:** mensagens pós-fechamento (ex: "◐ Criando cofre…", "✓ Cofre aberto", "Operação cancelada") são responsabilidade do orquestrador — não do diálogo.
@@ -512,7 +512,7 @@ A aplicação comunica feedback ao usuário por meio de uma mensagem exibida na 
 | Sucesso | `✓` | `semantic.success` | — |
 | Informação | `ℹ` | `semantic.info` | — |
 | Alerta | `⚠` | `semantic.warning` | — |
-| Erro | `✗` | `semantic.error` | **bold** |
+| Erro | `✕` | `semantic.error` | **bold** |
 | Ocupado (spinner) | `◐ ◓ ◑ ◒` | `accent.primary` | — |
 | Dica de campo | `•` | `text.secondary` | *italic* |
 | Dica de uso | `•` | `text.secondary` | *italic* |
@@ -654,7 +654,7 @@ Quando `$NO_COLOR` está definido (ou o terminal informa que não suporta cores)
 | Config "desativado" | `semantic.off` | `desativado` (texto preserva estado) |
 | Dirty `•` | `semantic.warning` | `•` (símbolo preserva estado) |
 | Busca match | `special.match` + **bold** | **bold** |
-| Exclusão `✕` | `semantic.warning` + strikethrough | `✕` + strikethrough |
+| Exclusão `✗` | `semantic.warning` + strikethrough | `✗` + strikethrough |
 | Recém-criado `✦` | `semantic.warning` | `✦` (símbolo preserva estado) |
 | Modificado `✎` | `semantic.warning` | `✎` (símbolo preserva estado) |
 | Favorito `★` | `accent.secondary` | `★` (símbolo preserva semântica) |
