@@ -35,6 +35,8 @@ Quando algo é específico de uma tela ou componente (ex: quais campos o diálog
   - [Cabeçalho](#cabeçalho)
   - [Barra de Mensagens](#barra-de-mensagens)
   - [Barra de Comandos](#barra-de-comandos)
+  - [Painel Esquerdo: Árvore](#painel-esquerdo-árvore)
+  - [Painel Direito: Detalhe do Segredo — Modo Leitura](#painel-direito-detalhe-do-segredo--modo-leitura)
 - [Telas](#telas)
   - [Boas-vindas](#boas-vindas)
 
@@ -1104,6 +1106,282 @@ Os tokens de cada tipo de mensagem são definidos no [DS — Mensagens](tui-desi
 
 ---
 
+### Painel Esquerdo: Árvore
+
+**Contexto:** Área de trabalho — Modo Cofre.
+**Largura:** ~35% da área de trabalho.
+**Responsabilidade:** Exibir a hierarquia de pastas e segredos; permitir navegação e seleção do item a detalhar no painel direito.
+
+**Wireframe (Modo Cofre — scroll ativo, segredo selecionado, painel com foco):**
+
+```
+  ▼ ★ Favoritos        (2) ↑
+      ★ Bradesco              │
+      ★ Gmail                 │
+  ▼ Geral              (8)  ■
+    ▼ Sites e Apps     (5)  │
+      ● Gmail           <╡      ← special.highlight + bold (item selecionado)
+      ● YouTube              │
+      ● Facebook             │
+  ▼ Financeiro         (3)  │
+    ● Nubank                 ↓
+```
+
+> `↑`/`↓` indicam conteúdo além da área visível; `■` é o thumb proporcional na posição `│`; `<╡` marca o item sendo detalhado no painel direito. Quando `<╡` e `■` coincidem, `<╡` tem prioridade.
+
+**Wireframe (item marcado para exclusão — selecionado):**
+
+```
+    ▼ Sites e Apps     (5)  │
+      ✕ Gmail           <╡      ← special.highlight; `semantic.warning` + strikethrough
+      ● YouTube              │
+```
+
+**Wireframe (cofre vazio):**
+
+```
+  ▷ Geral              (0)  │   ← special.highlight (pasta raiz selecionada)
+                             │
+                             │
+```
+
+Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não tem nenhum segredo.
+
+#### Tokens
+
+| Elemento | Token | Atributo |
+|---|---|---|
+| Nome de item (normal) | `text.primary` | — |
+| Fundo de item selecionado | `special.highlight` | — |
+| Nome de item selecionado | `text.primary` | **bold** |
+| `▼ ▶ ▷` — prefixos de pasta | `text.secondary` | — |
+| `●` — prefixo de segredo | `text.secondary` | — |
+| `★` — prefixo de segredo favoritado | `accent.secondary` | — |
+| `★` — prefixo de itens dentro de `▼ ★ Favoritos` | `accent.secondary` | — |
+| Nome da pasta virtual `★ Favoritos` | `text.primary` | — |
+| Contadores `(n)` | `text.secondary` | — |
+| Nome de item marcado para exclusão | `semantic.warning` | ~~strikethrough~~ |
+| `✕` — prefixo de item marcado para exclusão | `semantic.warning` | — |
+| Nome de item recém-criado (não salvo) | `semantic.warning` | — |
+| `✦` — prefixo de item recém-criado | `semantic.warning` | — |
+| Nome de item modificado (não salvo) | `semantic.warning` | — |
+| `✎` — prefixo de item modificado | `semantic.warning` | — |
+| Nome de item desabilitado | `text.disabled` | dim |
+| `│` separador — painel com foco | `border.focused` | — |
+| `│` separador — painel sem foco | `border.default` | — |
+| `<╡` conector de seleção no separador | `accent.primary` | — |
+| `↑` / `↓` indicadores de scroll no `│` | `text.secondary` | — |
+| `■` thumb de scroll no `│` | `text.secondary` | — |
+
+#### Estados dos componentes
+
+| Componente | Estado | Condição |
+|---|---|---|
+| `★ Favoritos` | visível, expandível (`▼/▶`) | ≥ 1 segredo favoritado |
+| `★ Favoritos` | oculta | 0 segredos favoritados |
+| Item | `special.highlight` + texto **bold** | Cursor posicionado sobre o item |
+| `<╡` no separador | visível | Segredo aberto no painel direito |
+| `<╡` no separador | ausente — `│` normal | Nenhum segredo aberto no painel direito |
+| `↑`/`↓`/`■` no `│` | visível | Conteúdo excede a área visível do painel |
+| Item recém-criado | `✦` prefixo + texto `semantic.warning` | Item criado em memória, ainda não salvo em disco |
+| Item modificado | `✎` prefixo + texto `semantic.warning` | Item editado em memória, ainda não salvo em disco |
+| Painel esquerdo | placeholder "Cofre vazio" à direita | Cofre sem nenhum segredo |
+
+> **`<╡` × `■`:** quando o item selecionado coincide com a posição do thumb, `<╡` tem prioridade — mesma regra do DS para sobreposição em bordas.
+
+#### Mensagens
+
+| Contexto | Tipo | Texto |
+|---|---|---|
+| Painel recebe foco | Dica de campo | `• ↑↓ para navegar · Enter para abrir no painel direito` |
+| `★ Favoritos` (a pasta) selecionada | Dica de campo | `• Pasta virtual — segredos permanecem na localização original` |
+| Item marcado para exclusão selecionado | Dica de campo | `• F24 para cancelar a exclusão` |
+| Item modificado selecionado | Dica de campo | `• Alterações não salvas — ^S para salvar` |
+
+#### Eventos
+
+| Evento | Efeito |
+|---|---|
+| `↑` / `↓` | Cursor move para o item anterior/próximo visível |
+| `Enter` ou `→` em pasta | Expande/recolhe a pasta |
+| `Enter` ou `→` em segredo | Abre detalhe no painel direito; `<╡` aparece no separador |
+| `←` em pasta expandida | Recolhe a pasta |
+| `←` em pasta recolhida ou em segredo | Sobe para a pasta pai |
+| `Tab` | Foco → painel direito |
+| `Shift+Tab` | Foco → painel direito (ciclo inverso) |
+| `Home` / `End` | Cursor vai ao primeiro / último item visível |
+| `PgUp` / `PgDn` | Scroll por página (viewport − 1 linhas) |
+| `F18` — Favoritar/desfavoritar | `★` prefixo aparece/some no item; `★ Favoritos` aparece/some conforme contagem total |
+| `F21` — Novo segredo criado | Prefixo `✦`, texto `semantic.warning`; item aparece na posição criada até ser salvo |
+| `F22` — Segredo editado | Prefixo `✎`, texto `semantic.warning`; substituido por prefixo original após `^S` bem-sucedido |
+| `F23` — Marcar para exclusão | Prefixo `✕`, texto `semantic.warning` + strikethrough; se o item era favoritado, desaparece de `★ Favoritos` |
+| `F24` — Cancelar exclusão | Estado de exclusão removido; prefixo original restaurado |
+| Conteúdo ultrapassa área visível | `↑`/`↓`/`■` aparecem no `│` |
+
+#### Comportamento
+
+- **Seleção apenas por cor** — não há símbolo de cursor. A seleção é indicada exclusivamente pelo fundo `special.highlight`. Os prefixos (`▼ ▶ ▷ ● ★ ✦ ✎ ✕`) são estruturais e não mudam com a seleção
+- **Itens com alterações pendentes** — três prefixos indicam estado não salvo, todos em `semantic.warning` (mesma semântica do `•` dirty no cabeçalho): `✦` recém-criado, `✎` modificado, `✕` marcado para exclusão (+ strikethrough). Todos desaparecem após `^S` bem-sucedido
+- **`★ Favoritos` — posição e comportamento** — quando visível, é sempre o primeiro item da lista; se comporta como pasta normal (`▼/▶`); itens internos são atalhos para os segredos originais (os segredos permanecem na hierarquia de origem)
+- **Favorito marcado para exclusão** — o item some imediatamente de `★ Favoritos` ao ser marcado; permanece na hierarquia de origem com prefixo `✕`
+- **Scroll no separador** — segue o padrão DS: `↑`/`↓`/`■` aparecem no `│` (borda direita do painel); `<╡` tem prioridade sobre `■` em caso de coincidência (ver [DS — Scroll em diálogos](tui-design-system-novo.md#scroll-em-diálogos))
+- **Indentação** — 2 espaços por nível de aninhamento
+
+---
+
+### Painel Direito: Detalhe do Segredo — Modo Leitura
+
+**Contexto:** Área de trabalho — Modo Cofre.
+**Largura:** ~65% da área de trabalho.
+**Responsabilidade:** Exibir os campos do segredo selecionado na árvore; permitir navegação por campos, cópia de valores e reveal de campos sensíveis.
+
+> Este documento especifica apenas o **modo leitura**. O modo edição é especificado separadamente.
+
+**Wireframe (placeholder — nenhum segredo selecionado):**
+
+```
+                                                                  
+                                                                  
+          Selecione um segredo para ver os detalhes               
+                                                                  
+```
+
+**Wireframe (placeholder — cofre vazio):**
+
+```
+                                                                  
+                       Cofre vazio                                
+                                                                  
+```
+
+**Wireframe (segredo exibido, painel sem foco):**
+
+```
+  Gmail                                                               ★
+  ──────────────────────────────────────────────────────────────────
+  URL            https://mail.google.com
+  Usuário        fulano@gmail.com
+  Senha          ••••••••
+  Token 2FA      ••••••••
+
+  Observação     Conta pessoal principal — criada em 2018
+```
+
+**Wireframe (painel com foco — cursor em campo sensível):**
+
+```
+  Gmail                                                               ★
+  ──────────────────────────────────────────────────────────────────
+  URL            https://mail.google.com
+  Usuário        fulano@gmail.com
+  Senha          ••••••••        ← special.highlight + bold (campo selecionado)
+  Token 2FA      ••••••••
+
+  Observação     Conta pessoal principal — criada em 2018
+```
+
+Barra de comandos: `F16 Revelar · F17 Copiar · F22 Editar · F1 Ajuda`
+
+**Wireframe (campo sensível revelado):**
+
+```
+  Gmail                                                               ★
+  ──────────────────────────────────────────────────────────────────
+  URL            https://mail.google.com
+  Usuário        fulano@gmail.com
+  Senha          minha-senha-secreta-123    ← special.highlight + bold
+  Token 2FA      ••••••••
+
+  Observação     Conta pessoal principal — criada em 2018
+```
+
+Barra de comandos: `F16 Ocultar · F17 Copiar · F22 Editar · F1 Ajuda`
+
+**Wireframe (scroll ativo — coluna 1 char reservada à direita):**
+
+```
+  Gmail                                                               ★↑
+  ──────────────────────────────────────────────────────────────────  │
+  URL            https://mail.google.com                              ■
+  Usuário        fulano@gmail.com                                     │
+  Senha          ••••••••        ← special.highlight                  │
+  Token 2FA      ••••••••                                             │
+  Observação     Texto muito longo que ocupa várias linhas por        ↓
+```
+
+> A última coluna do painel é a trilha de scroll: `↑` na primeira linha visível quando há conteúdo acima, `↓` na última quando há conteúdo abaixo, `■` na posição proporcional.
+
+#### Tokens
+
+| Elemento | Token | Atributo |
+|---|---|---|
+| Título do segredo | `text.primary` | **bold** |
+| `★` favorito no título | `accent.secondary` | — |
+| Separador `───` | `border.default` | — |
+| Labels de campos | `text.secondary` | — |
+| Valores de texto | `text.primary` | — |
+| Valores de URL | `text.link` | — |
+| Máscaras `••••••••` | `text.secondary` | — |
+| Fundo de campo selecionado | `special.highlight` | — |
+| Label de campo selecionado | `text.secondary` | — |
+| Valor de campo selecionado | `text.primary` | **bold** |
+| Placeholders ("Selecione…" / "Cofre vazio") | `text.secondary` | *italic* |
+| `│` separador — painel com foco | `border.focused` | — |
+| `│` separador — painel sem foco | `border.default` | — |
+| `↑`/`↓`/`■` trilha de scroll à direita | `text.secondary` | — |
+
+#### Estados dos componentes
+
+| Componente | Estado | Condição |
+|---|---|---|
+| Conteúdo | placeholder "Selecione…" | Cofre com itens, nenhum segredo selecionado |
+| Conteúdo | placeholder "Cofre vazio" | Cofre sem nenhum segredo |
+| Conteúdo | segredo exibido | Segredo selecionado na árvore |
+| Cursor de campo | ausente | Painel sem foco |
+| Cursor de campo | `special.highlight` na linha do campo | Painel com foco |
+| Campo sensível | mascarado `••••••••` | Padrão ao abrir qualquer segredo |
+| Campo sensível | valor real exibido | `F16` acionado; timeout não expirou |
+| Campo sensível revelado | re-mascarado | Timeout de reveal expirou ou segredo trocado |
+| `★` no título | visível | Segredo favoritado |
+| `★` no título | ausente | Segredo não favoritado |
+| Scroll | `↑`/`↓`/`■` na margem direita | Conteúdo excede a área visível |
+
+#### Mensagens
+
+| Contexto | Tipo | Texto |
+|---|---|---|
+| Painel recebe foco | Dica de campo | `• ↑↓ para navegar entre campos · F17 para copiar` |
+| Campo sensível selecionado | Dica de campo | `• F16 para revelar · F17 para copiar` |
+| `F17` copia valor | Sucesso (2–3s) | `✓ [Label do campo] copiado para a área de transferência` |
+
+#### Eventos
+
+| Evento | Efeito |
+|---|---|
+| Segredo selecionado na árvore | Conteúdo atualizado; campos revelados re-mascarados; `<╡` aparece no separador |
+| Painel recebe foco (`Tab`) | Cursor de campo aparece no campo anteriormente ativo (ou no primeiro) |
+| `↑` / `↓` com painel em foco | Cursor de campo move para o campo anterior/próximo |
+| `Home` / `End` com painel em foco | Cursor vai ao primeiro / último campo |
+| `PgUp` / `PgDn` com painel em foco | Scroll por página (viewport − 1 linhas) |
+| `F16` — campo sensível em foco | Alterna mascarado ↔ revelado; label da ação na barra muda (`Revelar` ↔ `Ocultar`) |
+| `F17` — qualquer campo em foco | Copia valor para clipboard → MsgSuccess |
+| `Tab` / `Shift+Tab` | Foco → árvore (ciclo) |
+| Timeout de reveal expira | Campo volta a ser mascarado silenciosamente (sem mensagem) |
+| Segredo diferente selecionado na árvore | Todos os campos revelados são re-mascarados |
+
+#### Comportamento
+
+- **Cursor de campo somente com foco** — o cursor de campo (highlight na linha) só aparece quando o painel recebe foco via `Tab`; sem foco, o conteúdo é exibido sem destaque de campo
+- **`F16` contextual** — disponível (`Enabled`) apenas quando o campo em foco é sensível; quando o campo já está revelado, o label na barra muda para `Ocultar`
+- **Campos sensíveis iniciam mascarados** ao abrir qualquer segredo, incluindo segredos já visitados anteriormente
+- **Reveal timeout** — configurável nas Configurações do cofre; ao expirar, campo é re-mascarado silenciosamente. Ao navegar para outro segredo, todos os revelas são imediatamente cancelados
+- **URLs** — valores identificados como URL usam `text.link`, diferenciados visualmente de texto puro
+- **Campo Observação** — texto livre com word-wrap; pode ocupar múltiplas linhas e contribui para o scroll do painel
+- **Scroll** — última coluna do painel reservada para a trilha de scroll (`↑`/`↓`/`■`) mesmo quando não há scroll ativo (evita deslocamento de conteúdo ao ativar); mesma semântica do DS (ver [DS — Scroll em diálogos](tui-design-system-novo.md#scroll-em-diálogos))
+- **Posição do cursor ao retornar** — ao retornar o foco via `Tab`, o cursor vai ao campo que estava ativo antes, não ao primeiro campo
+
+---
+
 ## Telas
 
 ### Boas-vindas
@@ -1185,8 +1463,6 @@ Os tokens de cada tipo de mensagem são definidos no [DS — Mensagens](tui-desi
 
 ## Componentes
 
-### Painel Esquerdo: Árvore
-### Painel Direito: Detalhe do Segredo
 ### Painel Direito: Detalhe do Modelo
 
 ## Fluxos Visuais

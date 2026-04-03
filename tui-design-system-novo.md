@@ -112,17 +112,17 @@ A paleta é organizada por **papel funcional** — cada papel define *para que* 
 | **Interação** | `accent.primary` | Barra de seleção na lista, cursor de navegação, botão principal de ação | `#7aa2f7` <span style="color:#7aa2f7">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
 | | `accent.secondary` | Ícone de favorito (★), nomes de pastas na navegação de arquivos | `#bb9af7` <span style="color:#bb9af7">██</span> | `#00fff5` <span style="color:#00fff5">██</span> |
 | **Semânticas** | `semantic.success` | Operação concluída com sucesso, configuração ligada (ON) | `#9ece6a` <span style="color:#9ece6a">██</span> | `#05ffa1` <span style="color:#05ffa1">██</span> |
-| | `semantic.warning` | Alerta antes de ação permanente, aviso de bloqueio por tentativas erradas | `#e0af68` <span style="color:#e0af68">██</span> | `#ffe900` <span style="color:#ffe900">██</span> |
+| | `semantic.warning` | Alerta antes de ação permanente, aviso de bloqueio por tentativas erradas, prefixos de estado dirty (`✦ ✎ ✕`) | `#e0af68` <span style="color:#e0af68">██</span> | `#ffe900` <span style="color:#ffe900">██</span> |
 | | `semantic.error` | Erro de operação, senha incorreta, borda de diálogos destrutivos | `#f7768e` <span style="color:#f7768e">██</span> | `#ff3860` <span style="color:#ff3860">██</span> |
-| | `semantic.info` | Informação contextual, marcadores de segredos novos (`+`) ou modificados (`~`) | `#7dcfff` <span style="color:#7dcfff">██</span> | `#00b4d8` <span style="color:#00b4d8">██</span> |
+| | `semantic.info` | Informação contextual | `#7dcfff` <span style="color:#7dcfff">██</span> | `#00b4d8` <span style="color:#00b4d8">██</span> |
 | | `semantic.off` | Configuração desligada (OFF) | `#737aa2` <span style="color:#737aa2">██</span> | `#9999cc` <span style="color:#9999cc">██</span> |
-| **Especiais** | `special.muted` | Texto de segredos marcados para exclusão (riscado, esmaecido) | `#8690b5` <span style="color:#8690b5">██</span> | `#666688` <span style="color:#666688">██</span> |
+| **Especiais** | `special.muted` | Texto esmaecido — uso pontual em contextos que precisam de cor apagada sem conotação semântica | `#8690b5` <span style="color:#8690b5">██</span> | `#666688` <span style="color:#666688">██</span> |
 | | `special.highlight` | Fundo colorido atrás do item selecionado na lista | `#283457` <span style="background:#283457;color:#a9b1d6">██</span> | `#2a1533` <span style="background:#2a1533;color:#e0e0ff">██</span> |
 | | `special.match` | Trecho de texto que corresponde ao termo digitado na busca | `#f7c67a` <span style="color:#f7c67a">██</span> | `#ffc107` <span style="color:#ffc107">██</span> |
 
 ### Notas de contraste
 
-> **`special.muted` sobre `special.highlight`:** em Tokyo Night, `#8690b5` (texto de item excluído) sobre `#283457` (fundo selecionado) apresenta contraste de ~4.6:1, atingindo WCAG AA para texto normal. Valor anterior era `#565f89` (~2.5:1), que dependia exclusivamente da dupla camada (`✕` + strikethrough) para legibilidade. O novo valor mantém a aparência "apagada" do item excluído enquanto garante contraste suficiente. A dupla camada permanece como reforço — não como muleta.
+> **`special.muted`:** usado para texto com aparência "apagada" sem conotação semântica específica. Contraste intencional abaixo do normal — adequado para conteúdo secundário pontual, não para informação crítica.
 
 > **Aliases de valor:** `text.link` = `accent.primary` em hex. O alias documenta intenção — autores de temas podem divergir os valores quando precisarem distinguir link de ação primária.
 
@@ -317,8 +317,8 @@ O contexto de uso detalhado de cada símbolo está na seção onde ele é consum
 | `●` | Item folha | 1 | Geometric Shapes |
 | `★` | Favorito | 1 | Misc. Symbols |
 | `✕` | Marcado para exclusão | 1 | Dingbats |
-| `+` | Adicionado na sessão | 1 | Basic Latin |
-| `~` | Modificado na sessão | 1 | Basic Latin |
+| `✦` | Recém-criado (não salvo) | 1 | Dingbats |
+| `✎` | Modificado (não salvo) | 1 | Dingbats |
 | `•` | Indicador contextual (ver nota) | 1 | Latin Supplement |
 | `◉` | Campo revelável | 1 | Geometric Shapes |
 | `✓` | Sucesso | 1 | Dingbats |
@@ -352,9 +352,10 @@ Estados visuais definem como o mesmo elemento muda de aparência conforme o cont
 | Normal | `text.primary` sobre `surface.base` |
 | Selecionado | `special.highlight` + **bold** |
 | Desabilitado | `text.disabled` + dim |
-| Marcado para exclusão | `special.muted` + `✕` + ~~strikethrough~~ |
+| Marcado para exclusão | `semantic.warning` + `✕` + ~~strikethrough~~ |
+| Recém-criado (não salvo) | `✦` + texto `semantic.warning` |
+| Modificado (não salvo) | `✎` + texto `semantic.warning` |
 | Favorito | `★` em `accent.secondary` |
-| Adicionado / modificado | `+` ou `~` em `semantic.info` |
 | Pasta virtual / leitura | `text.secondary` + *italic* |
 | Campo sensível revelado | mesmo estilo do texto normal; a diferença é o valor exposto |
 | Erro inline | `semantic.error` |
@@ -652,9 +653,10 @@ Quando `$NO_COLOR` está definido (ou o terminal informa que não suporta cores)
 | Config "ativado" | `semantic.success` | `ativado` (texto preserva estado) |
 | Config "desativado" | `semantic.off` | `desativado` (texto preserva estado) |
 | Dirty `•` | `semantic.warning` | `•` (símbolo preserva estado) |
-| Indicador `+` / `~` | `semantic.info` | `+` / `~` (símbolos preservam estado) |
 | Busca match | `special.match` + **bold** | **bold** |
-| Exclusão `✕` | `semantic.error` + strikethrough | `✕` + strikethrough |
+| Exclusão `✕` | `semantic.warning` + strikethrough | `✕` + strikethrough |
+| Recém-criado `✦` | `semantic.warning` | `✦` (símbolo preserva estado) |
+| Modificado `✎` | `semantic.warning` | `✎` (símbolo preserva estado) |
 | Favorito `★` | `accent.secondary` | `★` (símbolo preserva semântica) |
 | Máscara `••••••••` | `text.secondary` | `text.primary` |
 | Borda de modal | `semantic.*` / `border.*` | Borda presente — tipo distinguido por símbolo no título |
