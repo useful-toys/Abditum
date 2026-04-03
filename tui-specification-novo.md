@@ -1160,12 +1160,12 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 | `★` — prefixo de itens dentro de `▼ ★ Favoritos` | `accent.secondary` | — |
 | Nome da pasta virtual `★ Favoritos` | `text.primary` | — |
 | Contadores `(n)` | `text.secondary` | — |
-| Nome de item marcado para exclusão | `semantic.warning` | ~~strikethrough~~ |
-| `✗` — prefixo de item marcado para exclusão | `semantic.warning` | — |
-| Nome de item recém-criado (não salvo) | `semantic.warning` | — |
-| `✦` — prefixo de item recém-criado | `semantic.warning` | — |
-| Nome de item modificado (não salvo) | `semantic.warning` | — |
-| `✎` — prefixo de item modificado | `semantic.warning` | — |
+| Nome de segredo marcado para exclusão | `semantic.warning` | ~~strikethrough~~ |
+| `✗` — prefixo de segredo marcado para exclusão | `semantic.warning` | — |
+| Nome de segredo recém-criado (não salvo) | `semantic.warning` | — |
+| `✦` — prefixo de segredo recém-criado | `semantic.warning` | — |
+| Nome de segredo modificado (não salvo) | `semantic.warning` | — |
+| `✎` — prefixo de segredo modificado | `semantic.warning` | — |
 | Nome de item desabilitado | `text.disabled` | dim |
 | `│` separador — painel com foco | `border.focused` | — |
 | `│` separador — painel sem foco | `border.default` | — |
@@ -1179,12 +1179,17 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 |---|---|---|
 | `★ Favoritos` | visível, expandível (`▼/▶`) | ≥ 1 segredo favoritado |
 | `★ Favoritos` | oculta | 0 segredos favoritados |
-| Item | `special.highlight` + texto **bold** | Cursor posicionado sobre o item |
+| Pasta ou segredo | `special.highlight` + texto **bold** | Cursor posicionado sobre o item |
+| Pasta com filhos, expandida | prefixo `▼` em `text.secondary` | Pasta não-vazia, aberta |
+| Pasta com filhos, recolhida | prefixo `▶` em `text.secondary` | Pasta não-vazia, fechada |
+| Pasta sem filhos | prefixo `▷` em `text.secondary` | Pasta vazia |
+| Segredo (folha, limpo) | prefixo `●` em `text.secondary` | Segredo sem alterações pendentes |
+| Segredo recém-criado | prefixo `✦` em `semantic.warning` + texto `semantic.warning` | Criado em memória, ainda não salvo em disco |
+| Segredo modificado | prefixo `✎` em `semantic.warning` + texto `semantic.warning` | Editado em memória, ainda não salvo em disco |
+| Segredo marcado para exclusão | prefixo `✗` em `semantic.warning` + texto `semantic.warning` + ~~strikethrough~~ | Marcado para exclusão, ainda não salvo |
 | `<╡` no separador | visível | Segredo aberto no painel direito |
 | `<╡` no separador | ausente — `│` normal | Nenhum segredo aberto no painel direito |
 | `↑`/`↓`/`■` no `│` | visível | Conteúdo excede a área visível do painel |
-| Item recém-criado | `✦` prefixo + texto `semantic.warning` | Item criado em memória, ainda não salvo em disco |
-| Item modificado | `✎` prefixo + texto `semantic.warning` | Item editado em memória, ainda não salvo em disco |
 | Painel esquerdo | placeholder "Cofre vazio" à direita | Cofre sem nenhum segredo |
 
 > **`<╡` × `■`:** quando o item selecionado coincide com a posição do thumb, `<╡` tem prioridade — mesma regra do DS para sobreposição em bordas.
@@ -1195,8 +1200,8 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 |---|---|---|
 | Painel recebe foco | Dica de campo | `• ↑↓ para navegar · Enter para abrir no painel direito` |
 | `★ Favoritos` (a pasta) selecionada | Dica de campo | `• Pasta virtual — segredos permanecem na localização original` |
-| Item marcado para exclusão selecionado | Dica de campo | `• F24 para cancelar a exclusão` |
-| Item modificado selecionado | Dica de campo | `• Alterações não salvas — ^S para salvar` |
+| Segredo marcado para exclusão selecionado | Dica de campo | `• F24 para cancelar a exclusão` |
+| Segredo modificado selecionado | Dica de campo | `• Alterações não salvas — ^S para salvar` |
 
 #### Eventos
 
@@ -1212,18 +1217,18 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 | `Home` / `End` | Cursor vai ao primeiro / último item visível |
 | `PgUp` / `PgDn` | Scroll por página (viewport − 1 linhas) |
 | `F18` — Favoritar/desfavoritar | `★` prefixo aparece/some no item; `★ Favoritos` aparece/some conforme contagem total |
-| `F21` — Novo segredo criado | Prefixo `✦`, texto `semantic.warning`; item aparece na posição criada até ser salvo |
+| `F21` — Novo segredo criado | Prefixo `✦`, texto `semantic.warning`; segredo aparece na posição criada até ser salvo |
 | `F22` — Segredo editado | Prefixo `✎`, texto `semantic.warning`; substituido por prefixo original após `^S` bem-sucedido |
-| `F23` — Marcar para exclusão | Prefixo `✗`, texto `semantic.warning` + strikethrough; se o item era favoritado, desaparece de `★ Favoritos` |
+| `F23` — Marcar para exclusão | Prefixo `✗`, texto `semantic.warning` + strikethrough; se o segredo era favoritado, desaparece de `★ Favoritos` |
 | `F24` — Cancelar exclusão | Estado de exclusão removido; prefixo original restaurado |
 | Conteúdo ultrapassa área visível | `↑`/`↓`/`■` aparecem no `│` |
 
 #### Comportamento
 
 - **Seleção apenas por cor** — não há símbolo de cursor. A seleção é indicada exclusivamente pelo fundo `special.highlight`. Os prefixos (`▼ ▶ ▷ ● ★ ✦ ✎ ✗`) são estruturais e não mudam com a seleção
-- **Itens com alterações pendentes** — três prefixos indicam estado não salvo, todos em `semantic.warning` (mesma semântica do `•` dirty no cabeçalho): `✦` recém-criado, `✎` modificado, `✗` marcado para exclusão (+ strikethrough). Todos desaparecem após `^S` bem-sucedido
+- **Segredos com alterações pendentes** — três prefixos indicam estado não salvo, todos em `semantic.warning` (mesma semântica do `•` dirty no cabeçalho): `✦` recém-criado, `✎` modificado, `✗` marcado para exclusão (+ strikethrough). Todos desaparecem após `^S` bem-sucedido
 - **`★ Favoritos` — posição e comportamento** — quando visível, é sempre o primeiro item da lista; se comporta como pasta normal (`▼/▶`); itens internos são atalhos para os segredos originais (os segredos permanecem na hierarquia de origem)
-- **Favorito marcado para exclusão** — o item some imediatamente de `★ Favoritos` ao ser marcado; permanece na hierarquia de origem com prefixo `✗`
+- **Favorito com estado dirty** — o prefixo dirty (`✦`, `✎`, `✗`) substitui o `★` dentro de `★ Favoritos`; o `★` só aparece como prefixo quando o segredo está limpo. Prioridade de prefixo: `✗` > `✎` > `✦` > `★` > `●`. Segredo marcado para exclusão some imediatamente de `★ Favoritos` — permanece na hierarquia de origem com prefixo `✗`
 - **Scroll no separador** — segue o padrão DS: `↑`/`↓`/`■` aparecem no `│` (borda direita do painel); `<╡` tem prioridade sobre `■` em caso de coincidência (ver [DS — Scroll em diálogos](tui-design-system-novo.md#scroll-em-diálogos))
 - **Indentação** — 2 espaços por nível de aninhamento
 
