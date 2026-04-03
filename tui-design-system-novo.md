@@ -506,23 +506,35 @@ A aplicação comunica feedback ao usuário por meio de uma mensagem exibida na 
 
 **Tipos de mensagem:**
 
-| Tipo | Símbolo | Token | Atributo | TTL | Desaparece com input |
-|---|---|---|---|---|---|
-| Sucesso | `✓` | `semantic.success` | — | 2–3 s | Não |
-| Informação | `ℹ` | `semantic.info` | — | 3 s | Não |
-| Aviso | `⚠` | `semantic.warning` | — | Permanente | **Sim** |
-| Erro | `✗` | `semantic.error` | **bold** | 5 s | Não |
-| Ocupado (spinner) | `◐ ◓ ◑ ◒` | `accent.primary` | — | Permanente | Não |
-| Dica de campo | `•` | `text.secondary` | *italic* | Permanente | Não |
-| Dica de uso | `•` | `text.secondary` | *italic* | Permanente | Não |
+| Tipo | Símbolo | Token | Atributo |
+|---|---|---|---|
+| Sucesso | `✓` | `semantic.success` | — |
+| Informação | `ℹ` | `semantic.info` | — |
+| Alerta | `⚠` | `semantic.warning` | — |
+| Erro | `✗` | `semantic.error` | **bold** |
+| Ocupado (spinner) | `◐ ◓ ◑ ◒` | `accent.primary` | — |
+| Dica de campo | `•` | `text.secondary` | *italic* |
+| Dica de uso | `•` | `text.secondary` | *italic* |
+
+**Ciclo de vida:**
+
+O ciclo de vida de cada mensagem é controlado pelo orquestrador que a emite. A tabela abaixo define os **defaults recomendados** — o caller pode sobrescrever TTL e trigger de dismissal conforme o contexto.
+
+| Tipo | TTL padrão | Dismissal padrão |
+|---|---|---|
+| Sucesso | 5 s | Expiração |
+| Informação | 5 s | Expiração |
+| Alerta | 5 s | Expiração |
+| Erro | 5 s | Expiração |
+| Ocupado (spinner) | Sem TTL | Substituição explícita por Sucesso, Erro ou Alerta ao término da operação |
+| Dica de campo | Permanente | Troca de campo ou substituição por outro tipo |
+| Dica de uso | Permanente | Substituição por qualquer outro tipo |
 
 **Regras de comportamento:**
 
-- Mensagem de **Aviso** é re-emitida a cada tick enquanto a condição persistir (ex: bloqueio iminente)
-- **Ocupado** permanece até ser substituído por Sucesso ou Erro ao concluir a operação; spinner avança 1 frame/segundo sincronizado com tick global
-- **Dica de campo** é substituída ao navegar para outro campo, ou por um Erro se o campo tiver valor inválido ao receber foco
-- **Dica de uso** é substituída pela próxima mensagem de qualquer tipo
-- Ao **fechar um diálogo** (confirmação ou cancelamento), a barra é limpa. Mensagens subsequentes são responsabilidade do orquestrador
+- **Ocupado** spinner avança 1 frame/segundo sincronizado com tick global.
+
+> O ciclo de vida da barra em diálogos funcionais (mensagem de contexto ao abrir, dica por campo, limpeza ao fechar) é contrato do orquestrador — documentado em [Barra de mensagens em diálogos](#sobreposição).
 
 ---
 
