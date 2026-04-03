@@ -1336,6 +1336,9 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 #### Comportamento
 
+- **Espelho do cofre** — a árvore é uma representação visual direta e sempre atualizada do estado do cofre. Qualquer mutação no cofre — independentemente de onde ou como foi originada — deve se refletir imediatamente na árvore. Não existe estado interno da árvore que contradiga o cofre.
+- **Foco persiste sobre o mesmo elemento** — quando qualquer evento atualiza a árvore (reordenação, renomeação, movimentação, exclusão de outro item, salvar, reverter…), o foco permanece sobre o mesmo elemento, mesmo que sua posição na lista tenha mudado. O scroll se ajusta automaticamente para garantir que o elemento com foco esteja visível.
+- **Foco ao remover o elemento focado** — se o evento for a remoção do próprio elemento com foco, o foco migra automaticamente seguindo a ordem de preferência: (1) elemento imediatamente abaixo na lista visível; (2) se não existir, elemento imediatamente acima; (3) se a lista ficou vazia, `▼ Geral` (pasta raiz, que nunca pode ser removida).
 - **Seleção apenas por cor** — não há símbolo de cursor. A seleção é indicada exclusivamente pelo fundo `special.highlight`. Os prefixos (`▼ ▶ ▷ ● ★ ✦ ✎ ✗`) são estruturais e não mudam com a seleção
 - **Detalhe automático** — o painel direito exibe o segredo que está com foco na árvore. Quando o foco está sobre uma pasta, o painel mantém o último segredo exibido. O detalhe não precisa ser "aberto" — é atualizado continuamente conforme o foco se move
 - **Nome inicial de novo segredo** — `<novo>`; é o nome provisório que aparece no nó até que o usuário edite o campo Nome no painel de detalhes
