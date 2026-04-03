@@ -1,4 +1,4 @@
-# Especificação Visual — Abditum TUI
+﻿# Especificação Visual — Abditum TUI
 
 > Wireframes, layouts de componentes e fluxos visuais concretos.
 > Cada tela e componente consome os padrões definidos no design system.
@@ -625,7 +625,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 │                                                                  │
 │  Cofre                                                           │
 │  ^S          Salvar cofre                                        │
-│  F5          Sair (salva se necessário)                          │
+│  ^Q          Sair (salva se necessário)                          │
 │  F1          Esta ajuda                                          │
 │                                                                  │
 ╰──────────────────────────────────────────────────── Esc Fechar ──╯
@@ -659,7 +659,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 │                                                                  │
 │  Cofre                                                           │
 │  ^S          Salvar cofre                                        │
-│  F5          Sair (salva se necessário)                          │
+│  ^Q          Sair (salva se necessário)                          │
 │  F1          Esta ajuda                                          ↓
 ╰──────────────────────────────────────────────────── Esc Fechar ──╯
 ```
