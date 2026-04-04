@@ -179,11 +179,17 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		key := msg.String()
 		inFlowOrModal := m.activeFlow != nil || len(m.modals) > 0
 
-		// 1. ActionManager.Dispatch - handles ScopeGlobal and ScopeLocal
+		// 1. If help modal is open, let it handle ALL keys (including F1 and ESC)
+		if len(m.modals) > 0 {
+			if _, isHelp := m.modals[len(m.modals)-1].(*helpModal); isHelp {
+				return m, m.modals[len(m.modals)-1].Update(msg)
+			}
+		}
+		// 2. ActionManager.Dispatch - handles ScopeGlobal and ScopeLocal
 		if cmd := m.actions.Dispatch(key, inFlowOrModal); cmd != nil {
 			return m, cmd
 		}
-		// 2. Topmost modal receives input
+		// 3. Other modals
 		if len(m.modals) > 0 {
 			return m, m.modals[len(m.modals)-1].Update(msg)
 		}
