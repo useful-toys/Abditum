@@ -201,6 +201,17 @@ Plans:
 - [x] 05.2-02-PLAN.md — actions.go: Action.Group int+Priority+HideFromBar, Visible() sort, RegisterGroupLabel, RenderCommandBar spec rewrite; root.go: f1 key+Group 1+Priority; help.go: int grouping with labels
 - [x] 05.2-03-PLAN.md — cmd/poc-mensagens: standalone PoC binary with all 15 actions, live tick, RenderMessageBar+RenderCommandBar demonstration
 
+### Phase 05.2.2: tui-scaffold-message-arch-fixes (INSERTED)
+
+**Goal:** Fix residual bugs in message bar rendering (root.go not using RenderMessageBar, uncolored text, no truncation) and help modal (F1 stacking, ESC not closing, missing bottom action bar).
+**Requirements**: TBD
+**Depends on:** Phase 5.2
+**Plans:** 2 plans in 1 wave
+
+Plans:
+- [ ] 05.2.2-01-PLAN.md — messages.go: semantic text coloring + truncation; root.go: wire RenderMessageBar()
+- [ ] 05.2.2-02-PLAN.md — root.go: fix F1/ESC dispatch order; help.go: add bottom action bar
+
 ### Phase 05.2.1: tui-scaffold-message-arch-fixes (INSERTED)
 
 **Goal:** Fix residual bugs discovered after Phase 05.2 — help modal full dialog rewrite, command bar truncation, spinner frame order, PoC modal pattern alignment.
@@ -211,6 +222,16 @@ Plans:
 Plans:
 - [ ] 05.2.1-01-PLAN.md — Help modal: full DS dialog rewrite (Portuguese title, scroll support, DS tokens, action bar)
 - [ ] 05.2.1-02-PLAN.md — Command bar truncation, spinner frame fix, PoC modal pattern
+
+### Phase 05.2.1.1: tui-scaffold-message-arch-fixes (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5.2.1
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 05.2.1.1 to break down)
 
 ### Phase 05.1: 05-tui-scaffold-root-model-fix (INSERTED)
 
