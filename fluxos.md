@@ -174,40 +174,52 @@ Cada fluxo é composto por:
 
 **Nota sobre a UX atual:** a interface não oferece o gesto de abrir cofre enquanto há um cofre carregado. Essa é uma restrição de UX, não do fluxo — o fluxo em si não impõe essa limitação.
 
-**Entrada antecipada via argumento de linha de comando:** se a aplicação for iniciada com um caminho de arquivo como argumento, o fluxo começa com o caminho já preenchido. O sistema verifica imediatamente se o arquivo é reconhecido como cofre válido — se sim, avança direto para a solicitação de senha (passo 2); se não, comunica o erro e o usuário permanece no passo 1 para rever o caminho.
+**Entrada antecipada via argumento de linha de comando:** se a aplicação for iniciada com um caminho de arquivo como argumento, o passo 1 é ignorado (a aplicação está sendo iniciada, não há cofre carregado). O sistema verifica se o arquivo informado existe:
+- **Se o arquivo existe** → é reconhecido como cofre válido. O passo 2 é ignorado (caminho já definido) e o fluxo avança direto para a solicitação de senha (passo 3).
+- **Se o arquivo não existe** → o Fluxo 1 não se aplica. A aplicação inicia o Fluxo 2 (Criar Novo Cofre) a partir do passo 3, com o caminho já preenchido.
 
 **Passos:**
 
-1. O usuário informa o caminho do arquivo do cofre. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
-   - Se o arquivo não for reconhecido como cofre válido → o sistema comunica o erro. O usuário pode corrigir o caminho e tentar novamente. Volta ao passo 1.
-2. O sistema solicita a senha mestra. O usuário a informa. O usuário pode desistir e voltar ao passo 1.
-   - Se a senha estiver incorreta → o sistema comunica o erro. O usuário pode tentar novamente. Volta ao passo 2.
-3. O sistema verifica a integridade do conteúdo do arquivo.
-   - Se o conteúdo estiver corrompido → o sistema comunica o erro. Volta ao passo 1.
-4. O cofre atual, se houver, é fechado. O novo cofre é carregado.
+1. O sistema verifica se há um cofre carregado com modificações não salvas.
+   - Se houver → o sistema comunica as alterações não salvas e solicita uma decisão: salvar e prosseguir, descartar e prosseguir, ou voltar.
+     - Se o usuário escolhe salvar e prosseguir → o cofre é gravado no arquivo atual usando o protocolo de salvamento atômico. Se o salvamento falhar, o fluxo é interrompido e o cofre permanece carregado e `alterado`. Se bem-sucedido, continua para o passo 2.
+     - Se o usuário escolhe descartar e prosseguir → continua para o passo 2.
+     - Se o usuário escolhe voltar → o fluxo é interrompido e nada muda.
+   - Se não houver modificações ou não houver cofre carregado → continua para o passo 2.
+2. O usuário informa o caminho do arquivo do cofre. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se o arquivo não for reconhecido como cofre válido → o sistema comunica o erro. O usuário pode corrigir o caminho e tentar novamente. Volta ao passo 2.
+3. O sistema solicita a senha mestra. O usuário a informa. O usuário pode desistir e voltar ao passo 2.
+   - Se a senha estiver incorreta → o sistema comunica o erro (categoria: autenticação). O usuário pode tentar novamente. Volta ao passo 3.
+4. O sistema verifica a integridade do conteúdo do arquivo.
+   - Se o conteúdo estiver corrompido → o sistema comunica o erro genérico (categoria: integridade). Volta ao passo 2.
+5. O cofre atual, se houver, é fechado. O novo cofre é carregado. O sistema comunica que o cofre foi aberto com sucesso.
 
 **Contexto resultante:**
 - Fluxo abandonado → contexto inalterado.
+- Falha ao salvar cofre atual → cofre permanece carregado e `alterado`; fluxo interrompido.
 - Sucesso → cofre `inalterado`, pasta Geral em foco.
-
-**Nota:** as mensagens de erro são sempre genéricas — o sistema não informa se o problema foi a senha ou a integridade do arquivo.
 
 ```mermaid
 flowchart TD
-    A([Contexto: qualquer]) --> B[Usuário informa caminho do arquivo]
-    B -- Desiste --> Z([Contexto inalterado])
-    B --> C(Arquivo\nreconhecido?)
-    C -- Não --> D[Comunica erro]
-    D --> B
-    C -- Sim --> E[Sistema solicita senha mestra]
-    E -- Volta --> B
-    E --> F(Senha\ncorreta?)
-    F -- Não --> G[Comunica erro\nNova tentativa]
-    G --> E
-    F -- Sim --> H(Conteúdo\níntegro?)
-    H -- Não --> I[Comunica erro]
-    I --> B
-    H -- Sim --> J([Cofre carregado\nEstado: inalterado])
+    A([Contexto: qualquer]) --> B(Cofre carregado\ne alterado?)
+    B -- Sim --> C[Alterações não salvas\nSalvar / Descartar / Voltar?]
+    C -- Voltar --> Z([Contexto inalterado])
+    C -- Salvar --> W0[Protocolo de salvamento atômico]
+    W0 -- Falha --> Z
+    W0 -- Sucesso --> P2
+    C -- Descartar --> P2
+    B -- Não --> P2
+    P2[Usuário informa caminho do arquivo] -- Desiste --> Z
+    P2 --> D(Arquivo\nreconhecido?)
+    D -- Não --> E[Comunica erro] --> P2
+    D -- Sim --> F[Sistema solicita senha mestra]
+    F -- Volta --> P2
+    F -- Desiste --> Z
+    F --> G(Senha\ncorreta?)
+    G -- Não --> H[Comunica erro\nNova tentativa] --> F
+    G -- Sim --> I(Conteúdo\níntegro?)
+    I -- Não --> J[Comunica erro genérico] --> P2
+    I -- Sim --> K([Cofre carregado\nEstado: inalterado\nSucesso comunicado])
 ```
 
 ---
@@ -218,52 +230,70 @@ flowchart TD
 
 **Nota sobre a UX atual:** a interface não oferece o gesto de criar cofre enquanto há um cofre carregado. Essa é uma restrição de UX, não do fluxo — o fluxo em si não impõe essa limitação.
 
+**Entrada antecipada via argumento de linha de comando:** se a aplicação for iniciada com um caminho de arquivo como argumento e o arquivo não existir, o passo 1 é ignorado (a aplicação está sendo iniciada, não há cofre carregado) e o passo 2 é ignorado (caminho já definido). O fluxo inicia no passo 3, com o caminho já preenchido.
+
 **Passos:**
 
-1. O usuário informa onde salvar o arquivo do cofre (caminho e nome). A extensão `.abditum` é adicionada automaticamente se omitida. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
-   - Se o arquivo de destino já existir → o sistema comunica que o arquivo já existe e solicita uma decisão: sobrescrever ou informar outro caminho.
-     - Se o usuário escolhe informar outro caminho → volta ao passo 1.
-     - Se o usuário escolhe sobrescrever → continua para o passo 2.
-2. O sistema solicita a senha mestra. O usuário a informa duas vezes para confirmação. O usuário pode desistir e voltar ao passo 1.
-   - Se as duas entradas não coincidem → o sistema comunica o erro. Volta ao passo 2.
-3. O sistema avalia a força da senha.
+1. O sistema verifica se há um cofre carregado com modificações não salvas.
+   - Se houver → o sistema comunica as alterações não salvas e solicita uma decisão: salvar e prosseguir, descartar e prosseguir, ou voltar.
+     - Se o usuário escolhe salvar e prosseguir → o cofre é gravado no arquivo atual usando o protocolo de salvamento atômico. Se o salvamento falhar, o fluxo é interrompido e o cofre permanece carregado e `alterado`. Se bem-sucedido, continua para o passo 2.
+     - Se o usuário escolhe descartar e prosseguir → continua para o passo 2.
+     - Se o usuário escolhe voltar → o fluxo é interrompido e nada muda.
+   - Se não houver modificações ou não houver cofre carregado → continua para o passo 2.
+2. O usuário informa onde salvar o arquivo do cofre (caminho e nome). A extensão `.abditum` é adicionada automaticamente se omitida. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+   - Se o arquivo de destino já existir → o sistema alerta que o arquivo já existe e solicita uma decisão: sobrescrever ou informar outro caminho.
+     - Se o usuário escolhe informar outro caminho → volta ao passo 2.
+     - Se o usuário escolhe sobrescrever → continua para o passo 3.
+   - Se o arquivo de destino não existir → continua para o passo 3.
+3. O sistema solicita a senha mestra. O usuário a informa duas vezes para confirmação. O usuário pode desistir e voltar ao passo 2.
+   - Se as duas entradas não coincidem → o sistema comunica o erro. Volta ao passo 3.
+4. O sistema avalia a força da senha.
    - Se a senha for considerada fraca → o sistema comunica os critérios não atendidos e solicita uma decisão: prosseguir mesmo assim ou revisar a senha.
-     - Se o usuário escolhe revisar → volta ao passo 2.
-     - Se o usuário escolhe prosseguir → continua para o passo 4.
-4. O cofre atual, se houver, é fechado. O novo cofre é criado com a estrutura inicial e gravado em disco.
+     - Se o usuário escolhe revisar → volta ao passo 3.
+     - Se o usuário escolhe prosseguir → continua para o passo 5.
+5. O novo cofre é criado com a estrutura inicial e gravado em disco.
    - Se o destino for um arquivo novo: a gravação ocorre diretamente no destino final.
      - Se falhar → o sistema comunica o erro. O fluxo é encerrado sem cofre carregado.
    - Se o destino for um arquivo existente (sobrescrita): é utilizado o protocolo de salvamento atômico.
      - Se falhar sem ter gerado backup → o sistema comunica o erro. O arquivo original permanece intacto. O fluxo é encerrado sem cofre carregado.
      - Se falhar após ter gerado backup → o sistema comunica o erro e informa que existe um backup disponível para intervenção manual. O fluxo é encerrado sem cofre carregado.
+6. O cofre atual, se houver, é fechado. O novo cofre é carregado. O sistema comunica que o novo cofre foi criado com sucesso.
 
 **Contexto resultante:**
 - Fluxo abandonado → contexto inalterado.
+- Falha ao salvar cofre atual → cofre permanece carregado e `alterado`; fluxo interrompido.
 - Sucesso → cofre `inalterado`, pasta Geral em foco.
-- Falha na gravação → sem cofre carregado.
+- Falha na gravação do novo cofre → sem cofre carregado.
 
 ```mermaid
 flowchart TD
-    A([Contexto: qualquer]) --> B[Usuário informa caminho e nome do arquivo]
-    B -- Desiste --> Z([Contexto inalterado])
-    B --> C(Arquivo de\ndestino existe?)
-    C -- Não --> P2
-    C -- Sim --> D[Comunica que arquivo já existe\nSobrescrever ou outro caminho?]
-    D -- Outro caminho --> B
-    D -- Sobrescrever --> P2
-    P2[Sistema solicita senha mestra\nduas vezes para confirmação] -- Volta --> B
-    P2 -- Desiste --> Z
-    P2 --> E(Entradas\ncoincidem?)
-    E -- Não --> F[Comunica erro] --> P2
-    E -- Sim --> G(Senha\nforte?)
-    G -- Sim --> P4
-    G -- Não --> H[Comunica critérios não atendidos\nProsseguir ou revisar?]
-    H -- Revisar --> P2
-    H -- Prosseguir --> P4
-    P4(Destino é\narquivo novo?) -- Sim --> W1[Grava diretamente no destino]
-    W1 --> OK([Cofre inalterado\nPasta Geral em foco])
+    A([Contexto: qualquer]) --> B(Cofre carregado\ne alterado?)
+    B -- Sim --> C[Alterações não salvas\nSalvar / Descartar / Voltar?]
+    C -- Voltar --> Z([Contexto inalterado])
+    C -- Salvar --> W0[Protocolo de salvamento atômico]
+    W0 -- Falha --> Z
+    W0 -- Sucesso --> P2
+    C -- Descartar --> P2
+    B -- Não --> P2
+    P2[Usuário informa caminho e nome do arquivo] -- Desiste --> Z
+    P2 --> D(Arquivo de\ndestino existe?)
+    D -- Não --> P3
+    D -- Sim --> E[Alerta: arquivo já existe\nSobrescrever ou outro caminho?]
+    E -- Outro caminho --> P2
+    E -- Sobrescrever --> P3
+    P3[Sistema solicita senha mestra\nduas vezes para confirmação] -- Volta --> P2
+    P3 -- Desiste --> Z
+    P3 --> F(Entradas\ncoincidem?)
+    F -- Não --> G[Comunica erro] --> P3
+    F -- Sim --> H(Senha\nforte?)
+    H -- Sim --> P5
+    H -- Não --> I[Comunica critérios não atendidos\nProsseguir ou revisar?]
+    I -- Revisar --> P3
+    I -- Prosseguir --> P5
+    P5(Destino é\narquivo novo?) -- Sim --> W1[Grava diretamente no destino]
+    W1 --> OK([Cofre inalterado\nPasta Geral em foco\nSucesso comunicado])
     W1 -- Falha --> ERR([Sem cofre carregado\nErro comunicado])
-    P4 -- Não --> W2[Protocolo de salvamento atômico]
+    P5 -- Não --> W2[Protocolo de salvamento atômico]
     W2 --> OK
     W2 -- Falha sem backup --> ERR
     W2 -- Falha após backup --> ERR2([Sem cofre carregado\nBackup disponível])
@@ -360,25 +390,29 @@ flowchart TD
 **Passos:**
 
 1. O cofre é bloqueado: buffers sensíveis são limpos, a área de transferência é limpa e a tela é apagada.
-2. O sistema inicia o Fluxo 1 — Abrir Cofre Existente — a partir do passo 2: o caminho do cofre recém-bloqueado está preenchido e o arquivo já reconhecido, de modo que o sistema solicita diretamente a senha mestra.
+2. O sistema inicia o Fluxo 1 — Abrir Cofre Existente — a partir do passo 3: o caminho do cofre recém-bloqueado está preenchido e o arquivo já reconhecido, de modo que o sistema solicita diretamente a senha mestra. Se o arquivo não for mais acessível ou estiver corrompido, o Fluxo 1 retorna ao passo 2 para o usuário informar outro caminho.
 
 **Contexto resultante:**
-- Cofre bloqueado → Fluxo 1 iniciado no passo 2, com o caminho do cofre preenchido.
+- Cofre bloqueado → Fluxo 1 iniciado no passo 3, com o caminho do cofre preenchido.
 
 ---
 
 ## Fluxo 7 — Aviso de bloqueio iminente por inatividade
 
-**Contexto necessário:** cofre carregado no entorno global; temporizador de inatividade em 75% do tempo configurado.
+**Contexto necessário:** cofre carregado no entorno global; temporizador de inatividade atingiu o limiar de aviso (75% do tempo configurado).
+
+**Nota:** o aviso prévio de bloqueio é uma decisão de UX — os requisitos não o mencionam explicitamente, mas ele melhora a experiência do usuário ao evitar surpresas com o bloqueio automático.
 
 **Passos:**
 
 1. O sistema comunica que o cofre será bloqueado em breve por inatividade.
+2. O sistema aguarda a expiração do temporizador restante ou atividade do usuário.
+   - Se o usuário interagir com a aplicação → o temporizador de inatividade é reiniciado e o aviso é dispensado. O fluxo é encerrado.
+   - Se o temporizador expirar → o aviso é dispensado e o sistema inicia o Fluxo 6 (Bloquear cofre).
 
 **Contexto resultante:**
-- Aviso exibido → contexto inalterado.
-
-**Nota:** este fluxo não tem dependência com o Fluxo 6 (Bloquear cofre). Qualquer atividade do usuário após o aviso reinicia o temporizador de inatividade, mas isso não é parte deste fluxo — é comportamento contínuo do sistema de temporização.
+- Usuário interagiu → contexto inalterado; temporizador reiniciado.
+- Temporizador expirou → Fluxo 6 iniciado.
 
 ---
 
@@ -1008,4 +1042,67 @@ flowchart TD
 **Contexto resultante:**
 - Fluxo abandonado → contexto inalterado.
 - Sucesso → cofre `alterado`; novo modelo disponível com a estrutura do segredo.
+
+---
+
+## Fluxo 37 — Navegar pelo cofre
+
+**Contexto necessário:** cofre carregado no entorno global; modo visualização/navegação ativo.
+
+**Passos:**
+
+1. O sistema exibe a árvore de pastas com a Pasta Geral como raiz. Cada pasta exibe a contagem total de segredos ativos contidos nela e em todas as suas subpastas recursivamente. Segredos marcados para exclusão não são contabilizados.
+2. O usuário navega entre as pastas, expandindo e recolhendo nós da árvore. O usuário pode desistir e abandonar o fluxo a qualquer momento.
+3. Ao selecionar uma pasta, o sistema exibe a lista de segredos contidos nela. Cada segredo exibe seus indicadores de estado de sessão quando aplicável (ver Fluxo 40).
+4. O usuário pode selecionar um segredo para abri-lo (inicia Fluxo 38).
+
+**Contexto resultante:**
+- Fluxo abandonado → contexto inalterado.
+- Navegação ativa → pasta em foco; segredos da pasta visíveis.
+
+---
+
+## Fluxo 38 — Visualizar segredo
+
+**Contexto necessário:** cofre carregado no entorno global; segredo aberto; modo visualização ativo.
+
+**Passos:**
+
+1. O sistema exibe o nome do segredo, seus campos (comuns sempre visíveis, sensíveis ocultos por padrão) e a observação.
+2. O usuário pode solicitar revelar um campo sensível (inicia Fluxo 16), copiar o valor de qualquer campo (inicia Fluxo 17), ou entrar em modo de edição (inicia Fluxo 20 ou 21).
+
+**Contexto resultante:**
+- Visualização ativa → segredo exibido em modo leitura; contexto inalterado.
+
+---
+
+## Fluxo 39 — Acessar pasta Favoritos
+
+**Contexto necessário:** cofre carregado no entorno global; modo visualização/navegação ativo.
+
+**Passos:**
+
+1. O usuário seleciona a pasta virtual "Favoritos", posicionada como nó irmão da Pasta Geral na árvore (acima dela).
+2. O sistema exibe todos os segredos com favorito = verdadeiro, percorridos em profundidade seguindo a ordem do cofre. A pasta virtual é somente leitura — não é possível criar, mover ou excluir segredos diretamente a partir dela.
+3. O usuário pode selecionar um segredo favorito para abri-lo (inicia Fluxo 38).
+
+**Contexto resultante:**
+- Pasta Favoritos ativa → lista de segredos favoritos visível; pasta virtual permanece somente leitura.
+
+---
+
+## Fluxo 40 — Ver indicadores de estado de sessão
+
+**Contexto necessário:** cofre carregado no entorno global; segredo visível na listagem de uma pasta.
+
+**Passos:**
+
+1. O sistema exibe os indicadores de estado de sessão ao lado de cada segredo na listagem:
+   - **"adicionado"** → segredo criado na sessão atual (estado `incluido`)
+   - **"modificado"** → segredo cujo conteúdo foi alterado na sessão atual (estado `modificado`)
+   - **"excluído"** → segredo marcado para exclusão (estado `excluido`)
+2. Segredos sem alterações desde o carregamento não exibem indicador. Segredos marcados para exclusão não aparecem em resultados de busca.
+
+**Contexto resultante:**
+- Indicadores visíveis → contexto inalterado.
 
