@@ -151,13 +151,37 @@ func RenderMessageBar(msg *DisplayMessage, width int) string {
 
 	// Prefix: "── " (2 border chars + space = 3 visible chars)
 	prefix := borderStyle.Render("──") + " "
-	// Content: styled symbol + space + plain text
-	content := symStyle.Render(symbol) + " " + msg.Text
 	// Suffix start: " ─" (1 space + 1 border = 2 visible chars)
 	suffixStart := " " + borderStyle.Render(borderChar)
 
+	// Calculate available width for symbol + text
+	prefixW := lipgloss.Width(prefix)
+	suffixW := lipgloss.Width(suffixStart)
+	symbolRendered := symStyle.Render(symbol) + " "
+	symbolW := lipgloss.Width(symbolRendered)
+	availableTextW := width - prefixW - suffixW
+
+	var content string
+	if availableTextW <= symbolW {
+		// Not enough room for any text — show symbol only
+		content = symbolRendered
+	} else {
+		// Truncate text to fit available width
+		maxTextW := availableTextW - symbolW
+		text := msg.Text
+		truncated := false
+		for lipgloss.Width(symStyle.Render(text)) > maxTextW && len(text) > 0 {
+			text = text[:len(text)-1]
+			truncated = true
+		}
+		if truncated && len(text) > 0 {
+			text = text + "…"
+		}
+		content = symbolRendered + symStyle.Render(text)
+	}
+
 	// Calculate fill: width minus all visible chars
-	visibleSoFar := lipgloss.Width(prefix) + lipgloss.Width(content) + lipgloss.Width(suffixStart)
+	visibleSoFar := prefixW + lipgloss.Width(content) + suffixW
 	fillLen := width - visibleSoFar
 	if fillLen < 0 {
 		fillLen = 0
