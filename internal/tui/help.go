@@ -44,12 +44,27 @@ func (m *helpModal) View() string {
 	allActions := m.actions.All()
 	content := m.buildContent(allActions)
 
+	// Bottom action bar (D-17): "Esc Fechar" with border fill
+	barStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
+	actionText := barStyle.Render("Esc Fechar")
+	// Calculate fill: boxW minus padding (2) minus border chars (2) minus action text width
+	borderWidth := boxW - 4 // account for border + padding
+	actionWidth := lipgloss.Width(actionText)
+	fillEach := (borderWidth - actionWidth) / 2
+	if fillEach < 1 {
+		fillEach = 1
+	}
+	fill := strings.Repeat("─", fillEach)
+	actionBar := barStyle.Render(fill+" ") + actionText + barStyle.Render(" "+fill)
+
+	combined := content + "\n" + actionBar
+
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("62")).
 		Padding(0, 1).
 		Width(boxW).
-		Render(content)
+		Render(combined)
 }
 
 // Shortcuts returns the dismiss shortcut for the command bar.
@@ -60,8 +75,8 @@ func (m *helpModal) Shortcuts() []Shortcut {
 // buildContent formats the action list into a readable shortcut reference.
 func (m *helpModal) buildContent(actions []Action) string {
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("62"))
-	keyStyle   := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
-	sepStyle   := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
+	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 	groupStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("14"))
 
 	var b strings.Builder
@@ -99,6 +114,5 @@ func (m *helpModal) buildContent(actions []Action) string {
 		}
 	}
 
-	b.WriteString("\n" + sepStyle.Render("  Esc or F1  close this help") + "\n")
 	return b.String()
 }
