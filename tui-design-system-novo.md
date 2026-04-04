@@ -695,8 +695,10 @@ Anti-padrões documentam o que **não deve ser feito** na interface do Abditum. 
 | **Máscara Apenas Visual** *(Alto)* | `••••••••` exibido mas copiável sem feedback | Proteção ilusória; dado sensível exposto em clipboard |
 | **Campo Sensível Indistinguível** *(Alto)* | Campos sensíveis e comuns têm mesma aparência | Revelação acidental ou proteção ignorada |
 | **Countdown Invisível** *(Médio)* | Cópia bem-sucedida mas sem indicação de TTL da clipboard | Usuário não sabe se o dado ainda está disponível |
+| **Limpeza de Clipboard Assíncrona ao Encerrar** *(Alto)* | A limpeza ao bloquear/encerrar é delegada a uma goroutine ou `time.AfterFunc` — que pode ser interrompida antes de executar quando `os.Exit` é chamado, anulando a garantia de limpeza. Mecanismo correto especificado em [`arquitetura.md` § Clipboard](arquitetura.md) | Dado sensível permanece na clipboard após o usuário encerrar ou bloquear o cofre, contrariando a garantia de limpeza ao sair |
 | **Exportação Sem Cerimônia** *(Crítico)* | Exportação (arquivo não criptografado) com tratamento de ação rotineira | Usuário exporta para local inseguro sem compreender risco |
 | **Dirty State Apenas Global** *(Crítico)* | Indicador `•` só no cabeçalho, sem `✦ ✎ ✗` por item | Usuário não consegue auditar o que será salvo |
+| **Scrollback Não Limpo ao Encerrar** *(Alto)* | Saída ou bloqueio limpa apenas a tela visível, sem limpar o scrollback — dados revelados durante a sessão ficam acessíveis no histórico do terminal. Sequência correta e coordenação com Bubble Tea especificadas em [`arquitetura.md` § Clear screen](arquitetura.md) | Qualquer pessoa com acesso ao terminal após encerrar o Abditum pode rolar o scrollback e ler campos sensíveis revelados durante a sessão |
 
 ---
 
@@ -787,7 +789,7 @@ Anti-padrões documentam o que **não deve ser feito** na interface do Abditum. 
 |---|---|---|
 | **Auto-save Silencioso** *(Alto)* | Alteração de senha salva automaticamente sem feedback | Usuário acredita que é reversível |
 | **Conflito de Arquivo Minimizado** *(Crítico)* | Arquivo modificado externamente sobrescrito sem aviso | Dados de outra sessão/backup destruídos |
-| **Re-autenticação Durante Sessão** *(Alto)* | Senha mestra solicitada novamente em salvamento/exportação | Fricção ilegítima; treina digitação irrefletida |
+| **Re-autenticação Durante Sessão** *(Alto)* | Senha mestra solicitada novamente em operações rotineiras de salvamento ou descarte — a senha já está em memória e não há ganho de segurança nisso. **Exceção legítima:** exportação, onde re-autenticação é um controle válido de defesa-em-profundidade perante um cofre aberto sem dono | Fricção ilegítima nos fluxos comuns; treina o usuário a fornecer a senha sem questionar o contexto — vetor clássico de phishing de UI |
 | **Exclusão Desaparece Imediatamente** *(Crítico)* | Item marcado para exclusão some sem `✗` + strikethrough | Usuário crê ter deletado permanentemente |
 | **Importação Sem Prévia de Impacto** *(Crítico)* | Mesclagem executada sem mostrar o que será sobrescrito | Perda de dados não intencionada |
 
