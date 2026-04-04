@@ -627,7 +627,7 @@ Cada tecla pertence a exatamente um escopo. Escopos mais específicos sobrepõem
 | `Home` / `End` | Primeiro / último item visível | [Foco e Navegação](#foco-e-navegação) |
 | `PgUp` / `PgDn` | Scroll por página (viewport − 1) em conteúdo com scroll | [Scroll em diálogos](#scroll-em-diálogos) |
 | `F12` | Alternar tema (Tokyo Night ↔ Cyberpunk) | [Temas](#temas) |
-| `F1` | Abrir modal de Ajuda | — |
+| `F1` | Abrir / fechar modal de Ajuda (toggle) | — |
 
 **Teclas de área de trabalho (definidas neste documento):**
 
@@ -733,6 +733,10 @@ Anti-padrões documentam o que **não deve ser feito** na interface do Abditum. 
 | **Pilha de Modais Sem Profundidade** *(Médio)* | Modal abre modal abre modal sem indicação | Desorientação; fechamento acidental com Esc repetido |
 | **Ação Default Ausente** *(Médio)* | Ação default desaparece quando inativa | Usuário não sabe o que falta preencher |
 | **Confirmação Assimétrica** *(Crítico)* | "Salvar e Sair" pede dupla confirmação; "Descartar" não | Incentivo perverso aumenta perdas de dados |
+| **Saída Sem Confirmação** *(Crítico)* | Aplicação encerra sem confirmar quando há alterações pendentes | Perda silenciosa de dados não salvos |
+| **Fechamento de Cofre Sem Confirmação** *(Crítico)* | Fechar/bloquear cofre com modificações não salvas sem confirmar | Perda silenciosa de dados não salvos |
+| **Ação Destrutiva Sem Confirmação** *(Crítico)* | Ação irreversível ou com perda de dados executa sem diálogo de confirmação e opção de desistir | Dado perdido sem chance de recuperação |
+| **Fluxo Sem Saída** *(Alto)* | Fluxo de múltiplos passos sem opção de desistir (cancelar) ou voltar ao passo anterior | Usuário preso; forçado a concluir ou matar o processo |
 
 ---
 

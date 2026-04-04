@@ -693,7 +693,8 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 
 | Evento | Efeito |
 |---|---|
-| `F1` pressionado (qualquer contexto) | Abre o modal; barra de comandos fica vazia; `F1` oculto |
+| `F1` pressionado (modal fechado) | Abre o modal; barra de comandos fica vazia; `F1` oculto |
+| `F1` pressionado (modal aberto) | Fecha o modal; `F1` volta visível na barra |
 | `Esc` | Fecha o modal; `F1` volta visível na barra |
 | `↑` / `↓` | Scroll por linha (se conteúdo excede viewport) |
 | `PgUp` / `PgDn` | Scroll por página (viewport − 1 linhas) |

@@ -123,8 +123,8 @@ func RenderMessageBar(msg *DisplayMessage, width int) string {
 		return borderStyle.Render(strings.Repeat(borderChar, width))
 	}
 
-	// spinner frames in display order: ◐ ◓ ◒ ◑
-	spinnerFrames := []string{"◐", "◓", "◒", "◑"}
+	// spinner frames in display order: ◐ ◓ ◑ ◒
+	spinnerFrames := []string{"◐", "◓", "◑", "◒"}
 
 	var symbol string
 	var symStyle lipgloss.Style
@@ -139,7 +139,7 @@ func RenderMessageBar(msg *DisplayMessage, width int) string {
 		symbol = "⚠"
 		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#e0af68"))
 	case MsgError:
-		symbol = "✗"
+		symbol = "✕"
 		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#f7768e")).Bold(true)
 	case MsgBusy:
 		symbol = spinnerFrames[msg.Frame%4]
@@ -157,7 +157,7 @@ func RenderMessageBar(msg *DisplayMessage, width int) string {
 	// Calculate available width for symbol + text
 	prefixW := lipgloss.Width(prefix)
 	suffixW := lipgloss.Width(suffixStart)
-	symbolRendered := symStyle.Render(symbol) + " "
+	symbolRendered := symStyle.Render(symbol + " ")
 	symbolW := lipgloss.Width(symbolRendered)
 	availableTextW := width - prefixW - suffixW
 
