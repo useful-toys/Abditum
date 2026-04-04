@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 06
 status: planning
-last_updated: "2026-04-03T20:45:12.587Z"
+last_updated: "2026-04-04T03:36:56.833Z"
 progress:
-  total_phases: 14
-  completed_phases: 8
-  total_plans: 28
-  completed_plans: 28
+  total_phases: 17
+  completed_phases: 10
+  total_plans: 32
+  completed_plans: 32
 ---
 
 # Project State — Abditum
@@ -49,6 +49,12 @@ Plans executed:
 ## Accumulated Context
 
 ### Roadmap Evolution
+
+- Phase 05.2.2 inserted after Phase 05.2: tui-scaffold-message-arch-fixes (INSERTED REFINEMENT)
+  - **Purpose:** Test message truncation with >100 char long messages + F10 action in PoC
+  - **Scope:** Expand poc-mensagens to validate RenderMessageBar behavior at terminal limits
+
+- Phase 05.2.1 inserted after Phase 05.2: tui-scaffold-message-arch-fixes (INSERTED URGENT)
 
 - Phase 05.2 inserted after Phase 5: tui-scaffold-message-arch (INSERTED)
 
