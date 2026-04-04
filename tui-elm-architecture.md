@@ -44,7 +44,7 @@ type childModel interface {
 
 ### `modalView`
 
-Interface implementada por modais. Separada de `childModel` porque modais têm contrato diferente: não recebem tamanho alocado (se auto-dimensionam por conteúdo), não participam de despacho de ações, e têm ciclo de vida gerenciado pela stack.
+Interface implementada por modais. Separada de `childModel` porque modais têm contrato diferente: não recebem espaço alocado (se auto-dimensionam por conteúdo, ex: 80% do terminal), não participam de despacho de ações, e têm ciclo de vida gerenciado pela stack.
 
 ```go
 type Shortcut struct {
@@ -56,8 +56,13 @@ type modalView interface {
     Update(tea.Msg) tea.Cmd
     View() string
     Shortcuts() []Shortcut  // renderizados na command bar enquanto modal está ativo
+    SetSize(w, h int)       // recebe dimensões do terminal para auto-dimensionamento
 }
 ```
+
+- `SetSize()` é chamado pelo `rootModel` em todo `WindowSizeMsg` e antes de cada `View()`.
+- Modais usam `w`/`h` para calcular seus próprios limites (ex: min(70 colunas, 80% da largura)).
+- Posicionamento continua sendo responsabilidade exclusiva do `rootModel` via `lipgloss.Place()`.
 
 `Shortcuts()` permite que a command bar mostre os atalhos do modal ativo em vez das ações do `ActionManager`:
 
