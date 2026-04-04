@@ -23,6 +23,7 @@ func (s *stubModal) Update(msg tea.Msg) tea.Cmd {
 }
 func (s *stubModal) View() string          { return "stub" }
 func (s *stubModal) Shortcuts() []Shortcut { return nil }
+func (s *stubModal) SetSize(w, h int)      {}
 
 // stubFlow implements flowHandler for tests.
 type stubFlow struct {
