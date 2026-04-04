@@ -21,7 +21,7 @@ func (s *stubModal) Update(msg tea.Msg) tea.Cmd {
 	s.received = msg
 	return nil
 }
-func (s *stubModal) View() string         { return "stub" }
+func (s *stubModal) View() string          { return "stub" }
 func (s *stubModal) Shortcuts() []Shortcut { return nil }
 
 // stubFlow implements flowHandler for tests.
@@ -50,9 +50,9 @@ func (stubResult) isModalResult() {}
 
 // TestRootModelInit verifies rootModel starts in the correct initial state (D-11).
 func TestRootModelInit(t *testing.T) {
-	m := newRootModel(nil, "")
+	m := NewRootModel()
 	if m == nil {
-		t.Fatal("newRootModel returned nil")
+		t.Fatal("NewRootModel returned nil")
 	}
 	if m.area != workAreaWelcome {
 		t.Errorf("expected workAreaWelcome, got %d", m.area)
@@ -63,14 +63,15 @@ func TestRootModelInit(t *testing.T) {
 	if len(m.modals) != 0 {
 		t.Errorf("expected 0 modals, got %d", len(m.modals))
 	}
-	if cmd := m.Init(); cmd != nil {
-		t.Error("Init() must return nil - tick must not start before workAreaVault")
+	// Init() now starts global tick (D-10) — returns non-nil cmd
+	if cmd := m.Init(); cmd == nil {
+		t.Error("Init() must return a tick cmd in PoC mode")
 	}
 }
 
 // TestModalStack_PushPop verifies modal stack grows/shrinks correctly.
 func TestModalStack_PushPop(t *testing.T) {
-	m := newRootModel(nil, "")
+	m := NewRootModel()
 
 	modal1 := &stubModal{}
 	modal2 := &stubModal{}
@@ -105,7 +106,7 @@ func TestModalStack_PushPop(t *testing.T) {
 // TestLiveWorkChildren_NilSafety verifies that nil concrete pointer fields do not appear
 // as typed-nil interface values in liveWorkChildren() (Go typed-nil trap prevention).
 func TestLiveWorkChildren_NilSafety(t *testing.T) {
-	m := newRootModel(nil, "")
+	m := NewRootModel()
 
 	// Nil out the only active child.
 	m.welcome = nil
@@ -132,7 +133,7 @@ func TestLiveWorkChildren_NilSafety(t *testing.T) {
 // TestStartEndFlow verifies startFlowMsg sets activeFlow and calls Init(),
 // and endFlowMsg clears activeFlow (D-08).
 func TestStartEndFlow(t *testing.T) {
-	m := newRootModel(nil, "")
+	m := NewRootModel()
 	flow := &stubFlow{}
 
 	if m.activeFlow != nil {
@@ -158,7 +159,7 @@ func TestStartEndFlow(t *testing.T) {
 // TestModalResultRouting verifies that modalResult messages route exclusively
 // to activeFlow and are silently dropped when no flow is active (D-03).
 func TestModalResultRouting(t *testing.T) {
-	m := newRootModel(nil, "")
+	m := NewRootModel()
 	flow := &stubFlow{}
 	result := stubResult{}
 
@@ -182,7 +183,7 @@ func TestModalResultRouting(t *testing.T) {
 // TestWindowSizeMsg_NoModalSetSize verifies that modals do NOT receive SetSize
 // when tea.WindowSizeMsg is processed (modals are position-unaware per D-02).
 func TestWindowSizeMsg_NoModalSetSize(t *testing.T) {
-	m := newRootModel(nil, "")
+	m := NewRootModel()
 	modal := &stubModal{}
 
 	// Push a modal onto the stack.
@@ -223,7 +224,7 @@ func makeKeyPress(key string) tea.KeyPressMsg {
 // TestStartFlow_ClearsOrphanModals verifies that startFlowMsg resets the modal stack,
 // preventing orphan modals from a previous flow leaking into the new one (D-08).
 func TestStartFlow_ClearsOrphanModals(t *testing.T) {
-	m := newRootModel(nil, "")
+	m := NewRootModel()
 	m.Update(pushModalMsg{modal: &stubModal{}})
 	m.Update(pushModalMsg{modal: &stubModal{}})
 	if len(m.modals) != 2 {
@@ -241,7 +242,7 @@ func TestStartFlow_ClearsOrphanModals(t *testing.T) {
 // TestBroadcast_ReachesModals verifies that domain messages sent through the
 // broadcast path are forwarded to active modals in addition to work-area children.
 func TestBroadcast_ReachesModals(t *testing.T) {
-	m := newRootModel(nil, "")
+	m := NewRootModel()
 	modal := &stubModal{}
 	m.Update(pushModalMsg{modal: modal})
 
@@ -255,7 +256,7 @@ func TestBroadcast_ReachesModals(t *testing.T) {
 // TestD09_ActionManagerBeforeModal verifies that a ScopeGlobal action registered
 // on ActionManager fires BEFORE the topmost modal receives the key (D-09 priority #1 > #2).
 func TestD09_ActionManagerBeforeModal(t *testing.T) {
-	m := newRootModel(nil, "")
+	m := NewRootModel()
 	modal := &stubModal{}
 	m.Update(pushModalMsg{modal: modal})
 
@@ -271,7 +272,7 @@ func TestD09_ActionManagerBeforeModal(t *testing.T) {
 // TestKeyPress_CallsHandleInput verifies that messages.HandleInput is called for
 // every KeyPressMsg, even when no registered action matches the key.
 func TestKeyPress_CallsHandleInput(t *testing.T) {
-	m := newRootModel(nil, "")
+	m := NewRootModel()
 	m.messages.Show(MsgHint, "dismiss me", 0, true) // clearOnInput=true
 
 	m.Update(makeKeyPress("z")) // unknown key, no action registered
