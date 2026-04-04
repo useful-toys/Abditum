@@ -49,20 +49,21 @@ type rootModel struct {
 // Compile-time assertion: rootModel satisfies tea.Model.
 var _ tea.Model = &rootModel{}
 
-// NewRootModel is the exported constructor for main.go.
-func NewRootModel(mgr *vault.Manager, initialPath string) *rootModel {
-	return newRootModel(mgr, initialPath)
+// NewRootModel is the exported constructor for main.go (PoC mode, D-04).
+func NewRootModel() *rootModel {
+	return newRootModel()
 }
 
-// newRootModel constructs a fully initialized rootModel.
-func newRootModel(mgr *vault.Manager, initialPath string) *rootModel {
+// newRootModel constructs a fully initialized rootModel in PoC mode.
+// mgr is nil, vaultPath is "", area is workAreaWelcome (D-02, D-03, D-05).
+func newRootModel() *rootModel {
 	actions := NewActionManager()
 	messages := NewMessageManager()
 
 	m := &rootModel{
 		area:         workAreaWelcome,
-		mgr:          mgr,
-		vaultPath:    initialPath,
+		mgr:          nil, // PoC mode — no vault (D-02)
+		vaultPath:    "",
 		actions:      actions,
 		messages:     messages,
 		lastActionAt: time.Now(),
@@ -70,48 +71,91 @@ func newRootModel(mgr *vault.Manager, initialPath string) *rootModel {
 
 	m.welcome = newWelcomeModel(actions)
 
-	// Register global actions on rootModel as owner (D-06).
+	// Register all 15 PoC actions on rootModel as owner (D-19 through D-23).
 	actions.Register(m,
-		Action{
-			Keys:        []string{"ctrl+q"},
-			Label:       "Sair",
-			Description: "Sair do Abditum",
-			Group:       1,
-			Scope:       ScopeLocal,
-			Priority:    10,
-			HideFromBar: false,
-			Enabled:     func() bool { return true },
+		// Group 1 "Mensagens" — visible in command bar
+		Action{Keys: []string{"f2"}, Label: "Dica uso", Description: "Mostrar MsgHint permanente",
+			Group: 1, Scope: ScopeLocal, Priority: 90, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { m.messages.Show(MsgHint, "Dica de uso permanente", 0, false); return nil }},
+		Action{Keys: []string{"f3"}, Label: "Dica campo", Description: "Mostrar MsgHint de campo",
+			Group: 1, Scope: ScopeLocal, Priority: 80, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { m.messages.Show(MsgHint, "Dica de campo permanente", 0, false); return nil }},
+		Action{Keys: []string{"f4"}, Label: "Info", Description: "Mostrar MsgInfo",
+			Group: 1, Scope: ScopeLocal, Priority: 70, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { m.messages.Show(MsgInfo, "Informação neutra", 0, false); return nil }},
+		Action{Keys: []string{"f5"}, Label: "Alerta", Description: "Mostrar MsgWarn",
+			Group: 1, Scope: ScopeLocal, Priority: 60, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { m.messages.Show(MsgWarn, "Alerta de atenção", 0, false); return nil }},
+		Action{Keys: []string{"f6"}, Label: "Erro", Description: "Mostrar MsgError",
+			Group: 1, Scope: ScopeLocal, Priority: 50, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { m.messages.Show(MsgError, "Erro de operação", 0, false); return nil }},
+		Action{Keys: []string{"f7"}, Label: "Ocupado", Description: "Mostrar MsgBusy com spinner",
+			Group: 1, Scope: ScopeLocal, Priority: 40, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { m.messages.Show(MsgBusy, "Processando...", 0, false); return nil }},
+		Action{Keys: []string{"f8"}, Label: "Sucesso", Description: "Mostrar MsgSuccess",
+			Group: 1, Scope: ScopeLocal, Priority: 30, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { m.messages.Show(MsgSuccess, "Operação concluída", 0, false); return nil }},
+		Action{Keys: []string{"f9"}, Label: "Limpar", Description: "Limpar barra de mensagens",
+			Group: 1, Scope: ScopeLocal, Priority: 20, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { m.messages.Clear(); return nil }},
+		Action{Keys: []string{"f10"}, Label: "Truncar", Description: "Testar truncação de mensagem longa",
+			Group: 1, Scope: ScopeLocal, Priority: 15, HideFromBar: false,
+			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd {
-				if m.mgr != nil && m.mgr.IsModified() {
-					return Confirm(DialogAlert, "Sair", "Ha alteracoes nao salvas. Deseja sair mesmo assim?", tea.Quit, nil)
-				}
-				return tea.Quit
-			},
-		},
-		Action{
-			Keys:        []string{"f1"},
-			Label:       "Ajuda",
-			Description: "Mostrar atalhos de teclado",
-			Group:       1,
-			Scope:       ScopeGlobal,
-			Priority:    0,
-			HideFromBar: false,
-			Enabled:     func() bool { return true },
+				m.messages.Show(MsgInfo, "Esta é uma mensagem muito longa com mais de cem caracteres para testar o sistema de truncação com reticências quando a mensagem excede a largura disponível da barra de mensagens do sistema.", 0, false)
+				return nil
+			}},
+
+		// Shift+Fx variants — HideFromBar: true (visible in Help modal only, TTL 5s)
+		Action{Keys: []string{"shift+f2"}, Label: "Dica uso 5s", Description: "MsgHint com TTL de 5s",
+			Group: 1, Scope: ScopeLocal, Priority: 89, HideFromBar: true,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { m.messages.Show(MsgHint, "Dica de uso (5s)", 5, false); return nil }},
+		Action{Keys: []string{"shift+f3"}, Label: "Dica campo 5s", Description: "MsgHint campo com TTL de 5s",
+			Group: 1, Scope: ScopeLocal, Priority: 79, HideFromBar: true,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { m.messages.Show(MsgHint, "Dica de campo (5s)", 5, false); return nil }},
+		Action{Keys: []string{"shift+f4"}, Label: "Info 5s", Description: "MsgInfo com TTL de 5s",
+			Group: 1, Scope: ScopeLocal, Priority: 69, HideFromBar: true,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { m.messages.Show(MsgInfo, "Informação (5s)", 5, false); return nil }},
+		Action{Keys: []string{"shift+f5"}, Label: "Alerta 5s", Description: "MsgWarn com TTL de 5s",
+			Group: 1, Scope: ScopeLocal, Priority: 59, HideFromBar: true,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { m.messages.Show(MsgWarn, "Alerta (5s)", 5, false); return nil }},
+		Action{Keys: []string{"shift+f6"}, Label: "Erro 5s", Description: "MsgError com TTL de 5s",
+			Group: 1, Scope: ScopeLocal, Priority: 49, HideFromBar: true,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { m.messages.Show(MsgError, "Erro (5s)", 5, false); return nil }},
+
+		// Navigation/Global actions
+		Action{Keys: []string{"ctrl+q"}, Label: "Sair", Description: "Sair do Abditum",
+			Group: 1, Scope: ScopeLocal, Priority: 10, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { return tea.Quit }},
+		Action{Keys: []string{"f1"}, Label: "Ajuda", Description: "Mostrar atalhos de teclado",
+			Group: 1, Scope: ScopeGlobal, Priority: 0, HideFromBar: false,
+			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd {
-				return func() tea.Msg {
-					return pushModalMsg{modal: newHelpModal(actions)}
-				}
-			},
-		},
+				return func() tea.Msg { return pushModalMsg{modal: newHelpModal(actions)} }
+			}},
 	)
-	actions.RegisterGroupLabel(1, "Global")
+	actions.RegisterGroupLabel(1, "Mensagens")
 
 	return m
 }
 
-// Init satisfies tea.Model. Returns nil - the global tick does NOT start here.
+// Init satisfies tea.Model. Always starts global tick for message TTL (D-10, D-11).
 func (m *rootModel) Init() tea.Cmd {
-	return nil
+	return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tickMsg(t) })
 }
 
 // Update satisfies tea.Model. Implements the D-09 dispatch order.
@@ -321,16 +365,8 @@ func (m *rootModel) renderFrame() string {
 		workH = 0
 	}
 
-	// Header: app name + vault path + dirty indicator
-	vaultName := "No vault open"
-	if m.vaultPath != "" {
-		vaultName = m.vaultPath
-	}
-	dirty := ""
-	if m.mgr != nil && m.mgr.IsModified() {
-		dirty = " ●"
-	}
-	header := headerStyle.Render("  Abditum  " + vaultName + dirty)
+	// Header: PoC mode — no vault, no dirty indicator (D-06, D-07)
+	header := headerStyle.Render("  Abditum")
 
 	// Message bar
 	msgBar := RenderMessageBar(m.messages.Current(), m.width)
