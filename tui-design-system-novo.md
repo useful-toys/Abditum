@@ -34,6 +34,15 @@ A composição dessas peças em telas, wireframes e fluxos concretos pertence ao
   - [Foco e Navegação](#foco-e-navegação)
   - [Mapa de Teclas](#mapa-de-teclas)
   - [Acessibilidade](#acessibilidade)
+- [Anti-padrões](#anti-padrões)
+  - [Segurança Visual](#segurança-visual)
+  - [Estado e Feedback](#estado-e-feedback-1)
+  - [Navegação e Teclado](#navegação-e-teclado)
+  - [Diálogos e Confirmações](#diálogos-e-confirmações)
+  - [Layout e Estrutura](#layout-e-estrutura)
+  - [Tipografia e Cor](#tipografia-e-cor)
+  - [Acessibilidade](#acessibilidade-1)
+  - [Ciclo de Vida do Cofre](#ciclo-de-vida-do-cofre)
 
 ---
 
@@ -665,3 +674,386 @@ Quando `$NO_COLOR` está definido (ou o terminal informa que não suporta cores)
 | Máscara `••••••••` | `text.secondary` | `text.primary` |
 | Borda de modal | `semantic.*` / `border.*` | Borda presente — tipo distinguido por símbolo no título |
 | Campo de input | `surface.input` | `surface.base` — cursor + label em **bold** preservam foco |
+
+---
+
+## Anti-padrões
+
+Anti-padrões documentam o que **não deve ser feito** na interface do Abditum. Cada item descreve um padrão de implementação incorreto, por que viola os princípios deste design system ou os requisitos do produto, e qual consequência concreta ele gera para o usuário.
+
+> **Regra de uso:** toda decisão de implementação que contradiga um item desta seção deve ser justificada explicitamente na especificação que a adota. Sem justificativa documentada, o anti-padrão prevalece como proibição.
+
+---
+
+### Segurança Visual
+
+#### Revelação Passiva de Campo Sensível *(Crítico)*
+**O que é:** campos sensíveis revelam seu valor por foco, hover ou Tab — sem ação explícita do usuário.
+**Por que é errado:** viola o princípio *Segurança como experiência*. Foco é navegação, não autorização. A revelação exige gesto intencional.
+**Consequência:** dado sensível exposto em ambiente público sem que o usuário perceba.
+
+---
+
+#### Mascaramento Simbólico Sem Substância *(Alto)*
+**O que é:** `••••••••` é exibido na lista ou detalhe, mas o campo permanece copiável por atalho sem nenhum feedback — a máscara é puramente visual.
+**Por que é errado:** cria falsa sensação de proteção. O risco real fica invisível ao próprio usuário.
+**Consequência:** dado sensível copiado e exposto em ambiente compartilhado sem percepção do usuário.
+
+---
+
+#### Paridade Visual Entre Campo Sensível e Campo Comum *(Alto)*
+**O que é:** campos sensíveis e campos comuns têm a mesma aparência no painel de detalhe — sem `◉`, sem máscara, sem distinção de estilo.
+**Por que é errado:** o usuário não sabe quais campos requerem atenção antes de revelar. A distinção visual é parte da proteção.
+**Consequência:** revelação acidental de campo sensível que o usuário não sabia ser sensível; ou proteção ignorada por ser imperceptível.
+
+---
+
+#### Countdown Invisível da Clipboard *(Médio)*
+**O que é:** ao copiar um campo, a mensagem de sucesso aparece e desaparece, mas não há indicação de quanto tempo resta até a limpeza automática.
+**Por que é errado:** o requisito define TTL configurável para clipboard. Sem indicação, o usuário não sabe se o dado ainda está disponível — ou se já foi limpo.
+**Consequência:** dado sensível persiste na clipboard além do esperado; ou o usuário tenta colar em outra aplicação e estranha o comportamento sem entender o motivo.
+
+---
+
+#### Exportação Sem Cerimônia *(Crítico)*
+**O que é:** a operação de exportar — que produz um arquivo **não criptografado** com todo o conteúdo do cofre — tem o mesmo tratamento visual de qualquer ação rotineira.
+**Por que é errado:** o requisito exige aviso explícito sobre riscos. O design system tem severidade `destrutivo` precisamente para este caso — irreversível em termos de exposição de dados.
+**Consequência:** usuário exporta inadvertidamente para local inseguro sem compreender as implicações.
+
+---
+
+#### Dirty State Apenas no Cabeçalho *(Crítico)*
+**O que é:** o indicador de alterações não salvas (`•`) aparece somente no cabeçalho global, sem os prefixos `✦ ✎ ✗` por item na árvore.
+**Por que é errado:** viola o princípio *Estado sempre visível*. O usuário sabe que *algo* mudou, mas não *o quê*. Antes de salvar um cofre com dados sensíveis, ele deve poder auditar o que está prestes a persistir.
+**Consequência:** salvamento de exclusão acidental não percebida; ou perda de modificação por falta de rastreabilidade visual por item.
+
+---
+
+### Estado e Feedback
+
+#### Silêncio Após Operação Crítica *(Alto)*
+**O que é:** salvar, bloquear ou exportar o cofre não produz nenhuma mensagem de confirmação. A operação "simplesmente acontece".
+**Por que é errado:** viola o princípio *Feedback imediato*. Para um cofre de senhas, ausência de feedback após salvar é indistinguível de falha silenciosa.
+**Consequência:** usuário fecha o terminal acreditando que salvou quando não salvou; ou repete a operação desnecessariamente por insegurança.
+
+---
+
+#### Spinner Sem Resolução *(Médio)*
+**O que é:** a mensagem `◐ Carregando…` é exibida durante uma operação mas nunca é substituída por `✓ Sucesso` ou `✕ Erro` ao término.
+**Por que é errado:** o design system define que `MsgBusy` é sempre substituído explicitamente ao terminar. Spinner sem resolução é ambiguidade de estado — o usuário não sabe se pode interagir.
+**Consequência:** interação prematura antes da operação concluir; ou espera indefinida por algo que já terminou.
+
+---
+
+#### Fila de Mensagens *(Médio)*
+**O que é:** múltiplas mensagens são enfileiradas e aparecem em sequência na barra de mensagens, ou aparecem sobrepostas.
+**Por que é errado:** o design system é explícito: *"uma mensagem por vez — nova mensagem substitui a anterior imediatamente. Não há fila nem pilha."* Fila cria ordem temporal que o usuário não está preparado para rastrear.
+**Consequência:** mensagens de contextos diferentes sem correspondência clara com as ações que as geraram.
+
+---
+
+#### Contador de Segredos Defasado *(Médio)*
+**O que é:** a contagem de segredos de cada pasta na árvore não atualiza em tempo real — o número só muda ao salvar ou recarregar.
+**Por que é errado:** o requisito especifica que a contagem deve refletir segredos ativos (não marcados para exclusão) em tempo real de sessão. Contador defasado mente sobre o estado atual.
+**Consequência:** decisões tomadas com base em dados incorretos; perda de confiança na interface.
+
+---
+
+#### Modo Ativo Sem Indicador *(Alto)*
+**O que é:** a aplicação entra em modo de busca, edição ou reordenação sem que nenhum indicador visual persista — barra de comandos e cabeçalho não mudam.
+**Por que é errado:** em TUI, modo ativo é contexto invisível por natureza. Sem indicador persistente, o usuário digita no modo errado.
+**Consequência:** dados sobrescritos acidentalmente; ações disparadas sem intenção; desorientação em cofres com muitos itens.
+
+---
+
+### Navegação e Teclado
+
+#### Enter Polissêmico Sem Distinção de Modo *(Médio)*
+**O que é:** `Enter` sobre uma pasta expande a pasta; sobre um segredo abre o modo de edição — mas o cursor não diferencia visualmente "navegação" de "edição prestes a iniciar".
+**Por que é errado:** as consequências diferem radicalmente: expandir pasta é reversível com uma tecla; entrar em modo de edição pode acionar mudanças. A distinção deve ser visual, não apenas semântica.
+**Consequência:** abertura acidental do modo de edição ao tentar apenas visualizar; modificação de dados sem intenção.
+
+---
+
+#### Cursor Saltando ao Topo Após Operação *(Médio)*
+**O que é:** após excluir, mover ou reordenar um item, o cursor retorna ao topo da lista independentemente de onde estava.
+**Por que é errado:** viola o princípio *Estabilidade espacial*. Operações devem preservar o contexto de posição ou mover o cursor ao item logicamente mais próximo.
+**Consequência:** re-navegação obrigatória após cada operação; experiência lenta e frustrante em cofres com muitas pastas e segredos.
+
+---
+
+#### Setas com Semântica Dupla Imperceptível *(Baixo)*
+**O que é:** `←` e `→` expandem/recolhem pastas na árvore e também navegam entre botões em diálogos — sem indicador visual do comportamento ativo.
+**Por que é errado:** o design system reconhece a ambiguidade contextual das setas. Sem indicador de modo (barra de comandos diferenciada, indicador de foco), o usuário não sabe qual comportamento esperar.
+**Consequência:** tentativa de expandir pasta fecha um diálogo acidentalmente; ou tentativa de navegar entre botões dispara recolhimento de pasta ao fundo.
+
+---
+
+### Diálogos e Confirmações
+
+#### Fadiga de Confirmação *(Médio)*
+**O que é:** toda ação — inclusive operações benignas como renomear um campo ou favoritar um segredo — exibe um diálogo de confirmação com `Enter / Esc`.
+**Por que é errado:** quando toda ação pede confirmação, o usuário aprende a apertar `Enter` reflexivamente. A confirmação que deveria proteger ações graves (exportar, excluir pasta com n segredos) fica com o mesmo peso visual de trocar um nome.
+**Consequência:** confirmação de destruição de dados pelo mesmo reflexo condicionado usado para confirmar renomeação.
+
+---
+
+#### Uniformidade de Risco Visual *(Alto)*
+**O que é:** o diálogo de "Excluir pasta com 47 segredos" e o de "Renomear pasta" têm a mesma aparência — mesma borda, mesmo símbolo (ou ausência), mesma cor da ação default.
+**Por que é errado:** o design system define explicitamente o modelo Intenção × Severidade com tratamento visual diferenciado. Destrutivo usa `semantic.warning` de borda e `semantic.error` na tecla default. Rotineiro usa `border.focused` neutro.
+**Consequência:** usuário não calibra a gravidade da ação a partir de pistas visuais; todas parecem igualmente reversíveis.
+
+---
+
+#### Pilha de Modais Sem Indicador de Profundidade *(Médio)*
+**O que é:** uma operação abre um diálogo que ao ser confirmado abre outro, que por sua vez abre um terceiro — sem indicação de profundidade na pilha nem de como encerrar todo o fluxo de uma vez.
+**Por que é errado:** `Esc` fecha apenas o elemento do topo. Com pilha de 3 níveis, o usuário precisa de 3 `Esc` sem saber quantos faltam.
+**Consequência:** desorientação; fechamento acidental do contexto base ao pressionar `Esc` além da conta.
+
+---
+
+#### Ação Default Ausente Quando Inativa *(Médio)*
+**O que é:** quando as condições do diálogo não estão satisfeitas (ex: campo de senha vazio), a ação default desaparece completamente da borda inferior.
+**Por que é errado:** o design system especifica `text.disabled` sem bold — a ação deve estar presente mas inativa. Remover o elemento retira a âncora visual que orienta o usuário sobre qual ação estará disponível quando as condições forem satisfeitas.
+**Consequência:** o usuário não sabe se falta preencher algo, se preencheu errado, ou se a ação simplesmente não existe naquele contexto.
+
+---
+
+#### Confirmação Assimétrica ao Sair *(Crítico)*
+**O que é:** "Salvar e Sair" pede confirmação dupla, mas "Descartar e Sair" executa com um único `Enter` — a ação mais destrutiva tem menos fricção que a ação segura.
+**Por que é errado:** fricção deve ser proporcional ao risco. Descartar é irreversível; salvar é a ação conservadora. Hierarquia de confirmação invertida.
+**Consequência:** usuário que quer salvar passa por mais passos que o usuário que vai descartar — incentivo perverso que aumenta perdas acidentais de dados.
+
+---
+
+### Layout e Estrutura
+
+#### Layout Saltitante por Conteúdo Variável *(Médio)*
+**O que é:** ao selecionar um segredo com 2 campos, depois um com 8 campos, o painel de detalhe reposiciona elementos fixos (título do segredo, barra de comandos) para acomodar os campos extras.
+**Por que é errado:** viola o princípio *Estabilidade espacial*. Conteúdo variável cresce dentro da área de trabalho — não empurra as zonas fixas de layout.
+**Consequência:** o usuário perde ancoragem após cada seleção; precisa reaprender a posição dos elementos a cada troca de segredo.
+
+---
+
+#### Over-boxing *(Baixo)*
+**O que é:** cada seção da interface (árvore, detalhe, campos, observação) é envolta em caixa própria com borda `╭╮╰╯` — a tela vira um grid de caixas dentro de caixas.
+**Por que é errado:** o design system é explícito: *"bordas aparecem apenas em modais e separadores. Painéis são organizados por espaço, alinhamento e hierarquia tipográfica."* Over-boxing transplanta layout CSS para o terminal e falha em ambos os meios.
+**Consequência:** ruído visual extremo; o usuário não distingue bordas estruturais (modais) de bordas decorativas; em terminais com suporte parcial, metade das bordas renderiza incorretamente.
+
+---
+
+#### Informação Densa Sem Hierarquia *(Baixo)*
+**O que é:** no painel de detalhe, nome do segredo, labels de campos, valores e observação aparecem com o mesmo peso tipográfico e espaçamento.
+**Por que é errado:** o design system define bold para títulos, `text.secondary` para labels, `◉` para campos reveláveis. Sem hierarquia, o usuário varre o painel inteiro para encontrar o campo que quer.
+**Consequência:** tempo elevado para localizar e copiar o campo desejado; interface percebida como lista plana, não formulário estruturado.
+
+---
+
+#### Truncamento Silencioso *(Médio)*
+**O que é:** nomes longos de segredo, pasta ou campo são cortados na borda da coluna disponível sem o caractere `…`.
+**Por que é errado:** o design system define `…` como pictograma obrigatório de truncamento. Sem ele, o usuário não sabe se leu o nome completo ou se há conteúdo além do visível.
+**Consequência:** confusão de identidade entre credenciais com nomes similares (ex: "Gmail Pessoal" vs "Gmail Pessoal 2"); cópia da senha errada.
+
+---
+
+#### Pasta Virtual Indistinguível de Pasta Real *(Médio)*
+**O que é:** a pasta virtual "Favoritos" aparece na árvore com o mesmo visual (`▶`) de pastas regulares — mesmo símbolo, mesmo estilo, mesmas ações na barra de comandos.
+**Por que é errado:** o design system prevê `text.secondary + italic` para pastas virtuais/leitura. O requisito é explícito: pasta virtual é somente leitura. A restrição deve ser comunicada antes da tentativa de ação.
+**Consequência:** usuário tenta criar segredo em Favoritos e recebe erro sem nenhuma pista visual prévia de que a operação era impossível.
+
+---
+
+#### Caractere de Largura Dupla Sem Contabilização de Colunas *(Alto)*
+**O que é:** símbolos de largura ambígua ou caracteres que o terminal renderiza em 2 colunas (ex: alguns CJK, certos blocos Unicode) são usados sem compensar a coluna extra — o restante da linha fica deslocado para a direita em 1 coluna.
+**Por que é errado:** o design system exige símbolos BMP de largura previsível de 1 coluna exatamente por isso. A largura de um caractere Unicode depende do locale, da fonte e do emulador de terminal — não da especificação Unicode. Código que assume 1 byte = 1 coluna ou 1 rune = 1 coluna produz desalinhamento silencioso, invisível em um terminal e quebrado em outro.
+**Consequência:** bordas de modais não fecham, colunas de tabelas ficam tortas, separadores `│` aparecem fora de posição — tudo de forma irreproducível entre ambientes de desenvolvimento e produção.
+
+---
+
+#### Layout Não Recalculado Após Redimensionamento *(Crítico)*
+**O que é:** ao redimensionar o terminal (janela menor ou maior), o conteúdo continua renderizado com as dimensões anteriores — textos transbordam para fora da área visível, separadores ficam curtos ou longos demais, modais saem da tela.
+**Por que é errado:** o terminal pode ser redimensionado a qualquer momento. O evento `WindowSizeMsg` do Bubble Tea deve propagar as novas dimensões para todos os componentes que calculam largura ou altura. Qualquer componente que cacheia dimensões sem reagir ao resize produz layout quebrado.
+**Consequência:** após redimensionar, a interface fica inutilizável até reiniciar a aplicação; bordas de modais ultrapassam os limites do terminal; conteúdo da árvore sobrescreve o painel de detalhe.
+
+---
+
+#### String Mais Longa que o Espaço Disponível Sem Truncamento *(Alto)*
+**O que é:** um nome de segredo, valor de campo, mensagem de erro ou título de diálogo com comprimento superior ao espaço disponível é renderizado sem truncamento — o texto simplesmente transborda para a próxima linha ou para fora da área do componente.
+**Por que é errado:** o design system define `…` como mecanismo obrigatório de truncamento para qualquer texto que exceda o espaço disponível. Transbordo de texto quebra o layout de grade fixa do terminal: uma linha que "vaza" desloca todas as linhas seguintes e pode corromper a estrutura visual inteira do componente.
+**Consequência:** nome de segredo muito longo empurra o conector `<╡` para fora da coluna do separador; título de diálogo longo quebra a borda superior; valor de campo longo sobrescreve o label do campo abaixo.
+
+---
+
+#### Conteúdo Vertical Sem Scroll Quando Excede a Área *(Alto)*
+**O que é:** um painel, diálogo ou seção com conteúdo que excede a altura disponível simplesmente corta o conteúdo no limite inferior — sem indicador de scroll, sem setas `↑↓`, sem thumb `■`.
+**Por que é errado:** o design system define o padrão de scroll para exatamente este caso: indicadores na borda direita comunicam que há conteúdo além da viewport. Cortar silenciosamente é invisível — o usuário não sabe que existe mais conteúdo abaixo.
+**Consequência:** campos do final de um segredo com muitos campos ficam inacessíveis; parte inferior de um diálogo longo — incluindo as ações de confirmação — desaparece; o usuário não consegue confirmar nem cancelar a operação.
+
+---
+
+#### Valor de Campo Mais Longo que a Área do Campo *(Médio)*
+**O que é:** o valor de um campo de texto (especialmente campos sensíveis com senhas longas ou chaves de API) é exibido sem adaptação ao espaço disponível — sem truncamento, sem scroll horizontal, sem quebra de linha controlada.
+**Por que é errado:** campos de detalhe têm largura fixa ditada pelo painel. Um valor mais longo que a área do campo transborda para fora dos limites do componente ou quebra a grade de alinhamento do restante do painel.
+**Consequência:** senha longa sobrescreve o label do campo ao lado; chave de API com 128 caracteres empurra o separador `│` para fora da posição; o usuário não consegue ver nem copiar o valor completo sem revelar e fazer scroll.
+
+---
+
+#### Sangramento de Estilo ANSI *(Alto)*
+**O que é:** uma sequência de estilo ANSI (cor, bold, dim) abre mas não é fechada com reset explícito — o estilo vaza para o conteúdo seguinte, colorindo ou engrossando texto que não deveria receber aquele atributo.
+**Por que é errado:** no terminal, o estado de estilo é global e persistente até ser explicitamente resetado. Diferente de CSS (escopo por elemento), uma tag ANSI sem fechamento afeta tudo que vier depois — incluindo outros componentes, a barra de comandos e até o prompt do shell após a aplicação encerrar.
+**Consequência:** item selecionado em `accent.primary` contamina o texto do painel de detalhe; erro em `semantic.error` deixa toda a barra de comandos vermelha; ao sair, o prompt do shell fica colorido com o último estilo aberto da TUI.
+
+---
+
+#### Cálculo de Largura com Sequências ANSI Incluídas *(Alto)*
+**O que é:** ao calcular quantas colunas um texto ocupa (para truncar, alinhar ou construir bordas), o código usa o comprimento da string Go (`len(s)`) em vez da largura visual — que exclui os bytes das sequências de escape ANSI.
+**Por que é errado:** uma string estilizada como `"\x1b[1mGmail\x1b[0m"` tem `len()` = 15 bytes, mas ocupa apenas 5 colunas visíveis. Usar `len()` produz alinhamento errado, truncamento precoce e bordas que parecem corretas no código mas ficam deslocadas na tela.
+**Consequência:** o título de um modal com texto em bold fica desalinhado na borda superior; itens da árvore com indicadores coloridos (`✦`, `✎`) têm indentação incorreta; a barra de comandos parece ter espaço vazio sobrando ou faltando.
+
+---
+
+#### Layout Colapsando em Estado Vazio *(Médio)*
+**O que é:** quando um painel fica sem conteúdo (cofre vazio, pasta vazia, resultado de busca sem correspondências), o componente colapsa para altura zero — fazendo o outro painel ou elemento adjacente expandir inesperadamente ou o separador `│` desaparecer.
+**Por que é errado:** o painel deve manter sua proporção e estrutura independentemente do conteúdo. Estado vazio é um estado válido que precisa de altura mínima reservada e de uma mensagem de estado vazio — não de colapso silencioso de layout.
+**Consequência:** ao esvaziar uma pasta, o painel esquerdo some e o painel de detalhe ocupa 100% da largura; o separador desaparece; ao criar um item, o layout salta de volta para a proporção 35/65 — violando estabilidade espacial.
+
+---
+
+#### Deslocamento de Conteúdo por Indicador Aparecendo ou Sumindo *(Médio)*
+**O que é:** ao adicionar ou remover um indicador de estado junto ao nome de um item (ex: `✦` ao criar, `✎` ao editar, `★` ao favoritar), o nome do item se desloca horizontalmente — todos os outros itens sem indicador ficam numa coluna, os com indicador ficam numa coluna diferente.
+**Por que é errado:** indica que o indicador não ocupa uma coluna reservada fixa. O layout correto reserva sempre 1 coluna para o indicador — exibindo espaço em branco quando não há indicador — de modo que o nome do item começa sempre na mesma coluna.
+**Consequência:** ao favoritar um segredo, o nome "pula" 1 coluna para a direita; ao salvar e os indicadores `✦ ✎` desaparecem, todos os nomes "pulam" de volta — a árvore inteira trepida visualmente.
+
+---
+
+#### Largura de Spinner Variante Entre Frames *(Baixo)*
+**O que é:** os frames do spinner `◐ ◓ ◑ ◒` têm larguras de renderização diferentes entre si em alguns terminais — causando leve deslocamento do texto adjacente a cada tick de animação.
+**Por que é errado:** todos os quatro caracteres do inventário ocupam 1 coluna no BMP, mas terminais com fontes que tratam Geometric Shapes como "largura ambígua" podem renderizá-los em 2 colunas dependendo do locale. Se houver divergência entre frames, a mensagem adjacente ao spinner oscila 1 coluna por segundo.
+**Consequência:** a mensagem `◐ Abrindo cofre…` pisca horizontalmente a cada frame do spinner; em terminais afetados, a mensagem parece trêmula mesmo sem nenhuma atualização de conteúdo.
+
+---
+
+#### Shift de Layout por Contador com Largura Variável *(Baixo)*
+**O que é:** contagens numéricas exibidas na árvore (ex: número de segredos por pasta: `12`, `9`, `124`) não têm largura reservada fixada — quando o número muda de 1 para 2 dígitos ou de 2 para 3, o conteúdo adjacente se desloca.
+**Por que é errado:** texto que muda de largura dinamicamente quebra o alinhamento de tudo que está à direita ou que usa a mesma coluna como referência. A largura máxima previsível deve ser reservada (ou o valor deve ser right-aligned num campo de largura fixa).
+**Consequência:** ao salvar e um item ser removido, a contagem da pasta muda de `10` para `9` e o nome da pasta "pula" 1 coluna para a esquerda; ao importar vários segredos, as contagens saltam de 2 para 3 dígitos e toda a coluna de nomes se move.
+
+---
+
+#### Artefato Visual de Render Anterior *(Alto)*
+**O que é:** ao fechar um modal, trocar de aba ou atualizar o conteúdo de um painel, parte do frame anterior permanece visível — caracteres de bordas, texto ou cores do estado anterior não foram sobrescritos pelo novo frame.
+**Por que é errado:** o Bubble Tea renderiza por diff — apenas o que mudou é reescrito. Se o componente anterior ocupava mais linhas ou colunas que o novo, as células excedentes ficam com o conteúdo antigo. O componente precisa preencher explicitamente todo o espaço que reserva, incluindo linhas em branco ao final.
+**Consequência:** ao fechar um diálogo de confirmação alto, os caracteres da borda inferior do diálogo ficam "flutuando" sobre o conteúdo de fundo; ao navegar de um segredo com 8 campos para um com 2 campos, os 6 campos extras do item anterior continuam visíveis.
+
+---
+
+#### Linha Final do Terminal Causando Scroll Involuntário *(Médio)*
+**O que é:** um componente escreve na última coluna da última linha do terminal, fazendo o terminal interpretar isso como overflow e rolar o conteúdo uma linha para cima — deslocando toda a interface.
+**Por que é errado:** em muitos emuladores de terminal, escrever na célula exata `(linhas, colunas)` — o canto inferior direito — aciona um scroll automático independente da intenção da aplicação. A barra de comandos, que ocupa a última linha, deve evitar escrever na última coluna.
+**Consequência:** a barra de comandos "cai" uma linha, criando uma linha vazia no topo da interface; cada interação que re-renderiza a barra agrava o problema, empurrando o cabeçalho gradualmente para fora da tela.
+
+---
+
+#### Cursor Posicionado em Coluna Incorreta Durante Edição *(Alto)*
+**O que é:** o cursor visual (bloco ou underline piscante) aparece numa coluna diferente de onde o próximo caractere será inserido — geralmente por causa de discrepância entre a largura em bytes usada para calcular a posição e a largura em colunas visuais do conteúdo já digitado.
+**Por que é errado:** o terminal posiciona o cursor por colunas físicas. Se o código calcula `offset = len(input[:cursor])` em bytes em vez de somar as larguras de rune de cada caractere (especialmente com caracteres multibyte como acentos, `ü`, `ñ`, `ç` ou emojis), o cursor fica desalinhado em relação ao texto exibido — confundindo e dificultando a edição.
+**Consequência:** ao editar uma senha com `ç` ou `á`, o cursor "pula" para a posição errada; o usuário vê o cursor sobre o caractere X mas ao digitar o novo caractere aparece na posição X+1 ou X-1; backspace apaga o caractere errado.
+
+---
+
+#### Campo de Edição Sem Scroll Horizontal *(Alto)*
+**O que é:** ao editar um campo cujo valor é mais longo que a largura visual do campo, o texto simplesmente é truncado ou overflow — sem que o conteúdo role horizontalmente para manter o cursor sempre visível.
+**Por que é errado:** o estado editável de um campo não é o mesmo que o estado de exibição. Um campo de exibição pode truncar com `…`, mas um campo em modo de edição deve exibir sempre a janela do texto centrada no cursor. Sem scroll, o usuário perde o contexto do que está digitando assim que o valor ultrapassa a largura do campo.
+**Consequência:** ao editar uma URL de 80 caracteres num campo de 30 colunas, o texto após a coluna 30 desaparece; o usuário não consegue ver o que digitou nem confirmar se está correto; mover o cursor com `←`/`→` navega "no escuro" enquanto o conteúdo da tela fica estático.
+
+---
+
+### Tipografia e Cor
+
+#### Bold Inflacionado *(Baixo)*
+**O que é:** bold é aplicado a títulos de seção, labels de campos, nomes de pastas, nomes de segredos, ações na barra e texto de atalho — tudo em bold.
+**Por que é errado:** bold é o único destaque tipográfico universalmente confiável — sua força vem da raridade. Se tudo é bold, nada é bold.
+**Consequência:** hierarquia tipográfica colapsa; a interface parece gritante e dificulta a leitura de escaneamento rápido.
+
+---
+
+#### Token Semântico com Uso Decorativo *(Baixo)*
+**O que é:** `semantic.success` (verde) é usado para destacar o nome do segredo favorito; `semantic.warning` é usado como cor de dica por "parecer uma atenção".
+**Por que é errado:** o design system é explícito: *"`semantic.*` existe para comunicar estado operacional, nunca para ornamentar a interface."* Uso decorativo dilui o significado dos tokens.
+**Consequência:** usuário para de confiar nos indicadores semânticos; ignora mensagens de erro genuínas por acreditar que são "decoração".
+
+---
+
+#### Cor Hardcoded *(Alto)*
+**O que é:** o código usa literais hex diretamente (ex: `#7aa2f7`) em vez dos tokens semânticos (ex: `accent.primary`, `border.focused`).
+**Por que é errado:** a abstração de tokens é a base do sistema de temas. Hardcode significa que o segundo tema continua exibindo as cores do primeiro.
+**Consequência:** troca de tema requer alteração de código; o tema Cyberpunk nunca funciona corretamente onde há hardcode.
+
+---
+
+#### Italic Sem Reforço de Cor *(Baixo)*
+**O que é:** hints e textos de dica aparecem *apenas* em italic — sem a cor `text.secondary` exigida como complemento pelo design system.
+**Por que é errado:** italic tem suporte parcial. Em terminais sem suporte (frequente no Windows/ConHost), o texto de dica fica visualmente idêntico ao conteúdo primary. A combinação `italic + text.secondary` é obrigatória para garantir legibilidade cruzada.
+**Consequência:** em terminais sem suporte a italic, hints são indistinguíveis do conteúdo real — o usuário não sabe o que é dado e o que é orientação.
+
+---
+
+### Acessibilidade
+
+#### Estado Comunicado Apenas por Cor *(Alto)*
+**O que é:** estados como "modificado", "criado" e "excluído" na árvore são comunicados apenas por cor — os símbolos `✦ ✎ ✗` não são usados.
+**Por que é errado:** viola o princípio fundamental de acessibilidade: *"nenhum estado crítico pode depender exclusivamente de cor."* Toda a seção de fallback NO_COLOR da matriz de acessibilidade existe para garantir este comportamento.
+**Consequência:** em ambientes CI, terminais monocromáticos ou com `$NO_COLOR`, toda informação de estado de sessão desaparece.
+
+---
+
+#### Área de Clique de Um Caractere *(Baixo)*
+**O que é:** o conector `<╡` — indicador do item selecionado na árvore — é o único alvo clicável para "selecionar e ver detalhe", com 2 colunas de largura em posição variável.
+**Por que é errado:** o design system prevê mouse como canal secundário completo. Alvo de 2 colunas em posição dinâmica exige precisão impossível para uso fluido. O clique deve funcionar na linha inteira.
+**Consequência:** usuário com mouse não consegue usar a aplicação de forma eficiente; cada clique requer precisão cirúrgica.
+
+---
+
+#### Mensagem de Erro Técnica Exposta ao Usuário *(Médio)*
+**O que é:** erros de sistema (arquivo corrompido, falha de I/O) exibem a mensagem interna do runtime, como `"unexpected end of JSON at offset 1247"` ou o caminho completo do arquivo.
+**Por que é errado:** viola o requisito de privacidade (*"ausência total de logs contendo caminhos de arquivos"*) e o princípio de que mensagens de erro são para o usuário, não para o sistema.
+**Consequência:** exposição do caminho do arquivo (localização do cofre); usuário sem ação clara diante de mensagem técnica incompreensível.
+
+---
+
+### Ciclo de Vida do Cofre
+
+#### Auto-save Silencioso *(Alto)*
+**O que é:** a aplicação salva automaticamente após certas operações (ex: alteração de senha mestra) sem comunicar claramente que isso ocorreu nem distinguir visualmente do salvamento manual.
+**Por que é errado:** a alteração de senha mestra é a *única* exceção explícita ao princípio *Controle total do usuário* — e por isso exige comunicação extra-clara, não mais silêncio.
+**Consequência:** usuário tenta desfazer a alteração de senha achando que é reversível como tudo mais no cofre — e descobre que não é.
+
+---
+
+#### Conflito de Arquivo Ignorado ou Minimizado *(Crítico)*
+**O que é:** ao detectar que o arquivo foi modificado externamente, a aplicação salva por cima sem aviso — ou exibe um diálogo tão breve que o usuário confirma reflexivamente.
+**Por que é errado:** o requisito exige escolha explícita entre Sobrescrever / Salvar como novo / Cancelar. Trata-se de diálogo de severidade destrutiva — perda de dados de outra sessão é irreversível.
+**Consequência:** dados salvos por outra instância ou backup restaurado destruídos silenciosamente.
+
+---
+
+#### Re-autenticação Durante a Sessão *(Alto)*
+**O que é:** a aplicação solicita a senha mestra novamente para operações de salvamento ou exportação durante uma sessão já autenticada.
+**Por que é errado:** o requisito é explícito: *"a senha é fornecida uma única vez ao abrir o cofre. Não há re-solicitação de senha para salvamento ou descarte."* Re-autenticação frequente é *security theater* — a senha já está em memória — e treina o usuário a digitar sua senha mestra em contextos inesperados.
+**Consequência:** fricção sem ganho de segurança; usuário condicionado a digitar a senha sem questionar o contexto (vetor de phishing de UI).
+
+---
+
+#### Exclusão Que Desaparece Imediatamente *(Crítico)*
+**O que é:** itens marcados para exclusão somem da lista imediatamente — sem `✗` + strikethrough — como se já tivessem sido deletados permanentemente.
+**Por que é errado:** o requisito define exclusão como *marcação reversível até o salvamento*. O design system define tratamento visual específico: `semantic.warning + ✗ + strikethrough`. Sumir com o item remove a reversibilidade de fato, mesmo que tecnicamente ela ainda exista.
+**Consequência:** usuário crê ter deletado permanentemente; não tenta desfazer; perde dados que poderiam ser recuperados.
+
+---
+
+#### Importação Sem Prévia de Impacto *(Crítico)*
+**O que é:** ao importar um arquivo de intercâmbio, a aplicação executa a mesclagem diretamente — sobrescrevendo segredos conflitantes e criando pastas — sem mostrar ao usuário o que será alterado antes da confirmação.
+**Por que é errado:** a política de importação (mescla de pastas, sobrescrita de segredos e modelos conflitantes) é agressiva e irreversível no arquivo. O impacto precisa ser comunicado *antes* da confirmação, não descoberto *depois*.
+**Consequência:** perda de versões de segredos que o usuário não pretendia sobrescrever; auditoria manual do cofre inteiro necessária para entender o que mudou.
+
+
