@@ -206,11 +206,11 @@ Plans:
 **Goal:** Fix residual bugs in message bar rendering (root.go not using RenderMessageBar, uncolored text, no truncation) and help modal (F1 stacking, ESC not closing, missing bottom action bar).
 **Requirements**: TBD
 **Depends on:** Phase 5.2
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 05.2.2-01-PLAN.md — messages.go: semantic text coloring + truncation; root.go: wire RenderMessageBar()
-- [ ] 05.2.2-02-PLAN.md — root.go: fix F1/ESC dispatch order; help.go: add bottom action bar
+- [x] 05.2.2-02-PLAN.md — root.go: fix F1/ESC dispatch order; help.go: add bottom action bar
 
 ### Phase 05.2.1: tui-scaffold-message-arch-fixes (INSERTED)
 
