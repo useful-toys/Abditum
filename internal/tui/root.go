@@ -1,4 +1,4 @@
-﻿package tui
+package tui
 
 import (
 	"strings"
@@ -222,12 +222,24 @@ func (m *rootModel) broadcast(msg tea.Msg) []tea.Cmd {
 // Uses explicit nil checks on concrete pointer fields to avoid typed-nil trap.
 func (m *rootModel) liveWorkChildren() []childModel {
 	var live []childModel
-	if m.welcome != nil        { live = append(live, m.welcome) }
-	if m.vaultTree != nil      { live = append(live, m.vaultTree) }
-	if m.secretDetail != nil   { live = append(live, m.secretDetail) }
-	if m.templateList != nil   { live = append(live, m.templateList) }
-	if m.templateDetail != nil { live = append(live, m.templateDetail) }
-	if m.settings != nil       { live = append(live, m.settings) }
+	if m.welcome != nil {
+		live = append(live, m.welcome)
+	}
+	if m.vaultTree != nil {
+		live = append(live, m.vaultTree)
+	}
+	if m.secretDetail != nil {
+		live = append(live, m.secretDetail)
+	}
+	if m.templateList != nil {
+		live = append(live, m.templateList)
+	}
+	if m.templateDetail != nil {
+		live = append(live, m.templateDetail)
+	}
+	if m.settings != nil {
+		live = append(live, m.settings)
+	}
 	return live
 }
 
@@ -235,13 +247,21 @@ func (m *rootModel) liveWorkChildren() []childModel {
 func (m *rootModel) activeChild() childModel {
 	switch m.area {
 	case workAreaWelcome:
-		if m.welcome != nil { return m.welcome }
+		if m.welcome != nil {
+			return m.welcome
+		}
 	case workAreaVault:
-		if m.vaultTree != nil { return m.vaultTree }
+		if m.vaultTree != nil {
+			return m.vaultTree
+		}
 	case workAreaTemplates:
-		if m.templateList != nil { return m.templateList }
+		if m.templateList != nil {
+			return m.templateList
+		}
 	case workAreaSettings:
-		if m.settings != nil { return m.settings }
+		if m.settings != nil {
+			return m.settings
+		}
 	}
 	return nil
 }
@@ -283,7 +303,7 @@ func (m *rootModel) renderFrame() string {
 	}
 
 	headerStyle := lipgloss.NewStyle().Width(m.width).Background(lipgloss.Color("236")).Foreground(lipgloss.Color("255"))
-	msgBarStyle := lipgloss.NewStyle().Width(m.width).Foreground(lipgloss.Color("245"))
+
 	cmdBarStyle := lipgloss.NewStyle().Width(m.width).Background(lipgloss.Color("236"))
 	workAreaStyle := lipgloss.NewStyle().Width(m.width)
 
@@ -307,11 +327,7 @@ func (m *rootModel) renderFrame() string {
 	header := headerStyle.Render("  Abditum  " + vaultName + dirty)
 
 	// Message bar
-	var msgText string
-	if msg := m.messages.Current(); msg != nil {
-		msgText = msg.Text
-	}
-	msgBar := msgBarStyle.Render("  " + msgText)
+	msgBar := RenderMessageBar(m.messages.Current(), m.width)
 
 	// Work area: delegate to active child
 	var workContent string
