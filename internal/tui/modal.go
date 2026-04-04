@@ -97,5 +97,8 @@ func (m *modalModel) View() string {
 // Shortcuts returns nil - basic dialog modals show no command bar shortcuts.
 func (m *modalModel) Shortcuts() []Shortcut { return nil }
 
+// SetSize is a no-op for modalModel — it uses fixed width.
+func (m *modalModel) SetSize(w, h int) {}
+
 // Compile-time assertion: modalModel must satisfy the modalView interface.
 var _ modalView = &modalModel{}

@@ -154,7 +154,7 @@ func RenderMessageBar(msg *DisplayMessage, width int) string {
 	// Calculate available width for symbol + text
 	prefixW := lipgloss.Width(prefix)
 	suffixW := lipgloss.Width(suffixStart)
-	symbolRendered := symStyle.Render(symbol + " ")
+	symbolRendered := symStyle.Render(symbol + "  ")
 	symbolW := lipgloss.Width(symbolRendered)
 	availableTextW := width - prefixW - suffixW
 

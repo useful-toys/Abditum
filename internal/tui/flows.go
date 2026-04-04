@@ -16,12 +16,14 @@ type Shortcut struct {
 	Label string
 }
 
-// modalView - D-02: Separate from childModel. No SetSize - modals auto-size by content.
-// rootModel.View() positions the modal via lipgloss.Place.
+// modalView - D-02: Separate from childModel. Modals auto-size by content
+// but need terminal dimensions to calculate their own limits (e.g. 80%).
+// rootModel calls SetSize on every resize and before View().
 type modalView interface {
 	Update(tea.Msg) tea.Cmd
 	View() string
 	Shortcuts() []Shortcut
+	SetSize(w, h int)
 }
 
 // modalResult - D-03: Marker interface for messages carrying sensitive data.

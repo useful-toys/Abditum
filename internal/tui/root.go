@@ -322,6 +322,7 @@ func (m *rootModel) View() tea.View {
 
 	if len(m.modals) > 0 {
 		top := m.modals[len(m.modals)-1]
+		top.SetSize(m.width, m.height)
 		content = lipgloss.Place(m.width, m.height,
 			lipgloss.Center, lipgloss.Center, top.View())
 	}
@@ -352,12 +353,13 @@ func (m *rootModel) renderFrame() string {
 		return "Initializing..."
 	}
 
-	headerStyle := lipgloss.NewStyle().Width(m.width).Background(lipgloss.Color("236")).Foreground(lipgloss.Color("255"))
+	headerStyle := lipgloss.NewStyle().Width(m.width).Foreground(lipgloss.Color(ColorAccentPrimary)).Bold(true)
+	separatorStyle := lipgloss.NewStyle().Width(m.width).Foreground(lipgloss.Color(ColorBorderDefault))
 
 	cmdBarStyle := lipgloss.NewStyle().Width(m.width).Background(lipgloss.Color("236"))
 	workAreaStyle := lipgloss.NewStyle().Width(m.width)
 
-	const headerH = 1
+	const headerH = 2 // DS: 2 lines (app name + separator)
 	const msgBarH = 1
 	const cmdBarH = 1
 	workH := m.height - headerH - msgBarH - cmdBarH
@@ -365,8 +367,8 @@ func (m *rootModel) renderFrame() string {
 		workH = 0
 	}
 
-	// Header: PoC mode — no vault, no dirty indicator (D-06, D-07)
-	header := headerStyle.Render("  Abditum")
+	// Header: 2 lines per DS "Sem cofre" spec (tui-specification-novo.md §741-746)
+	header := headerStyle.Render("  Abditum") + "\n" + separatorStyle.Render(strings.Repeat("─", m.width))
 
 	// Message bar
 	msgBar := RenderMessageBar(m.messages.Current(), m.width)
@@ -400,7 +402,7 @@ func (m *rootModel) renderFrame() string {
 	}
 	cmdBar := cmdBarStyle.Render(cmdBarContent)
 
-	return strings.Join([]string{header, msgBar, workArea, cmdBar}, "\n")
+	return strings.Join([]string{header, workArea, msgBar, cmdBar}, "\n")
 }
 
 // renderVaultArea renders workAreaVault: vaultTree (left) + secretDetail (right).

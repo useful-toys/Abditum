@@ -7,8 +7,8 @@ type DialogType int
 
 const (
 	DialogQuestion DialogType = iota // neutral decision
-	DialogAlert                       // destructive or irreversible action
-	DialogInfo                        // information requiring explicit acknowledgement
+	DialogAlert                      // destructive or irreversible action
+	DialogInfo                       // information requiring explicit acknowledgement
 )
 
 // DialogOption is a selectable choice in an Ask or Confirm dialog.
@@ -25,8 +25,8 @@ type FilePickerMode int
 
 const (
 	FilePickerFile      FilePickerMode = iota // files only
-	FilePickerDirectory                        // directories only
-	FilePickerAny                              // files and directories
+	FilePickerDirectory                       // directories only
+	FilePickerAny                             // files and directories
 )
 
 // Message creates an informational dialog dismissed via ENTER or ESC.
@@ -80,8 +80,9 @@ func (m *passwordEntryModal) Update(msg tea.Msg) tea.Cmd {
 		func() tea.Msg { return passwordEntryResult{Cancelled: true} },
 	)
 }
-func (m *passwordEntryModal) View() string         { return "[PasswordEntry stub - Phase 6]" }
+func (m *passwordEntryModal) View() string          { return "[PasswordEntry stub - Phase 6]" }
 func (m *passwordEntryModal) Shortcuts() []Shortcut { return nil }
+func (m *passwordEntryModal) SetSize(w, h int)      {}
 
 type passwordCreateModal struct{ title string }
 
@@ -91,8 +92,9 @@ func (m *passwordCreateModal) Update(msg tea.Msg) tea.Cmd {
 		func() tea.Msg { return passwordCreateResult{Cancelled: true} },
 	)
 }
-func (m *passwordCreateModal) View() string         { return "[PasswordCreate stub - Phase 6]" }
+func (m *passwordCreateModal) View() string          { return "[PasswordCreate stub - Phase 6]" }
 func (m *passwordCreateModal) Shortcuts() []Shortcut { return nil }
+func (m *passwordCreateModal) SetSize(w, h int)      {}
 
 type filePickerModal struct {
 	title string
@@ -106,8 +108,9 @@ func (m *filePickerModal) Update(msg tea.Msg) tea.Cmd {
 		func() tea.Msg { return filePickerResult{Cancelled: true} },
 	)
 }
-func (m *filePickerModal) View() string         { return "[FilePicker stub - Phase 6]" }
+func (m *filePickerModal) View() string          { return "[FilePicker stub - Phase 6]" }
 func (m *filePickerModal) Shortcuts() []Shortcut { return nil }
+func (m *filePickerModal) SetSize(w, h int)      {}
 
 // newDialogModal creates a modalModel-backed dialog for Message and Confirm.
 func newDialogModal(dtype DialogType, title, message string, options []DialogOption) modalView {

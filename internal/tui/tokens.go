@@ -21,7 +21,22 @@ const (
 
 // Border and structural colors.
 const (
-	ColorBorder = "#414868" // default border line
+	ColorBorderDefault = "#414868" // default border line
+	ColorBorder        = ColorBorderDefault
+)
+
+// Text semantic colors (DS text.* tokens).
+const (
+	ColorTextPrimary   = "#a9b1d6" // normal text
+	ColorTextSecondary = "#565f89" // secondary/support text
+	ColorTextDisabled  = "#3b4261" // disabled options
+	ColorTextLink      = "#7aa2f7" // URLs and external links
+)
+
+// Accent colors.
+const (
+	ColorAccentPrimary   = "#7aa2f7" // primary accent (selection, cursor, default action)
+	ColorAccentSecondary = "#bb9af7" // secondary accent (favorites, folder names)
 )
 
 // Command bar colors.

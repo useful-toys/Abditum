@@ -210,13 +210,36 @@ func (a *ActionManager) RenderCommandBar(width int) string {
 
 	// Build anchor string
 	anchor := keyStyle.Render(anchorAction.Keys[0]) + " " + labelStyle.Render(anchorAction.Label)
-
-	// Position anchor at right edge
-	bodyW := lipgloss.Width(body)
 	anchorW := lipgloss.Width(anchor)
+	minGap := 1
+
+	// Truncate lowest-priority actions until anchor fits
+	// bodyParts is already sorted by Priority desc (from Visible())
+	for len(bodyParts) > 0 {
+		body = "  " + strings.Join(bodyParts, sepStyle.Render(" · "))
+		bodyW := lipgloss.Width(body)
+		gap := width - bodyW - anchorW
+		if gap >= minGap {
+			break
+		}
+		bodyParts = bodyParts[:len(bodyParts)-1]
+	}
+
+	// If even empty body + anchor doesn't fit, show only anchor
+	if len(bodyParts) == 0 {
+		bodyW := lipgloss.Width("  ")
+		if width-bodyW-anchorW < minGap {
+			return "  " + anchor
+		}
+		gap := width - bodyW - anchorW
+		return "  " + strings.Repeat(" ", gap-minGap) + anchor
+	}
+
+	body = "  " + strings.Join(bodyParts, sepStyle.Render(" · "))
+	bodyW := lipgloss.Width(body)
 	gap := width - bodyW - anchorW
-	if gap < 1 {
-		gap = 1
+	if gap < minGap {
+		gap = minGap
 	}
 	return body + strings.Repeat(" ", gap) + anchor
 }
