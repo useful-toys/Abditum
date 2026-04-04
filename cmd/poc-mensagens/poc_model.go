@@ -63,6 +63,14 @@ func newPocModel() *pocMessagesModel {
 			Group: 1, Scope: tui.ScopeLocal, Priority: 20, HideFromBar: false,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { m.msgs.Clear(); return nil }},
+		tui.Action{Keys: []string{"f10"}, Label: "Truncar", Description: "Testar truncação de mensagem longa",
+			Group: 1, Scope: tui.ScopeLocal, Priority: 15, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				longMsg := "Esta é uma mensagem muito longa com mais de cem caracteres para testar o sistema de truncação com reticências quando a mensagem excede a largura disponível da barra de mensagens do sistema."
+				m.msgs.Show(tui.MsgInfo, longMsg, 0, false)
+				return nil
+			}},
 
 		// shift+Fx variants — HideFromBar: true (visible in Help modal only)
 		tui.Action{Keys: []string{"shift+f2"}, Label: "Dica uso 5s", Description: "MsgHint com TTL de 5s",
@@ -141,7 +149,7 @@ func (m *pocMessagesModel) View() tea.View {
 		return v
 	}
 
-	headerStyle   := lipgloss.NewStyle().Width(m.width).Bold(true).Foreground(lipgloss.Color("#a9b1d6"))
+	headerStyle := lipgloss.NewStyle().Width(m.width).Bold(true).Foreground(lipgloss.Color("#a9b1d6"))
 	workAreaStyle := lipgloss.NewStyle().Width(m.width)
 
 	const headerH = 1
@@ -163,7 +171,7 @@ func (m *pocMessagesModel) View() tea.View {
 		workContent = lipgloss.Place(m.width, workH, lipgloss.Center, lipgloss.Center,
 			lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89")).Render(
 				"Teste das mensagens\n\n"+
-					"F2–F9: exibir mensagens  ·  shift+F2–F6: variantes com TTL\n"+
+					"F2–F10: exibir mensagens  ·  shift+F2–F6: variantes com TTL\n"+
 					"F1: ajuda  ·  ctrl+Q: sair"))
 	}
 	workArea := workAreaStyle.Height(workH).Render(workContent)
@@ -189,9 +197,9 @@ func (m *pocMessagesModel) View() tea.View {
 // Uses a simple string builder — no need for helpModal machinery in a PoC.
 func (m *pocMessagesModel) renderHelp() string {
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#7aa2f7"))
-	keyStyle   := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7")).Bold(true)
-	sepStyle   := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
-	dimStyle   := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
+	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7")).Bold(true)
+	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
+	dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
 
 	var b strings.Builder
 	b.WriteString("\n")
