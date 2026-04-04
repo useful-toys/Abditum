@@ -23,7 +23,7 @@
 - [ ] **Phase 9: Vault Lifecycle Operations** � Save, Save As, Discard/Reload, Change Master Password, Export, Import, Settings configuration
 - [ ] **Phase 10: Security Timers + Clipboard + Lock/Exit** � Auto-lock, manual lock, clipboard auto-clear, field reveal timer, screen+scrollback wipe, clean exit
 - [ ] **Phase 11: Cross-Platform CI Matrix + Integration Tests** � Full Windows/macOS/Linux matrix, race detector, golden files, secret-pattern scanner, govulncheck
-
+- [ ] **Phase 05.3: merge-poc-to-app** — Transformar abditum.exe na PoC standalone (sem cofre, sem domínio, apenas demonstração de componentes TUI) e remover cmd/poc-mensagens
 ---
 
 ## Phase Details
@@ -477,6 +477,17 @@ Plans:
 | QUERY-05 | 10 | Copy field to clipboard; auto-clear on timer/lock/exit; Wayland best-effort |
 | CI-02 | 11 | CI matrix: Windows + macOS + Linux on every push |
 | COMPAT-02 | 11 | Binary runs on Windows, macOS, Linux (verified in CI matrix) |
+
+### Phase 05.3: merge-poc-to-app (INSERTED)
+
+**Goal:** Transformar `abditum.exe` na PoC standalone (sem cofre, sem domínio, apenas demonstração de componentes TUI) e remover `cmd/poc-mensagens`.
+**Requirements**: *(internal refactor + PoC merge — no v1 requirements)*
+**Depends on:** Phase 5.2.2
+**Plans:** 2 plans in 2 waves
+
+Plans:
+- [ ] 05.3-01-PLAN.md — Centralize tokens (colors, symbols, styles), refactor messages.go/actions.go/help.go to consume tokens
+- [ ] 05.3-02-PLAN.md — Rewrite NewRootModel for PoC mode (15 actions, no vault.Manager), update main.go, delete cmd/poc-mensagens/
 
 ---
 
