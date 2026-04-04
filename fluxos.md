@@ -428,14 +428,15 @@ flowchart TD
      - Se o usuário escolhe sobrescrever → continua para o passo 3.
      - Se o usuário escolhe salvar como novo arquivo → o fluxo é interrompido e o Fluxo 9 (Salvar cofre em outro arquivo) é iniciado.
      - Se o usuário escolhe voltar → o fluxo é interrompido e nada muda.
-3. O cofre é gravado no arquivo atual usando o protocolo de salvamento atômico. Segredos marcados para exclusão não são gravados; após o salvamento bem-sucedido, são removidos da memória.
+3. O cofre é gravado no arquivo atual usando o protocolo de salvamento atômico. Segredos marcados para exclusão não são gravados; após o salvamento bem-sucedido, são removidos da memória. O sistema comunica que o cofre foi salvo com sucesso.
    - Se o salvamento falhar sem ter gerado backup → o sistema comunica o erro. O arquivo original permanece intacto e o estado em memória é preservado.
    - Se o salvamento falhar após ter gerado backup → o sistema comunica o erro e informa que existe um backup disponível para intervenção manual. O estado em memória é preservado.
 
 **Contexto resultante:**
-- Sucesso → cofre `inalterado`.
+- Sucesso → cofre `inalterado`; sucesso comunicado.
 - Falha → cofre `alterado`; arquivo original intacto.
 - Voltou → contexto inalterado.
+- Salvar como novo arquivo → Fluxo 9 iniciado.
 
 ```mermaid
 flowchart TD
@@ -446,7 +447,7 @@ flowchart TD
     D -- Voltar --> Z([Contexto inalterado])
     D -- Salvar como novo arquivo --> F9([Inicia Fluxo 9])
     D -- Sobrescrever --> W
-    W[Protocolo de salvamento atômico] --> OK([Cofre inalterado])
+    W[Protocolo de salvamento atômico] --> OK([Cofre inalterado\nSucesso comunicado])
     W -- Falha sem backup --> ERR([Cofre alterado\nArquivo intacto\nErro comunicado])
     W -- Falha após backup --> ERR2([Cofre alterado\nBackup disponível])
 ```
@@ -472,11 +473,11 @@ flowchart TD
    - Se o destino for um arquivo existente (sobrescrita): é utilizado o protocolo de salvamento atômico.
      - Se falhar sem ter gerado backup → o sistema comunica o erro. O arquivo de destino permanece intacto e o arquivo de trabalho permanece o original.
      - Se falhar após ter gerado backup → o sistema comunica o erro e informa que existe um backup disponível para intervenção manual. O arquivo de trabalho permanece o original.
-3. O arquivo de trabalho passa a ser o novo arquivo. Próximas modificações e salvamentos ocorrem sobre ele.
+3. O arquivo de trabalho passa a ser o novo arquivo. Próximas modificações e salvamentos ocorrem sobre ele. O sistema comunica que o cofre foi salvo no novo arquivo com sucesso.
 
 **Contexto resultante:**
 - Fluxo abandonado → contexto inalterado.
-- Sucesso → cofre `inalterado`; arquivo de trabalho atualizado para o novo caminho.
+- Sucesso → cofre `inalterado`; arquivo de trabalho atualizado para o novo caminho; sucesso comunicado.
 - Falha → cofre no estado anterior; arquivo de trabalho inalterado.
 
 ```mermaid
@@ -492,7 +493,7 @@ flowchart TD
     F -- Sobrescrever --> W
     W(Destino é\narquivo novo?) -- Sim --> W1[Grava diretamente no destino]
     W -- Não --> W2[Protocolo de salvamento atômico]
-    W1 --> OK([Cofre inalterado\nArquivo de trabalho atualizado])
+    W1 --> OK([Cofre inalterado\nArquivo de trabalho atualizado\nSucesso comunicado])
     W1 -- Falha --> ERR([Estado anterior preservado\nErro comunicado])
     W2 --> OK
     W2 -- Falha sem backup --> ERR2([Estado anterior preservado\nArquivo de destino intacto])
@@ -509,15 +510,17 @@ flowchart TD
 
 1. O usuário solicita descartar alterações e recarregar.
 2. O sistema verifica se o arquivo foi modificado externamente desde a última leitura ou salvamento.
-   - Se foi modificado externamente → o sistema comunica o fato e solicita confirmação para prosseguir com o recarregamento.
-     - Se o usuário volta → o fluxo é interrompido e nada muda.
+   - Se foi modificado externamente → o sistema alerta sobre a modificação externa e solicita uma decisão: prosseguir com o recarregamento ou voltar.
+     - Se o usuário escolhe voltar → o fluxo é interrompido e nada muda.
+     - Se o usuário escolhe prosseguir → continua para o passo 3.
+   - Se não foi modificado externamente → continua para o passo 3.
 3. O sistema solicita confirmação do descarte.
    - Se o usuário volta → o fluxo é interrompido e nada muda.
-4. O cofre é recarregado do arquivo usando a senha ativa na sessão, descartando todas as alterações em memória desde o último salvamento ou desde a abertura.
+4. O cofre é recarregado do arquivo usando a senha ativa na sessão, descartando todas as alterações em memória desde o último salvamento ou desde a abertura. O sistema comunica que as alterações foram descartadas e o cofre foi recarregado com sucesso.
    - Se o arquivo estiver inacessível ou corrompido → o sistema comunica o erro. O cofre permanece no estado em memória anterior ao descarte (ainda `alterado`).
 
 **Contexto resultante:**
-- Sucesso → cofre `inalterado`, no estado persistido no arquivo.
+- Sucesso → cofre `inalterado`, no estado persistido no arquivo; sucesso comunicado.
 - Falha no recarregamento → cofre `alterado`, estado em memória preservado.
 - Voltou → contexto inalterado.
 
@@ -531,7 +534,7 @@ flowchart TD
     CS -- Prosseguir --> D
     D[Sistema solicita confirmação do descarte] -- Voltar --> Z
     D -- Confirma --> W[Recarrega do arquivo com senha ativa]
-    W --> OK([Cofre inalterado\nEstado do arquivo])
+    W --> OK([Cofre inalterado\nEstado do arquivo\nSucesso comunicado])
     W -- Arquivo inacessível\nou corrompido --> ERR([Cofre alterado\nEstado em memória preservado\nErro comunicado])
 ```
 
@@ -554,13 +557,15 @@ flowchart TD
    - Se foi modificado externamente → o sistema comunica o conflito e solicita uma decisão: sobrescrever ou voltar.
      - Se o usuário escolhe voltar → o fluxo é interrompido e nada muda; a senha mestra não é alterada.
      - Se o usuário escolhe sobrescrever → continua para o passo 5.
-5. O cofre é salvo imediatamente com a nova senha, incluindo todas as alterações pendentes da sessão, usando o protocolo de salvamento atômico. A operação é irrevogável — não é possível desfazê-la após a conclusão.
+   - Se não foi modificado externamente → continua para o passo 5.
+5. O cofre é salvo imediatamente com a nova senha, incluindo todas as alterações pendentes da sessão, usando o protocolo de salvamento atômico. A operação é irrevogável — não é possível desfazê-la após a conclusão. O sistema comunica que a senha mestra foi alterada com sucesso.
    - Se o salvamento falhar sem ter gerado backup → o sistema comunica o erro. O arquivo original permanece intacto; a senha mestra não é alterada na sessão.
    - Se o salvamento falhar após ter gerado backup → o sistema comunica o erro e informa que existe um backup disponível para intervenção manual. A senha mestra não é alterada na sessão.
 
 **Contexto resultante:**
 - Fluxo abandonado → contexto inalterado; senha mestra não alterada.
-- Sucesso → cofre `inalterado`; nova senha mestra ativa na sessão.
+- Sucesso → cofre `inalterado`; nova senha mestra ativa na sessão; sucesso comunicado.
+- Falha no salvamento → cofre `alterado`; arquivo original intacto; senha mestra não alterada.
 
 **Nota:** após a alteração, o cofre foi regravado com a nova senha e todas as alterações pendentes foram persistidas — o Fluxo 10 (Descartar alterações) deixa de ser elegível.
 
@@ -580,7 +585,7 @@ flowchart TD
     CHK -- Sim --> G[Comunica conflito\nSobrescrever ou voltar?]
     G -- Voltar --> Z
     G -- Sobrescrever --> W
-    W[Protocolo de salvamento atômico\ncom nova senha] --> OK([Cofre inalterado\nNova senha ativa])
+    W[Protocolo de salvamento atômico\ncom nova senha] --> OK([Cofre inalterado\nNova senha ativa\nSucesso comunicado])
     W -- Falha sem backup --> ERR([Arquivo intacto\nSenha não alterada\nErro comunicado])
     W -- Falha após backup --> ERR2([Senha não alterada\nBackup disponível])
 ```
@@ -594,18 +599,21 @@ flowchart TD
 **Passos:**
 
 1. O usuário solicita exportar o cofre.
-2. O sistema comunica os riscos de segurança da exportação (arquivo não criptografado) e solicita confirmação.
+2. O sistema solicita a senha mestra para reautenticação.
+   - Se a senha estiver incorreta → o sistema comunica o erro. O usuário pode tentar novamente ou desistir. Volta ao passo 2.
+   - Se o usuário desiste → o fluxo é interrompido e nada muda.
+3. O sistema comunica os riscos de segurança da exportação (arquivo não criptografado) e solicita confirmação.
    - Se o usuário volta → o fluxo é interrompido e nada muda.
-3. O usuário informa o caminho do arquivo de exportação. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
+4. O usuário informa o caminho do arquivo de exportação. O usuário pode desistir e abandonar o fluxo a qualquer momento neste passo.
    - Se o arquivo de destino já existir → o sistema comunica que o arquivo já existe e solicita uma decisão: sobrescrever ou informar outro caminho.
-     - Se o usuário escolhe informar outro caminho → volta ao passo 3.
-     - Se o usuário escolhe sobrescrever → continua para o passo 4.
-4. O cofre é exportado para o arquivo informado. O arquivo contém toda a estrutura do cofre — pastas, segredos ativos e modelos — sem criptografia. Segredos marcados para exclusão não são incluídos. Configurações de timers não são exportadas.
+     - Se o usuário escolhe informar outro caminho → volta ao passo 4.
+     - Se o usuário escolhe sobrescrever → continua para o passo 5.
+5. O cofre é exportado para o arquivo informado. O arquivo contém toda a estrutura do cofre — pastas, segredos ativos e modelos — sem criptografia. Segredos marcados para exclusão não são incluídos. Configurações de timers não são exportadas. O sistema comunica que o cofre foi exportado com sucesso.
    - Se a exportação falhar → o sistema comunica o erro.
 
 **Contexto resultante:**
 - Fluxo abandonado → contexto inalterado.
-- Sucesso → arquivo de intercâmbio criado; cofre e sessão inalterados.
+- Sucesso → arquivo de intercâmbio criado; cofre e sessão inalterados; sucesso comunicado.
 - Falha → contexto inalterado.
 
 ---
@@ -621,12 +629,14 @@ flowchart TD
    - Se o arquivo for inválido em estrutura ou não contiver a Pasta Geral → o sistema comunica o erro. Volta ao passo 2.
 3. O sistema comunica a política de mesclagem (pastas mescladas; segredos e modelos com nome conflitante substituídos) e solicita confirmação.
    - Se o usuário volta → o fluxo é interrompido e nada muda.
-4. O conteúdo é importado e mesclado ao cofre: pastas mescladas, segredos com nomes únicos adicionados, segredos com nomes conflitantes substituídos, modelos com nomes conflitantes substituídos.
+   - Se o usuário confirma → continua para o passo 4.
+4. O conteúdo é importado e mesclado ao cofre: pastas mescladas, segredos com nomes únicos adicionados, segredos com nomes conflitantes substituídos, modelos com nomes conflitantes substituídos. Se alguma alteração ocorreu, a flag de modificação (dirty) do cofre é setada. O sistema comunica que a importação foi concluída com sucesso.
    - Se a mesclagem falhar → o sistema comunica o erro. O cofre permanece no estado anterior à importação.
 
 **Contexto resultante:**
 - Fluxo abandonado → contexto inalterado.
-- Sucesso → cofre `alterado`, data de update do cofre atualizada, pasta Geral em foco.
+- Sucesso (com alterações) → cofre `alterado`, `data_ultima_modificacao` atualizada, pasta Geral em foco; sucesso comunicado.
+- Sucesso (sem alterações) → cofre inalterado; sucesso comunicado.
 - Falha na mesclagem → contexto inalterado.
 
 ---
