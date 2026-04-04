@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 06
 status: planning
-last_updated: "2026-04-04T04:49:17.269Z"
+last_updated: "2026-04-04T05:31:01.371Z"
 progress:
-  total_phases: 17
-  completed_phases: 10
-  total_plans: 33
-  completed_plans: 33
+  total_phases: 18
+  completed_phases: 11
+  total_plans: 35
+  completed_plans: 35
 ---
 
 # Project State — Abditum
@@ -223,6 +223,8 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 05-05]: NewRootModel exported wrapper added to root.go — main.go is package main and cannot access unexported newRootModel
 - [Phase 05-05]: vault.NovoCofre() used in main.go bootstrap (not NewCofre which doesn't exist) — Portuguese naming convention
 - [Phase 05-05]: CGO_ENABLED=0 go test -race fails on Windows — race detector requires CGO; use CI (Linux) for race detection; local tests verified without -race
+- [Phase 05.3]: tokens.go created with centralized semantic colors, symbols, and style helpers — messages.go, actions.go, help.go refactored to consume tokens (zero hardcoding)
+- [Phase 05.3]: NewRootModel() takes no parameters (PoC mode), all 15 actions registered, Init() starts global tick, header simplified to Abditum only
 
 ### Phase 02 Decisions
 
