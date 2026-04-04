@@ -113,8 +113,8 @@ func (m *MessageManager) HandleInput() {
 // When msg == nil, renders a plain border line. Exported for PoC and rootModel use.
 // Anatomy when msg != nil: ── <symbol> <text> ─...─  (fills to width)
 func RenderMessageBar(msg *DisplayMessage, width int) string {
-	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#414868"))
-	borderChar := "─"
+	borderStyle := StyleBorder()
+	borderChar := SymBorder
 
 	if msg == nil || width <= 0 {
 		if width <= 0 {
@@ -123,30 +123,27 @@ func RenderMessageBar(msg *DisplayMessage, width int) string {
 		return borderStyle.Render(strings.Repeat(borderChar, width))
 	}
 
-	// spinner frames in display order: ◐ ◓ ◑ ◒
-	spinnerFrames := []string{"◐", "◓", "◑", "◒"}
-
 	var symbol string
 	var symStyle lipgloss.Style
 	switch msg.Kind {
 	case MsgSuccess:
-		symbol = "✓"
-		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#9ece6a"))
+		symbol = SymSuccess
+		symStyle = StyleSymbol(MsgSuccess)
 	case MsgInfo:
-		symbol = "ℹ"
-		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7dcfff"))
+		symbol = SymInfo
+		symStyle = StyleSymbol(MsgInfo)
 	case MsgWarn:
-		symbol = "⚠"
-		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#e0af68"))
+		symbol = SymWarn
+		symStyle = StyleSymbol(MsgWarn)
 	case MsgError:
-		symbol = "✕"
-		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#f7768e")).Bold(true)
+		symbol = SymError
+		symStyle = StyleSymbol(MsgError)
 	case MsgBusy:
-		symbol = spinnerFrames[msg.Frame%4]
-		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+		symbol = SpinnerFrame(msg.Frame)
+		symStyle = StyleSymbol(MsgBusy)
 	default: // MsgHint
-		symbol = "•"
-		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89")).Italic(true)
+		symbol = SymHint
+		symStyle = StyleSymbol(MsgHint)
 	}
 
 	// Prefix: "── " (2 border chars + space = 3 visible chars)
@@ -175,7 +172,7 @@ func RenderMessageBar(msg *DisplayMessage, width int) string {
 			truncated = true
 		}
 		if truncated && len(text) > 0 {
-			text = text + "…"
+			text = text + SymEllipsis
 		}
 		content = symbolRendered + symStyle.Render(text)
 	}

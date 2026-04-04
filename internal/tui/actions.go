@@ -24,10 +24,10 @@ type Action struct {
 	Keys        []string
 	Label       string
 	Description string
-	Group       int         // grouping in Help modal — groups shown in ascending order
+	Group       int // grouping in Help modal — groups shown in ascending order
 	Scope       ActionScope
-	Priority    int         // higher = further left in command bar; governs truncation order
-	HideFromBar bool        // hidden from command bar; listed in Help modal
+	Priority    int  // higher = further left in command bar; governs truncation order
+	HideFromBar bool // hidden from command bar; listed in Help modal
 	Enabled     func() bool
 	Handler     func() tea.Cmd
 }
@@ -170,9 +170,9 @@ func (a *ActionManager) All() []Action {
 // Key token: #7aa2f7 bold. Label token: #a9b1d6. Separator: #565f89.
 // F1 action is right-anchored; all other actions are left-padded with 2 spaces.
 func (a *ActionManager) RenderCommandBar(width int) string {
-	keyStyle   := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7")).Bold(true)
-	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#a9b1d6"))
-	sepStyle   := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
+	keyStyle := StyleCommandKey()
+	labelStyle := StyleCommandLabel()
+	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorSeparator))
 
 	visible := a.Visible()
 
@@ -212,7 +212,7 @@ func (a *ActionManager) RenderCommandBar(width int) string {
 	anchor := keyStyle.Render(anchorAction.Keys[0]) + " " + labelStyle.Render(anchorAction.Label)
 
 	// Position anchor at right edge
-	bodyW  := lipgloss.Width(body)
+	bodyW := lipgloss.Width(body)
 	anchorW := lipgloss.Width(anchor)
 	gap := width - bodyW - anchorW
 	if gap < 1 {
