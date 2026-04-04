@@ -348,6 +348,8 @@ O contexto de uso detalhado de cada símbolo está na seção onde ele é consum
 
 > **`•` reutilizado:** aparece como indicador de alterações pendentes no cabeçalho, como marcador de dica contextual na barra de mensagens, como marcador de dica de uso, e como caractere de máscara em campos sensíveis. A distinção é sempre pelo contexto visual — nunca coexistem na mesma região.
 
+> **`◐ ◓ ◑ ◒` e largura ambígua:** especificados como 1 coluna neste inventário. Em terminais com fontes que tratam Geometric Shapes como largura ambígua (dependente de locale), podem ser renderizados em 2 colunas — causando jitter na mensagem adjacente. Ver anti-padrão [Largura de Spinner Variante Entre Frames](#layout-e-estrutura).
+
 ---
 
 ## Estados Visuais
@@ -849,10 +851,10 @@ Anti-padrões documentam o que **não deve ser feito** na interface do Abditum. 
 
 ---
 
-#### Truncamento Silencioso *(Médio)*
-**O que é:** nomes longos de segredo, pasta ou campo são cortados na borda da coluna disponível sem o caractere `…`.
-**Por que é errado:** o design system define `…` como pictograma obrigatório de truncamento. Sem ele, o usuário não sabe se leu o nome completo ou se há conteúdo além do visível.
-**Consequência:** confusão de identidade entre credenciais com nomes similares (ex: "Gmail Pessoal" vs "Gmail Pessoal 2"); cópia da senha errada.
+#### Truncamento Ausente ou Transbordo de Texto *(Alto)*
+**O que é:** texto mais longo que o espaço disponível é renderizado sem adaptação — nomes de segredo, labels, valores de campo, mensagens de erro ou títulos de diálogo são cortados abruptamente sem `…`, ou transbordam para a próxima linha e para fora da área do componente.
+**Por que é errado:** o design system define `…` como mecanismo obrigatório de truncamento para qualquer texto que exceda o espaço disponível. Corte sem símbolo deixa o usuário sem saber se leu o conteúdo completo. Transbordo quebra o layout de grade fixa do terminal: uma linha que "vaza" desloca todas as linhas seguintes e pode corromper a estrutura visual inteira do componente.
+**Consequência:** confusão de identidade entre credenciais com nomes similares (ex: "Gmail Pessoal" vs "Gmail Pessoal 2"); título de diálogo longo quebra a borda superior; valor de campo longo sobrescreve o label do campo abaixo.
 
 ---
 
@@ -874,13 +876,6 @@ Anti-padrões documentam o que **não deve ser feito** na interface do Abditum. 
 **O que é:** ao redimensionar o terminal (janela menor ou maior), o conteúdo continua renderizado com as dimensões anteriores — textos transbordam para fora da área visível, separadores ficam curtos ou longos demais, modais saem da tela.
 **Por que é errado:** o terminal pode ser redimensionado a qualquer momento. O evento `WindowSizeMsg` do Bubble Tea deve propagar as novas dimensões para todos os componentes que calculam largura ou altura. Qualquer componente que cacheia dimensões sem reagir ao resize produz layout quebrado.
 **Consequência:** após redimensionar, a interface fica inutilizável até reiniciar a aplicação; bordas de modais ultrapassam os limites do terminal; conteúdo da árvore sobrescreve o painel de detalhe.
-
----
-
-#### String Mais Longa que o Espaço Disponível Sem Truncamento *(Alto)*
-**O que é:** um nome de segredo, valor de campo, mensagem de erro ou título de diálogo com comprimento superior ao espaço disponível é renderizado sem truncamento — o texto simplesmente transborda para a próxima linha ou para fora da área do componente.
-**Por que é errado:** o design system define `…` como mecanismo obrigatório de truncamento para qualquer texto que exceda o espaço disponível. Transbordo de texto quebra o layout de grade fixa do terminal: uma linha que "vaza" desloca todas as linhas seguintes e pode corromper a estrutura visual inteira do componente.
-**Consequência:** nome de segredo muito longo empurra o conector `<╡` para fora da coluna do separador; título de diálogo longo quebra a borda superior; valor de campo longo sobrescreve o label do campo abaixo.
 
 ---
 
