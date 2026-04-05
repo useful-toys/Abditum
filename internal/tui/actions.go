@@ -167,16 +167,22 @@ func (a *ActionManager) All() []Action {
 }
 
 // RenderCommandBar renders the command bar from currently visible actions.
-// Key token: #7aa2f7 bold. Label token: #a9b1d6. Separator: #565f89.
+// Tokens per DS spec: key = accent.primary bold, label = text.primary, separator = text.secondary.
+// The command bar uses the application's default background (surface.base) — no explicit bg set.
 // F1 action is right-anchored; all other actions are left-padded with 2 spaces.
 func (a *ActionManager) RenderCommandBar(width int) string {
 	keyStyle := StyleCommandKey()
 	labelStyle := StyleCommandLabel()
 	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorSeparator))
 
+	// renderPart builds a single "KEY Label" token pair.
+	renderPart := func(key, label string) string {
+		return keyStyle.Render(key) + " " + labelStyle.Render(label)
+	}
+
 	visible := a.Visible()
 
-	// Separate F1 anchor from body actions
+	// Separate F1 anchor from body actions.
 	var bodyActions []Action
 	var anchorAction *Action
 	for i := range visible {
@@ -188,55 +194,69 @@ func (a *ActionManager) RenderCommandBar(width int) string {
 		}
 	}
 
-	// Build body parts
-	var bodyParts []string
+	// Build body parts (visible widths stored separately for truncation loop).
+	type part struct {
+		rendered string
+		visW     int
+	}
+	var bodyParts []part
 	for _, act := range bodyActions {
 		if len(act.Keys) == 0 {
 			continue
 		}
-		part := keyStyle.Render(act.Keys[0]) + " " + labelStyle.Render(act.Label)
-		bodyParts = append(bodyParts, part)
+		r := renderPart(act.Keys[0], act.Label)
+		bodyParts = append(bodyParts, part{rendered: r, visW: lipgloss.Width(r)})
 	}
 
-	var body string
-	if len(bodyParts) > 0 {
-		body = "  " + strings.Join(bodyParts, sepStyle.Render(" · "))
+	sep := sepStyle.Render(" · ")
+	sepW := lipgloss.Width(sep)
+
+	// joinBody assembles left padding + parts + separators.
+	// Returns (assembled string, visible width).
+	joinBody := func(parts []part) (string, int) {
+		if len(parts) == 0 {
+			return "", 0
+		}
+		out := "  "
+		w := 2
+		for i, p := range parts {
+			if i > 0 {
+				out += sep
+				w += sepW
+			}
+			out += p.rendered
+			w += p.visW
+		}
+		return out, w
 	}
 
-	// No anchor: return body only
+	// No anchor: return body only.
 	if anchorAction == nil || len(anchorAction.Keys) == 0 {
+		body, _ := joinBody(bodyParts)
 		return body
 	}
 
-	// Build anchor string
-	anchor := keyStyle.Render(anchorAction.Keys[0]) + " " + labelStyle.Render(anchorAction.Label)
+	// Build anchor string.
+	anchor := renderPart(anchorAction.Keys[0], anchorAction.Label)
 	anchorW := lipgloss.Width(anchor)
 	minGap := 1
 
-	// Truncate lowest-priority actions until anchor fits
-	// bodyParts is already sorted by Priority desc (from Visible())
+	// Truncate lowest-priority actions until anchor fits.
+	// bodyParts is already sorted by Priority desc (from Visible()).
 	for len(bodyParts) > 0 {
-		body = "  " + strings.Join(bodyParts, sepStyle.Render(" · "))
-		bodyW := lipgloss.Width(body)
-		gap := width - bodyW - anchorW
-		if gap >= minGap {
+		_, bodyW := joinBody(bodyParts)
+		if width-bodyW-anchorW >= minGap {
 			break
 		}
 		bodyParts = bodyParts[:len(bodyParts)-1]
 	}
 
-	// If even empty body + anchor doesn't fit, show only anchor
+	body, bodyW := joinBody(bodyParts)
 	if len(bodyParts) == 0 {
-		bodyW := lipgloss.Width("  ")
-		if width-bodyW-anchorW < minGap {
-			return "  " + anchor
-		}
-		gap := width - bodyW - anchorW
-		return "  " + strings.Repeat(" ", gap-minGap) + anchor
+		body = "  "
+		bodyW = 2
 	}
 
-	body = "  " + strings.Join(bodyParts, sepStyle.Render(" · "))
-	bodyW := lipgloss.Width(body)
 	gap := width - bodyW - anchorW
 	if gap < minGap {
 		gap = minGap
