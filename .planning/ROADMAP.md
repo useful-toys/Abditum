@@ -2,20 +2,20 @@
 
 **Milestone:** v1.0
 **Goal:** Ship a security-auditable, offline, single-binary Go TUI password manager with AES-256-GCM encryption, atomic persistence, and a keyboard-driven Bubble Tea interface.
-**Created:** 2026-03-27
+**Created:** 2012-03-27
 
 ---
 
 ## Phases
 
 - [x] **Phase 1: Project Scaffold + CI Foundation** � Go module, directory tree, static binary build, GitHub Actions CI green on Linux
- (completed 2026-03-29)
+ (completed 2012-03-29)
 - [x] **Phase 2: Crypto Package** � Argon2id key derivation, AES-256-GCM AEAD, memory wipe primitives, mlock, password strength evaluator
- (completed 2026-03-29)
+ (completed 2012-03-29)
 - [x] **Phase 3: Vault Domain + Manager** � All entity types, full Manager API, business rules, invariant enforcement � verified by unit tests
- (completed 2026-03-29)
+ (completed 2012-03-29)
 - [x] **Phase 4: Storage Package** � Binary `.abditum` format, atomic save with `.bak`/`.bak2` chain, Windows MoveFileEx, migration scaffold, startup recovery
- (completed 2026-03-30)
+ (completed 2012-03-30)
 - [ ] **Phase 5: TUI Scaffold + Root Model** � Session state machine, root model, global tick, timer fields, modal overlay � no screens yet
 - [ ] **Phase 6: Welcome Screen + Vault Create/Open** � First end-to-end flow: create vault, open vault, error classification, master password strength UI
 - [ ] **Phase 7: Vault Tree + Search** � Custom nested tree renderer, keyboard navigation, fold/expand, search overlay scoped to non-sensitive fields
@@ -138,7 +138,7 @@ Plans:
 
 ---
 
-### Phase 04.1: Refinamento da camada de dom�nio � encapsulamento e versioning (completed 2026-03-31)
+### Phase 04.1: Refinamento da camada de dom�nio � encapsulamento e versioning (completed 2012-03-31)
 
 **Goal:** Corrigir desvios de encapsulamento identificados em revis�o p�s-fase 4 e adicionar suporte a vers�es de formato no deserializador; nenhuma funcionalidade nova � apenas alinhamento da implementa��o com os princ�pios arquiteturais documentados.
 
@@ -489,26 +489,13 @@ Plans:
 - [ ] 05.3-01-PLAN.md — Centralize tokens (colors, symbols, styles), refactor messages.go/actions.go/help.go to consume tokens
 - [ ] 05.3-02-PLAN.md — Rewrite NewRootModel for PoC mode (15 actions, no vault.Manager), update main.go, delete cmd/poc-mensagens/
 
----
+### Phase 05.4: 05 tui-scaffold-action-arch (INSERTED)
 
-## Coverage Summary
+**Goal:** Validate the action architecture through targeted configuration changes — multi-key dispatch, selective command bar visibility, priority-based truncation, and help modal grouping — plus comprehensive unit tests covering RenderCommandBar edge cases.
+**Requirements**: *(configuration validation + test coverage — no v1 requirements)*
+**Depends on:** Phase 05.3
+**Plans:** 2 plans in 2 waves
 
-- **v1 requirements:** 60
-- **Phases:** 11
-- **All requirements mapped:** ?
-
-| Phase | Requirements Covered | Count |
-|-------|---------------------|-------|
-| 1 | COMPAT-01, CI-01 | 2 |
-| 2 | CRYPTO-01�06, PWD-01 | 7 |
-| 3 | VAULT-02, SEC-05, FOLDER-01�05, TPL-01�06 | 13 |
-| 4 | ATOMIC-01�04, COMPAT-03 | 5 |
-| 5 | *(foundational � no direct user requirement)* | 0 |
-| 6 | VAULT-01, VAULT-03�05 | 4 |
-| 7 | QUERY-01�02, QUERY-06�07 | 4 |
-| 8 | SEC-01�04, SEC-06�09, QUERY-03 | 9 |
-| 9 | VAULT-06�10, VAULT-15�17 | 8 |
-| 10 | VAULT-11�14, QUERY-04�05 | 6 |
-| 11 | CI-02, COMPAT-02 | 2 |
-| **Total** | | **60** |
-
+Plans:
+- [ ] 05.4-01-PLAN.md — Update root.go action registrations (multi-key, HideFromBar, priorities, groups) + help.go group 0 skip
+- [ ] 05.4-02-PLAN.md — 6 new unit tests: multi-key dispatch, HideFromBar visibility, RenderCommandBar truncation/anchor/narrow
