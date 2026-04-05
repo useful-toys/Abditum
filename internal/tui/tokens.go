@@ -41,9 +41,9 @@ const (
 
 // Command bar colors.
 const (
-	ColorCommandKey   = "#7aa2f7" // action key token (bold)
-	ColorCommandLabel = "#a9b1d6" // action label text
-	ColorSeparator    = "#565f89" // separator dots
+	ColorCommandKey   = "#7aa2f7" // action key token (bold) — accent.primary
+	ColorCommandLabel = "#a9b1d6" // action label text — text.primary
+	ColorSeparator    = "#565f89" // separator dots — text.secondary
 )
 
 // Help modal colors (lipgloss 256-color palette indices as strings).
