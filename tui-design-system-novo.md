@@ -192,8 +192,9 @@ A interface é minimalista: bordas aparecem apenas em modais e separadores. Pain
 | Modal semântico | Rounded (`╭╮╰╯│─`) | `semantic.*` ou `accent.*` | Cor reforça o tipo do diálogo |
 | Separador vertical | `│` | `border.default` | Divide painéis lado a lado |
 | Separador horizontal | `─` | `border.default` | Separa grupos ou seções |
+| Junction em T | `├` `┬` `┴` `┤` | `border.default` | Ponto onde separadores se encontram entre si ou se ligam a bordas internas de painéis (ex: FilePicker) |
 
-> **Regra prática:** Rounded é o único estilo de caixa adotado. Separadores são linhas; a interface evita boxes decorativos.
+> **Regra prática:** Rounded é o único estilo de caixa adotado. Separadores são linhas; a interface evita boxes decorativos. Junctions em T são usados exclusivamente para conectar separadores internos — nunca como ornamento.
 
 ---
 
@@ -240,6 +241,16 @@ A proporção é aproximada — a implementação pode ajustar em ±5% para alin
 | Padding interno horizontal | 2 colunas | Respiro visual sem desperdício |
 | Padding interno vertical | 1 linha | Respiro entre borda e conteúdo |
 | Posição | Centrado horizontal e verticalmente | Previsibilidade — o olho do usuário vai sempre ao centro |
+
+**Exceções ao dimensionamento:**
+
+Quando um diálogo concreto precisa divergir de um parâmetro deste documento, a exceção deve ser:
+
+1. **Documentada na especificação** do componente — não basta implementar sem registrar
+2. **Justificada por um princípio do DS** — tipicamente "O Terminal como Meio" (espaço vertical é recurso escasso) ou "Hierarquia da Informação" (densidade necessária para cumprir o papel)
+3. **Escopo-limitada** — a exceção vale apenas para aquele diálogo; não cria precedente para demais
+
+> **Regra:** exceção documentada com justificativa vinculada a princípio = decisão intencional. Exceção sem documentação = inconsistência a corrigir.
 
 **Mensagens longas em diálogos:**
 
@@ -340,6 +351,7 @@ O contexto de uso detalhado de cada símbolo está na seção onde ele é consum
 | `↑` `↓` | Indicação de scroll (direção) | 1 | Arrows |
 | `■` | Thumb de scroll (posição) | 1 | Geometric Shapes |
 | `─` `│` | Separadores | 1 | Box Drawing |
+| `├` `┬` `┴` `┤` | Junctions em T — pontos onde separadores se encontram ou se ligam a bordas de painéis internos | 1 | Box Drawing |
 | `·` | Separador do cabeçalho | 1 | Latin Supplement |
 | `╭╮╰╯` | Cantos arredondados | 1 | Box Drawing |
 | `<╡` | Conector árvore → detalhe | 1+1 | Basic Latin + Box Drawing |
@@ -454,7 +466,7 @@ Regras da moldura:
 - **Demais ações**: tecla + label na cor da borda, sem bold
 - **Borda e título** usam o mesmo token — definido pela tabela de tipos semânticos
 - **Ações internas** (revelar senha, alternar campo, expandir diretório) aparecem exclusivamente na barra de comandos — não na borda do diálogo
-- **Teclas de navegação** (↑↓, →, ←, Tab) são de conhecimento amplo e não aparecem na borda
+- **Teclas de navegação** (↑↓, →, ←, Tab) são de conhecimento amplo e não aparecem na borda nem na barra de comandos
 - A **barra de comandos** exibe apenas as ações internas do diálogo (ex: Tab entre campos, revelar senha). Ações de confirmação e cancelamento já estão na borda inferior do diálogo — não são duplicadas na barra
 
 **Diálogos de decisão (confirmação e reconhecimento):**
@@ -737,6 +749,11 @@ Anti-padrões documentam o que **não deve ser feito** na interface do Abditum. 
 | **Fechamento de Cofre Sem Confirmação** *(Crítico)* | Fechar/bloquear cofre com modificações não salvas sem confirmar | Perda silenciosa de dados não salvos |
 | **Ação Destrutiva Sem Confirmação** *(Crítico)* | Ação irreversível ou com perda de dados executa sem diálogo de confirmação e opção de desistir | Dado perdido sem chance de recuperação |
 | **Fluxo Sem Saída** *(Alto)* | Fluxo de múltiplos passos sem opção de desistir (cancelar) ou voltar ao passo anterior | Usuário preso; forçado a concluir ou matar o processo |
+| **Ação Fantasma na Barra** *(Alto)* | Exibir na barra de comandos uma ação que não se aplica ao contexto atual (`Enabled = false`) — mesmo que em estilo dim/disabled | Usuário tenta acionar, recebe erro silencioso; poluição visual; quebra a confiança na barra como indicador de ações disponíveis |
+| **Dica com Tecla Redundante** *(Médio)* | Mensagem de dica de campo ou uso menciona teclas de ação (ex: "F17 para copiar") que já estão visíveis na barra de comandos | Ruído cognitivo; dica fica datada se a tecla mudar; duplicação de informação |
+| **Tecla Fantasma na Barra** *(Alto)* | Sugerir na barra de comandos uma tecla que não está registrada ou não funciona (ex: F17 quando só existem 12 F-keys no terminal) | Usuário pressiona e nada acontece; quebra de confiança na interface |
+| **Tecla Ambígua** *(Alto)* | Atribuir ao aplicativo combinações que o terminal ou shell intercepta antes de entregar (ex: `Ctrl+C` → SIGINT, `Ctrl+Z` → EOF/SIGTSTP, `Ctrl+D` → EOF) | Ação nunca chega ao app; comportamento imprevisível entre plataformas; pode encerrar a aplicação |
+| **Interrupção Inesperada** *(Crítico)* | A aplicação encerra abruptamente ao receber sinal do terminal (SIGINT via `Ctrl+C`, SIGQUIT via `Ctrl+\`) sem limpar memória sensível, clipboard ou scrollback | Dados sensíveis permanecem em memória e clipboard; scrollback do terminal expõe conteúdo da sessão |
 
 ---
 

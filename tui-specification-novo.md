@@ -308,7 +308,7 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
        ↑ text.disabled (2º campo vazio)
 ```
 
-**Estado com ambos campos preenchidos (ação default desbloqueada):**
+**Estado com ambos campos preenchidos e senhas conferem (ação default desbloqueada):**
 
 ```
 ╭── Definir senha mestra ───────────────────╮
@@ -323,6 +323,23 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 │                                            │
 ╰── Enter Confirmar ──────────── Esc Cancelar ╯
        ↑ accent.primary + bold (desbloqueado)
+```
+
+**Estado com senhas divergentes (ação default bloqueada — erro no campo):**
+
+```
+╭── Definir senha mestra ───────────────────╮
+│                                            │
+│  Nova senha                                │
+│  ░••••••••░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│                                            │
+│  Confirmação                               │
+│  ░••••▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│                                            │
+│  Força: ████████░░ Boa                     │
+│                                            │
+╰── Enter Confirmar ──────────── Esc Cancelar ╯
+       ↑ text.disabled (senhas divergem)
 ```
 
 | Elemento | Token | Atributo |
@@ -350,11 +367,11 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 | Medidor de força | visível | Campo `Nova senha` não vazio |
 | Medidor de força | oculto | Campo `Nova senha` vazio |
 | Linha em branco antes do medidor | visível | Medidor visível |
-| Ação `Enter Confirmar` | bloqueada (`text.disabled`) | Campo `Nova senha` vazio **ou** campo `Confirmação` vazio |
-| Ação `Enter Confirmar` | ativa (`accent.primary` **bold**) | Ambos os campos não vazios |
+| Ação `Enter Confirmar` | bloqueada (`text.disabled`) | Campo `Nova senha` vazio **ou** campo `Confirmação` vazio **ou** senhas divergentes |
+| Ação `Enter Confirmar` | ativa (`accent.primary` **bold**) | Ambos os campos não vazios **e** senhas conferem |
 | Ação `Esc Cancelar` | sempre ativa | — |
 
-> **Nota:** a verificação de igualdade entre as senhas ocorre **no momento do Enter** — não bloqueia a ação default. Se as senhas divergem, o erro é comunicado e o campo de confirmação é limpo.
+> **Nota:** a verificação de igualdade entre as senhas ocorre **em tempo real** — a cada tecla no campo `Confirmação` e ao abandonar o campo (Tab ou mudança de foco). Se as senhas divergem, a ação default fica bloqueada e a barra de mensagens exibe erro no lugar da dica de campo.
 
 **Mensagens:**
 
@@ -362,7 +379,8 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 |---|---|---|
 | Diálogo abre / foco em `Nova senha` (vazio ou válido) | Dica de campo | `• A senha mestra protege todo o cofre — use 12+ caracteres` |
 | Foco em `Confirmação` (vazio ou válido) | Dica de campo | `• Redigite a senha para confirmar` |
-| Foco em campo com erro prévio de divergência | Erro (5s) | `✕ As senhas não conferem — digite novamente` |
+| Foco em `Confirmação` (senhas divergentes) | Erro (5s) | `✕ As senhas não conferem — digite novamente` |
+| Digitação em `Confirmação` (senhas divergentes) | Erro (5s) | `✕ As senhas não conferem — digite novamente` |
 | `Enter` → senhas divergentes | Erro (5s) | `✕ As senhas não conferem — digite novamente` |
 | Diálogo fecha (confirmação ou cancelamento) | — | Barra limpa *(orquestrador assume)* |
 
@@ -370,12 +388,17 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 - `Tab` alterna entre os campos `Nova senha` e `Confirmação`
 - Medidor de força atualizado a cada tecla no campo `Nova senha`
 - Máscara de comprimento fixo (8 `•`) — não revela o tamanho real da senha
+- Validação de igualdade em tempo real: a cada tecla no campo `Confirmação` e ao abandonar o campo (Tab)
+- Senhas divergentes: ação default bloqueada (`text.disabled`); barra de mensagens exibe erro (`✕`) no lugar da dica de campo; erro permanece até que as senhas confiram ou o campo seja limpo
 
 **Transições especiais:**
 
 | Evento | Efeito |
 |---|---|
-| `Enter` com senhas divergentes | Foco move para `Confirmação`; campo `Confirmação` limpo; ação default volta para `text.disabled` |
+| Digitação em `Confirmação` torna senhas iguais | Erro na barra é substituído pela dica de campo; ação default muda para `accent.primary` **bold** |
+| Digitação em `Confirmação` torna senhas diferentes | Dica de campo é substituída por erro (`✕`, TTL 5s); ação default volta para `text.disabled` |
+| Abandonar `Confirmação` (Tab) com senhas divergentes | Erro exibido na barra; foco move para `Nova senha`; ação default bloqueada |
+| Abandonar `Confirmação` (Tab) com senhas iguais | Dica exibida na barra; foco move para `Nova senha`; ação default ativa |
 
 ---
 
@@ -386,10 +409,13 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 **Dimensionamento:** largura máxima do DS (70 colunas ou 80% do terminal, o menor); altura 80% do terminal. Proporção árvore/arquivos ~40/60.
 **Diretório inicial:** CWD do processo.
 **Filtro fixo:** apenas arquivos `*.abditum` são exibidos no painel de arquivos. Não há campo de filtro editável.
+**Padding:** 2 colunas horizontal; **0 vertical** — exceção ao DS [Dimensionamento de diálogos](tui-design-system-novo.md#dimensionamento-de-diálogos). Justificativa: princípio "O Terminal como Meio" — espaço vertical é recurso escasso; o FilePicker é o diálogo mais denso da aplicação (header de caminho + 2 painéis + campo de nome no modo Save). As bordas `╭╮╰╯` e os headers internos (`Caminho:`, `Estrutura`, `Arquivos`, `Nome do arquivo`) criam contenção e separação suficientes sem padding vertical.
 
 O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e condições distintos. Ambos compartilham a mesma anatomia de painéis.
 
 > Nos wireframes abaixo, `░` representa áreas com fundo `surface.input` (campos de entrada).
+
+> **Decisão de layout:** o FilePicker usa separadores internos com junctions em T (`├┬┴┤`) e painéis lado a lado — estrutura que não se encaixa no modelo padrão de diálogos do DS. Esta configuração foi documentada como **exceção justificada** (ver [DS — Exceções ao dimensionamento](tui-design-system-novo.md#dimensionamento-de-diálogos)) e não promoveu uma subseção no DS porque: (1) o FilePicker é o único diálogo com essa complexidade; (2) é um padrão de SO consolidado, não um padrão reutilizável interno; (3) o mecanismo de exceção do DS cobre o caso. Se um segundo diálogo com painéis internos surgir, a exceção será promovida a subseção.
 
 ---
 
@@ -472,7 +498,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 | Contexto | Tipo | Texto |
 |---|---|---|
 | Diálogo abre / foco na árvore | Dica de campo | `• Navegue pelas pastas e selecione um cofre` |
-| Foco no painel de arquivos (com seleção) | Dica de campo | `• Enter para abrir o cofre selecionado` |
+| Foco no painel de arquivos (com seleção) | Dica de campo | `• Selecione o cofre para abrir` |
 | Foco no painel de arquivos (painel vazio) | Dica de campo | `• Nenhum cofre neste diretório — navegue para outra pasta` |
 | Diálogo fecha | — | Barra limpa *(orquestrador assume)* |
 
@@ -580,7 +606,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 | Diálogo abre / foco na árvore | Dica de campo | `• Navegue pelas pastas e escolha onde salvar` |
 | Foco no painel de arquivos | Dica de campo | `• Arquivos existentes neste diretório` |
 | Foco no campo `Nome do arquivo` (vazio) | Dica de campo | `• Digite o nome do arquivo — .abditum será adicionado automaticamente` |
-| Foco no campo `Nome do arquivo` (preenchido) | Dica de campo | `• Enter para salvar o cofre` |
+| Foco no campo `Nome do arquivo` (preenchido) | Dica de campo | `• Confirme para salvar o cofre` |
 | Diálogo fecha | — | Barra limpa *(orquestrador assume)* |
 
 **Comportamento:**
@@ -924,10 +950,10 @@ Cada ação na barra segue o formato: **TECLA Label** — tecla em `accent.prima
 **Com ação desabilitada (nenhum segredo selecionado):**
 
 ```
-  F21 Novo · F22 Editar · F23 Excluir · ^S Salvar                              F1 Ajuda
+  F21 Novo · F22 Editar · ^S Salvar                                              F1 Ajuda
 ```
 
-`F23 Excluir` em `text.disabled` + dim. Permanece visível na posição — não colapsa.
+Ações com `Enabled = false` não aparecem na barra — só no modal de Ajuda. O espaço colapsa; separadores `·` são re-calculados entre ações visíveis.
 
 **Durante diálogo ativo (apenas ações internas):**
 
@@ -1086,8 +1112,8 @@ Os tokens de cada tipo de mensagem são definidos no [DS — Mensagens](tui-desi
 
 | Evento | Efeito |
 |---|---|
-| Operação concluída com sucesso | Exibe `✓` mensagem (`semantic.success`, TTL 2–3s) |
-| Informação neutra | Exibe `ℹ` mensagem (`semantic.info`, TTL 3s) |
+| Operação concluída com sucesso | Exibe `✓` mensagem (`semantic.success`, TTL 5s) |
+| Informação neutra | Exibe `ℹ` mensagem (`semantic.info`, TTL 5s) |
 | Condição de alerta (ex: bloqueio iminente) | Exibe `⚠` mensagem (`semantic.warning`, permanente, desaparece com input) |
 | Falha em operação | Exibe `✕` mensagem (`semantic.error` + bold, TTL 5s) |
 | Operação em andamento | Exibe spinner `◐◓◑◒` (`accent.primary`, permanente até sucesso/erro) |
@@ -1116,7 +1142,7 @@ Os tokens de cada tipo de mensagem são definidos no [DS — Mensagens](tui-desi
 **Wireframe (Modo Cofre — scroll ativo, segredo selecionado, painel com foco):**
 
 ```
-  ▼ ★ Favoritos        (2) ↑
+  ▼ Favoritos          (2) ↑
       ★ Bradesco              │
       ★ Gmail                 │
   ▼ Geral              (8)  ■
@@ -1128,7 +1154,7 @@ Os tokens de cada tipo de mensagem são definidos no [DS — Mensagens](tui-desi
     ● Nubank                 ↓
 ```
 
-> `↑`/`↓` indicam conteúdo além da área visível; `■` é o thumb proporcional na posição `│`; `<╡` marca o item sendo detalhado no painel direito. Quando `<╡` e `■` coincidem, `<╡` tem prioridade.
+> `↑`/`↓` indicam conteúdo além da área visível; `■` é o thumb proporcional na posição `│`; `<╡` marca o item sendo detalhado no painel direito. `<╡` e scroll (`↑`/`↓`/`■`) ocupam a mesma coluna — o separador entre painéis. Quando `<╡` coincide com um indicador de scroll na mesma linha, `<╡` tem prioridade (o indicador de scroll é suprimido naquela linha).
 
 **Wireframe (item marcado para exclusão — selecionado):**
 
@@ -1158,8 +1184,8 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 | `▼ ▶ ▷` — prefixos de pasta | `text.secondary` | — |
 | `●` — prefixo de segredo | `text.secondary` | — |
 | `★` — prefixo de segredo favoritado | `accent.secondary` | — |
-| `★` — prefixo de itens dentro de `▼ ★ Favoritos` | `accent.secondary` | — |
-| Nome da pasta virtual `★ Favoritos` | `text.primary` | — |
+| `★` — prefixo de itens dentro de `▼ Favoritos` | `accent.secondary` | — |
+| Nome da pasta virtual `Favoritos` | `accent.primary` | **bold** |
 | Contadores `(n)` | `text.secondary` | — |
 | Nome de segredo marcado para exclusão | `semantic.warning` | ~~strikethrough~~ |
 | `✗` — prefixo de segredo marcado para exclusão | `semantic.warning` | — |
@@ -1178,8 +1204,8 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 | Componente | Estado | Condição |
 |---|---|---|
-| `★ Favoritos` | visível, expandível (`▼/▶`) | ≥ 1 segredo favoritado |
-| `★ Favoritos` | oculta | 0 segredos favoritados |
+| `Favoritos` | visível, expandível (`▼/▶`) | ≥ 1 segredo favoritado |
+| `Favoritos` | oculta | 0 segredos favoritados |
 | Pasta ou segredo | `special.highlight` + texto **bold** | Cursor posicionado sobre o item |
 | Pasta com filhos, expandida | prefixo `▼` em `text.secondary` | Pasta não-vazia, aberta |
 | Pasta com filhos, recolhida | prefixo `▶` em `text.secondary` | Pasta não-vazia, fechada |
@@ -1200,7 +1226,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 | Contexto | Tipo | Texto |
 |---|---|---|
 | Painel recebe foco | Dica de campo | `• ↑↓ para navegar` |
-| `★ Favoritos` (a pasta) selecionada | Dica de campo | `• Pasta virtual — segredos permanecem na localização original` |
+| `Favoritos` (a pasta) selecionada | Dica de campo | `• Pasta virtual — segredos permanecem na localização original` |
 
 #### Eventos
 
@@ -1254,16 +1280,16 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 | Clique no prefixo `▶` ou `▼` | Pasta expande/recolhe — mesmo efeito de `→`/`←` sobre pasta |
 | Clique no prefixo `▷` | Sem efeito |
 | Scroll do mouse para cima/baixo | Janela desliza; cursor acompanha se sair da área visível |
-| Clique em item dentro de `★ Favoritos` | Foco move para o atalho dentro de `★ Favoritos`; painel direito exibe o segredo referenciado |
+| Clique em item dentro de `Favoritos` | Foco move para o atalho dentro de `Favoritos`; painel direito exibe o segredo referenciado |
 
-**Navegação — `★ Favoritos`:**
+**Navegação — `Favoritos`:**
 
 | Evento | Efeito na árvore |
 |---|---|
-| Foco entra em `★ Favoritos` (pasta virtual) | Painel direito mantém último segredo exibido; barra exibe dica "Pasta virtual — segredos permanecem na localização original" |
-| `★ Favoritos` expandida | Atalhos dos segredos favoritados tornam-se visíveis; prefixo `▶` → `▼` |
-| `★ Favoritos` recolhida | Atalhos ocultados; prefixo `▼` → `▶` |
-| Foco em atalho dentro de `★ Favoritos` | Painel direito exibe o detalhe do segredo referenciado; `<╡` aparece na linha do atalho |
+| Foco entra em `Favoritos` (pasta virtual) | Painel direito mantém último segredo exibido; barra exibe dica "Pasta virtual — segredos permanecem na localização original" |
+| `Favoritos` expandida | Atalhos dos segredos favoritados tornam-se visíveis; prefixo `▶` → `▼` |
+| `Favoritos` recolhida | Atalhos ocultados; prefixo `▼` → `▶` |
+| Foco em atalho dentro de `Favoritos` | Painel direito exibe o detalhe do segredo referenciado; `<╡` aparece na linha do atalho |
 
 **Segredo — criação e duplicação:**
 
@@ -1284,15 +1310,15 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 | Evento | Efeito na árvore |
 |---|---|
-| Segredo marcado para exclusão | Prefixo → `✗`; texto `semantic.warning` + strikethrough; contador da pasta e ancestrais −1; se favoritado, some de `★ Favoritos` |
-| Exclusão cancelada (restauração) | Prefixo original restaurado (`●`, `★`, `✦` ou `✎`); texto normal; contador da pasta e ancestrais +1; se era favoritado, volta a `★ Favoritos` |
+| Segredo marcado para exclusão | Prefixo → `✗`; texto `semantic.warning` + strikethrough; contador da pasta e ancestrais −1; se favoritado, some de `Favoritos` |
+| Exclusão cancelada (restauração) | Prefixo original restaurado (`●`, `★`, `✦` ou `✎`); texto normal; contador da pasta e ancestrais +1; se era favoritado, volta a `Favoritos` |
 
 **Segredo — favorito:**
 
 | Evento | Efeito na árvore |
 |---|---|
-| Segredo favoritado | Prefixo `●` → `★` (se limpo); se já era `✦` ou `✎`, prefixo dirty mantido (ver regra de prioridade em Comportamento); `★ Favoritos` aparece se era a primeira marcação; atalho inserido em `★ Favoritos` |
-| Segredo desfavoritado | Prefixo `★` → `●` (se limpo); atalho removido de `★ Favoritos`; `★ Favoritos` desaparece se contagem chegar a 0 |
+| Segredo favoritado | Prefixo `●` → `★` (se limpo); se já era `✦` ou `✎`, prefixo dirty mantido (ver regra de prioridade em Comportamento); `Favoritos` aparece se era a primeira marcação; atalho inserido em `Favoritos` |
+| Segredo desfavoritado | Prefixo `★` → `●` (se limpo); atalho removido de `Favoritos`; `Favoritos` desaparece se contagem chegar a 0 |
 
 **Segredo — reordenação e movimentação:**
 
@@ -1333,7 +1359,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 | Salvo com sucesso (mesmo arquivo) | Nós `✗` removidos fisicamente da árvore; prefixos `✦` e `✎` voltam a `●` ou `★` conforme o flag `favorito`; contadores recalculados; foco permanece no item atual |
 | Salvo como (arquivo diferente) | Efeitos idênticos ao salvar com sucesso — a árvore não distingue o destino do arquivo |
 | Salvo com outra senha | Efeitos idênticos ao salvar com sucesso — a árvore não conhece a chave de cifragem |
-| Reverter alterações (recarregar do disco) | Árvore completamente reconstruída a partir do arquivo em disco: nós `✦` removidos (não existem no disco); nós `✎` voltam ao nome e prefixo originais (`●` ou `★`); nós `✗` voltam ao prefixo original (`●` ou `★`); contadores recalculados; se o item em foco ainda existe, foco permanece nele; se o item em foco era `✦` (deixou de existir), foco vai para a pasta pai; `★ Favoritos` reconstruída a partir dos dados do disco |
+| Reverter alterações (recarregar do disco) | Árvore completamente reconstruída a partir do arquivo em disco: nós `✦` removidos (não existem no disco); nós `✎` voltam ao nome e prefixo originais (`●` ou `★`); nós `✗` voltam ao prefixo original (`●` ou `★`); contadores recalculados; se o item em foco ainda existe, foco permanece nele; se o item em foco era `✦` (deixou de existir), foco vai para a pasta pai; `Favoritos` reconstruída a partir dos dados do disco |
 
 #### Comportamento
 
@@ -1344,14 +1370,16 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 - **Detalhe automático** — o painel direito exibe o segredo que está com foco na árvore. Quando o foco está sobre uma pasta, o painel mantém o último segredo exibido. O detalhe não precisa ser "aberto" — é atualizado continuamente conforme o foco se move
 - **Nome inicial de novo segredo** — `<novo>`; é o nome provisório que aparece no nó até que o usuário edite o campo Nome no painel de detalhes
 - **Segredos com alterações pendentes** — três prefixos indicam estado não salvo, todos em `semantic.warning` (mesma semântica do `•` dirty no cabeçalho): `✦` recém-criado, `✎` modificado, `✗` marcado para exclusão (+ strikethrough). Todos desaparecem após `^S` bem-sucedido
-- **`★ Favoritos` — posição e comportamento** — quando visível, é sempre o primeiro item da lista; se comporta como pasta normal (`▼/▶`); itens internos são atalhos para os segredos originais (os segredos permanecem na hierarquia de origem)
-- **Favorito com estado dirty** — o prefixo dirty (`✦`, `✎`, `✗`) substitui o `★` dentro de `★ Favoritos`; o `★` só aparece como prefixo quando o segredo está limpo. Prioridade de prefixo: `✗` > `✎` > `✦` > `★` > `●`. Segredo marcado para exclusão some imediatamente de `★ Favoritos` — permanece na hierarquia de origem com prefixo `✗`
+- **`Favoritos` — posição e comportamento** — quando visível, é sempre o primeiro item da lista; se comporta como pasta normal (`▼/▶`); itens internos são atalhos para os segredos originais (os segredos permanecem na hierarquia de origem)
+- **`Favoritos` — aparição e remoção** — o nó aparece instantaneamente quando o primeiro segredo é favoritado; desaparece instantaneamente quando o último segredo favoritado é desfavoritado. A atualização segue o princípio "Espelho do cofre" — a árvore reflete o estado do cofre imediatamente após a execução da ação
+- **Foco preservado ao inserir/remover `Favoritos`** — quando o nó `Favoritos` aparece ou desaparece, a posição absoluta de todos os itens na lista desloca ±1. O foco permanece sobre o mesmo elemento lógico (identificado por identidade, não por índice). O scroll se ajusta automaticamente para manter o elemento em foco visível
+- **Favorito com estado dirty** — o prefixo dirty (`✦`, `✎`, `✗`) substitui o `★` dentro de `Favoritos`; o `★` só aparece como prefixo quando o segredo está limpo. Prioridade de prefixo: `✗` > `✎` > `✦` > `★` > `●`. Segredo marcado para exclusão some imediatamente de `Favoritos` — permanece na hierarquia de origem com prefixo `✗`
 - **Navegação linear ignora expand/collapse** — `↑`/`↓` navegam apenas entre itens *visíveis*; filhos de pastas recolhidas são invisíveis e portanto pulados
 - **`→` sobre segredo é no-op** — segredos são folhas; avançar sobre eles não tem efeito (o detalhe já foi atualizado ao receber foco)
 - **`←` tem dois comportamentos** — sobre pasta expandida, recolhe a pasta e foco permanece na pasta; sobre qualquer outro item (pasta recolhida, pasta vazia, segredo), sobe o foco para a pasta pai. Sobre a pasta raiz expandida, apenas recolhe
 - **Foco ao retornar ao painel** — ao receber foco via Tab, o cursor restaura a posição anterior (não vai ao topo)
 - **Scroll automático** — o viewport se ajusta automaticamente para manter o item em foco visível; nunca há item em foco fora da área visível
-- **Scroll no separador** — segue o padrão DS: `↑`/`↓`/`■` aparecem no `│` (borda direita do painel); `<╡` tem prioridade sobre `■` em caso de coincidência (ver [DS — Scroll em diálogos](tui-design-system-novo.md#scroll-em-diálogos))
+- **Scroll no separador** — o scroll da árvore é indicado por `↑`/`↓`/`■` no `│` (separador entre painéis). `<╡` e scroll ocupam a mesma coluna: `<╡` tem prioridade sobre `■` em caso de coincidência (ver [DS — Scroll em diálogos](tui-design-system-novo.md#scroll-em-diálogos)). Quando `<╡` coincide com `↑` ou `↓`, `<╡` prevalece — a direção do scroll é implícita pela presença do outro indicador nas demais linhas
 - **Indentação** — 2 espaços por nível de aninhamento
 
 ---
@@ -1477,9 +1505,9 @@ Barra de comandos: `F16 Ocultar · F17 Copiar · F22 Editar · F1 Ajuda`
 
 | Contexto | Tipo | Texto |
 |---|---|---|
-| Painel recebe foco | Dica de campo | `• ↑↓ para navegar entre campos · F17 para copiar` |
-| Campo sensível selecionado | Dica de campo | `• F16 para revelar · F17 para copiar` |
-| `F17` copia valor | Sucesso (2–3s) | `✓ [Label do campo] copiado para a área de transferência` |
+| Painel recebe foco | Dica de campo | `• Navegue entre campos e copie o valor` |
+| Campo sensível selecionado | Dica de campo | `• Revele ou copie o valor do campo` |
+| `F17` copia valor | Sucesso (5s) | `✓ [Label do campo] copiado para a área de transferência` |
 
 #### Eventos
 
@@ -1505,6 +1533,7 @@ Barra de comandos: `F16 Ocultar · F17 Copiar · F22 Editar · F1 Ajuda`
 - **URLs** — valores identificados como URL usam `text.link`, diferenciados visualmente de texto puro
 - **Campo Observação** — texto livre com word-wrap; pode ocupar múltiplas linhas e contribui para o scroll do painel
 - **Scroll** — última coluna do painel reservada para a trilha de scroll (`↑`/`↓`/`■`) mesmo quando não há scroll ativo (evita deslocamento de conteúdo ao ativar); mesma semântica do DS (ver [DS — Scroll em diálogos](tui-design-system-novo.md#scroll-em-diálogos))
+- **`<╡` e scroll são independentes** — `<╡` aparece na margem esquerda do painel (separador com a árvore) e indica qual item da árvore está sendo detalhado; `↑`/`↓`/`■` aparece na margem direita e indica scroll dentro do conteúdo do detalhe. Um não afeta o outro — `<╡` só muda quando a seleção na árvore muda; `↑`/`↓`/`■` só muda quando o conteúdo do detalhe é rolado
 - **Posição do cursor ao retornar** — ao retornar o foco via `Tab`, o cursor vai ao campo que estava ativo antes, não ao primeiro campo
 
 ---
