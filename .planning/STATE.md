@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 05.7
 status: executing
-last_updated: "2026-04-06T09:54:46.262Z"
+last_updated: "2026-04-06T10:40:02.899Z"
 progress:
   total_phases: 22
   completed_phases: 13
   total_plans: 48
-  completed_plans: 43
+  completed_plans: 44
 ---
 
 # Project State — Abditum
@@ -245,6 +245,7 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 05.6]: Plain-text test assertions on View() — ANSI escape code assertions are fragile and deferred to Phase 06+
 - [Phase 05.7-golden-test-architecture-for-tui-modals]: RenderCommandBar receives []Action as parameter — callers pass am.Visible() explicitly, keeping the function pure and testable without an ActionManager
 - [Phase 05.7-golden-test-architecture-for-tui-modals]: helpModal.groupLabel stored as func(int) string field — preserves GroupLabel fallback logic without ActionManager dependency, enabling plain []Action fixture injection in tests
+- [Phase 05.7]: RenderCommandBar sorts actions by Priority desc internally — callers may pass unsorted slices
 
 ### Phase 02 Decisions
 
