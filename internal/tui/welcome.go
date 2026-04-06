@@ -39,9 +39,17 @@ func (m *welcomeModel) Update(msg tea.Msg) tea.Cmd {
 // View renders the ASCII art logo centered on screen.
 func (m *welcomeModel) View() string {
 	logoBlock := lipgloss.NewStyle().Width(43).Render(RenderLogo(m.theme))
-	hint := lipgloss.NewStyle().Foreground(m.theme.SemanticInfo).
-		Render("No vault open")
-	content := logoBlock + "\n\n" + hint
+
+	// Action hints
+	hintText := "n Novo cofre    o Abrir cofre"
+	hintStyle := lipgloss.NewStyle().Foreground(m.theme.TextSecondary)
+	renderedHints := hintStyle.Render(hintText)
+
+	// Combine logo and hints
+	content := lipgloss.JoinVertical(lipgloss.Center,
+		logoBlock,
+		renderedHints,
+	)
 
 	if m.width == 0 || m.height == 0 {
 		return content
