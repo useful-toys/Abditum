@@ -96,7 +96,7 @@ O usuário tem controle total e exclusivo sobre seus segredos: os dados existem 
 
 ## Context
 
-**Estado atual:** Phase 5 complete — Full TUI architecture scaffold delivered. `rootModel` is the sole `tea.Model`, implementing D-06 priority dispatch, `workArea` state machine, modal stack, FlowRegistry, and frame compositor. All 7 child model stubs satisfy `childModel`. Charm v2 dependencies in `go.mod`. Unit tests (5) passing. TUI bootstraps via `main.go`. Ready for Phase 6 (Welcome Screen + Vault Create/Open flows).
+**Estado atual:** Phase 5.7 complete — Golden test architecture established and gap-closed. 100 spec-compliant golden files across 4 TUI components (MessageBar, CommandBar, DecisionDialog, HelpModal): `.txt.golden` contains plain stripped text; `.json.golden` uses compact tuple format `[line, col, fg, bg, [styles]]`. ANSI parser fixed (MarshalJSON, empty style array, dedup). All tests passing. Ready for Phase 6 (Welcome Screen + Vault Create/Open flows).
 
 **Stack definida:**
 - Linguagem: **Go** — compilado como binário único, sem runtime externo
@@ -161,4 +161,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-06 after Phase 5.7 completion — Golden test architecture established for TUI modals (MessageBar, CommandBar, DecisionDialog, HelpModal); RenderCommandBar decoupled to pure function; helpModal decoupled from ActionManager.*
+*Last updated: 2026-04-06 after Phase 5.7 gap closure — Golden test architecture fully spec-compliant: 100 golden files regenerated with compact tuple JSON and plain-text TXT; ANSI parser fixed; all 4 TUI component test suites passing.*
