@@ -473,7 +473,7 @@ func TestDecisionDialog_Golden(t *testing.T) {
 	cases := []testCase{
 		// 1. Destructive 1-action short title width=30
 		{
-			variant: "destructive-1action-short-30",
+			variant: "destructive-1action-short-30x24",
 			dialog: func() *DecisionDialog {
 				d := NewDecisionDialog(SeverityDestructive, IntentionAcknowledge,
 					"Excluir segredo",
@@ -485,7 +485,7 @@ func TestDecisionDialog_Golden(t *testing.T) {
 		},
 		// 2. Destructive 2-action long title+body width=60
 		{
-			variant: "destructive-2action-long-60",
+			variant: "destructive-2action-long-60x24",
 			dialog: func() *DecisionDialog {
 				d := NewDecisionDialog(SeverityDestructive, IntentionConfirm,
 					"Excluir permanentemente este segredo do cofre atual?",
@@ -500,7 +500,7 @@ func TestDecisionDialog_Golden(t *testing.T) {
 		},
 		// 3. Error 3-action short title width=30
 		{
-			variant: "error-3action-short-30",
+			variant: "error-3action-short-30x24",
 			dialog: func() *DecisionDialog {
 				d := NewDecisionDialog(SeverityError, IntentionConfirm,
 					"Cofre corrompido",
@@ -516,7 +516,7 @@ func TestDecisionDialog_Golden(t *testing.T) {
 		},
 		// 4. Error 1-action long title+body width=60
 		{
-			variant: "error-1action-long-60",
+			variant: "error-1action-long-60x24",
 			dialog: func() *DecisionDialog {
 				d := NewDecisionDialog(SeverityError, IntentionAcknowledge,
 					"Erro crítico ao acessar o cofre — arquivo danificado",
@@ -528,7 +528,7 @@ func TestDecisionDialog_Golden(t *testing.T) {
 		},
 		// 5. Alert 2-action short title, 2-line body width=30
 		{
-			variant: "alert-2action-short-30",
+			variant: "alert-2action-short-30x24",
 			dialog: func() *DecisionDialog {
 				d := NewDecisionDialog(SeverityAlert, IntentionConfirm,
 					"Sobrescrever?",
@@ -543,7 +543,7 @@ func TestDecisionDialog_Golden(t *testing.T) {
 		},
 		// 6. Alert 3-action long title, 1-line body width=60
 		{
-			variant: "alert-3action-long-60",
+			variant: "alert-3action-long-60x24",
 			dialog: func() *DecisionDialog {
 				d := NewDecisionDialog(SeverityAlert, IntentionConfirm,
 					"Conflito de nome ao salvar novo segredo no cofre",
@@ -559,7 +559,7 @@ func TestDecisionDialog_Golden(t *testing.T) {
 		},
 		// 7. Informative 1-action short title, 1-line body width=60
 		{
-			variant: "informative-1action-short-60",
+			variant: "informative-1action-short-60x24",
 			dialog: func() *DecisionDialog {
 				d := NewDecisionDialog(SeverityInformative, IntentionAcknowledge,
 					"Dica",
@@ -571,7 +571,7 @@ func TestDecisionDialog_Golden(t *testing.T) {
 		},
 		// 8. Informative 2-action long title, 2-line body width=30
 		{
-			variant: "informative-2action-long-30",
+			variant: "informative-2action-long-30x24",
 			dialog: func() *DecisionDialog {
 				d := NewDecisionDialog(SeverityInformative, IntentionConfirm,
 					"Segredo copiado para a área de transferência com sucesso",
@@ -586,7 +586,7 @@ func TestDecisionDialog_Golden(t *testing.T) {
 		},
 		// 9. Neutral 3-action short title, 1-line body width=30
 		{
-			variant: "neutral-3action-short-30",
+			variant: "neutral-3action-short-30x24",
 			dialog: func() *DecisionDialog {
 				d := NewDecisionDialog(SeverityNeutral, IntentionConfirm,
 					"Continuar?",
@@ -602,7 +602,7 @@ func TestDecisionDialog_Golden(t *testing.T) {
 		},
 		// 10. Neutral 2-action long title, 2-line body width=60
 		{
-			variant: "neutral-2action-long-60",
+			variant: "neutral-2action-long-60x24",
 			dialog: func() *DecisionDialog {
 				d := NewDecisionDialog(SeverityNeutral, IntentionConfirm,
 					"Confirmar alterações pendentes antes de fechar o cofre?",
@@ -623,7 +623,7 @@ func TestDecisionDialog_Golden(t *testing.T) {
 			out := tc.dialog.View()
 
 			// .txt.golden: raw ANSI output
-			checkOrUpdateDecisionGolden(t, tc.variant, "txt", out)
+			checkOrUpdateDecisionGolden(t, tc.variant, "txt", stripANSI(out))
 
 			// .json.golden: style transitions
 			transitions := testdatapkg.ParseANSIStyle(out)
