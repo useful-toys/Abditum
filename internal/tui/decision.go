@@ -411,6 +411,10 @@ func (d *DecisionDialog) renderActionBar(boxW int) string {
 		if i < len(segs)-1 {
 			leftPlain.WriteString(" ── ")
 			leftStyled.WriteString(" " + dashes(2) + " ")
+		} else {
+			// trailing space before the fill dashes
+			leftPlain.WriteString(" ")
+			leftStyled.WriteString(" ")
 		}
 	}
 
