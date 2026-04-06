@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 06
 status: planning
-last_updated: "2026-04-06T11:08:37.499Z"
+last_updated: "2026-04-06T12:50:34.168Z"
 progress:
   total_phases: 22
   completed_phases: 13
-  total_plans: 48
-  completed_plans: 47
+  total_plans: 51
+  completed_plans: 48
 ---
 
 # Project State — Abditum
@@ -250,6 +250,9 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 05.7]: Negative scroll sentinel (-1 → maxScroll) simplifies fixture setup for bottom-scroll scenarios in help_test.go
 - [Phase 05.7-04]: Variant-embedded width in decision golden path helper — decisionGoldenPath(variant, ext) does not append width suffix since variant already encodes it (e.g. destructive-1action-short-30)
 - [Phase 05.7-04]: Explicit-key Update tests use lowercase rune codes (e.g. 'm') to verify case-insensitive dispatch in DecisionDialog.Update()
+- [Phase 05.7-06]: StyleTransition.MarshalJSON emits compact [line,col,fg,bg,[styles]] tuple — encoding/json import added; nil Style coerces to []string{} for null-safe JSON
+- [Phase 05.7-06]: styleMapToArray uses active := []string{} literal (not var nil) so no-style transitions always produce [] in JSON output
+- [Phase 05.7-06]: ParseANSIStyle deduplicates same-(line,col) transitions by replacing last slice element — multiple SGR before any text advance produce one transition
 
 ### Phase 02 Decisions
 
