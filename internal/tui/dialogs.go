@@ -1,9 +1,11 @@
 package tui
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -110,12 +112,13 @@ type filePickerModal struct {
 	mode        FilePickerMode
 	ext         string
 	currentPath string
-	files       []string // filtered files without extension
-	directories []string // subdirectories
-	fileCursor  int      // cursor position in files list
-	treeCursor  int      // cursor position in directories list
-	fileScroll  int      // scroll offset for files
-	treeScroll  int      // scroll offset for tree
+	files       []string      // filtered files without extension
+	fileInfos   []os.FileInfo // metadata for files (size, mod time)
+	directories []string      // subdirectories
+	fileCursor  int           // cursor position in files list
+	treeCursor  int           // cursor position in directories list
+	fileScroll  int           // scroll offset for files
+	treeScroll  int           // scroll offset for tree
 	width       int
 	height      int
 	theme       *Theme
@@ -140,6 +143,7 @@ func (m *filePickerModal) Init() tea.Cmd {
 // loadDirectory reads the current directory and filters for .abditum files.
 func (m *filePickerModal) loadDirectory() {
 	m.files = []string{}
+	m.fileInfos = []os.FileInfo{}
 	m.directories = []string{}
 	m.fileCursor = 0
 	m.treeCursor = 0
@@ -161,6 +165,9 @@ func (m *filePickerModal) loadDirectory() {
 			// Store without extension
 			name := strings.TrimSuffix(entry.Name(), ".abditum")
 			m.files = append(m.files, name)
+			// Store file info for metadata display
+			info, _ := entry.Info()
+			m.fileInfos = append(m.fileInfos, info)
 		}
 	}
 }
@@ -267,6 +274,49 @@ func (m *filePickerModal) View() string {
 	return strings.Join(lines, "\n")
 }
 
+// formatFileSize returns a human-readable file size string (e.g., "1.2MB", "512B").
+func formatFileSize(sizeBytes int64) string {
+	const unit = 1024
+	if sizeBytes < unit {
+		return fmt.Sprintf("%dB", sizeBytes)
+	}
+	div, exp := int64(unit), 0
+	for n := sizeBytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f%s", float64(sizeBytes)/float64(div), []string{"", "K", "M", "G"}[exp]) + "B"
+}
+
+// formatRelativeDate returns a relative time string for a file's modification time.
+// Examples: "now", "1h", "2d", or "01/01/24" for older files.
+func formatRelativeDate(modTime time.Time) string {
+	now := time.Now()
+	diff := now.Sub(modTime)
+
+	// If modified within the last minute, show "now"
+	if diff < time.Minute {
+		return "now"
+	}
+	// If within the last hour
+	if diff < time.Hour {
+		mins := int(diff.Minutes())
+		return fmt.Sprintf("%dm", mins)
+	}
+	// If within the last day
+	if diff < 24*time.Hour {
+		hours := int(diff.Hours())
+		return fmt.Sprintf("%dh", hours)
+	}
+	// If within the last week
+	if diff < 7*24*time.Hour {
+		days := int(diff.Hours() / 24)
+		return fmt.Sprintf("%dd", days)
+	}
+	// For older files, show date in MM/DD/YY format
+	return modTime.Format("01/02/06")
+}
+
 // renderTreePanel renders the left panel with directories.
 func (m *filePickerModal) renderTreePanel(width int) string {
 	content := []string{"  Estrutura"}
@@ -300,7 +350,19 @@ func (m *filePickerModal) renderFilesPanel(width int) string {
 		if i == m.fileCursor && m.focusPanel == 1 {
 			prefix = "→ "
 		}
-		line := prefix + file
+
+		// Build file entry with metadata
+		var line string
+		if i < len(m.fileInfos) && m.fileInfos[i] != nil {
+			// Include file size and relative date
+			size := formatFileSize(m.fileInfos[i].Size())
+			date := formatRelativeDate(m.fileInfos[i].ModTime())
+			line = fmt.Sprintf("%s%-20s %8s  %s", prefix, file, size, date)
+		} else {
+			line = prefix + file
+		}
+
+		// Truncate if too wide
 		if lipgloss.Width(line) > width {
 			line = line[:width-1] + "…"
 		}
