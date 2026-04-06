@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 05.6
+current_phase: 05.7
 status: executing
-last_updated: "2026-04-06T01:32:35.492Z"
+last_updated: "2026-04-06T09:54:46.262Z"
 progress:
-  total_phases: 21
+  total_phases: 22
   completed_phases: 13
-  total_plans: 42
-  completed_plans: 42
+  total_plans: 48
+  completed_plans: 43
 ---
 
 # Project State — Abditum
 
 **Last updated:** 2026-04-01T03:03:16Z
-**Current phase:** 05.6
+**Current phase:** 05.7
 **Milestone:** v1.0
 
 ## Status
@@ -56,6 +56,10 @@ Plans to execute:
 
 ### Roadmap Evolution
 
+- Phase 05.7 inserted after Phase 05: golden-test-architecture-for-tui-modals (INSERTED URGENT)
+  - **Purpose:** Golden test architecture for TUI modals — detect visual regressions (spacing, colors, fonts) that conventional tests miss
+  - **Scope:** SGR parser, golden test runners, 48 DecisionDialog golden files, 8 HelpDialog golden files
+
 - Phase 12 added: 05 tui-scaffold-action-arch
 - Phase 05.6 added: tui-scaffold-dialogs
 
@@ -83,7 +87,7 @@ Plans to execute:
 
 ### Phase 04.1: Refinamento da Camada de Domínio (Completed 2026-03-31)
 
-**Status:** Executing Phase 05.6
+**Status:** Executing Phase 05.7
 
 **Key Deliverables:**
 
@@ -239,6 +243,8 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 05.6]: Test assertions on View() use plain-text content checks only — ANSI color code assertions are fragile and deferred to Phase 06+ visual integration tests
 - [Phase 05.6]: View() builds top border manually (╭── styledTitle dashes ──╮) — lipgloss v2 has no BorderTitle method
 - [Phase 05.6]: Plain-text test assertions on View() — ANSI escape code assertions are fragile and deferred to Phase 06+
+- [Phase 05.7-golden-test-architecture-for-tui-modals]: RenderCommandBar receives []Action as parameter — callers pass am.Visible() explicitly, keeping the function pure and testable without an ActionManager
+- [Phase 05.7-golden-test-architecture-for-tui-modals]: helpModal.groupLabel stored as func(int) string field — preserves GroupLabel fallback logic without ActionManager dependency, enabling plain []Action fixture injection in tests
 
 ### Phase 02 Decisions
 
