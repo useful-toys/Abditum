@@ -1,68 +1,88 @@
 # Phase 6: Welcome Screen + Vault Create/Open - Discussion Log
 
 > **Audit trail only.** Do not use as input to planning, research, or execution agents.
-> Decisions are captured in CONTEXT.md — this log preserves the context gathered and alternatives considered.
+> Decisions are captured in CONTEXT.md — this log preserves the alternatives considered.
 
-**Date:** 2026-04-02
-**Mode:** Specification-driven (user provided spec files instead of interactive Q&A)
-
----
-
-## Context Sources
-
-The user provided four specification documents as the basis for all decisions in this phase, bypassing the interactive gray-area discussion flow:
-
-1. `tui-specification-novo.md` — Full visual spec for PasswordEntry, PasswordCreate, FilePicker (Open + Save modes), Help, and decision dialogs
-2. `tui-design-system-novo.md` — Design system with color palette, typography, borders, layout rules, and modal anatomy
-3. `fluxos.md` — Behavioral flow specs for Fluxo 1 (Abrir Cofre) and Fluxo 2 (Criar Cofre), including CLI fast-path, retry rules, and overwrite handling
-4. `requisitos.md` — Requirements including VAULT-01, VAULT-03, VAULT-04, and password strength rules
+**Date:** 2026-04-06
+**Phase:** 06-welcome-screen-vault-create-open
+**Areas discussed:** Welcome Screen Interaction, File Picker User Experience, Password Dialogs Behavior, Vault Lifecycle Flow Control, Global Shortcuts and Theme System.
 
 ---
 
-## Key Decisions Derived from Specs
+## Welcome Screen Interaction Pattern
 
-### Welcome screen action model
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Dedicated actions in Command Bar | User initiates Open/Create via explicit keys (e.g., 'o', 'n') visible in the command bar. | ✓ |
 
-**Considered:** ROADMAP Phase 6 plan described a `welcomeModel` with j/k/Enter menu and sub-states (`subStatePickPath`, `subStateCreatePassword`, `subStateOpenPassword`).
+**User's choice:** Initiated via explicit actions ('o', 'n') displayed as hints on the welcome screen, dispatched by `ActionManager`.
 
-**Resolved:** Phase 5 CONTEXT (D-02, D-09) is authoritative. `preVaultModel` stays display-only; open/create are FlowRegistry flows dispatched by keys `n` and `o` already registered in Phase 5. The ROADMAP plan description was written before Phase 5 locked the architecture. No menu, no sub-states.
-
-### Max retries on vault open
-
-**Spec source:** `tui-specification-novo.md` §PasswordEntry — "Tentativa 2 de 5" wireframe.
-
-**Decision:** Max 5 attempts. Counter hidden on attempt 1, shown from attempt 2 onward. After 5 exhausted attempts, dialog closes automatically (emits `flowCancelledMsg{}`). No hard lock-out beyond that — user returns to welcome screen.
-
-### Weak password UX
-
-**Spec source:** `tui-specification-novo.md` §PasswordCreate — action default unlocked when both fields non-empty, regardless of strength.
-
-**Resolved:** Strength meter (`Força: ████████░░ Boa/Fraca`) with semantic colors is the full weak-password UX. No separate confirmation modal for weak password. Submit is always allowed when both fields are non-empty. This aligns with the ROADMAP plan's "non-blocking warning banner, submit allowed" and with `requisitos.md` §Força da Senha Mestra: "O aviso de senha fraca é apenas informativo."
-
-### FilePicker scope
-
-**Spec source:** `tui-specification-novo.md` §FilePicker — full two-panel spec (tree + files, Open + Save modes).
-
-**Decision:** Implement the full spec-compliant FilePicker as a dedicated `filePickerModal` struct. No simplified text-input shortcut. Phase 6 is the first use case for FilePicker per Phase 5 CONTEXT (D-10: "File picker modal is deferred — implemented in the phase that introduces its first use case").
-
-### CLI path fast-path
-
-**Spec source:** `fluxos.md` Fluxo 1 — "Entrada antecipada via argumento de linha de comando."
-
-**Decision:** When `initialPath` is non-empty at startup, `rootModel.Init()` returns a cmd that starts `openVaultFlow` starting from path verification (not FilePicker). If path is invalid, show error modal and fall back to FilePicker.
-
-### Error classification
-
-**Spec source:** `fluxos.md` Fluxo 1 step 1/3, `requisitos.md` VAULT-04.
-
-**Decision:** Auth errors → retry (up to 5); integrity/magic/version errors → Recognition × Error modal → return to FilePicker. Mapped to storage sentinel errors with no technical strings exposed.
+**Notes:** This aligns with the `tui-elm-architecture.md` where `welcomeModel` is display-only and `ActionManager` handles key dispatch. `welcomeModel` renders visual hints.
 
 ---
 
-## Alternatives Not Pursued
+## File Picker User Experience
 
-- **Text-input path entry** instead of FilePicker: rejected — full FilePicker is specced and Phase 6 is its designated introduction phase
-- **Blocking weak-password modal**: rejected — spec and requirements both say informative/non-blocking
-- **`welcomeModel` with sub-states**: rejected — superseded by Phase 5 architecture (D-09)
-- **Single `passwordModal` for both entry and create**: rejected — the two dialogs have different field counts, Tab behavior, and strength meter; separate structs are cleaner
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Custom two-panel layout with detailed navigation | FilePicker implements a two-panel layout with directory tree and file list, supporting full keyboard/mouse navigation, filtering, metadata display, and error handling for inaccessible paths. | ✓ |
 
+**User's choice:** Custom two-panel FilePicker implementation, adhering to `tui-specification-novo.md` for layout, navigation, metadata, and error handling (e.g., 0 vertical padding, `os.ReadDir`).
+
+**Notes:** `charm.land/bubbles/v2/filepicker` was considered but deemed unsuitable due to its single-panel layout. Custom implementation ensures full compliance with the two-panel specification. Error messages are generic and user-friendly.
+
+---
+
+## Password Entry & Creation Flows
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Dedicated modals with masked input, strength meter, attempt counter | Separate modals (`passwordEntryModal`, `passwordCreateModal`) handle password input, masked with '•', provide strength feedback, and manage attempts. | ✓ |
+
+**User's choice:** Dedicated `passwordEntryModal` and `passwordCreateModal` conforming to `tui-specification-novo.md` for fixed width, masking, real-time strength meter (for create), attempt counter (for entry), and precise message feedback.
+
+**Notes:** `bubbles/textinput` is used for input fields. Password strength is evaluated using `crypto.EvaluatePasswordStrength`. Password buffers are zeroed immediately after use.
+
+---
+
+## Vault Lifecycle Flow Control
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| State machine flows (`flowHandler`) with explicit `startFlowMsg`/`endFlowMsg` | `openVaultFlow` and `createVaultFlow` act as internal state machines, pushing dialogs onto the modal stack and reacting to results. Includes pre-checks for unsaved changes, overwrite confirmation, and error handling. | ✓ |
+
+**User's choice:** Orchestrate multi-step vault operations using `flowHandler` implementations (`openVaultFlow`, `createVaultFlow`) that manage their internal state and interact with the `rootModel` via specific messages (`filePickedMsg`, `pwdEnteredMsg`, `pwdCreatedMsg`, `vaultOpenedMsg`, `flowCancelledMsg`).
+
+**Notes:** Flows begin by checking for unsaved changes (requiring a `Confirmation × Neutro` dialog). Overwrite scenarios in create flow trigger a `Confirmation × Destrutivo` dialog. All `storage` and `vault` errors are classified and mapped to user-friendly messages and appropriate dialogs. `RecoverOrphans` is called silently.
+
+---
+
+## Global Shortcuts and Theme System
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| `Ctrl+Q` for exit with unsaved changes flow, `F12` for theme toggle | Global shortcuts registered in `ActionManager`, `Ctrl+Q` triggers `fluxos.md` exit flows. `F12` toggles between `ThemeTokyoNight` and `ThemeCyberpunk` without persistence. | ✓ |
+
+**User's choice:** `rootModel` manages global shortcuts. `Ctrl+Q` orchestrates the appropriate exit flow (`Fluxo 3, 4, or 5`). `F12` directly toggles the active `Theme` instance, propagating changes to all active TUI components immediately.
+
+**Notes:** The theme system uses a `Theme` struct to encapsulate all color tokens, populated with exact hex values from `tui-design-system-novo.md`. Theme changes are applied via a type-switch helper (`applyTheme`) to all live children/modals. `F12` is registered as `HideFromBar: true`. Memory and screen clearing on exit/lock are ensured.
+
+---
+
+## the agent's Discretion
+
+- Exact Go struct field counts and constructor signatures for the new modal types.
+- Scroll implementation details within FilePicker panels.
+- `pwdEnteredMsg.password` and `pwdCreatedMsg.password` lifetime management: flow handlers must zero the slices after use.
+- Whether `openVaultFlow` and `createVaultFlow` own their modal structs as fields (for state continuity across `Update` calls) or recreate them on each flow state transition.
+- Use `charm.land/bubbles/v2/key` for key bindings in new modal types if it enhances readability without architectural overhead (existing codebase uses string matching).
+- `storage.Probe()` API (or equivalent) for CLI fast-path: if `internal/storage` does not expose a header-only read, `storage.Load` with a dummy password will return `ErrAuthFailed` for non-vault files, which is sufficient.
+
+## Deferred Ideas
+
+- **Vault tree display and secret navigation**: Phase 7.
+- **Save / Save As / Discard / Change Password / Export / Import as standalone features**: Phase 9 (only implemented as part of initial Open/Create flows in Phase 6).
+- **Security timers, clipboard, manual lock/exit flows**: Phase 10.
+- **Theme persistence**: Saving the user's selected theme to settings file is Phase 9.
+- **Tab navigation between modes (F2, F3, F4)**: These are visually rendered but become functional in Phase 7+.
+- **File picker for `bubbles/filepicker`**: If the current custom implementation proves too complex or deviates too much, re-evaluate wrapping `bubbles/filepicker` for the two-panel spec layout in a future phase.
