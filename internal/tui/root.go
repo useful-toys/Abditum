@@ -149,7 +149,7 @@ func newRootModel() *rootModel {
 			Group: 1, Scope: ScopeGlobal, Priority: 0, HideFromBar: false,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd {
-				return func() tea.Msg { return pushModalMsg{modal: newHelpModal(actions)} }
+				return func() tea.Msg { return pushModalMsg{modal: newHelpModal(actions.All(), actions.GroupLabel)} }
 			}},
 	)
 	actions.RegisterGroupLabel(1, "Mensagens")

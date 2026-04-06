@@ -13,18 +13,22 @@ import (
 // Pushed onto the modal stack when the user presses F1.
 // Dismissed via ESC or F1.
 type helpModal struct {
-	actions *ActionManager
-	width   int // terminal width for dynamic sizing
-	height  int // terminal height for dynamic sizing
-	scroll  int // current scroll offset
+	actions    []Action         // all registered actions for the help overlay
+	groupLabel func(int) string // resolves a group int to a display label
+	width      int              // terminal width for dynamic sizing
+	height     int              // terminal height for dynamic sizing
+	scroll     int              // current scroll offset
 }
 
 // Compile-time assertion: helpModal satisfies modalView.
 var _ modalView = &helpModal{}
 
 // newHelpModal creates a new help overlay modal.
-func newHelpModal(actions *ActionManager) *helpModal {
-	return &helpModal{actions: actions}
+// It accepts a pre-computed slice of all actions and a groupLabel function
+// so that golden tests can instantiate it with plain []Action fixtures,
+// without needing an ActionManager.
+func newHelpModal(actions []Action, groupLabel func(int) string) *helpModal {
+	return &helpModal{actions: actions, groupLabel: groupLabel}
 }
 
 // SetSize sets the terminal dimensions for dynamic modal sizing.
@@ -77,7 +81,7 @@ func (m *helpModal) View() string {
 	}
 	boxW := maxW
 
-	allActions := m.actions.All()
+	allActions := m.actions
 	lines := m.buildContentLines(allActions)
 	totalLines := len(lines)
 
@@ -184,8 +188,7 @@ func (m *helpModal) renderDialog(lines []string, boxW, innerH int, hasAbove, has
 
 // totalLines returns the total number of content lines.
 func (m *helpModal) totalLines() int {
-	allActions := m.actions.All()
-	return len(m.buildContentLines(allActions))
+	return len(m.buildContentLines(m.actions))
 }
 
 // contentHeight returns the visible content height (excluding borders).
@@ -232,7 +235,7 @@ func (m *helpModal) buildContentLines(actions []Action) []string {
 			}
 			continue
 		}
-		label := m.actions.GroupLabel(grp)
+		label := m.groupLabel(grp)
 		if label != "" {
 			lines = append(lines, groupStyle.Render(label))
 		}
