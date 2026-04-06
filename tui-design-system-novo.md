@@ -629,54 +629,51 @@ O ciclo entre painéis é circular. Painéis vazios ou sem conteúdo interativo 
 
 Esta seção define a **política de atribuição de teclas** — como atalhos são organizados, quais regras regem conflitos e quais teclas têm significado global. O mapeamento completo por tela está na [especificação de telas](tui-specification-novo.md).
 
-**Política de escopos:**
+**Política de escopos e Ergonomia:**
 
-Cada tecla pertence a exatamente um escopo. Escopos mais específicos sobrepõem os mais gerais quando ambos estão ativos (ex: um diálogo sobrepõe a área de trabalho).
+As teclas são atribuídas seguindo uma hierarquia de escopos e agrupamentos físicos no teclado, visando otimizar a memória muscular e evitar acionamentos acidentais para ações críticas. Escopos mais específicos sobrepõem os mais gerais quando ambos estão ativos.
 
 | Escopo | Descrição | Exemplo |
 |---|---|---|
-| **Global** | Funciona em qualquer contexto da aplicação | `F12` tema, `Esc` cancelar |
-| **Área de trabalho** | Funciona quando a área de trabalho tem foco (sem diálogo aberto) | `^S` salvar, `^F` buscar |
-| **Diálogo** | Funciona apenas enquanto um diálogo está no topo da pilha | `Enter` confirmar, atalho da opção |
-| **Tela-específico** | Funciona apenas em uma tela ou painel particular | F-keys de segredo, pasta, modelo |
+| **Global** | Funciona em qualquer contexto da aplicação | `F1`, `F12`, `Ctrl+Q`, `Ctrl+Alt+Shift+Q` |
+| **Área de trabalho** | Funciona quando a área de trabalho tem foco (sem diálogo aberto) | `F2-F11` (ações do cofre e modos), `Shift+F6`, `Shift+F7`, `Ctrl+F7` |
+| **Diálogo** | Funciona apenas enquanto um diálogo está no topo da pilha | `Enter`, `Esc`, `Tab` |
+| **Contextual/Foco** | Ações específicas do item ou campo com foco | `Insert`, `Del`, `Ctrl+<letra>` (para ações locais) |
 
-**Regras de consistência:**
+**Regras de Consistência e Semântica de Modificadores:**
 
-- `Enter` sempre avança ou aprofunda; `Esc` sempre retrocede ou abandona. O vetor direcional é consistente mesmo quando a ação concreta varia por escopo (ver [Princípios — Consistência de interação](#experiência)).
-- Se uma tecla precisa ter significado diferente em dois contextos, isso deve ser documentado e justificado na especificação.
-- Teclas de navegação universais (`↑↓←→`, `Tab`, `Home`, `End`) não aparecem na barra de comandos — são senso comum em TUI. Exceção: diálogos exibem opções explicitamente.
+-   `Enter` sempre avança ou aprofunda: confirma em diálogos, seleciona/expande na árvore, ativa/confirma edição de campo.
+-   `Esc` sempre retrocede ou abandona: fecha modal, cancela edição, sai de modo (busca, edição).
+-   `Tab` / `Shift+Tab` navegam entre painéis (modo leitura) ou campos (modo edição).
+-   `↑↓←→` são para navegação direcional em listas, árvores e campos.
+-   `Home` / `End` navegam ao primeiro / último item visível ou início/fim de linha em campos.
+-   `PgUp` / `PgDn` realizam scroll por página (viewport − 1) em conteúdo com scroll.
+-   **`Ctrl + <tecla>`**: Preferencialmente para ações **locais** no contexto da área de trabalho ou componente ativo.
+-   **`Alt + <tecla>`**: Para ações alternativas ou modificadores, se `Ctrl` estiver esgotado ou for ambíguo.
+-   **`Insert`**: Sugerido para ações de inserção/criação (no contexto do foco).
+-   **`Del`**: Sugerido para ações de exclusão (no contexto do foco).
+-   Se uma tecla precisa ter significado diferente em dois contextos, isso deve ser documentado e justificado na especificação.
+-   Teclas de navegação universais (`↑↓←→`, `Tab`, `Home`, `End`, `PgUp`, `PgDn`) não aparecem na barra de comandos — são senso comum em TUI. Exceção: diálogos podem exibir opções explicitamente.
 
-**Teclas globais (definidas neste documento):**
+**Atalhos Globais (Aplicam-se em qualquer contexto):**
 
-| Tecla | Ação | Referência |
+| Tecla | Ação (Função) | Notas |
 |---|---|---|
-| `Enter` | Avança / aprofunda: confirma em diálogos, seleciona/expande na árvore, ativa/confirma edição de campo | [Sobreposição](#sobreposição), Princípios |
-| `Esc` | Retrocede / abandona: fecha modal, cancela edição, sai de modo (busca, edição) | [Sobreposição](#sobreposição), Princípios |
-| `Tab` / `Shift+Tab` | Navega entre painéis (modo leitura) ou campos (modo edição) | [Foco e Navegação](#foco-e-navegação) |
-| `↑` `↓` | Navegação direcional em listas e árvores | [Foco e Navegação](#foco-e-navegação) |
-| `←` `→` | Expandir/recolher pastas; alternar opções em diálogos | [Foco e Navegação](#foco-e-navegação) |
-| `Home` / `End` | Primeiro / último item visível | [Foco e Navegação](#foco-e-navegação) |
-| `PgUp` / `PgDn` | Scroll por página (viewport − 1) em conteúdo com scroll | [Scroll em diálogos](#scroll-em-diálogos) |
-| `F12` | Alternar tema (Tokyo Night ↔ Cyberpunk) | [Temas](#temas) |
-| `F1` | Abrir / fechar modal de Ajuda (toggle) | — |
+| `F1` | Abrir / fechar modal de Ajuda | |
+| `F12` | Alternar Tema | Ação pontual, sem necessidade de visibilidade permanente na barra de comandos |
+| `Ctrl+Q` | Sair da Aplicação | Gerencia todas as saídas com as devidas confirmações |
+| `Ctrl+Alt+Shift+Q` | Bloquear Cofre | Bloqueio emergencial, descarta alterações, sem confirmação. Atalho "complicado" para evitar acidentes. |
 
-**Teclas de área de trabalho (definidas neste documento):**
+**Teclas de Área de Trabalho (Ativas quando a área de trabalho tem foco, sem diálogos):**
 
-| Tecla | Ação | Condição |
-|---|---|---|
-| `F2` | Modo Cofre (aba) | Só com cofre aberto |
-| `F3` | Modo Modelos (aba) | Só com cofre aberto |
-| `F4` | Modo Config (aba) | Só com cofre aberto |
+A atribuição específica de teclas a fluxos individuais é detalhada na [especificação de telas](tui-specification-novo.md), mas as teclas F são reservadas por grupos de ações, seguindo a ergonomia do teclado físico:
 
-> O mapeamento de F-keys por contexto funcional (segredos, pastas, modelos, cofre) é definido na especificação de telas.
+-   **`F2` a `F4`**: Reservadas para **seleção das áreas de trabalho** (Modo Cofre, Modelos, Configurações).
+-   **`F5` a `F8`**: Reservadas para **ações de persistência do cofre** (criar, abrir, salvar, recarregar).
+-   **`F9` a `F11`**: Reservadas para **ações complementares de gerenciamento do cofre** (exportar, importar, alterar senha mestra).
 
-**Ações ocultas da barra de comandos:**
+> **Fluxo 7 — Aviso de Bloqueio Iminente por Inatividade:** É um fluxo iniciado pelo sistema, não requer um atalho manual do usuário.
 
-Algumas ações globais não aparecem na barra de comandos — são registradas no ActionManager com o atributo "oculto da barra". Essas ações contínuam disponíveis por teclado e aparecem no modal de Ajuda (`F1`).
-
-| Tecla | Ação | Justificativa |
-|---|---|---|
-| `F12` | Alternar tema | Ação pontual, sem necessidade de visibilidade permanente |
 
 ---
 
