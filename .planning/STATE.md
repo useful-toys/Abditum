@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 06
-status: planning
+status: context_gathered
 last_updated: "2026-04-06T13:29:12.238Z"
 progress:
   total_phases: 22
@@ -14,7 +14,7 @@ progress:
 
 # Project State — Abditum
 
-**Last updated:** 2026-04-01T03:03:16Z
+**Last updated:** 2026-04-06 (Phase 06 context gathered)
 **Current phase:** 06
 **Milestone:** v1.0
 
@@ -34,23 +34,9 @@ progress:
 
 ## Current Phase
 
-**Phase 05.6: TUI Scaffold Dialogs** — Planning ✓
+**Phase 06: Welcome Screen + Vault Create/Open** — Context Gathered ✓
 
-Plans to execute:
-
-- [ ] 05.6-01: Fix compilation errors in decision.go (unused titleStyle, missing BorderTitle) + rewrite View() with manual top-border construction
-- [ ] 05.6-02: 10 matrix fixture constructors + 3 rendering tests (symbol presence, border chars, matrix render)
-- [ ] 05.6-03: 4 interaction tests (Enter/Esc/arrows/unknown) + 4 edge case tests
-- [ ] 05.6-04: 1 integration test (Acknowledge → modal stack push/Enter → pop) + final build+vet verification
-
-**Pre-conditions (current state):**
-
-- `go test ./internal/tui/...` FAILS (build error in decision.go)
-- Error 1: `titleStyle` declared and not used (line 179)
-- Error 2: `borderStyle.BorderTitle` undefined (lipgloss v2 has no such method)
-- All other packages compile and test clean
-
-**Next:** Execute Plan 01 (fix compilation errors)
+**Next:** Plan Phase 06
 
 ## Accumulated Context
 
@@ -200,7 +186,7 @@ Plans to execute:
 3. **D-09:** Safe pointer sharing — `Manager.Vault()` returns live `*Cofre` pointer, getters return defensive copies
 4. **D-11:** Two independent state flags — `cofre.modificado` (any mutation) vs `segredo.estadoSessao` (content only)
 5. **D-17:** Atomic save with two-phase commit — prepare snapshot, persist, finalize deletions only on success
-6. **D-24:** Timestamps on structural changes only — favoriting doesn't update `segredo.dataUltimaModificacao`
+6. **D-24:** Timestamps only on structural changes — favoriting doesn't update `segredo.dataUltimaModificacao`
 7. **D-27:** Deletion semantics differ — Segredo soft delete, Pasta hard delete
 8. **D-28:** Factory vs Initializer — `NovoCofre()` creates structure, `InicializarConteudoPadrao()` bootstraps content
 
