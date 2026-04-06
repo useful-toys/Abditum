@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 06
 status: planning
-last_updated: "2026-04-06T13:02:54.671Z"
+last_updated: "2026-04-06T13:21:09.176Z"
 progress:
   total_phases: 22
   completed_phases: 13
   total_plans: 51
-  completed_plans: 49
+  completed_plans: 50
 ---
 
 # Project State — Abditum
@@ -254,6 +254,8 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 05.7-06]: styleMapToArray uses active := []string{} literal (not var nil) so no-style transitions always produce [] in JSON output
 - [Phase 05.7-06]: ParseANSIStyle deduplicates same-(line,col) transitions by replacing last slice element — multiple SGR before any text advance produce one transition
 - [Phase 05.7-golden-test-architecture-for-tui-modals]: stripANSI uses spec pattern for plain-text golden files; decision/help use WxH naming convention
+- [Phase 05.7-golden-test-architecture-for-tui-modals]: ﻿commandbar-no-actions JSON files contain null (not []) — nil slice from ParseANSIStyle marshals to JSON null, spec-compliant for zero-transition scenarios
+- [Phase 05.7-golden-test-architecture-for-tui-modals]: ﻿help-3actions-30x12.txt.golden has 15 lines (not 12) — text wrapping at narrow width is expected rendering behavior; tests stable
 
 ### Phase 02 Decisions
 
