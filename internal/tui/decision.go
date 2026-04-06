@@ -180,48 +180,47 @@ func (d *DecisionDialog) View() string {
 	borderColor := d.borderColor()
 	boxW := d.boxWidth()
 
-	// ── Title line ──────────────────────────────────────────────────────────
-	// Formula: "╭── " + styledTitle + dashes(fill) + " ──╮"
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(borderColor))
+	titleSt := lipgloss.NewStyle().Foreground(lipgloss.Color(borderColor)).Bold(true)
+	bodySt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextPrimary))
+
+	// ── Top border ───────────────────────────────────────────────────────────
+	// "╭── {symbol}  {title} ────...────╮"
 	// leftAnchor = "╭── " (4 runes), rightAnchor = " ──╮" (4 runes)
 	symbol := d.symbol()
 	titleText := d.title
 	if symbol != "" {
 		titleText = symbol + "  " + titleText
 	}
-	titleStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(borderColor)).
-		Bold(true)
-	styledTitle := titleStyle.Render(titleText)
-
-	borderFg := lipgloss.Color(borderColor)
-	styledDash := lipgloss.NewStyle().Foreground(borderFg).Render("─")
-	styledCornerTL := lipgloss.NewStyle().Foreground(borderFg).Render("╭")
-	styledSide := lipgloss.NewStyle().Foreground(borderFg).Render("│")
-
-	const leftAnchorW = 4  // "╭── "
-	const rightAnchorW = 4 // " ──╮"
-	titleW := len([]rune(titleText))
+	titleW := lipgloss.Width(titleText) // measure plain (no ANSI yet)
+	const leftAnchorW = 4               // "╭── "
+	const rightAnchorW = 4              // " ──╮"
 	fillW := boxW - leftAnchorW - titleW - rightAnchorW
 	if fillW < 1 {
 		fillW = 1
 	}
-	topLine := styledCornerTL + strings.Repeat(styledDash, 2) + " " +
-		styledTitle + " " + strings.Repeat(styledDash, fillW) + strings.Repeat(styledDash, 2) +
-		lipgloss.NewStyle().Foreground(borderFg).Render("╮")
+	topLine := borderSt.Render("╭──") + " " +
+		titleSt.Render(titleText) + " " +
+		borderSt.Render(strings.Repeat("─", fillW)+"──╮")
 
 	// ── Empty padding line ───────────────────────────────────────────────────
-	innerW := boxW - 2 // subtract left and right border chars
-	emptyPad := styledSide + strings.Repeat(" ", innerW) + styledSide
+	// innerW = columns between the two │ chars (exclusive)
+	innerW := boxW - 2 // boxW includes the 2 border columns
+	emptyPad := borderSt.Render("│") + strings.Repeat(" ", innerW) + borderSt.Render("│")
 
 	// ── Body lines (word-wrapped) ────────────────────────────────────────────
-	maxBodyW := boxW - 4 // border(2) + padding(2)
+	// innerW = boxW-2; padding each side = 2 chars; body content = innerW-4
+	maxBodyW := innerW - 4
+	if maxBodyW < 1 {
+		maxBodyW = 1
+	}
 	wrappedBody := wrapBody(d.body, maxBodyW)
 
-	bodyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextPrimary))
 	var bodyLines []string
 	for _, line := range wrappedBody {
-		padded := line + strings.Repeat(" ", maxBodyW-len([]rune(line)))
-		bodyLines = append(bodyLines, styledSide+"  "+bodyStyle.Render(padded)+" "+styledSide)
+		// Single render: apply both color and exact width together (mirrors help.go pattern).
+		content := bodySt.Width(maxBodyW).Render(line)
+		bodyLines = append(bodyLines, borderSt.Render("│")+"  "+content+"  "+borderSt.Render("│"))
 	}
 
 	// ── Action bar (bottom border) ───────────────────────────────────────────
@@ -350,8 +349,9 @@ func (d *DecisionDialog) renderActionBar(boxW int) string {
 	defaultFg := lipgloss.Color(defaultKeyColor)
 	otherFg := lipgloss.Color(borderColor)
 
-	dash := lipgloss.NewStyle().Foreground(borderFg).Render("─")
-	corner := lipgloss.NewStyle().Foreground(borderFg).Render
+	borderSt := lipgloss.NewStyle().Foreground(borderFg)
+	// dashes renders N dashes as a single ANSI span (avoids N×span overhead).
+	dashes := func(n int) string { return borderSt.Render(strings.Repeat("─", n)) }
 
 	// Build styled action segments.
 	// Each segment: " Key Label " wrapped in "── ... ──"
@@ -390,7 +390,7 @@ func (d *DecisionDialog) renderActionBar(boxW int) string {
 	// Acknowledgement: only one action, right-aligned.
 	if d.intention == IntentionAcknowledge && len(segs) == 1 {
 		// ╰────── Enter OK ──╯
-		actionPart := " " + segs[0].styled + " " + strings.Repeat("─", 2)
+		actionPart := " " + segs[0].styled + " " + dashes(2)
 		actionPlain := " " + segs[0].text + " ──"
 
 		// total width of actionPart (printable)
@@ -400,8 +400,8 @@ func (d *DecisionDialog) renderActionBar(boxW int) string {
 		if leadW < 2 {
 			leadW = 2
 		}
-		lead := corner("╰") + strings.Repeat(dash, leadW)
-		tail := corner("╯")
+		lead := borderSt.Render("╰") + dashes(leadW)
+		tail := borderSt.Render("╯")
 		return lead + actionPart + tail
 	}
 
@@ -412,14 +412,14 @@ func (d *DecisionDialog) renderActionBar(boxW int) string {
 	// Build left portion: "╰── seg0 ──"  [── seg1 ──] ...
 	var leftPlain, leftStyled strings.Builder
 	leftPlain.WriteString("╰── ")
-	leftStyled.WriteString(corner("╰") + strings.Repeat(dash, 2) + " ")
+	leftStyled.WriteString(borderSt.Render("╰") + dashes(2) + " ")
 
 	for i, s := range segs {
 		leftPlain.WriteString(s.text)
 		leftStyled.WriteString(s.styled)
 		if i < len(segs)-1 {
 			leftPlain.WriteString(" ── ")
-			leftStyled.WriteString(" " + strings.Repeat(dash, 2) + " ")
+			leftStyled.WriteString(" " + dashes(2) + " ")
 		}
 	}
 
@@ -427,10 +427,10 @@ func (d *DecisionDialog) renderActionBar(boxW int) string {
 	var rightPlain, rightStyled string
 	if cancelSeg != nil {
 		rightPlain = " " + cancelSeg.text + " ──╯"
-		rightStyled = " " + cancelSeg.styled + " " + strings.Repeat(dash, 2) + corner("╯")
+		rightStyled = " " + cancelSeg.styled + " " + dashes(2) + borderSt.Render("╯")
 	} else {
 		rightPlain = " ──╯"
-		rightStyled = " " + strings.Repeat(dash, 2) + corner("╯")
+		rightStyled = " " + dashes(2) + borderSt.Render("╯")
 	}
 
 	leftPW := len([]rune(leftPlain.String()))
@@ -439,7 +439,7 @@ func (d *DecisionDialog) renderActionBar(boxW int) string {
 	if fillW < 1 {
 		fillW = 1
 	}
-	fill := strings.Repeat(dash, fillW)
+	fill := dashes(fillW)
 
 	return leftStyled.String() + fill + rightStyled
 }
