@@ -125,7 +125,7 @@ func TestHelpModal_Golden(t *testing.T) {
 	cases := []testCase{
 		// Set 1: 3 actions, height=12, no scroll needed
 		{
-			variant: "3actions-30",
+			variant: "3actions-30x12",
 			modal: func() *helpModal {
 				m := newHelpModal(help3actions(), helpGroupLabel)
 				m.SetSize(30, 12)
@@ -133,7 +133,7 @@ func TestHelpModal_Golden(t *testing.T) {
 			}(),
 		},
 		{
-			variant: "3actions-60",
+			variant: "3actions-60x12",
 			modal: func() *helpModal {
 				m := newHelpModal(help3actions(), helpGroupLabel)
 				m.SetSize(60, 12)
@@ -141,12 +141,12 @@ func TestHelpModal_Golden(t *testing.T) {
 			}(),
 		},
 		// Set 2: 15 actions, height=16, 3 scroll positions × 2 widths
-		{variant: "15actions-top-30", modal: make15(30, 16, 0)},
-		{variant: "15actions-top-60", modal: make15(60, 16, 0)},
-		{variant: "15actions-mid-30", modal: make15(30, 16, 3)},
-		{variant: "15actions-mid-60", modal: make15(60, 16, 3)},
-		{variant: "15actions-bottom-30", modal: make15(30, 16, -1)}, // -1 = maxScroll
-		{variant: "15actions-bottom-60", modal: make15(60, 16, -1)}, // -1 = maxScroll
+		{variant: "15actions-top-30x16", modal: make15(30, 16, 0)},
+		{variant: "15actions-top-60x16", modal: make15(60, 16, 0)},
+		{variant: "15actions-mid-30x16", modal: make15(30, 16, 3)},
+		{variant: "15actions-mid-60x16", modal: make15(60, 16, 3)},
+		{variant: "15actions-bottom-30x16", modal: make15(30, 16, -1)}, // -1 = maxScroll
+		{variant: "15actions-bottom-60x16", modal: make15(60, 16, -1)}, // -1 = maxScroll
 	}
 
 	for _, tc := range cases {
@@ -155,7 +155,7 @@ func TestHelpModal_Golden(t *testing.T) {
 			out := tc.modal.View()
 
 			// .txt.golden: raw ANSI output
-			checkOrUpdateHelpGolden(t, tc.variant, "txt", out)
+			checkOrUpdateHelpGolden(t, tc.variant, "txt", stripANSI(out))
 
 			// .json.golden: style transitions
 			transitions := testdatapkg.ParseANSIStyle(out)
