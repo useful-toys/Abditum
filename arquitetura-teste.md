@@ -1,10 +1,45 @@
-# Arquitetura de Testes Golden para Componentes TUI
+# Arquitetura de Testes para Componentes TUI: Aparência e Comportamento
+
+## Índice
+- [Objetivo](#objetivo)
+  - [Aplicabilidade](#aplicabilidade)
+  - [Escopo dos Golden Files](#escopo-dos-golden-files)
+- [Problema: Limitações dos Testes Atuais](#problema-limitações-dos-testes-atuais)
+- [Solução: Golden Files com Dois Níveis de Validação](#solução-golden-files-com-dois-níveis-de-validação)
+  - [Nível 1: `.txt.golden` — O Desenho Canônico do Layout](#nível-1-txtgolden--o-desenho-canônico-do-layout)
+  - [Nível 2: `.json.golden` — O Estilo Canônico por Posição](#nível-2-jsongolden--o-estilo-canônico-por-posição)
+- [Princípios de Cobertura](#princípios-de-cobertura)
+  - [1. Tamanhos de Terminal](#1-tamanhos-de-terminal)
+  - [2. Variantes de Construção](#2-variantes-de-construção)
+  - [3. Variantes de Popular o Modelo](#3-variantes-de-popular-o-modelo)
+  - [4. Diversidade de Conteúdo e Estados do Modelo](#4-diversidade-de-conteúdo-e-estados-do-modelo)
+  - [Estratégia de Combinação](#estratégia-de-combinação)
+  - [Matriz de Exemplo (Conceitual)](#matriz-de-exemplo-conceitual)
+- [Implementação](#implementação)
+  - [1. Estrutura de Diretórios](#1-estrutura-de-diretórios)
+  - [2. Parser SGR Mínimo (Reutilizável)](#2-parser-sgr-mínimo-reutilizável)
+  - [3. Golden Test Runner (Genérico)](#3-golden-test-runner-genérico)
+  - [4. Testes de `Update()` — Exploração de Estado](#4-testes-de-update--exploração-de-estado)
+  - [5. Flag de Regeneração](#5-flag-de-regeneração)
+- [Workflow](#workflow)
+  - [Desenvolvimento normal (sem mudanças visuais)](#desenvolvimento-normal-sem-mudanças-visuais)
+  - [Após mudança visual intencional (ex: mudar cor, spacing)](#após-mudança-visual-intencional-ex-mudar-cor-spacing)
+  - [Bug detectado (ex: espaçamento faltando)](#bug-detectado-ex-espaçamento-faltando)
+- [Estilos Suportados](#estilos-suportados)
+- [Benefícios](#benefícios)
+- [Casos de Uso](#casos-de-uso)
+  - [1. Regressão de espaçamento (como o bug de `renderActionBar`)](#1-regressão-de-espaçamento-como-o-bug-de-renderActionBar)
+  - [2. Regressão de cor](#2-regressão-de-cor)
+  - [3. Mudança intencional de severidade (ex: novo estilo Warning)](#3-mudança-intencional-de-severidade-ex-novo-estilo-warning)
+- [Escopo Futuro](#escopo-futuro)
 
 ## Objetivo
 
-Validar que `View()` de componentes TUI (modais, diálogos, linhas de status) renderizam **texto, espaçamento, bordas e cores** corretos, detectando regressões visuais sutis que testes convencionais não conseguem capturar.
+Esta arquitetura de testes visa validar **duas dimensões cruciais** dos componentes TUI (modais, diálogos, linhas de status):
+1.  **Aparência (Conteúdo e Formatação):** Garantir que a função `View()` renderiza **texto, espaçamento, bordas e cores** corretos.
+2.  **Comportamento (Interatividade):** Assegurar que o método `Update()` processa entradas e gerencia o estado de forma esperada.
 
-Esta arquitetura é **genérica** e aplicável a qualquer componente que implemente uma função de renderização que retorne `string` (preferencialmente ANSI).
+A arquitetura é **genérica** e aplicável a qualquer componente que implemente `View()` (retornando `string` preferencialmente ANSI) e `Update()`.
 
 ### Aplicabilidade
 
