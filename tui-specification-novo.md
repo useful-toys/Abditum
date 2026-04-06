@@ -60,19 +60,22 @@ A severidade governa **todo** o tratamento visual da moldura. A intenção defin
 | **Informativo** | `ℹ` | `semantic.info` | `accent.primary` | `semantic.info` | **bold** |
 | **Neutro** | — | `border.focused` | `accent.primary` | `border.focused` | **bold** |
 
-**Barra de ações por intenção:**
+**Associação implícita de teclas:**
 
-| Intenção | Ação default (esquerda) | Ações intermediárias | Ação cancelar (direita) |
-|---|---|---|---|
-| **Confirmação** | Tecla + label em **bold**, token da tecla default | Tecla + label na cor da borda | `Esc` + label na cor da borda |
-| **Reconhecimento** | `Enter OK` em **bold**, token `accent.primary` | — | — (`Esc` fecha, equivalente a OK) |
+Qualquer tecla pode ser atribuída a uma ação na borda. O diálogo aplica implicitamente:
+- `Enter` → primeira ação (mesmo que já possua outra tecla)
+- `Esc` → última ação (mesmo que já possua outra tecla)
+- 1 ação apenas → `Enter` e `Esc` acionam a mesma ação
 
-**Regras derivadas (recordatório):**
+**Barra de ações por quantidade:**
 
-- Borda e título usam o **mesmo** token
-- Tecla default sempre em **bold**; demais ações sem bold
-- Símbolo precede o título na borda superior; Neutro não usa símbolo
-- Mensagem interna em `text.primary`; nomes de itens referenciados em **bold**
+| Ações | Layout | Uso |
+|---|---|---|
+| **1 ação** | Alinhada à **direita** | Reconhecimento — o usuário apenas toma ciência |
+| **2 ações** | Default à **esquerda**, Cancelar à **direita** | Confirmação binária |
+| **3 ações** | Default à **esquerda**, alternativa no meio, Cancelar à **direita** | Confirmação com alternativa |
+
+> **Limite prático:** 3 ações é o máximo tolerável. Diálogos com 4 ou mais ações na borda indicam falha de design — o usuário não deve ler um menu de opções na moldura.
 
 ---
 
@@ -440,7 +443,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 │          ▶ src/              │                                     │
 │        ▶ outros/             │                                     │
 │      ▶ downloads/            ↓                                     ↓
-╰── Enter Abrir ───────────────┴─────────────────────── Esc Cancelar ─╯
+╰── Enter Abrir ───────────────┴────────────────────── Esc Cancelar ──╯
        ↑ accent.primary + bold (desbloqueado)
 ```
 
@@ -458,7 +461,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 │        ▶ fotos/              │                                     │
 │        ▶ textos/             │                                     │
 │                              │                                     │
-╰── Enter Abrir ───────────────┴─────────────────────── Esc Cancelar ─╯
+╰── Enter Abrir ───────────────┴────────────────────── Esc Cancelar ──╯
        ↑ text.disabled (bloqueado)
 ```
 
@@ -574,27 +577,15 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
        ↑ text.disabled (bloqueado)
 ```
 
+> Tokens de estrutura (título, headers, separadores, pasta, arquivo, metadados, Caminho, ação default) idênticos ao [Modo Open](#filepicker--modo-open). Exclusivos do Modo Save:
+
 | Elemento | Token | Atributo |
 |---|---|---|
-| Título `Salvar cofre` | `text.primary` | **bold** |
-| Header `Estrutura` | `text.secondary` | **bold** |
-| Header `Arquivos` | `text.secondary` | **bold** |
-| Separadores internos | `border.default` | — |
-| Pasta selecionada na árvore | `accent.primary` | **bold** |
-| Pasta não selecionada | `text.primary` | — |
-| Indicador de pasta (`▶`/`▼`) | `accent.secondary` | — |
-| Arquivo existente (sem extensão `.abditum`) | `text.primary` | — |
-| Indicador de arquivo `●` | `text.secondary` | — |
-| Metadados (tamanho, data/hora) | `text.secondary` | — |
-| Rótulo `Caminho:` | `text.secondary` | — |
-| Valor do caminho | `text.primary` | — |
 | Label `Nome do arquivo` (campo ativo) | `accent.primary` | **bold** |
 | Label `Nome do arquivo` (campo inativo) | `text.secondary` | — |
 | Área do campo `░` | `surface.input` | — |
 | Placeholder | `text.secondary` | *italic* |
 | Cursor `▌` | `text.primary` | — |
-| Ação default (bloqueada) | `text.disabled` | — |
-| Ação default (desbloqueada) | `accent.primary` | **bold** |
 
 **Estados dos componentes:**
 
@@ -633,11 +624,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 - Extensão `.abditum` é adicionada silenciosamente ao caminho de retorno, sem alterar o texto exibido no campo
 - **Duplo-clique em pasta:** expande/recolhe (mesmo que `Enter`)
 - **Duplo-clique em arquivo existente:** copia o nome para o campo `Nome do arquivo`
-- **Scroll do mouse:** afeta o painel com foco
-- **Arquivos ocultos** (nome iniciado com `.`) não são exibidos
-- **Caminho longo:** truncado no início com `…` (ex: `…/projetos/abditum`)
-- **Diretórios sem permissão:** exibidos normalmente na árvore; ao tentar expandir, erro na barra (`✕ Sem permissão para acessar <pasta>`) e pasta permanece recolhida
-- **Fallback de CWD:** se o CWD é inacessível, o FilePicker navega para home do usuário (`~`) e exibe mensagem informativa (`⚠ Diretório atual inacessível — navegando para home`)
+- Scroll do mouse, arquivos ocultos, caminho longo, permissões e fallback CWD: idêntico ao [Modo Open](#filepicker--modo-open)
 
 **Transições especiais:**
 
@@ -696,23 +683,6 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 │                                                                  │
 │  Segredo                                                         │
 │  Ctrl+R      Revelar / ocultar campo sensível                    ↓
-╰──────────────────────────────────────────────────── Esc Fechar ──╯
-```
-
-**Wireframe (exemplo: scroll — meio do conteúdo):**
-
-```
-╭── Ajuda — Atalhos e Ações ───────────────────────────────────────╮
-│                                                                  ↑
-│  Ctrl+C      Copiar valor para área de transferência             │
-│  F21         Novo segredo                                        │
-│  F22         Editar segredo                                      │
-│  F23         Excluir segredo                                     ■
-│                                                                  │
-│  Cofre                                                           │
-│  ^S          Salvar cofre                                        │
-│  ^Q          Sair (salva se necessário)                          │
-│  F1          Esta ajuda                                          ↓
 ╰──────────────────────────────────────────────────── Esc Fechar ──╯
 ```
 
@@ -1003,7 +973,6 @@ Ações de menor prioridade são ocultadas quando não há espaço. `F1` permane
 |---|---|---|
 | Tecla da ação (ex: `F21`) | `accent.primary` | **bold** |
 | Label da ação (ex: `Novo`) | `text.primary` | — |
-
 | Separador `·` | `text.secondary` | — |
 | `F1` (Ajuda) | `accent.primary` | **bold** |
 
@@ -1058,60 +1027,13 @@ Além destes:
 **Altura fixa:** 1 linha.
 **Anatomia:** borda `─` contínua na largura total do terminal. Quando há mensagem, o texto (símbolo + `·` espaço + conteúdo) começa com 2 espaços de padding à esquerda (alinhado com o texto do cabeçalho), seguido de `─` até o fim da linha. O espaço entre símbolo e texto é sempre exatamente 1 caractere.
 
-**Wireframe (sem mensagem — borda separadora):**
-
-```
-────────────────────────────────────────────────────────────────────────────────
-```
-
-**Wireframe (sucesso):**
+**Anatomia (exemplo — sucesso):**
 
 ```
 ── ✓ Gmail copiado para a área de transferência ────────────────────────────────
-   ↑ semantic.success
 ```
 
-**Wireframe (erro):**
-
-```
-── ✕ Falha ao salvar — arquivo em uso por outro processo ───────────────────────
-   ↑ semantic.error + bold
-```
-
-**Wireframe (aviso):**
-
-```
-── ⚠ Cofre será bloqueado em 15 segundos ──────────────────────────────────────
-   ↑ semantic.warning
-```
-
-**Wireframe (spinner):**
-
-```
-── ◐ Salvando cofre... ─────────────────────────────────────────────────────────
-   ↑ accent.primary
-```
-
-**Wireframe (dica de campo / dica de uso):**
-
-```
-── • Use Tab para alternar o foco entre os painéis ─────────────────────────────
-   ↑ text.secondary + italic
-```
-
-**Wireframe (informação):**
-
-```
-── ℹ Cofre criado em /home/user/documentos/pessoal.abditum ─────────────────────
-   ↑ semantic.info
-```
-
-**Wireframe (truncamento — mensagem excede largura disponível):**
-
-```
-── ✕ Erro ao importar arquivo: o formato do arquivo não é compatível com a v… ──
-   ↑ semantic.error + bold                                            ↑ trunca com …
-```
+Todos os tipos seguem este padrão. Diferenças por tipo: `✓` sucesso · `✕` erro (**bold**) · `⚠` aviso · `◐◓◑◒` spinner · `•` dica (*italic*) · `ℹ` informação · sem mensagem (borda `─` contínua). Mensagem longa truncada com `…` no fim.
 
 #### Tokens
 
@@ -1592,11 +1514,7 @@ Barra de comandos: `F16 Ocultar · F17 Copiar · F22 Editar · F1 Ajuda`
 
 | Elemento | Token | Atributo |
 |---|---|---|
-| Logo — linha 1 | DS — [Gradiente do logo](tui-design-system-novo.md#gradiente-do-logo) linha 1 | — |
-| Logo — linha 2 | DS — Gradiente do logo linha 2 | — |
-| Logo — linha 3 | DS — Gradiente do logo linha 3 | — |
-| Logo — linha 4 | DS — Gradiente do logo linha 4 | — |
-| Logo — linha 5 | DS — Gradiente do logo linha 5 | — |
+| Logo (linhas 1–5) | DS — [Gradiente do logo](tui-design-system-novo.md#gradiente-do-logo) — por linha | — |
 | Versão (ex: `v0.1.0`) | `text.secondary` | — |
 
 > As cores do logo não são tokens nomeados — são os valores hexadecimais da tabela de gradiente do DS, aplicados por linha conforme o tema ativo.
