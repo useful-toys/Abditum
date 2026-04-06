@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	testdatapkg "github.com/useful-toys/abditum/internal/tui/testdata"
@@ -184,6 +185,13 @@ func checkOrUpdateGolden(t *testing.T, path, got string) {
 	}
 }
 
+// stripANSI removes all ANSI escape sequences from s, returning plain visible text.
+// Used when writing .txt.golden files — these must contain no escape codes.
+func stripANSI(s string) string {
+	re := regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	return re.ReplaceAllString(s, "")
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // TestRenderMessageBar_Golden
 // ─────────────────────────────────────────────────────────────────────────────
@@ -224,7 +232,7 @@ func TestRenderMessageBar_Golden(t *testing.T) {
 
 				// .txt.golden: raw ANSI output — validates layout, spacing, truncation, borders
 				txtPath := goldenPath("messages", tc.variant, w, "txt")
-				checkOrUpdateGolden(t, txtPath, out)
+				checkOrUpdateGolden(t, txtPath, stripANSI(out))
 
 				// .json.golden: style transitions — validates colors and font attributes
 				transitions := testdatapkg.ParseANSIStyle(out)

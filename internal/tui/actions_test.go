@@ -402,7 +402,7 @@ func TestRenderCommandBar_Golden(t *testing.T) {
 
 				// .txt.golden: raw ANSI output
 				txtPath := goldenPath("commandbar", tc.variant, w, "txt")
-				checkOrUpdateGolden(t, txtPath, out)
+				checkOrUpdateGolden(t, txtPath, stripANSI(out))
 
 				// .json.golden: style transitions
 				transitions := testdatapkg.ParseANSIStyle(out)
