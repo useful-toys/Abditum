@@ -73,41 +73,45 @@ func newRootModel() *rootModel {
 
 	// Register all 15 PoC actions on rootModel as owner (D-19 through D-23).
 	actions.Register(m,
-		// Group 1 "Mensagens" — visible in command bar
+		// Group 1 "Mensagens" — message type demonstrations
 		Action{Keys: []string{"f2"}, Label: "Dica uso", Description: "Mostrar MsgHint permanente",
-			Group: 1, Scope: ScopeLocal, Priority: 90, HideFromBar: false,
+			Group: 1, Scope: ScopeLocal, Priority: 15, HideFromBar: false,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { m.messages.Show(MsgHint, "Dica de uso permanente", 0, false); return nil }},
 		Action{Keys: []string{"f3"}, Label: "Dica campo", Description: "Mostrar MsgHint de campo",
-			Group: 1, Scope: ScopeLocal, Priority: 80, HideFromBar: false,
+			Group: 1, Scope: ScopeLocal, Priority: 20, HideFromBar: true,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { m.messages.Show(MsgHint, "Dica de campo permanente", 0, false); return nil }},
 		Action{Keys: []string{"f4"}, Label: "Info", Description: "Mostrar MsgInfo",
-			Group: 1, Scope: ScopeLocal, Priority: 70, HideFromBar: false,
+			Group: 1, Scope: ScopeLocal, Priority: 30, HideFromBar: false,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { m.messages.Show(MsgInfo, "Informação neutra", 0, false); return nil }},
 		Action{Keys: []string{"f5"}, Label: "Alerta", Description: "Mostrar MsgWarn",
-			Group: 1, Scope: ScopeLocal, Priority: 60, HideFromBar: false,
+			Group: 1, Scope: ScopeLocal, Priority: 40, HideFromBar: true,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { m.messages.Show(MsgWarn, "Alerta de atenção", 0, false); return nil }},
 		Action{Keys: []string{"f6"}, Label: "Erro", Description: "Mostrar MsgError",
 			Group: 1, Scope: ScopeLocal, Priority: 50, HideFromBar: false,
-			Enabled: func() bool { return true },
+			Enabled: func() bool { return false },
 			Handler: func() tea.Cmd { m.messages.Show(MsgError, "Erro de operação", 0, false); return nil }},
+
+		// Group 2 "Status" — operation state demonstrations
 		Action{Keys: []string{"f7"}, Label: "Ocupado", Description: "Mostrar MsgBusy com spinner",
-			Group: 1, Scope: ScopeLocal, Priority: 40, HideFromBar: false,
+			Group: 2, Scope: ScopeLocal, Priority: 60, HideFromBar: false,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { m.messages.Show(MsgBusy, "Processando...", 0, false); return nil }},
 		Action{Keys: []string{"f8"}, Label: "Sucesso", Description: "Mostrar MsgSuccess",
-			Group: 1, Scope: ScopeLocal, Priority: 30, HideFromBar: false,
+			Group: 2, Scope: ScopeLocal, Priority: 70, HideFromBar: false,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { m.messages.Show(MsgSuccess, "Operação concluída", 0, false); return nil }},
+
+		// No group — utility actions
 		Action{Keys: []string{"f9"}, Label: "Limpar", Description: "Limpar barra de mensagens",
-			Group: 1, Scope: ScopeLocal, Priority: 20, HideFromBar: false,
+			Group: 0, Scope: ScopeLocal, Priority: 80, HideFromBar: false,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { m.messages.Clear(); return nil }},
-		Action{Keys: []string{"f10"}, Label: "Truncar", Description: "Testar truncação de mensagem longa",
-			Group: 1, Scope: ScopeLocal, Priority: 15, HideFromBar: false,
+		Action{Keys: []string{"f10", "f11"}, Label: "Truncar", Description: "Testar truncação de mensagem longa",
+			Group: 0, Scope: ScopeLocal, Priority: 90, HideFromBar: false,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd {
 				m.messages.Show(MsgInfo, "Esta é uma mensagem muito longa com mais de cem caracteres para testar o sistema de truncação com reticências quando a mensagem excede a largura disponível da barra de mensagens do sistema.", 0, false)
@@ -116,19 +120,19 @@ func newRootModel() *rootModel {
 
 		// Shift+Fx variants — HideFromBar: true (visible in Help modal only, TTL 5s)
 		Action{Keys: []string{"shift+f2"}, Label: "Dica uso 5s", Description: "MsgHint com TTL de 5s",
-			Group: 1, Scope: ScopeLocal, Priority: 89, HideFromBar: true,
+			Group: 1, Scope: ScopeLocal, Priority: 14, HideFromBar: true,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { m.messages.Show(MsgHint, "Dica de uso (5s)", 5, false); return nil }},
 		Action{Keys: []string{"shift+f3"}, Label: "Dica campo 5s", Description: "MsgHint campo com TTL de 5s",
-			Group: 1, Scope: ScopeLocal, Priority: 79, HideFromBar: true,
+			Group: 1, Scope: ScopeLocal, Priority: 19, HideFromBar: true,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { m.messages.Show(MsgHint, "Dica de campo (5s)", 5, false); return nil }},
 		Action{Keys: []string{"shift+f4"}, Label: "Info 5s", Description: "MsgInfo com TTL de 5s",
-			Group: 1, Scope: ScopeLocal, Priority: 69, HideFromBar: true,
+			Group: 1, Scope: ScopeLocal, Priority: 29, HideFromBar: true,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { m.messages.Show(MsgInfo, "Informação (5s)", 5, false); return nil }},
 		Action{Keys: []string{"shift+f5"}, Label: "Alerta 5s", Description: "MsgWarn com TTL de 5s",
-			Group: 1, Scope: ScopeLocal, Priority: 59, HideFromBar: true,
+			Group: 1, Scope: ScopeLocal, Priority: 39, HideFromBar: true,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { m.messages.Show(MsgWarn, "Alerta (5s)", 5, false); return nil }},
 		Action{Keys: []string{"shift+f6"}, Label: "Erro 5s", Description: "MsgError com TTL de 5s",
@@ -138,7 +142,7 @@ func newRootModel() *rootModel {
 
 		// Navigation/Global actions
 		Action{Keys: []string{"ctrl+q"}, Label: "Sair", Description: "Sair do Abditum",
-			Group: 1, Scope: ScopeLocal, Priority: 10, HideFromBar: false,
+			Group: 0, Scope: ScopeLocal, Priority: 10, HideFromBar: false,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { return tea.Quit }},
 		Action{Keys: []string{"f1"}, Label: "Ajuda", Description: "Mostrar atalhos de teclado",
@@ -149,6 +153,7 @@ func newRootModel() *rootModel {
 			}},
 	)
 	actions.RegisterGroupLabel(1, "Mensagens")
+	actions.RegisterGroupLabel(2, "Status")
 
 	return m
 }
@@ -317,14 +322,23 @@ func (m *rootModel) activeChild() childModel {
 }
 
 // View satisfies tea.Model. Composes the full frame and overlays any active modal.
+// View satisfies tea.Model. Composes the full frame and overlays any active modal.
+// The modal is placed inside the work area only — header, msgBar, and cmdBar are
+// never covered.
 func (m *rootModel) View() tea.View {
-	content := m.renderFrame()
+	content := m.renderFrame(nil)
 
 	if len(m.modals) > 0 {
+		const headerH = 2
+		const msgBarH = 1
+		const cmdBarH = 1
+		workH := m.height - headerH - msgBarH - cmdBarH
+		if workH < 0 {
+			workH = 0
+		}
 		top := m.modals[len(m.modals)-1]
-		top.SetSize(m.width, m.height)
-		content = lipgloss.Place(m.width, m.height,
-			lipgloss.Center, lipgloss.Center, top.View())
+		top.SetSize(m.width, workH) // pass workH, not total height
+		content = m.renderFrame(top)
 	}
 
 	v := tea.NewView(content)
@@ -332,6 +346,9 @@ func (m *rootModel) View() tea.View {
 	return v
 }
 
+// overlayModal renders a modal dialog centered over the existing frame content.
+// The frame remains visible behind/around the modal — only the modal region is replaced.
+// Deprecated: kept for reference; replaced by lipgloss.Place inside renderFrame.
 // renderShortcuts renders a command bar from modal shortcuts.
 func renderShortcuts(shortcuts []Shortcut, width int) string {
 	if len(shortcuts) == 0 {
@@ -347,19 +364,20 @@ func renderShortcuts(shortcuts []Shortcut, width int) string {
 	return "  " + strings.Join(parts, sepStyle.Render("  |  ")+"  ")
 }
 
-// renderFrame composes the base frame zones: header + message bar + work area + command bar.
-func (m *rootModel) renderFrame() string {
+// renderFrame composes the full frame: header + work area + msg bar + cmd bar.
+// If modal is non-nil, it is centered inside the work area using lipgloss.Place.
+// The modal must have been sized with SetSize(width, workH) before calling.
+func (m *rootModel) renderFrame(modal modalView) string {
 	if m.width == 0 || m.height == 0 {
 		return "Initializing..."
 	}
 
 	headerStyle := lipgloss.NewStyle().Width(m.width).Foreground(lipgloss.Color(ColorAccentPrimary)).Bold(true)
 	separatorStyle := lipgloss.NewStyle().Width(m.width).Foreground(lipgloss.Color(ColorBorderDefault))
-
-	cmdBarStyle := lipgloss.NewStyle().Width(m.width).Background(lipgloss.Color("236"))
+	cmdBarStyle := lipgloss.NewStyle().Width(m.width)
 	workAreaStyle := lipgloss.NewStyle().Width(m.width)
 
-	const headerH = 2 // DS: 2 lines (app name + separator)
+	const headerH = 2
 	const msgBarH = 1
 	const cmdBarH = 1
 	workH := m.height - headerH - msgBarH - cmdBarH
@@ -367,13 +385,13 @@ func (m *rootModel) renderFrame() string {
 		workH = 0
 	}
 
-	// Header: 2 lines per DS "Sem cofre" spec (tui-specification-novo.md §741-746)
+	// Header
 	header := headerStyle.Render("  Abditum") + "\n" + separatorStyle.Render(strings.Repeat("─", m.width))
 
 	// Message bar
 	msgBar := RenderMessageBar(m.messages.Current(), m.width)
 
-	// Work area: delegate to active child
+	// Work area
 	var workContent string
 	switch m.area {
 	case workAreaWelcome:
@@ -393,12 +411,23 @@ func (m *rootModel) renderFrame() string {
 	}
 	workArea := workAreaStyle.Height(workH).Render(workContent)
 
-	// Command bar: use modal shortcuts when modal active
+	// Overlay modal centered inside work area using lipgloss.Place.
+	// lipgloss.Place handles ANSI correctly and never touches header/msgBar/cmdBar.
+	if modal != nil {
+		modalStr := modal.View()
+		workArea = lipgloss.Place(m.width, workH, lipgloss.Center, lipgloss.Center, modalStr)
+	}
+
+	// Command bar: always render so the frame occupies exactly `height` lines.
+	// When no shortcuts, render a blank background line.
 	var cmdBarContent string
-	if len(m.modals) > 0 {
-		cmdBarContent = renderShortcuts(m.modals[len(m.modals)-1].Shortcuts(), m.width)
+	if modal != nil {
+		cmdBarContent = renderShortcuts(modal.Shortcuts(), m.width)
 	} else {
 		cmdBarContent = m.actions.RenderCommandBar(m.width)
+	}
+	if cmdBarContent == "" {
+		cmdBarContent = strings.Repeat(" ", m.width)
 	}
 	cmdBar := cmdBarStyle.Render(cmdBarContent)
 

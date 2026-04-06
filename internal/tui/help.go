@@ -67,10 +67,10 @@ func (m *helpModal) Update(msg tea.Msg) tea.Cmd {
 // View renders the help modal with title in top border and action in bottom border.
 // Follows DS dialog anatomy (§436-458): title embedded in top border, action bar in bottom border.
 func (m *helpModal) View() string {
-	// Dynamic sizing per DS: max 70 cols or 80% of terminal
-	maxW := 70
+	// Dynamic sizing per DS: max 60 cols or 70% of terminal
+	maxW := 60
 	if m.width > 0 {
-		pctW := int(float64(m.width) * 0.8)
+		pctW := int(float64(m.width) * 0.7)
 		if pctW < maxW {
 			maxW = pctW
 		}
@@ -81,35 +81,28 @@ func (m *helpModal) View() string {
 	lines := m.buildContentLines(allActions)
 	totalLines := len(lines)
 
-	// Max height: 80% of terminal, minus top border + bottom border
-	maxH := m.height
-	if m.height > 0 {
-		pctH := int(float64(m.height) * 0.8)
-		if pctH < maxH {
-			maxH = pctH
-		}
+	// Dialog layout: top border(1) + content(innerH) + bottom border(1)
+	// Content area: top padding(1) + action lines(usableH) + bottom padding(1)
+	// Total dialog = usableH + 4 lines — must fit in terminal.
+	maxUsable := m.height - 4
+	if maxUsable > 20 {
+		maxUsable = 20 // cap for large terminals
 	}
-	contentH := maxH - 2 // minus top border line + bottom border line
-	if contentH < 5 {
-		contentH = 5
+	if maxUsable < 3 {
+		maxUsable = 3 // minimum usable action lines
 	}
+	usableH := maxUsable
+	innerH := usableH + 2 // content area includes padding lines
 
-	// Dialog grows to fit content, capped at contentH
-	dialogH := min(totalLines+2, contentH) // +2 for top/bottom borders
-	if dialogH < 7 {
-		dialogH = 7 // minimum: title + 4 content + bottom border
-	}
-	innerH := dialogH - 2 // content area only
-
-	// Apply scroll window
+	// Clamp visible window to available content
 	start := m.scroll
-	if start > totalLines-innerH {
-		start = totalLines - innerH
+	if start > totalLines-usableH {
+		start = totalLines - usableH
 	}
 	if start < 0 {
 		start = 0
 	}
-	end := start + innerH
+	end := start + usableH
 	if end > totalLines {
 		end = totalLines
 	}
@@ -118,7 +111,7 @@ func (m *helpModal) View() string {
 	hasAbove := start > 0
 	hasBelow := end < totalLines
 
-	return m.renderDialog(visibleLines, boxW, innerH, hasAbove, hasBelow, totalLines, start, innerH)
+	return m.renderDialog(visibleLines, boxW, innerH, hasAbove, hasBelow, totalLines, start, usableH)
 }
 
 // renderDialog builds the full dialog with title in top border and action in bottom border.
@@ -158,12 +151,12 @@ func (m *helpModal) renderDialog(lines []string, boxW, innerH int, hasAbove, has
 		}
 
 		left := borderStyle.Render("│")
+		rightBorder := borderStyle.Render("│")
 		if indicator != "" {
-			right := actionStyle.Render(indicator)
-			contentLines = append(contentLines, left+"  "+lipgloss.NewStyle().Width(innerW-2).Render(line)+right)
+			indicatorStyled := actionStyle.Render(indicator)
+			contentLines = append(contentLines, left+"  "+lipgloss.NewStyle().Width(innerW).Render(line)+"  "+indicatorStyled)
 		} else {
-			right := borderStyle.Render("│")
-			contentLines = append(contentLines, left+"  "+lipgloss.NewStyle().Width(innerW).Render(line)+"  "+right)
+			contentLines = append(contentLines, left+"  "+lipgloss.NewStyle().Width(innerW).Render(line)+"  "+rightBorder)
 		}
 	}
 
@@ -196,15 +189,16 @@ func (m *helpModal) totalLines() int {
 }
 
 // contentHeight returns the visible content height (excluding borders).
+// Must match the usableH calculation in View() exactly.
 func (m *helpModal) contentHeight() int {
-	maxH := m.height
-	if m.height > 0 {
-		pctH := int(float64(m.height) * 0.8)
-		if pctH < maxH {
-			maxH = pctH
-		}
+	maxUsable := m.height - 4
+	if maxUsable > 20 {
+		maxUsable = 20
 	}
-	return maxH - 2 // minus top border + bottom border
+	if maxUsable < 3 {
+		maxUsable = 3
+	}
+	return maxUsable
 }
 
 // buildContentLines formats actions into display lines.
@@ -228,6 +222,16 @@ func (m *helpModal) buildContentLines(actions []Action) []string {
 	sort.Ints(groupOrder)
 
 	for _, grp := range groupOrder {
+		// Group 0: no header — actions listed without section label
+		if grp == 0 {
+			for _, act := range grouped[grp] {
+				if len(act.Keys) == 0 {
+					continue
+				}
+				lines = append(lines, "  "+keyStyle.Render(act.Keys[0])+"  "+act.Description)
+			}
+			continue
+		}
 		label := m.actions.GroupLabel(grp)
 		if label != "" {
 			lines = append(lines, groupStyle.Render(label))
@@ -243,7 +247,8 @@ func (m *helpModal) buildContentLines(actions []Action) []string {
 	return lines
 }
 
-// Shortcuts returns the dismiss shortcut for the command bar.
+// Shortcuts returns an empty slice — help modal has no command bar actions.
+// Dismiss is handled via ESC/F1 in Update() and indicated in the bottom border.
 func (m *helpModal) Shortcuts() []Shortcut {
-	return []Shortcut{{Key: "esc", Label: "Fechar ajuda"}}
+	return nil
 }
