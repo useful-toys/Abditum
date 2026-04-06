@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -20,6 +21,10 @@ func main() {
 }
 
 func run() error {
+	var vaultPath string
+	flag.StringVar(&vaultPath, "vault", "", "Path to the Abditum vault file")
+	flag.Parse()
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	defer clipboard.WriteAll("") //nolint:errcheck

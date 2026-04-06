@@ -1,6 +1,13 @@
 package tui
 
-import tea "charm.land/bubbletea/v2"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+)
 
 // DialogType is the semantic type of a question or confirm dialog.
 type DialogType int
@@ -63,10 +70,12 @@ func PasswordCreate(title string) tea.Cmd {
 	}
 }
 
-// FilePicker creates a stub file-picker modal.
+// FilePicker creates a file-picker modal.
 func FilePicker(title string, mode FilePickerMode, extension string) tea.Cmd {
 	return func() tea.Msg {
-		return pushModalMsg{modal: &filePickerModal{title: title, mode: mode, ext: extension}}
+		fpk := &filePickerModal{title: title, mode: mode, ext: extension}
+		fpk.Init()
+		return pushModalMsg{modal: fpk}
 	}
 }
 
@@ -97,20 +106,228 @@ func (m *passwordCreateModal) Shortcuts() []Shortcut { return nil }
 func (m *passwordCreateModal) SetSize(w, h int)      {}
 
 type filePickerModal struct {
-	title string
-	mode  FilePickerMode
-	ext   string
+	title       string
+	mode        FilePickerMode
+	ext         string
+	currentPath string
+	files       []string // filtered files without extension
+	directories []string // subdirectories
+	fileCursor  int      // cursor position in files list
+	treeCursor  int      // cursor position in directories list
+	fileScroll  int      // scroll offset for files
+	treeScroll  int      // scroll offset for tree
+	width       int
+	height      int
+	theme       *Theme
+	focusPanel  int // 0 = tree, 1 = files
+}
+
+func (m *filePickerModal) Init() tea.Cmd {
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = os.Getenv("HOME")
+		if cwd == "" {
+			cwd = "/"
+		}
+	}
+	m.currentPath = cwd
+	m.theme = ThemeTokyoNight
+	m.focusPanel = 1 // start in files panel
+	m.loadDirectory()
+	return nil
+}
+
+// loadDirectory reads the current directory and filters for .abditum files.
+func (m *filePickerModal) loadDirectory() {
+	m.files = []string{}
+	m.directories = []string{}
+	m.fileCursor = 0
+	m.treeCursor = 0
+
+	entries, err := os.ReadDir(m.currentPath)
+	if err != nil {
+		return // silently skip inaccessible directories
+	}
+
+	for _, entry := range entries {
+		// Skip hidden files
+		if strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+
+		if entry.IsDir() {
+			m.directories = append(m.directories, entry.Name())
+		} else if strings.HasSuffix(entry.Name(), ".abditum") {
+			// Store without extension
+			name := strings.TrimSuffix(entry.Name(), ".abditum")
+			m.files = append(m.files, name)
+		}
+	}
 }
 
 func (m *filePickerModal) Update(msg tea.Msg) tea.Cmd {
-	return tea.Batch(
-		func() tea.Msg { return popModalMsg{} },
-		func() tea.Msg { return filePickerResult{Cancelled: true} },
-	)
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch msg.Code {
+		case tea.KeyEsc:
+			// Cancel flow
+			return tea.Batch(
+				func() tea.Msg { return popModalMsg{} },
+				func() tea.Msg { return filePickerResult{Cancelled: true} },
+			)
+		case tea.KeyEnter:
+			// Select file or directory
+			if m.focusPanel == 0 && len(m.directories) > 0 && m.treeCursor < len(m.directories) {
+				// Navigate into directory
+				m.currentPath = filepath.Join(m.currentPath, m.directories[m.treeCursor])
+				m.loadDirectory()
+				return nil
+			} else if m.focusPanel == 1 && len(m.files) > 0 && m.fileCursor < len(m.files) {
+				// Select file
+				fileName := m.files[m.fileCursor] + ".abditum"
+				fullPath := filepath.Join(m.currentPath, fileName)
+				return tea.Batch(
+					func() tea.Msg { return popModalMsg{} },
+					func() tea.Msg { return filePickerResult{Path: fullPath} },
+				)
+			}
+		case tea.KeyDown:
+			if m.focusPanel == 0 {
+				if len(m.directories) > 0 {
+					m.treeCursor = (m.treeCursor + 1) % len(m.directories)
+				}
+			} else {
+				if len(m.files) > 0 {
+					m.fileCursor = (m.fileCursor + 1) % len(m.files)
+				}
+			}
+		case tea.KeyUp:
+			if m.focusPanel == 0 {
+				if len(m.directories) > 0 {
+					m.treeCursor = (m.treeCursor - 1 + len(m.directories)) % len(m.directories)
+				}
+			} else {
+				if len(m.files) > 0 {
+					m.fileCursor = (m.fileCursor - 1 + len(m.files)) % len(m.files)
+				}
+			}
+		case tea.KeyTab:
+			// Cycle focus
+			m.focusPanel = (m.focusPanel + 1) % 2
+		case tea.KeyLeft:
+			if m.focusPanel == 1 {
+				m.focusPanel = 0
+			}
+		case tea.KeyRight:
+			if m.focusPanel == 0 {
+				m.focusPanel = 1
+			}
+		}
+	}
+	return nil
 }
-func (m *filePickerModal) View() string          { return "[FilePicker stub - Phase 6]" }
-func (m *filePickerModal) Shortcuts() []Shortcut { return nil }
-func (m *filePickerModal) SetSize(w, h int)      {}
+
+func (m *filePickerModal) View() string {
+	// Simple two-panel layout
+	panelWidth := (m.width - 1) / 2 // subtract 1 for separator
+
+	// Left panel: Estrutura (tree)
+	leftPanel := m.renderTreePanel(panelWidth)
+	// Right panel: Arquivos (files)
+	rightPanel := m.renderFilesPanel(panelWidth)
+
+	// Combine with separator
+	lines := []string{}
+	leftLines := strings.Split(leftPanel, "\n")
+	rightLines := strings.Split(rightPanel, "\n")
+
+	maxLines := len(leftLines)
+	if len(rightLines) > maxLines {
+		maxLines = len(rightLines)
+	}
+
+	for i := 0; i < maxLines; i++ {
+		left := ""
+		if i < len(leftLines) {
+			left = leftLines[i]
+		}
+		right := ""
+		if i < len(rightLines) {
+			right = rightLines[i]
+		}
+
+		// Pad left to width
+		for lipgloss.Width(left) < panelWidth {
+			left += " "
+		}
+
+		lines = append(lines, left+"│"+right)
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+// renderTreePanel renders the left panel with directories.
+func (m *filePickerModal) renderTreePanel(width int) string {
+	content := []string{"  Estrutura"}
+
+	for i, dir := range m.directories {
+		prefix := "  "
+		if i == m.treeCursor && m.focusPanel == 0 {
+			prefix = "→ "
+		}
+		line := prefix + dir
+		if lipgloss.Width(line) > width {
+			line = line[:width]
+		}
+		content = append(content, line)
+	}
+
+	// Pad to height
+	for len(content) < m.height {
+		content = append(content, "")
+	}
+
+	return strings.Join(content[:m.height], "\n")
+}
+
+// renderFilesPanel renders the right panel with files.
+func (m *filePickerModal) renderFilesPanel(width int) string {
+	content := []string{" Arquivos"}
+
+	for i, file := range m.files {
+		prefix := "  "
+		if i == m.fileCursor && m.focusPanel == 1 {
+			prefix = "→ "
+		}
+		line := prefix + file
+		if lipgloss.Width(line) > width {
+			line = line[:width-1] + "…"
+		}
+		content = append(content, line)
+	}
+
+	// Pad to height
+	for len(content) < m.height {
+		content = append(content, "")
+	}
+
+	return strings.Join(content[:m.height], "\n")
+}
+
+func (m *filePickerModal) SetSize(w, h int) {
+	m.width = w
+	m.height = h
+}
+
+func (m *filePickerModal) Shortcuts() []Shortcut {
+	return []Shortcut{
+		{Key: "↑↓", Label: "Navegar"},
+		{Key: "Tab", Label: "Trocar"},
+		{Key: "Enter", Label: "Selecionar"},
+		{Key: "Esc", Label: "Cancelar"},
+	}
+}
 
 // newDialogModal creates a modalModel-backed dialog for Message and Confirm.
 func newDialogModal(dtype DialogType, title, message string, options []DialogOption) modalView {
