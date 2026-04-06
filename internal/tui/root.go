@@ -154,6 +154,150 @@ func newRootModel() *rootModel {
 	)
 	actions.RegisterGroupLabel(1, "Mensagens")
 	actions.RegisterGroupLabel(2, "Status")
+	actions.RegisterGroupLabel(3, "Diálogos")
+
+	// Group 3 — Dialog PoC (5 severidades × 3 nº ações)
+	actions.Register(m,
+		// Destrutivo — 1, 2, 3 ações
+		Action{Keys: []string{"1"}, Label: "Dest·1", Description: "Destrutivo 1 ação: Exclusão concluída",
+			Group: 3, Scope: ScopeLocal, Priority: 24, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Acknowledge(SeverityDestructive, "Exclusão concluída", "Gmail foi excluído permanentemente.", nil)
+			}},
+		Action{Keys: []string{"2"}, Label: "Dest·2", Description: "Destrutivo 2 ações: Excluir segredo",
+			Group: 3, Scope: ScopeLocal, Priority: 23, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Decision(SeverityDestructive, "Excluir segredo",
+					"Gmail será excluído permanentemente. Esta ação não pode ser desfeita.",
+					DecisionAction{Key: "Enter", Label: "Excluir", Default: true},
+					nil,
+					DecisionAction{Key: "Esc", Label: "Cancelar"})
+			}},
+		Action{Keys: []string{"3"}, Label: "Dest·3", Description: "Destrutivo 3 ações: Excluir pasta",
+			Group: 3, Scope: ScopeLocal, Priority: 22, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Decision(SeverityDestructive, "Excluir pasta",
+					"Financeiro e todos os seus segredos serão excluídos permanentemente.",
+					DecisionAction{Key: "Enter", Label: "Excluir", Default: true},
+					[]DecisionAction{{Key: "M", Label: "Mover conteúdo"}},
+					DecisionAction{Key: "Esc", Label: "Cancelar"})
+			}},
+
+		// Erro — 1, 2, 3 ações
+		Action{Keys: []string{"4"}, Label: "Err·1", Description: "Erro 1 ação: Falha ao salvar",
+			Group: 3, Scope: ScopeLocal, Priority: 21, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Acknowledge(SeverityError, "Falha ao salvar", "Não foi possível salvar o cofre. O arquivo pode estar em uso por outro processo.", nil)
+			}},
+		Action{Keys: []string{"5"}, Label: "Err·2", Description: "Erro 2 ações: Senha incorreta",
+			Group: 3, Scope: ScopeLocal, Priority: 20, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Decision(SeverityError, "Senha incorreta",
+					"A senha está incorreta. O cofre não pôde ser aberto.",
+					DecisionAction{Key: "Enter", Label: "Tentar novamente", Default: true},
+					nil,
+					DecisionAction{Key: "Esc", Label: "Cancelar"})
+			}},
+		Action{Keys: []string{"6"}, Label: "Err·3", Description: "Erro 3 ações: Cofre corrompido",
+			Group: 3, Scope: ScopeLocal, Priority: 19, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Decision(SeverityError, "Cofre corrompido",
+					"O arquivo está corrompido. Deseja tentar recuperar a partir do backup?",
+					DecisionAction{Key: "Enter", Label: "Recuperar", Default: true},
+					[]DecisionAction{{Key: "A", Label: "Abrir backup"}},
+					DecisionAction{Key: "Esc", Label: "Cancelar"})
+			}},
+
+		// Alerta — 1, 2, 3 ações
+		Action{Keys: []string{"7"}, Label: "Ale·1", Description: "Alerta 1 ação: Sessão bloqueada",
+			Group: 3, Scope: ScopeLocal, Priority: 18, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Acknowledge(SeverityAlert, "Sessão bloqueada", "O cofre foi bloqueado após 5 minutos de inatividade.", nil)
+			}},
+		Action{Keys: []string{"8"}, Label: "Ale·2", Description: "Alerta 2 ações: Alterações não salvas",
+			Group: 3, Scope: ScopeLocal, Priority: 17, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Decision(SeverityAlert, "Alterações não salvas",
+					"Existem alterações não salvas. Sair irá descartá-las.",
+					DecisionAction{Key: "Enter", Label: "Descartar", Default: true},
+					nil,
+					DecisionAction{Key: "Esc", Label: "Voltar"})
+			}},
+		Action{Keys: []string{"9"}, Label: "Ale·3", Description: "Alerta 3 ações: Senha fraca",
+			Group: 3, Scope: ScopeLocal, Priority: 16, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Decision(SeverityAlert, "Senha fraca",
+					"A senha mestra é fraca e pode ser facilmente descoberta.",
+					DecisionAction{Key: "Enter", Label: "Usar assim mesmo", Default: true},
+					[]DecisionAction{{Key: "T", Label: "Trocar senha"}},
+					DecisionAction{Key: "Esc", Label: "Cancelar"})
+			}},
+
+		// Informativo — 1, 2, 3 ações
+		Action{Keys: []string{"a"}, Label: "Inf·1", Description: "Informativo 1 ação: Cofre criado",
+			Group: 3, Scope: ScopeLocal, Priority: 15, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Acknowledge(SeverityInformative, "Cofre criado", "O cofre foi criado com sucesso em ~/documentos/pessoal.abditum.", nil)
+			}},
+		Action{Keys: []string{"b"}, Label: "Inf·2", Description: "Informativo 2 ações: Conflito detectado",
+			Group: 3, Scope: ScopeLocal, Priority: 14, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Decision(SeverityInformative, "Conflito detectado",
+					"O arquivo foi modificado externamente desde a última abertura.",
+					DecisionAction{Key: "Enter", Label: "Sobrescrever", Default: true},
+					nil,
+					DecisionAction{Key: "Esc", Label: "Cancelar"})
+			}},
+		Action{Keys: []string{"c"}, Label: "Inf·3", Description: "Informativo 3 ações: Importação concluída",
+			Group: 3, Scope: ScopeLocal, Priority: 13, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Decision(SeverityInformative, "Importação concluída",
+					"12 segredos importados. 3 entradas já existentes foram atualizadas.",
+					DecisionAction{Key: "Enter", Label: "Ver detalhes", Default: true},
+					[]DecisionAction{{Key: "F", Label: "Fechar"}},
+					DecisionAction{Key: "Esc", Label: "OK"})
+			}},
+
+		// Neutro — 1, 2, 3 ações
+		Action{Keys: []string{"d"}, Label: "Neu·1", Description: "Neutro 1 ação: Operação concluída",
+			Group: 3, Scope: ScopeLocal, Priority: 12, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Acknowledge(SeverityNeutral, "Operação concluída", "A exportação foi salva em ~/documentos/backup-2026-04-05.json.", nil)
+			}},
+		Action{Keys: []string{"e"}, Label: "Neu·2", Description: "Neutro 2 ações: Sair do Abditum",
+			Group: 3, Scope: ScopeLocal, Priority: 11, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Decision(SeverityNeutral, "Sair do Abditum",
+					"Deseja sair? Todas as alterações não salvas serão descartadas.",
+					DecisionAction{Key: "Enter", Label: "Sair", Default: true},
+					nil,
+					DecisionAction{Key: "Esc", Label: "Cancelar"})
+			}},
+		Action{Keys: []string{"f"}, Label: "Neu·3", Description: "Neutro 3 ações: Salvar cofre",
+			Group: 3, Scope: ScopeLocal, Priority: 10, HideFromBar: false,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd {
+				return Decision(SeverityNeutral, "Salvar cofre",
+					"Deseja salvar as alterações antes de continuar?",
+					DecisionAction{Key: "Enter", Label: "Salvar", Default: true},
+					[]DecisionAction{{Key: "N", Label: "Não salvar"}},
+					DecisionAction{Key: "Esc", Label: "Voltar"})
+			}},
+	)
 
 	return m
 }
