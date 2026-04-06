@@ -51,7 +51,7 @@ type DecisionAction struct {
 //   - Action bar at the bottom of the box (not outside)
 //
 // Keyboard: Enter triggers the default action; Esc triggers the cancel action;
-// Tab/left/right cycle focus among non-cancel actions.
+// explicit key bindings (e.g. "M", "A") trigger their matched action directly.
 // Shortcuts() returns nil — command bar shows only F1 Ajuda while dialog is open.
 type DecisionDialog struct {
 	title     string
@@ -59,7 +59,6 @@ type DecisionDialog struct {
 	severity  Severity
 	intention Intention
 	actions   []DecisionAction // ordered: default first, cancel last
-	focus     int              // index into actions (excludes cancel for tab cycling)
 	width     int
 	height    int
 }
@@ -87,7 +86,6 @@ func NewDecisionDialog(
 		severity:  severity,
 		intention: intention,
 		actions:   actions,
-		focus:     0,
 	}
 }
 
@@ -143,22 +141,15 @@ func (d *DecisionDialog) Update(msg tea.Msg) tea.Cmd {
 
 	case "esc":
 		return d.triggerCancel()
-
-	case "tab", "right", "l":
-		d.advanceFocus(+1)
-
-	case "shift+tab", "left", "h":
-		d.advanceFocus(-1)
 	}
 
 	// Check if any action has a matching explicit key binding.
-	for i, a := range d.actions {
+	for _, a := range d.actions {
 		if a.Cancel {
 			continue // Esc already handled above
 		}
 		if strings.EqualFold(key, strings.ToLower(a.Key)) && a.Key != "Enter" {
-			d.focus = i
-			return d.triggerFocused()
+			return d.triggerAction(a)
 		}
 	}
 
@@ -444,45 +435,23 @@ func (d *DecisionDialog) renderActionBar(boxW int) string {
 	return leftStyled.String() + fill + rightStyled
 }
 
-// focusableCount returns the number of non-cancel actions (focus cycles among these).
-func (d *DecisionDialog) focusableCount() int {
-	count := 0
-	for _, a := range d.actions {
-		if !a.Cancel {
-			count++
-		}
-	}
-	return count
-}
-
-// advanceFocus moves the focus index by delta, skipping cancel actions.
-func (d *DecisionDialog) advanceFocus(delta int) {
-	fc := d.focusableCount()
-	if fc <= 1 {
-		return
-	}
-	d.focus = (d.focus + delta + fc) % fc
-}
-
-// triggerFocused executes the currently focused (non-cancel) action and pops the modal.
+// triggerFocused executes the action with Default:true and pops the modal.
+// This is always triggered by Enter, regardless of any navigation state.
 func (d *DecisionDialog) triggerFocused() tea.Cmd {
-	nonCancel := make([]DecisionAction, 0, len(d.actions))
 	for _, a := range d.actions {
-		if !a.Cancel {
-			nonCancel = append(nonCancel, a)
+		if a.Default {
+			return d.triggerAction(a)
 		}
 	}
-	idx := d.focus
-	if idx >= len(nonCancel) {
-		idx = 0
-	}
-	var userCmd tea.Cmd
-	if idx < len(nonCancel) {
-		userCmd = nonCancel[idx].Cmd
-	}
+	// No default action defined — just pop.
+	return func() tea.Msg { return popModalMsg{} }
+}
+
+// triggerAction executes a single action's Cmd (if any) and pops the modal.
+func (d *DecisionDialog) triggerAction(a DecisionAction) tea.Cmd {
 	pop := func() tea.Msg { return popModalMsg{} }
-	if userCmd != nil {
-		return tea.Batch(pop, userCmd)
+	if a.Cmd != nil {
+		return tea.Batch(pop, a.Cmd)
 	}
 	return pop
 }

@@ -345,28 +345,6 @@ func TestDecisionDialog_EscTriggersCancel(t *testing.T) {
 	}
 }
 
-// TestDecisionDialog_ArrowCyclesFocus: pocKey3 (Destrutivo 3-action: Excluir/Mover/Cancelar),
-// send right → focus=1, right again → focus=0 (wraps, only 2 non-cancel actions).
-func TestDecisionDialog_ArrowCyclesFocus(t *testing.T) {
-	d := pocKey3()
-
-	if d.focus != 0 {
-		t.Fatalf("initial focus should be 0, got %d", d.focus)
-	}
-
-	// Send right arrow — advance focus
-	d.Update(tea.KeyPressMsg{Code: tea.KeyRight})
-	if d.focus != 1 {
-		t.Errorf("after right: expected focus=1, got %d", d.focus)
-	}
-
-	// Send right again — should wrap back to 0 (2 non-cancel actions)
-	d.Update(tea.KeyPressMsg{Code: tea.KeyRight})
-	if d.focus != 0 {
-		t.Errorf("after second right (wrap): expected focus=0, got %d", d.focus)
-	}
-}
-
 // TestDecisionDialog_UnknownKeyIgnored: pocKeyE (Neutro 2-action),
 // send key "z", assert cmd is nil.
 func TestDecisionDialog_UnknownKeyIgnored(t *testing.T) {
