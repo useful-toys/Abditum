@@ -16,14 +16,27 @@
  (completed 2012-03-29)
 - [x] **Phase 4: Storage Package** � Binary `.abditum` format, atomic save with `.bak`/`.bak2` chain, Windows MoveFileEx, migration scaffold, startup recovery
  (completed 2012-03-30)
-- [ ] **Phase 5: TUI Scaffold + Root Model** � Session state machine, root model, global tick, timer fields, modal overlay � no screens yet
-- [ ] **Phase 6: Welcome Screen + Vault Create/Open** � First end-to-end flow: create vault, open vault, error classification, master password strength UI
-- [ ] **Phase 7: Vault Tree + Search** � Custom nested tree renderer, keyboard navigation, fold/expand, search overlay scoped to non-sensitive fields
-- [ ] **Phase 8: Secret Detail + Edit Flows** � View/create/edit-values/edit-structure modes, template management, duplicate/move/reorder/favorite/soft-delete
-- [ ] **Phase 9: Vault Lifecycle Operations** � Save, Save As, Discard/Reload, Change Master Password, Export, Import, Settings configuration
-- [ ] **Phase 10: Security Timers + Clipboard + Lock/Exit** � Auto-lock, manual lock, clipboard auto-clear, field reveal timer, screen+scrollback wipe, clean exit
-- [ ] **Phase 11: Cross-Platform CI Matrix + Integration Tests** � Full Windows/macOS/Linux matrix, race detector, golden files, secret-pattern scanner, govulncheck
-- [ ] **Phase 05.3: merge-poc-to-app** — Transformar abditum.exe na PoC standalone (sem cofre, sem domínio, apenas demonstração de componentes TUI) e remover cmd/poc-mensagens
+- [x] **Phase 5: TUI Scaffold + Root Model**
+ (completed 2026-04-06) — Session state machine, root model, global tick, timer fields, modal overlay — no screens yet
+- [x] **Phase 05.1: 05-tui-scaffold-root-model-fix**
+ (completed 2026-04-06)
+- [x] **Phase 05.2: tui-scaffold-message-arch**
+ (completed 2026-04-06)
+- [x] **Phase 05.2.1: tui-scaffold-message-arch-fixes**
+ (completed 2026-04-06)
+- [x] **Phase 05.2.1.1: tui-scaffold-message-arch-fixes**
+ (completed 2026-04-06)
+- [x] **Phase 05.2.2: tui-scaffold-message-arch-fixes**
+ (completed 2026-04-06)
+- [x] **Phase 05.3: merge-poc-to-app**
+ (completed 2026-04-06) — Transformar abditum.exe na PoC standalone (sem cofre, sem domínio, apenas demonstração de componentes TUI) e remover cmd/poc-mensagens
+- [x] **Phase 05.4: 05 tui-scaffold-action-arch**
+ (completed 2026-04-06)
+- [x] **Phase 05.6: tui-scaffold-dialogs**
+ (completed 2026-04-06)
+- [x] **Phase 05.7: Golden test architecture for TUI modals**
+ (completed 2026-04-06)
+- [ ] **Phase 6: Welcome Screen + Vault Create/Open**
 ---
 
 ## Phase Details
@@ -186,6 +199,9 @@ Plans:
 
 ---
 
+- [x] **Phase 05.7: Golden test architecture for TUI modals**
+ (completed 2026-04-06)
+
 ### Phase 05.7: Golden test architecture for TUI modals (INSERTED)
 
 **Goal:** Implement golden test architecture for 4 TUI components: message bar, command bar, help modal, and decision dialog. Parser SGR reutilizável, 36 pares de golden files (72 arquivos), flag `-update` para regeneração.
@@ -201,7 +217,8 @@ Plans:
 - [x] 05.7-04-PLAN.md — DecisionDialog golden tests: 10 scenarios = 20 files + 8 Update() tests (Wave 2)
 - [x] 05.7-05-PLAN.md — HelpModal golden tests: 8 scenarios = 16 files + 8 Update() tests (Wave 2)
 
-### Phase 05.2: tui-scaffold-message-arch (INSERTED)
+- [x] **Phase 05.2: tui-scaffold-message-arch**
+ (completed 2026-04-06)
 
 **Goal:** Refactor the message bar and command bar architecture — split MsgKind, export RenderMessageBar, extend Action with Priority/HideFromBar/Group-as-int, rewrite RenderCommandBar with spec-correct tokens and F1 right anchor — and validate the full system with a standalone `cmd/poc-mensagens` PoC binary.
 
@@ -216,7 +233,8 @@ Plans:
 - [x] 05.2-02-PLAN.md — actions.go: Action.Group int+Priority+HideFromBar, Visible() sort, RegisterGroupLabel, RenderCommandBar spec rewrite; root.go: f1 key+Group 1+Priority; help.go: int grouping with labels
 - [x] 05.2-03-PLAN.md — cmd/poc-mensagens: standalone PoC binary with all 15 actions, live tick, RenderMessageBar+RenderCommandBar demonstration
 
-### Phase 05.2.2: tui-scaffold-message-arch-fixes (INSERTED)
+- [x] **Phase 05.2.2: tui-scaffold-message-arch-fixes**
+ (completed 2026-04-06)
 
 **Goal:** Fix residual bugs in message bar rendering (root.go not using RenderMessageBar, uncolored text, no truncation) and help modal (F1 stacking, ESC not closing, missing bottom action bar).
 **Requirements**: TBD
@@ -228,7 +246,8 @@ Plans:
 - [x] 05.2.2-02-PLAN.md — root.go: fix F1/ESC dispatch order; help.go: add bottom action bar
 - [x] 05.2.2-03-PLAN.md — Gap closure: verify error icon (✕ U+2715) and spinner frame order (◐ ◓ ◑ ◒) match design system spec
 
-### Phase 05.2.1: tui-scaffold-message-arch-fixes (INSERTED)
+- [x] **Phase 05.2.1: tui-scaffold-message-arch-fixes**
+ (completed 2026-04-06)
 
 **Goal:** Fix residual bugs discovered after Phase 05.2 — help modal full dialog rewrite, command bar truncation, spinner frame order, PoC modal pattern alignment.
 **Requirements**: TBD
@@ -239,7 +258,8 @@ Plans:
 - [ ] 05.2.1-01-PLAN.md — Help modal: full DS dialog rewrite (Portuguese title, scroll support, DS tokens, action bar)
 - [ ] 05.2.1-02-PLAN.md — Command bar truncation, spinner frame fix, PoC modal pattern
 
-### Phase 05.2.1.1: tui-scaffold-message-arch-fixes (INSERTED)
+- [x] **Phase 05.2.1.1: tui-scaffold-message-arch-fixes**
+ (completed 2026-04-06)
 
 **Goal:** [Urgent work - to be planned]
 **Requirements**: TBD
@@ -247,7 +267,8 @@ Plans:
 **Plans:** 0/0 plans complete
 (completed 2026-04-06)
 
-### Phase 05.1: 05-tui-scaffold-root-model-fix (INSERTED)
+- [x] **Phase 05.1: 05-tui-scaffold-root-model-fix**
+ (completed 2026-04-06)
 
 **Goal:** Realign internal/tui contracts with 	ui-elm-architecture.md before Phase 6 builds real screens. Rewrites childModel(3), modalView, flowHandler+Init, ActionManager owner API, MessageManager with MsgKind/TTL, dialogs expansion, and root.go dispatch � eliminating FlowRegistry/FlowContext/flowDescriptor which Phase 5 introduced but the canonical architecture abandoned.
 **Requirements**: TBD
