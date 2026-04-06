@@ -86,6 +86,12 @@ func PasswordCreate(title string) tea.Cmd {
 	}
 }
 
+// NewRecognitionError creates an error recognition dialog (acknowledgement-only).
+// Used for unrecoverable errors like invalid vault files.
+func NewRecognitionError(title, text string) tea.Cmd {
+	return Acknowledge(SeverityError, title, text, nil)
+}
+
 // FilePicker creates a file-picker modal.
 func FilePicker(title string, mode FilePickerMode, extension string) tea.Cmd {
 	return func() tea.Msg {

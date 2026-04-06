@@ -76,3 +76,9 @@ type pushModalMsg struct{ modal modalView }
 
 // popModalMsg - emitted by modals to request removal from the stack.
 type popModalMsg struct{}
+
+// vaultOpenedMsg - emitted by flows when a vault is successfully opened/created.
+// Used to notify rootModel that a vault has been loaded.
+type vaultOpenedMsg struct {
+	Path string // path to the opened vault file
+}
