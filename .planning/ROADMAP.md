@@ -283,15 +283,14 @@ Plans:
 
 **Goal:** A user can pick a vault file path, create a new vault with a master password (with real-time strength feedback), or open an existing vault � and every error case surfaces the correct generic user message with no technical detail leaked.
 
-**Requirements:** VAULT-01, VAULT-03, VAULT-04, VAULT-05
+**Requirements:** VAULT-01, VAULT-03, VAULT-04
 
-**Plans:**
-1. Implement `welcomeModel`: two sub-states (`subStatePickPath`, `subStateCreatePassword`, `subStateOpenPassword`); file path `textinput`; three action choices (Create / Open / Quit) navigated with `j`/`k`/Enter; key-hint footer ("?? navigate � Enter select � q quit") using `lipgloss`
-2. Implement vault creation flow (VAULT-01): dual password input fields (Enter password / Confirm password); real-time strength badge (Weak/Strong) rendered inline beneath first field � calls `crypto.EvaluatePasswordStrength` on every keystroke; mismatch shown as inline error; `str` mismatch or empty ? no submit; Weak password ? non-blocking warning banner, submit allowed; on submit: convert `textinput.Value()` ? `[]byte` immediately, zero textinput buffer, call `Manager.Create(path, passwordBytes)`, transition to `stateVaultTree`
-3. Implement vault open flow (VAULT-03): single password input; on submit: convert to `[]byte`, zero buffer, call `Manager.Open(path, passwordBytes)`; map storage sentinel errors to user messages (NO Go error strings, NO internal details): `storage.ErrInvalidMagic` ? "Invalid file � not an Abditum vault"; `storage.ErrVersionTooNew` ? "This vault was created by a newer version of Abditum"; `storage.ErrAuthFailed` ? "Incorrect password � please try again" (clear input, allow retry); `storage.ErrCorrupted` ? "Vault integrity error � file cannot be opened" (return to path selection, no retry) (VAULT-04, VAULT-05)
-4. Implement file path input validation: check file exists for Open (suggest creating if not found); check path is writable directory for Create; friendly messages for common errors (directory not found, permission denied) � generic, no OS error strings
-5. Implement `RecoverOrphans` call on `Manager.Open` path: before `storage.Load`, call `storage.RecoverOrphans(path)` � ignore orphan recovery errors (log generically); ensures startup recovery from Phase 4 fires on every vault open
-6. Write `teatest/v2` golden file tests for: welcome screen initial state (80�24), create-vault step 1 (path entered), create-vault step 2 (password + strength badge: Weak), create-vault step 3 (strength badge: Strong), open-vault password prompt, open-vault ErrAuthFailed error state, open-vault ErrCorrupted error state; use `teatest.WithInitialTermSize(80, 24)` throughout
+**Plans:** 5 plans in 4 waves
+- [ ] 06-01-PLAN.md — Theme System, Header, Welcome Screen + Theme Toggle
+- [ ] 06-02-PLAN.md — File Picker Modal (two-panel navigation, filtering, metadata)
+- [ ] 06-03-PLAN.md — Password Entry/Creation Modals (masked input, strength meter, attempt counter)
+- [ ] 06-04-PLAN.md — Vault Lifecycle Flows (Open, Create, CLI fast-path, exit flow, error handling)
+- [ ] 06-05-PLAN.md — Dialog Factories & Golden Tests (error dialogs, comprehensive UI tests)
 
 **UAT:**
 - [ ] User enters path + matching passwords ? vault file created on disk; TUI transitions to vault tree screen
