@@ -89,7 +89,7 @@ A severidade governa **todo** o tratamento visual da moldura. A intenção defin
 │  permanentemente.                │
 │  Esta ação não pode ser desfeita.│
 │                                  │
-╰── S Excluir ────────── N Cancelar ╯
+╰── Enter Excluir ───────────── Esc Cancelar ──╯
 ```
 
 | Elemento | Token | Atributo |
@@ -113,7 +113,7 @@ A severidade governa **todo** o tratamento visual da moldura. A intenção defin
 │                                  │
 │  Deseja salvar antes de sair?    │
 │                                  │
-╰── S Salvar ── N Descartar ── Esc Voltar ╯
+╰── Enter Salvar ── N Descartar ── Esc Voltar ──╯
 ```
 
 | Elemento | Token | Atributo |
@@ -140,7 +140,7 @@ A severidade governa **todo** o tratamento visual da moldura. A intenção defin
 │  O arquivo foi modificado        │
 │  externamente.                   │
 │                                  │
-╰── Enter OK ───────────────────╯
+╰────────────────────────────── Enter OK ──╯
 ```
 
 | Elemento | Token | Atributo |
@@ -165,7 +165,7 @@ A severidade governa **todo** o tratamento visual da moldura. A intenção defin
 │  O arquivo está corrompido ou    │
 │  não é um cofre válido.          │
 │                                  │
-╰── Enter OK ───────────────────╯
+╰────────────────────────────── Enter OK ──╯
 ```
 
 | Elemento | Token | Atributo |
@@ -198,7 +198,7 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 │  Senha                                     │
 │  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
 │                                            │
-╰── Enter Confirmar ──────────── Esc Cancelar ╯
+╰── Enter Confirmar ──────────── Esc Cancelar ──╯
        ↑ text.disabled (bloqueado)
 ```
 
@@ -210,7 +210,7 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 │  Senha                                     │
 │  ░••••••••▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
 │                                            │
-╰── Enter Confirmar ──────────── Esc Cancelar ╯
+╰── Enter Confirmar ──────────── Esc Cancelar ──╯
        ↑ accent.primary + bold (desbloqueado)
 ```
 
@@ -223,7 +223,7 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 │  ░••••••••▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
 │                                            │
 │  Tentativa 2 de 5                          │
-╰── Enter Confirmar ──────────── Esc Cancelar ╯
+╰── Enter Confirmar ──────────── Esc Cancelar ──╯
 ```
 
 | Elemento | Token | Atributo |
@@ -287,7 +287,7 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 │  Confirmação                               │
 │  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
 │                                            │
-╰── Enter Confirmar ──────────── Esc Cancelar ╯
+╰── Enter Confirmar ──────────── Esc Cancelar ──╯
        ↑ text.disabled (bloqueado)
 ```
 
@@ -304,7 +304,7 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 │                                            │
 │  Força: ████████░░ Boa                     │
 │                                            │
-╰── Enter Confirmar ──────────── Esc Cancelar ╯
+╰── Enter Confirmar ──────────── Esc Cancelar ──╯
        ↑ text.disabled (2º campo vazio)
 ```
 
@@ -321,7 +321,7 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 │                                            │
 │  Força: ████████░░ Boa                     │
 │                                            │
-╰── Enter Confirmar ──────────── Esc Cancelar ╯
+╰── Enter Confirmar ──────────── Esc Cancelar ──╯
        ↑ accent.primary + bold (desbloqueado)
 ```
 
@@ -338,7 +338,7 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 │                                            │
 │  Força: ████████░░ Boa                     │
 │                                            │
-╰── Enter Confirmar ──────────── Esc Cancelar ╯
+╰── Enter Confirmar ──────────── Esc Cancelar ──╯
        ↑ text.disabled (senhas divergem)
 ```
 
@@ -430,10 +430,10 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 ╭── Abrir cofre ─────────────────────────────────────────────────────╮
 │  Caminho: /home/usuario/projetos/abditum                           │
 ├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
-│  ▶ /                         ↑  ● database          25.8 MB       ↑
-│    ▼ usuario/                │  ● config              1.2 KB      │
-│      ▶ documentos/           │  ● backup             18.4 MB      │
-│      ▼ projetos/             │    15/03/25 14:32                   │
+│  ▶ /                         ↑  ● database   25.8 MB 15/03/25 14:32↑
+│    ▼ usuario/                │  ● config       1.2 KB 02/01/25 09:15│
+│      ▶ documentos/           │  ● backup      18.4 MB 04/04/25 18:47│
+│      ▼ projetos/             │                                     │
 │        ▶ site/               │                                     │
 │        ▼ abditum/            ■                                     ■
 │          ▶ docs/             │                                     │
@@ -444,7 +444,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
        ↑ accent.primary + bold (desbloqueado)
 ```
 
-> Scroll da árvore (`↑` `■` `↓`) substitui o `│` do separador entre painéis. Scroll dos arquivos (`↑` `■` `↓`) substitui o `│` da borda direita do modal. O `┴` na borda inferior marca a junção do separador com a base do diálogo.
+> Scroll da árvore (`↑` `■` `↓`) substitui o `│` do separador entre painéis. Scroll dos arquivos (`↑` `■` `↓`) substitui o `│` da borda direita do modal. O `┴` na borda inferior marca a junção do separador com a base do diálogo. Metadados (tamanho + `dd/mm/aa HH:MM`) na mesma linha do nome.
 
 **Wireframe (nenhum arquivo — ação default bloqueada, sem scroll):**
 
@@ -544,16 +544,16 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 ╭── Salvar cofre ────────────────────────────────────────────────────╮
 │  Caminho: /home/usuario/projetos/abditum                           │
 ├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
-│  ▶ /                         │  ● database          25.8 MB       │
-│    ▼ usuario/                │  ● config              1.2 KB      │
-│      ▼ projetos/             │    15/03/25 14:32                   │
+│  ▶ /                         │  ● database   25.8 MB 15/03/25 14:32│
+│    ▼ usuario/                │  ● config       1.2 KB 02/01/25 09:15│
+│      ▼ projetos/             │                                     │
 │        ▼ abditum/            │                                     │
 │          ▶ docs/             │                                     │
 │                              │                                     │
 ├──────────────────────────────┴─────────────────────────────────────┤
 │  Nome do arquivo                                                   │
 │  ░meu-cofre▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
-╰── Enter Salvar ────────────────────────────────────────── Esc Cancelar ╯
+╰── Enter Salvar ───────────────────────────────────────── Esc Cancelar ──╯
        ↑ accent.primary + bold (desbloqueado)
 ```
 
@@ -563,46 +563,14 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 ╭── Salvar cofre ────────────────────────────────────────────────────╮
 │  Caminho: /home/usuario/projetos                                   │
 ├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
-│  ▶ /                         │  ● database          25.8 MB       │
-│    ▼ usuario/                │    15/03/25 14:32                   │
-│      ▼ projetos/             │                                     │
-│                              │                                     │
-├──────────────────────────────┴─────────────────────────────────────┤
-│  Nome do arquivo                                                   │
-│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
-╰── Enter Salvar ────────────────────────────────────────── Esc Cancelar ╯
-       ↑ text.disabled (bloqueado)
-```
-╭── Salvar cofre ────────────────────────────────────────────────────╮
-│  Caminho: /home/usuario/projetos/abditum                           │
-├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
-│  ▶ /                         │  ● database          25.8 MB       │
-│    ▼ usuario/                │  ● config              1.2 KB      │
-│      ▼ projetos/             │                                     │
-│        ▼ abditum/            │                                     │
-│          ▶ docs/             │                                     │
-│                              │                                     │
-├──────────────────────────────┴─────────────────────────────────────┤
-│  Nome do arquivo                                                   │
-│  ░meu-cofre▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
-╰── Enter Salvar ────────────────────────────────────────── Esc Cancelar ╯
-       ↑ accent.primary + bold (desbloqueado)
-```
-
-**Wireframe (campo nome vazio — ação default bloqueada):**
-
-```
-╭── Salvar cofre ────────────────────────────────────────────────────╮
-│  Caminho: /home/usuario/projetos                                   │
-├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
-│  ▶ /                         │  ● database          25.8 MB       │
+│  ▶ /                         │  ● database   25.8 MB 15/03/25 14:32│
 │    ▼ usuario/                │                                     │
 │      ▼ projetos/             │                                     │
 │                              │                                     │
 ├──────────────────────────────┴─────────────────────────────────────┤
 │  Nome do arquivo                                                   │
 │  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
-╰── Enter Salvar ────────────────────────────────────────── Esc Cancelar ╯
+╰── Enter Salvar ───────────────────────────────────────── Esc Cancelar ──╯
        ↑ text.disabled (bloqueado)
 ```
 
