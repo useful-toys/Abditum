@@ -1,6 +1,7 @@
 package testdata
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -15,6 +16,29 @@ type StyleTransition struct {
 	FG    *string  `json:"fg"`    // cor foreground em hex (ex: "#a0a0a0"), ou null se default
 	BG    *string  `json:"bg"`    // cor background em hex, ou null se default
 	Style []string `json:"style"` // ["bold", "italic", ...], ou [] para nenhum
+}
+
+// MarshalJSON serializa StyleTransition como uma tupla compacta de 5 elementos:
+//
+//	[line, col, fg_hex_or_null, bg_hex_or_null, [styles]]
+//
+// Isso corresponde ao formato especificado em arquitetura-teste.md § "Formato de cada tupla".
+// Exemplo de saída: [0, 4, "#d08c00", null, ["bold"]]
+func (st StyleTransition) MarshalJSON() ([]byte, error) {
+	type tuple [5]any
+	var fg, bg any
+	if st.FG != nil {
+		fg = *st.FG
+	}
+	if st.BG != nil {
+		bg = *st.BG
+	}
+	// Garante que Style nunca seja null no JSON — usa [] em vez de null quando nil.
+	style := st.Style
+	if style == nil {
+		style = []string{}
+	}
+	return json.Marshal(tuple{st.Line, st.Col, fg, bg, style})
 }
 
 // ansiState holds the current rendering state during ANSI sequence parsing.
