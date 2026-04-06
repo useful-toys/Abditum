@@ -22,6 +22,7 @@ type rootModel struct {
 	width     int
 	height    int
 	theme     *Theme
+	header    headerModel
 
 	// Child models - nil = inactive. NEVER store as childModel interface.
 	welcome        *welcomeModel
@@ -69,6 +70,7 @@ func newRootModel() *rootModel {
 		messages:     messages,
 		lastActionAt: time.Now(),
 		theme:        ThemeTokyoNight,
+		header:       headerModel{},
 	}
 
 	m.welcome = newWelcomeModel(actions, m.theme)
@@ -534,8 +536,6 @@ func (m *rootModel) renderFrame(modal modalView) string {
 		return "Initializing..."
 	}
 
-	headerStyle := lipgloss.NewStyle().Width(m.width).Foreground(m.theme.AccentPrimary).Bold(true)
-	separatorStyle := lipgloss.NewStyle().Width(m.width).Foreground(m.theme.SurfaceRaised)
 	cmdBarStyle := lipgloss.NewStyle().Width(m.width).Background(m.theme.SurfaceBase)
 	workAreaStyle := lipgloss.NewStyle().Width(m.width).Background(m.theme.SurfaceBase)
 
@@ -548,7 +548,7 @@ func (m *rootModel) renderFrame(modal modalView) string {
 	}
 
 	// Header
-	header := headerStyle.Render("  Abditum") + "\n" + separatorStyle.Render(strings.Repeat("─", m.width))
+	header := m.header.Render(m.width, m.vaultPath, m.mgr != nil && m.mgr.IsModified(), m.area, m.theme)
 
 	// Message bar
 	msgBar := RenderMessageBar(m.messages.Current(), m.width, m.theme)
