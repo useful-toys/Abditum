@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	testdatapkg "github.com/useful-toys/abditum/internal/tui/testdata"
 )
 
 // TestPasswordCreateModalStructExists verifies that passwordCreateModal can be instantiated.
@@ -219,4 +220,34 @@ func TestPasswordCreateModalStrengthEvaluation(t *testing.T) {
 	m.password.SetValue("VeryStrongPassword123!")
 	m.updateStrength()
 	// Should evaluate to something (exact value depends on crypto package implementation)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Golden File Tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+// TestPasswordCreateModal_Golden validates visual output against golden files.
+func TestPasswordCreateModal_Golden(t *testing.T) {
+	m := &passwordCreateModal{
+		title: "Criar senha mestra",
+	}
+	m.Init()
+	m.theme = ThemeTokyoNight
+	m.messages = NewMessageManager()
+	m.SetSize(80, 24)
+
+	out := m.View()
+
+	// .txt.golden: plain text render
+	txtPath := goldenPath("passwordcreate", "initial", 80, "txt")
+	checkOrUpdateGolden(t, txtPath, stripANSI(out))
+
+	// .json.golden: style transitions
+	transitions := testdatapkg.ParseANSIStyle(out)
+	jsonBytes, err := testdatapkg.MarshalStyleTransitions(transitions)
+	if err != nil {
+		t.Fatalf("marshal transitions: %v", err)
+	}
+	jsonPath := goldenPath("passwordcreate", "initial", 80, "json")
+	checkOrUpdateGolden(t, jsonPath, string(jsonBytes))
 }

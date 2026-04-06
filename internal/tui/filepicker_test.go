@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	testdatapkg "github.com/useful-toys/abditum/internal/tui/testdata"
 )
 
 // Helper to create a filePickerModal for testing
@@ -350,4 +351,48 @@ func contains(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Golden File Tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+// TestFilePickerModal_Golden validates visual output against golden files.
+func TestFilePickerModal_Golden(t *testing.T) {
+	testDir := t.TempDir()
+
+	// Create test file structure
+	for i := 0; i < 5; i++ {
+		f, err := os.Create(testDir + "/" + fmt.Sprintf("vault%d.abditum", i))
+		if err != nil {
+			t.Fatalf("failed to create test file: %v", err)
+		}
+		f.Close()
+	}
+
+	// Create some directories
+	for i := 0; i < 3; i++ {
+		os.Mkdir(testDir+"/"+fmt.Sprintf("Folder%d", i), 0755)
+	}
+
+	fpk := &filePickerModal{focusPanel: 1}
+	fpk.currentPath = testDir
+	fpk.loadDirectory()
+	fpk.SetSize(80, 24)
+	fpk.theme = ThemeTokyoNight
+
+	out := fpk.View()
+
+	// .txt.golden: plain text render
+	txtPath := goldenPath("filepicker", "initial", 80, "txt")
+	checkOrUpdateGolden(t, txtPath, stripANSI(out))
+
+	// .json.golden: style transitions (if any ANSI codes present)
+	transitions := testdatapkg.ParseANSIStyle(out)
+	jsonBytes, err := testdatapkg.MarshalStyleTransitions(transitions)
+	if err != nil {
+		t.Fatalf("marshal transitions: %v", err)
+	}
+	jsonPath := goldenPath("filepicker", "initial", 80, "json")
+	checkOrUpdateGolden(t, jsonPath, string(jsonBytes))
 }
