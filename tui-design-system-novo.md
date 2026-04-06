@@ -428,16 +428,50 @@ Elementos sobrepostos (modais, diálogos, seletores) seguem regras uniformes de 
 | `Esc` | Aciona a opção de cancelamento; se não existir, fecha o elemento |
 | Atalho da opção | Aciona diretamente a opção correspondente |
 
-**Modelo bidimensional: Intenção × Severidade**
+**Ações na borda inferior:**
 
-Diálogos são classificados por duas dimensões ortogonais. Qualquer intenção pode combinar com qualquer severidade. A referência descritiva usa a forma: "diálogo de _intenção_ com severidade _severidade_" — por exemplo, "diálogo de confirmação com severidade destrutiva".
+Todo diálogo de decisão exibe suas ações na borda inferior. O número de ações define o layout:
 
-**Intenção** — o que o diálogo pede ao usuário:
-
-| Intenção | Descrição | Barra de ações |
+| Ações | Layout | Uso |
 |---|---|---|
-| Confirmação | Requer escolha entre opções (ex: Excluir / Cancelar) | Ação default + opcionais + cancelar |
-| Reconhecimento | Requer apenas que o usuário tome ciência | `Enter OK` (única ação) |
+| **1 ação** | Alinhada à **direita** | Reconhecimento — o usuário apenas toma ciência (ex: "OK") |
+| **2 ações** | Default à **esquerda**, Cancelar à **direita** | Confirmação binária (ex: "Excluir / Cancelar") |
+| **3 ações** | Default à **esquerda**, alternativa no meio, Cancelar à **direita** | Confirmação com alternativa (ex: "Salvar / Salvar como… / Cancelar") |
+
+> **Limite prático:** 3 ações é o máximo tolerável. Diálogos com 4 ou mais ações na borda indicam falha de design — o usuário não deve ler um menu de opções na moldura. Se o fluxo exige mais escolhas, divida em etapas ou use um seletor interno.
+
+**Wireframes por quantidade de ações:**
+
+**1 ação (reconhecimento):**
+```
+╰── Enter OK ──────────────────────────────────╯
+```
+
+**2 ações (confirmação binária):**
+```
+╰── Enter Excluir ───────────────────── Esc Cancelar ──╯
+```
+
+**3+ ações (confirmação com alternativas):**
+```
+╰── Enter Salvar ── A Salvar como ─────── Esc Cancelar ──╯
+```
+
+**2 ações (confirmação binária):**
+```
+╰── Enter Excluir ───────────────────── Esc Cancelar ──╯
+```
+
+**3+ ações (confirmação com alternativas):**
+```
+╰── Enter Salvar ── A Salvar como ─────── Esc Cancelar ──╯
+```
+
+**Regras de estilo:**
+
+- **Ação default** (`Enter`): tecla + label em **bold**, colorida com o token de destaque da severidade
+- **Ações alternativas**: tecla + label na cor da borda, sem bold
+- **Cancelar** (`Esc`): tecla + label na cor da borda, sem bold — sempre na última posição
 
 **Severidade** — governa o tratamento visual (borda, símbolo, cor da tecla default):
 
@@ -460,15 +494,15 @@ Todo diálogo — de decisão ou funcional — segue a mesma estrutura de moldur
 │                                  │
 │  (conteúdo interno do diálogo)   │
 │                                  │
-╰── S Ação ────────── Esc Cancelar ╯  ← borda inferior: default à esquerda, cancelar à direita
+╰── Enter Ação ────────── Esc Cancelar ╯  ← borda inferior: ações conforme quantidade (ver acima)
 ```
 
 Regras da moldura:
 
 - **Borda superior** contém o título embutido, precedido pelo símbolo de severidade quando aplicável (`⚠`, `ℹ`, `✕`). Severidade Neutro não usa símbolo
-- **Borda inferior** contém apenas ações de confirmação e cancelamento, alinhadas à direita
-- **Ordem das ações:** a ação default (associada a `Enter`) fica sempre na primeira posição (mais à esquerda); a ação de cancelamento (`Esc`) fica sempre na última posição (mais à direita, junto à borda). Em diálogos com 3 ou mais ações, as intermediárias ficam entre default e cancelar
-- **Ação default** (associada a `Enter`): tecla + label em **bold**, coloridos com o token de destaque da severidade (ver tabela de severidades acima) — visualmente distinta das demais
+- **Borda inferior** contém apenas ações — nunca duplicadas na barra de comandos
+- **Ordem das ações:** definida pela quantidade (1, 2 ou 3+ ações — ver tabela acima)
+- **Ação default** (associada a `Enter`): tecla + label em **bold**, coloridos com o token de destaque da severidade — visualmente distinta das demais
 - **Demais ações**: tecla + label na cor da borda, sem bold
 - **Borda e título** usam o mesmo token — definido pela tabela de tipos semânticos
 - **Ações internas** (revelar senha, alternar campo, expandir diretório) aparecem exclusivamente na barra de comandos — não na borda do diálogo
@@ -481,8 +515,9 @@ Diálogos de decisão pedem uma ação do usuário — seja uma escolha entre op
 
 - **Mensagem** em `text.primary`; nomes de itens referenciados em **bold**
 - A severidade define o tratamento visual da moldura e da tecla default conforme a tabela acima
+- O número de ações na borda inferior segue a tabela "Ações na borda inferior" acima
 
-> A matriz completa de combinações Intenção × Severidade com wireframes ilustrativos está documentada na [especificação de telas](tui-specification-novo.md#diálogos-de-decisão).
+> A matriz completa de combinações com wireframes ilustrativos está documentada na [especificação de telas](tui-specification-novo.md#diálogos-de-decisão).
 
 **Diálogos funcionais:**
 
@@ -755,6 +790,7 @@ Anti-padrões documentam o que **não deve ser feito** na interface do Abditum. 
 | **Fechamento de Cofre Sem Confirmação** *(Crítico)* | Fechar/bloquear cofre com modificações não salvas sem confirmar | Perda silenciosa de dados não salvos |
 | **Ação Destrutiva Sem Confirmação** *(Crítico)* | Ação irreversível ou com perda de dados executa sem diálogo de confirmação e opção de desistir | Dado perdido sem chance de recuperação |
 | **Fluxo Sem Saída** *(Alto)* | Fluxo de múltiplos passos sem opção de desistir (cancelar) ou voltar ao passo anterior | Usuário preso; forçado a concluir ou matar o processo |
+| **Borda como Menu** *(Alto)* | Diálogo com 4 ou mais ações na borda inferior — transforma a moldura num "roteador" de escolhas | Sobrecarga cognitiva; usuário não sabe qual ação escolher; a borda perde o papel de confirmação e vira menu disfarçado |
 | **Ação Fantasma na Barra** *(Alto)* | Exibir na barra de comandos uma ação que não se aplica ao contexto atual (`Enabled = false`) — mesmo que em estilo dim/disabled | Usuário tenta acionar, recebe erro silencioso; poluição visual; quebra a confiança na barra como indicador de ações disponíveis |
 | **Dica com Tecla Redundante** *(Médio)* | Mensagem de dica de campo ou uso menciona teclas de ação (ex: "F17 para copiar") que já estão visíveis na barra de comandos | Ruído cognitivo; dica fica datada se a tecla mudar; duplicação de informação |
 | **Tecla Fantasma na Barra** *(Alto)* | Sugerir na barra de comandos uma tecla que não está registrada ou não funciona (ex: F17 quando só existem 12 F-keys no terminal) | Usuário pressiona e nada acontece; quebra de confiança na interface |
