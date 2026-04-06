@@ -16,10 +16,10 @@
 
 ### Ciclo de Vida do Cofre
 
-- [ ] **VAULT-01**: Usuário pode criar novo cofre em arquivo com senha mestra; confirmação dupla obrigatória; avaliação de força exibida (sem bloquear operação)
+- [x] **VAULT-01**: Usuário pode criar novo cofre em arquivo com senha mestra; confirmação dupla obrigatória; avaliação de força exibida (sem bloquear operação)
 - [x] **VAULT-02**: Ao criar cofre, Pasta Geral é criada automaticamente com subpastas "Sites e Apps" e "Financeiro" e modelos padrão: Login (URL, Usuário, Senha), Cartão de Crédito (Titular, Número, Validade, CVV), Chave de API (Serviço, Chave)
-- [ ] **VAULT-03**: Usuário pode abrir cofre a partir de arquivo existente com senha mestra
-- [ ] **VAULT-04**: Erros de abertura classificados em 4 categorias: tipo de arquivo inválido (magic incorreto → rejeitar), versão incompatível (versão_formato > suportado → rejeitar), autenticação (tag GCM inválida → nova tentativa permitida), integridade (JSON inválido ou Pasta Geral ausente → rejeitar); mensagens sempre genéricas, sem detalhes técnicos
+- [x] **VAULT-03**: Usuário pode abrir cofre a partir de arquivo existente com senha mestra
+- [x] **VAULT-04**: Erros de abertura classificados em 4 categorias: tipo de arquivo inválido (magic incorreto → rejeitar), versão incompatível (versão_formato > suportado → rejeitar), autenticação (tag GCM inválida → nova tentativa permitida), integridade (JSON inválido ou Pasta Geral ausente → rejeitar); mensagens sempre genéricas, sem detalhes técnicos
 - [ ] **VAULT-05**: Se a Pasta Geral não existir no arquivo aberto, rejeitar com mensagem de erro (arquivo inválido) — sem tentativa de recriar
 - [ ] **VAULT-06**: Usuário pode salvar cofre no arquivo atual sem re-solicitar senha; segredos marcados para exclusão são removidos permanentemente
 - [ ] **VAULT-07**: Usuário pode salvar cofre em outro arquivo; arquivo de trabalho passa a ser o novo; segredos marcados removidos; não pode ser o mesmo arquivo atual
@@ -183,9 +183,9 @@
 | ATOMIC-03 | 4 | Pending |
 | ATOMIC-04 | 4 | Pending |
 | COMPAT-03 | 4 | Pending |
-| VAULT-01 | 6 | Pending |
-| VAULT-03 | 6 | Pending |
-| VAULT-04 | 6 | Pending |
+| VAULT-01 | 6 | Complete |
+| VAULT-03 | 6 | Complete |
+| VAULT-04 | 6 | Complete |
 | VAULT-05 | 6 | Pending |
 | QUERY-01 | 7 | Pending |
 | QUERY-02 | 7 | Pending |

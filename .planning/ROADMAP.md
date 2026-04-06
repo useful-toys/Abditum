@@ -36,7 +36,7 @@
  (completed 2026-04-06)
 - [x] **Phase 05.7: Golden test architecture for TUI modals**
  (completed 2026-04-06)
-- [ ] **Phase 6: Welcome Screen + Vault Create/Open**
+- [x] **Phase 6: Welcome Screen + Vault Create/Open** (completed 2026-04-06)
 ---
 
 ## Phase Details
@@ -285,7 +285,7 @@ Plans:
 
 **Requirements:** VAULT-01, VAULT-03, VAULT-04
 
-**Plans:** 5 plans in 4 waves
+**Plans:** 5/5 plans complete
 - [ ] 06-01-PLAN.md — Theme System, Header, Welcome Screen + Theme Toggle
 - [ ] 06-02-PLAN.md — File Picker Modal (two-panel navigation, filtering, metadata)
 - [ ] 06-03-PLAN.md — Password Entry/Creation Modals (masked input, strength meter, attempt counter)
