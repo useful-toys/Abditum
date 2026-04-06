@@ -635,3 +635,84 @@ func TestDecisionDialog_Golden(t *testing.T) {
 		})
 	}
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TestDecisionDialog_Update_* — explicit key binding behavioral tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+// TestDecisionDialog_Update_ExplicitKey_Destructive: pocKey3 has key "M" for "Mover conteúdo".
+// Sending key "m" (lowercase) must return non-nil cmd (case-insensitive match per Update logic).
+func TestDecisionDialog_Update_ExplicitKey_Destructive(t *testing.T) {
+	d := pocKey3() // Destructive 3-action: Enter Excluir / M Mover conteúdo / Esc Cancelar
+	cmd := d.Update(tea.KeyPressMsg{Code: 'm'})
+	if cmd == nil {
+		t.Error("explicit key 'm' (matching 'M' action) must return non-nil cmd")
+	}
+}
+
+// TestDecisionDialog_Update_ExplicitKey_Error: pocKey6 has key "A" for "Abrir backup".
+func TestDecisionDialog_Update_ExplicitKey_Error(t *testing.T) {
+	d := pocKey6() // Error 3-action: Enter Recuperar / A Abrir backup / Esc Cancelar
+	cmd := d.Update(tea.KeyPressMsg{Code: 'a'})
+	if cmd == nil {
+		t.Error("explicit key 'a' (matching 'A' action) must return non-nil cmd")
+	}
+}
+
+// TestDecisionDialog_Update_ExplicitKey_Alert: pocKey9 has key "T" for "Trocar senha".
+func TestDecisionDialog_Update_ExplicitKey_Alert(t *testing.T) {
+	d := pocKey9() // Alert 3-action: Enter Usar assim mesmo / T Trocar senha / Esc Cancelar
+	cmd := d.Update(tea.KeyPressMsg{Code: 't'})
+	if cmd == nil {
+		t.Error("explicit key 't' (matching 'T' action) must return non-nil cmd")
+	}
+}
+
+// TestDecisionDialog_Update_ExplicitKey_Informative: pocKeyC has key "F" for "Fechar".
+func TestDecisionDialog_Update_ExplicitKey_Informative(t *testing.T) {
+	d := pocKeyC() // Informative 3-action: Enter Ver detalhes / F Fechar / Esc OK
+	cmd := d.Update(tea.KeyPressMsg{Code: 'f'})
+	if cmd == nil {
+		t.Error("explicit key 'f' (matching 'F' action) must return non-nil cmd")
+	}
+}
+
+// TestDecisionDialog_Update_EnterOnAcknowledge: pocKey1 (Acknowledge, single action).
+// Enter must return non-nil cmd.
+func TestDecisionDialog_Update_EnterOnAcknowledge(t *testing.T) {
+	d := pocKey1()
+	cmd := d.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if cmd == nil {
+		t.Error("Enter on Acknowledge dialog must return non-nil cmd (pop modal)")
+	}
+}
+
+// TestDecisionDialog_Update_EscOnAcknowledge: pocKey1 has no Cancel action.
+// Esc must still return non-nil cmd (fallback pop modal path).
+func TestDecisionDialog_Update_EscOnAcknowledge(t *testing.T) {
+	d := pocKey1()
+	cmd := d.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if cmd == nil {
+		t.Error("Esc on Acknowledge dialog must return non-nil cmd (fallback pop modal)")
+	}
+}
+
+// TestDecisionDialog_Update_CancelKeyNotTreatedAsExplicit: pocKey3 has "Esc Cancelar" as Cancel.
+// Esc must trigger cancel path, not explicit key path. Return non-nil.
+func TestDecisionDialog_Update_CancelKeyNotTreatedAsExplicit(t *testing.T) {
+	d := pocKey3()
+	cmd := d.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if cmd == nil {
+		t.Error("Esc must trigger cancel path and return non-nil cmd")
+	}
+}
+
+// TestDecisionDialog_Update_UnknownExplicitKey: pocKey3 has M/Esc/Enter.
+// Key "z" must return nil.
+func TestDecisionDialog_Update_UnknownExplicitKey(t *testing.T) {
+	d := pocKey3()
+	cmd := d.Update(tea.KeyPressMsg{Code: 'z'})
+	if cmd != nil {
+		t.Error("unknown key 'z' on 3-action dialog must return nil cmd")
+	}
+}
