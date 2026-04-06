@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 06
 status: planning
-last_updated: "2026-04-04T05:31:01.371Z"
+last_updated: "2026-04-05T03:31:28.687Z"
 progress:
-  total_phases: 18
-  completed_phases: 11
-  total_plans: 35
-  completed_plans: 35
+  total_phases: 19
+  completed_phases: 12
+  total_plans: 40
+  completed_plans: 40
 ---
 
 # Project State — Abditum
@@ -49,6 +49,8 @@ Plans executed:
 ## Accumulated Context
 
 ### Roadmap Evolution
+
+- Phase 12 added: 05 tui-scaffold-action-arch
 
 - Phase 05.2.2 inserted after Phase 05.2: tui-scaffold-message-arch-fixes (INSERTED REFINEMENT)
   - **Purpose:** Test message truncation with >100 char long messages + F10 action in PoC

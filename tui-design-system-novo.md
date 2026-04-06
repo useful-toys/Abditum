@@ -288,13 +288,19 @@ Quando há conteúdo fora da viewport, a borda direita comunica direção e posi
 | Seta de scroll (`↑` / `↓`) | `text.secondary` | — |
 | Thumb de posição (`■`) | `text.secondary` | — |
 
-**Navegação:**
+**Navegação por teclado:**
 
 | Tecla | Efeito |
 |---|---|
 | `↑` / `↓` | Move uma linha |
 | `PgUp` / `PgDn` | Move uma página (viewport − 1 linhas) |
 | `Home` / `End` | Vai ao início / fim do conteúdo |
+
+**Navegação por mouse:**
+
+- **Scroll do mouse** roda o conteúdo do painel/diálogo com foco
+- **Clique na seta** (`↑`/`↓`) move uma linha na direção indicada
+- **Drag do thumb** (`■`) não suportado — TUI não tem drag contínuo
 
 > As bordas superior e inferior do diálogo (título, ações) permanecem intactas — o scroll afeta apenas o conteúdo interno.
 
@@ -780,6 +786,9 @@ Anti-padrões documentam o que **não deve ser feito** na interface do Abditum. 
 | **Última Linha Causa Scroll** *(Médio)* | Escrever em `(linhas, colunas)` aciona scroll | Barra de comandos "cai"; layout deslocado |
 | **Cursor Desalinhado** *(Alto)* | Cursor em coluna errada durante edição (bytes vs runes) | Backspace apaga caractere errado |
 | **Campo Edição Sem Scroll H** *(Alto)* | Campo longo truncado ou overflow sem scroll | Usuário não vê valor completo |
+| **Scroll Sem Teclado** *(Alto)* | Painel com scroll não responde a `Home`/`End`/`PgUp`/`PgDn` — só a `↑`/`↓` | Navegação lenta e frustrante em listas longas |
+| **Scroll Sem Mouse** *(Médio)* | Painel com scroll não responde ao scroll do mouse | Usuário espera interatividade padrão e não encontra |
+| **Scroll Invertido** *(Alto)* | `PgUp` desce ou `PgDn` sobe; `Home` vai ao fim | Quebra de expectativa; desorientação imediata |
 
 ---
 

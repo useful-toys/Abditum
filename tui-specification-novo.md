@@ -407,8 +407,8 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 **Contexto de uso:** abrir ou salvar arquivo do cofre.
 **Token de borda:** `border.focused`
 **Dimensionamento:** largura máxima do DS (70 colunas ou 80% do terminal, o menor); altura 80% do terminal. Proporção árvore/arquivos ~40/60.
-**Diretório inicial:** CWD do processo.
-**Filtro fixo:** apenas arquivos `*.abditum` são exibidos no painel de arquivos. Não há campo de filtro editável.
+**Diretório inicial:** CWD do processo. Se o CWD não existe ou não tem permissão de leitura, fallback para home do usuário (`~`).
+**Filtro fixo:** apenas arquivos `*.abditum` são exibidos no painel de arquivos. Não há campo de filtro editável. Arquivos ocultos (nome iniciado com `.`) não são exibidos. A extensão `.abditum` é omitida na exibição dos nomes de arquivo (redundante — o filtro já restringe ao formato).
 **Padding:** 2 colunas horizontal; **0 vertical** — exceção ao DS [Dimensionamento de diálogos](tui-design-system-novo.md#dimensionamento-de-diálogos). Justificativa: princípio "O Terminal como Meio" — espaço vertical é recurso escasso; o FilePicker é o diálogo mais denso da aplicação (header de caminho + 2 painéis + campo de nome no modo Save). As bordas `╭╮╰╯` e os headers internos (`Caminho:`, `Estrutura`, `Arquivos`, `Nome do arquivo`) criam contenção e separação suficientes sem padding vertical.
 
 O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e condições distintos. Ambos compartilham a mesma anatomia de painéis.
@@ -424,40 +424,41 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 **Título:** `Abrir cofre`
 **Objetivo:** selecionar um arquivo `.abditum` existente.
 
-**Wireframe (arquivo selecionado — ação default ativa):**
+**Wireframe (arquivo selecionado — ação default ativa, scroll em ambos os painéis):**
 
 ```
-╭── Abrir cofre ───────────────────────────────────────────────────╮
-│  Caminho: /home/usuario/projetos/abditum                         │
-├─ Estrutura ──────────────────┬─ Arquivos ────────────────────────┤
-│  ▶ /                         │  ● database.abditum   25.8 MB 1h │
-│    ▼ usuario/                │  ● config.abditum      1.2 KB 3d │
-│      ▶ documentos/           │  ● backup.abditum     18.4 MB 1s │
-│      ▼ projetos/             │                                   │
-│        ▶ site/               │                                   │
-│        ▼ abditum/            │                                   │
-│          ▶ docs/             │                                   │
-│          ▶ src/              │                                   │
-│        ▶ outros/             │                                   │
-│      ▶ downloads/            │                                   │
-│                              │                                   │
-╰── Enter Abrir ────────────────────────────────────── Esc Cancelar ╯
+╭── Abrir cofre ─────────────────────────────────────────────────────╮
+│  Caminho: /home/usuario/projetos/abditum                           │
+├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
+│  ▶ /                         ↑  ● database          25.8 MB       ↑
+│    ▼ usuario/                │  ● config              1.2 KB      │
+│      ▶ documentos/           │  ● backup             18.4 MB      │
+│      ▼ projetos/             │    15/03/25 14:32                   │
+│        ▶ site/               │                                     │
+│        ▼ abditum/            ■                                     ■
+│          ▶ docs/             │                                     │
+│          ▶ src/              │                                     │
+│        ▶ outros/             │                                     │
+│      ▶ downloads/            ↓                                     ↓
+╰── Enter Abrir ───────────────┴─────────────────────── Esc Cancelar ─╯
        ↑ accent.primary + bold (desbloqueado)
 ```
 
-**Wireframe (nenhum arquivo — ação default bloqueada):**
+> Scroll da árvore (`↑` `■` `↓`) substitui o `│` do separador entre painéis. Scroll dos arquivos (`↑` `■` `↓`) substitui o `│` da borda direita do modal. O `┴` na borda inferior marca a junção do separador com a base do diálogo.
+
+**Wireframe (nenhum arquivo — ação default bloqueada, sem scroll):**
 
 ```
-╭── Abrir cofre ───────────────────────────────────────────────────╮
-│  Caminho: /home/usuario/documentos                               │
-├─ Estrutura ──────────────────┬─ Arquivos ────────────────────────┤
-│  ▶ /                         │                                   │
-│    ▼ usuario/                │  Nenhum arquivo .abditum          │
-│      ▼ documentos/           │  neste diretório                  │
-│        ▶ fotos/              │                                   │
-│        ▶ textos/             │                                   │
-│                              │                                   │
-╰── Enter Abrir ────────────────────────────────────── Esc Cancelar ╯
+╭── Abrir cofre ─────────────────────────────────────────────────────╮
+│  Caminho: /home/usuario/documentos                                 │
+├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
+│  ▶ /                         │                                     │
+│    ▼ usuario/                │  Nenhum cofre neste diretório       │
+│      ▼ documentos/           │                                     │
+│        ▶ fotos/              │                                     │
+│        ▶ textos/             │                                     │
+│                              │                                     │
+╰── Enter Abrir ───────────────┴─────────────────────── Esc Cancelar ─╯
        ↑ text.disabled (bloqueado)
 ```
 
@@ -473,8 +474,9 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 | Arquivo selecionado no painel de arquivos | `special.highlight` (fundo) + `text.primary` | **bold** |
 | Arquivo não selecionado | `text.primary` | — |
 | Indicador de arquivo `●` | `text.secondary` | — |
-| Metadados (tamanho, data relativa) | `text.secondary` | — |
-| Texto `Nenhum arquivo .abditum` | `text.secondary` | — |
+| Nome do arquivo (sem extensão `.abditum`) | — | Extensão omitida na exibição — redundante com o filtro |
+| Metadados (tamanho, data/hora) | `text.secondary` | — |
+| Texto `Nenhum cofre neste diretório` | `text.secondary` | — |
 | Rótulo `Caminho:` | `text.secondary` | — |
 | Valor do caminho | `text.primary` | — |
 | Ação default (bloqueada) | `text.disabled` | — |
@@ -504,11 +506,20 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 
 **Comportamento:**
 
-- `Tab` alterna entre árvore e painel de arquivos (2 stops)
-- Na árvore: `↑↓` navega entre pastas; `→` ou `Enter` expande pasta recolhida; `←` recolhe pasta expandida; `Enter` em pasta expandida recolhe
-- No painel de arquivos: `↑↓` navega entre arquivos; `Enter` confirma seleção (equivale à ação default)
+- **Foco inicial:** árvore de diretórios (painel esquerdo)
+- **Ordem do Tab:** Árvore → Arquivos → volta (2 stops)
+- **Scroll:** cada painel tem scroll independente com indicadores `↑`/`↓`/`■` na borda direita do respectivo painel
+- **Navegação por teclado na árvore:** `↑↓` navega entre pastas; `→` ou `Enter` expande pasta recolhida; `←` ou `Enter` recolhe pasta expandida; `Home`/`End` vai ao primeiro/último item visível; `PgUp`/`PgDn` scroll por página
+- **Navegação por teclado nos arquivos:** `↑↓` navega entre arquivos; `Enter` confirma seleção (equivale à ação default); `Home`/`End` vai ao primeiro/último arquivo visível; `PgUp`/`PgDn` scroll por página
 - Ao expandir pasta na árvore, o painel de arquivos atualiza para mostrar os `.abditum` daquela pasta; primeiro arquivo pré-selecionado automaticamente
 - Rótulo `Caminho` atualiza ao navegar na árvore
+- **Duplo-clique em pasta:** expande/recolhe (mesmo que `Enter`)
+- **Duplo-clique em arquivo:** confirma seleção (mesmo que ação default)
+- **Scroll do mouse:** afeta o painel com foco
+- **Arquivos ocultos** (nome iniciado com `.`) não são exibidos
+- **Caminho longo:** truncado no início com `…` (ex: `…/projetos/abditum`)
+- **Diretórios sem permissão:** exibidos normalmente na árvore; ao tentar expandir, erro na barra (`✕ Sem permissão para acessar <pasta>`) e pasta permanece recolhida
+- **Fallback de CWD:** se o CWD é inacessível, o FilePicker navega para home do usuário (`~`) e exibe mensagem informativa (`⚠ Diretório atual inacessível — navegando para home`)
 
 **Transições especiais:**
 
@@ -517,6 +528,8 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 | Navegar para pasta sem `.abditum` | Painel de arquivos mostra texto vazio; ação default muda para `text.disabled` |
 | Navegar para pasta com `.abditum` | Primeiro arquivo pré-selecionado; ação default muda para `accent.primary` **bold** |
 | `Enter` no painel de arquivos | Diálogo fecha com o arquivo selecionado |
+| `Enter` em pasta expandida | Pasta recolhida; foco permanece na pasta |
+| Tentar expandir pasta sem permissão | Erro na barra (`✕ Sem permissão para acessar <pasta>`); pasta permanece recolhida |
 
 ---
 
@@ -528,36 +541,68 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 **Wireframe (campo nome preenchido — ação default ativa):**
 
 ```
-╭── Salvar cofre ──────────────────────────────────────────────────╮
-│  Caminho: /home/usuario/projetos/abditum                         │
-├─ Estrutura ──────────────────┬─ Arquivos ────────────────────────┤
-│  ▶ /                         │  ● database.abditum   25.8 MB 1h │
-│    ▼ usuario/                │  ● config.abditum      1.2 KB 3d │
-│      ▼ projetos/             │                                   │
-│        ▼ abditum/            │                                   │
-│          ▶ docs/             │                                   │
-│                              │                                   │
-├──────────────────────────────┴───────────────────────────────────┤
-│  Nome do arquivo                                                 │
-│  ░meu-cofre▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
-╰── Enter Salvar ───────────────────────────────────── Esc Cancelar ╯
+╭── Salvar cofre ────────────────────────────────────────────────────╮
+│  Caminho: /home/usuario/projetos/abditum                           │
+├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
+│  ▶ /                         │  ● database          25.8 MB       │
+│    ▼ usuario/                │  ● config              1.2 KB      │
+│      ▼ projetos/             │    15/03/25 14:32                   │
+│        ▼ abditum/            │                                     │
+│          ▶ docs/             │                                     │
+│                              │                                     │
+├──────────────────────────────┴─────────────────────────────────────┤
+│  Nome do arquivo                                                   │
+│  ░meu-cofre▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+╰── Enter Salvar ────────────────────────────────────────── Esc Cancelar ╯
        ↑ accent.primary + bold (desbloqueado)
 ```
 
 **Wireframe (campo nome vazio — ação default bloqueada):**
 
 ```
-╭── Salvar cofre ──────────────────────────────────────────────────╮
-│  Caminho: /home/usuario/projetos                                 │
-├─ Estrutura ──────────────────┬─ Arquivos ────────────────────────┤
-│  ▶ /                         │  ● database.abditum   25.8 MB 1h │
-│    ▼ usuario/                │                                   │
-│      ▼ projetos/             │                                   │
-│                              │                                   │
-├──────────────────────────────┴───────────────────────────────────┤
-│  Nome do arquivo                                                 │
-│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
-╰── Enter Salvar ───────────────────────────────────── Esc Cancelar ╯
+╭── Salvar cofre ────────────────────────────────────────────────────╮
+│  Caminho: /home/usuario/projetos                                   │
+├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
+│  ▶ /                         │  ● database          25.8 MB       │
+│    ▼ usuario/                │    15/03/25 14:32                   │
+│      ▼ projetos/             │                                     │
+│                              │                                     │
+├──────────────────────────────┴─────────────────────────────────────┤
+│  Nome do arquivo                                                   │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+╰── Enter Salvar ────────────────────────────────────────── Esc Cancelar ╯
+       ↑ text.disabled (bloqueado)
+```
+╭── Salvar cofre ────────────────────────────────────────────────────╮
+│  Caminho: /home/usuario/projetos/abditum                           │
+├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
+│  ▶ /                         │  ● database          25.8 MB       │
+│    ▼ usuario/                │  ● config              1.2 KB      │
+│      ▼ projetos/             │                                     │
+│        ▼ abditum/            │                                     │
+│          ▶ docs/             │                                     │
+│                              │                                     │
+├──────────────────────────────┴─────────────────────────────────────┤
+│  Nome do arquivo                                                   │
+│  ░meu-cofre▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+╰── Enter Salvar ────────────────────────────────────────── Esc Cancelar ╯
+       ↑ accent.primary + bold (desbloqueado)
+```
+
+**Wireframe (campo nome vazio — ação default bloqueada):**
+
+```
+╭── Salvar cofre ────────────────────────────────────────────────────╮
+│  Caminho: /home/usuario/projetos                                   │
+├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
+│  ▶ /                         │  ● database          25.8 MB       │
+│    ▼ usuario/                │                                     │
+│      ▼ projetos/             │                                     │
+│                              │                                     │
+├──────────────────────────────┴─────────────────────────────────────┤
+│  Nome do arquivo                                                   │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+╰── Enter Salvar ────────────────────────────────────────── Esc Cancelar ╯
        ↑ text.disabled (bloqueado)
 ```
 
@@ -570,9 +615,9 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 | Pasta selecionada na árvore | `accent.primary` | **bold** |
 | Pasta não selecionada | `text.primary` | — |
 | Indicador de pasta (`▶`/`▼`) | `accent.secondary` | — |
-| Arquivo existente | `text.primary` | — |
+| Arquivo existente (sem extensão `.abditum`) | `text.primary` | — |
 | Indicador de arquivo `●` | `text.secondary` | — |
-| Metadados | `text.secondary` | — |
+| Metadados (tamanho, data/hora) | `text.secondary` | — |
 | Rótulo `Caminho:` | `text.secondary` | — |
 | Valor do caminho | `text.primary` | — |
 | Label `Nome do arquivo` (campo ativo) | `accent.primary` | **bold** |
@@ -611,11 +656,20 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 
 **Comportamento:**
 
-- `Tab` alterna entre árvore, painel de arquivos e campo de nome (3 stops)
+- **Foco inicial:** árvore de diretórios (painel esquerdo)
+- **Ordem do Tab:** Árvore → Arquivos → Campo `Nome do arquivo` → volta (3 stops)
+- **Scroll:** cada painel tem scroll independente com indicadores `↑`/`↓`/`■` na borda direita do respectivo painel
 - Navegação na árvore e painel de arquivos idêntica ao modo Open
-- No painel de arquivos: selecionar um arquivo existente **copia o nome** para o campo `Nome do arquivo` (facilita sobrescrever)
+- No painel de arquivos: selecionar um arquivo existente **copia o nome (sem extensão)** para o campo `Nome do arquivo` (facilita sobrescrever)
 - Ao navegar na árvore, o campo `Nome do arquivo` **não é limpo** — preserva o nome digitado
 - Extensão `.abditum` é adicionada silenciosamente ao caminho de retorno, sem alterar o texto exibido no campo
+- **Duplo-clique em pasta:** expande/recolhe (mesmo que `Enter`)
+- **Duplo-clique em arquivo existente:** copia o nome para o campo `Nome do arquivo`
+- **Scroll do mouse:** afeta o painel com foco
+- **Arquivos ocultos** (nome iniciado com `.`) não são exibidos
+- **Caminho longo:** truncado no início com `…` (ex: `…/projetos/abditum`)
+- **Diretórios sem permissão:** exibidos normalmente na árvore; ao tentar expandir, erro na barra (`✕ Sem permissão para acessar <pasta>`) e pasta permanece recolhida
+- **Fallback de CWD:** se o CWD é inacessível, o FilePicker navega para home do usuário (`~`) e exibe mensagem informativa (`⚠ Diretório atual inacessível — navegando para home`)
 
 **Transições especiais:**
 
@@ -624,6 +678,8 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 | Selecionar arquivo existente no painel | Nome copiado para campo `Nome do arquivo`; ação default muda para `accent.primary` **bold** |
 | Limpar campo `Nome do arquivo` | Ação default volta para `text.disabled` |
 | `Enter` com campo preenchido | Diálogo fecha com caminho completo (diretório + nome + `.abditum`) |
+| `Enter` em pasta expandida | Pasta recolhida; foco permanece na pasta |
+| Tentar expandir pasta sem permissão | Erro na barra (`✕ Sem permissão para acessar <pasta>`); pasta permanece recolhida |
 
 ---
 

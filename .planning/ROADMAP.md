@@ -494,7 +494,7 @@ Plans:
 **Goal:** Validate the action architecture through targeted configuration changes — multi-key dispatch, selective command bar visibility, priority-based truncation, and help modal grouping — plus comprehensive unit tests covering RenderCommandBar edge cases.
 **Requirements**: *(configuration validation + test coverage — no v1 requirements)*
 **Depends on:** Phase 05.3
-**Plans:** 2 plans in 2 waves
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 05.4-01-PLAN.md — Update root.go action registrations (multi-key, HideFromBar, priorities, groups) + help.go group 0 skip
