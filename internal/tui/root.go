@@ -568,7 +568,7 @@ func (m *rootModel) renderFrame(modal modalView) string {
 	if modal != nil {
 		cmdBarContent = renderShortcuts(modal.Shortcuts(), m.width)
 	} else {
-		cmdBarContent = m.actions.RenderCommandBar(m.width)
+		cmdBarContent = RenderCommandBar(m.actions.Visible(), m.width)
 	}
 	if cmdBarContent == "" {
 		cmdBarContent = strings.Repeat(" ", m.width)

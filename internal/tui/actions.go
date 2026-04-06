@@ -166,11 +166,12 @@ func (a *ActionManager) All() []Action {
 	return result
 }
 
-// RenderCommandBar renders the command bar from currently visible actions.
+// RenderCommandBar renders the command bar from a pre-computed slice of visible actions.
 // Tokens per DS spec: key = accent.primary bold, label = text.primary, separator = text.secondary.
 // The command bar uses the application's default background (surface.base) — no explicit bg set.
 // F1 action is right-anchored; all other actions are left-padded with 2 spaces.
-func (a *ActionManager) RenderCommandBar(width int) string {
+// Callers should pass am.Visible() to obtain the sorted visible action slice.
+func RenderCommandBar(actions []Action, width int) string {
 	keyStyle := StyleCommandKey()
 	labelStyle := StyleCommandLabel()
 	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorSeparator))
@@ -180,7 +181,7 @@ func (a *ActionManager) RenderCommandBar(width int) string {
 		return keyStyle.Render(key) + " " + labelStyle.Render(label)
 	}
 
-	visible := a.Visible()
+	visible := actions
 
 	// Separate F1 anchor from body actions.
 	var bodyActions []Action

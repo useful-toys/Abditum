@@ -252,7 +252,7 @@ func TestRenderCommandBar_MultiKeyShowsFirst(t *testing.T) {
 		Handler:  func() tea.Cmd { return nil },
 	})
 
-	result := am.RenderCommandBar(80)
+	result := RenderCommandBar(am.Visible(), 80)
 	if !containsKey(result, "f10") {
 		t.Error("RenderCommandBar must show Keys[0] (f10)")
 	}
@@ -275,7 +275,7 @@ func TestRenderCommandBar_TruncatesLowestPriority(t *testing.T) {
 
 	// 30 cols: body ("  f10 High · f9 Mid · f2 Low") + anchor ("f1 Help") exceeds width.
 	// Truncation removes lowest priority first: f2 goes, f9 stays.
-	result := am.RenderCommandBar(30)
+	result := RenderCommandBar(am.Visible(), 30)
 
 	if !containsKey(result, "f10") {
 		t.Error("highest priority action (f10) must be kept")
@@ -300,7 +300,7 @@ func TestRenderCommandBar_NarrowTerminal_F1Only(t *testing.T) {
 	)
 
 	// 10 cols: body doesn't fit at all, only anchor survives.
-	result := am.RenderCommandBar(10)
+	result := RenderCommandBar(am.Visible(), 10)
 
 	if !containsKey(result, "f1") {
 		t.Error("at 10 cols, F1 anchor must still be visible")
