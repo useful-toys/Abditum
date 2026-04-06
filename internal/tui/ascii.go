@@ -17,9 +17,8 @@ const AsciiArt = `    ___    __        ___ __
 // RenderLogo renders the Abditum wordmark with a violet→cyan gradient.
 // Each of the 5 lines gets a distinct lipgloss foreground color.
 // Returns the colored multi-line string ready for display.
-func RenderLogo() string {
-	// Palette: violet → blue/cyan (one color per line)
-	colors := []string{"#9d7cd8", "#89ddff", "#7aa2f7", "#7dcfff", "#bb9af7"}
+func RenderLogo(t *Theme) string {
+	colors := t.LogoGradient
 
 	lines := strings.Split(AsciiArt, "\n")
 	var renderedLogo strings.Builder
@@ -28,7 +27,7 @@ func RenderLogo() string {
 		if i >= len(colors) {
 			i = len(colors) - 1
 		}
-		style := lipgloss.NewStyle().Foreground(lipgloss.Color(colors[i]))
+		style := lipgloss.NewStyle().Foreground(colors[i])
 		renderedLogo.WriteString(style.Render(line) + "\n")
 	}
 

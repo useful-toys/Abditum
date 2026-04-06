@@ -227,7 +227,7 @@ func TestRenderMessageBar_Golden(t *testing.T) {
 			w := w
 			name := fmt.Sprintf("%s-%d", tc.variant, w)
 			t.Run(name, func(t *testing.T) {
-				out := RenderMessageBar(tc.msg, w)
+				out := RenderMessageBar(tc.msg, w, ThemeTokyoNight)
 
 				// .txt.golden: raw ANSI output — validates layout, spacing, truncation, borders
 				txtPath := goldenPath("messages", tc.variant, w, "txt")

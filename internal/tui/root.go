@@ -21,6 +21,7 @@ type rootModel struct {
 	vaultPath string
 	width     int
 	height    int
+	theme     *Theme
 
 	// Child models - nil = inactive. NEVER store as childModel interface.
 	welcome        *welcomeModel
@@ -67,9 +68,10 @@ func newRootModel() *rootModel {
 		actions:      actions,
 		messages:     messages,
 		lastActionAt: time.Now(),
+		theme:        ThemeTokyoNight,
 	}
 
-	m.welcome = newWelcomeModel(actions)
+	m.welcome = newWelcomeModel(actions, m.theme)
 
 	// Register all 15 PoC actions on rootModel as owner (D-19 through D-23).
 	actions.Register(m,
@@ -145,6 +147,11 @@ func newRootModel() *rootModel {
 			Group: 0, Scope: ScopeLocal, Priority: 10, HideFromBar: false,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { return tea.Quit }},
+		// Global action for F12 to toggle theme
+		Action{Keys: []string{"f12"}, Label: "Toggle Theme", Description: "Alternar tema visual (Tokyo Night / Cyberpunk)",
+			Group: 0, Scope: ScopeGlobal, Priority: 100, HideFromBar: true,
+			Enabled: func() bool { return true },
+			Handler: func() tea.Cmd { return func() tea.Msg { return toggleThemeMsg{} } }},
 		Action{Keys: []string{"f1"}, Label: "Ajuda", Description: "Mostrar atalhos de teclado",
 			Group: 1, Scope: ScopeGlobal, Priority: 0, HideFromBar: false,
 			Enabled: func() bool { return true },
@@ -372,6 +379,17 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		key := msg.String()
 		inFlowOrModal := m.activeFlow != nil || len(m.modals) > 0
 
+		// Check for F12 theme toggle before any other key handling
+		if key == "f12" {
+			if m.theme == ThemeTokyoNight {
+				m.theme = ThemeCyberpunk
+			} else {
+				m.theme = ThemeTokyoNight
+			}
+			m.applyTheme()
+			return m, nil
+		}
+
 		// 1. If help modal is open, let it handle ALL keys (including F1 and ESC)
 		if len(m.modals) > 0 {
 			if _, isHelp := m.modals[len(m.modals)-1].(*helpModal); isHelp {
@@ -516,10 +534,10 @@ func (m *rootModel) renderFrame(modal modalView) string {
 		return "Initializing..."
 	}
 
-	headerStyle := lipgloss.NewStyle().Width(m.width).Foreground(lipgloss.Color(ColorAccentPrimary)).Bold(true)
-	separatorStyle := lipgloss.NewStyle().Width(m.width).Foreground(lipgloss.Color(ColorBorderDefault))
-	cmdBarStyle := lipgloss.NewStyle().Width(m.width)
-	workAreaStyle := lipgloss.NewStyle().Width(m.width)
+	headerStyle := lipgloss.NewStyle().Width(m.width).Foreground(m.theme.AccentPrimary).Bold(true)
+	separatorStyle := lipgloss.NewStyle().Width(m.width).Foreground(m.theme.SurfaceRaised)
+	cmdBarStyle := lipgloss.NewStyle().Width(m.width).Background(m.theme.SurfaceBase)
+	workAreaStyle := lipgloss.NewStyle().Width(m.width).Background(m.theme.SurfaceBase)
 
 	const headerH = 2
 	const msgBarH = 1
@@ -533,7 +551,7 @@ func (m *rootModel) renderFrame(modal modalView) string {
 	header := headerStyle.Render("  Abditum") + "\n" + separatorStyle.Render(strings.Repeat("─", m.width))
 
 	// Message bar
-	msgBar := RenderMessageBar(m.messages.Current(), m.width)
+	msgBar := RenderMessageBar(m.messages.Current(), m.width, m.theme)
 
 	// Work area
 	var workContent string
@@ -568,7 +586,7 @@ func (m *rootModel) renderFrame(modal modalView) string {
 	if modal != nil {
 		cmdBarContent = renderShortcuts(modal.Shortcuts(), m.width)
 	} else {
-		cmdBarContent = RenderCommandBar(m.actions.Visible(), m.width)
+		cmdBarContent = RenderCommandBar(m.actions.Visible(), m.width, m.theme)
 	}
 	if cmdBarContent == "" {
 		cmdBarContent = strings.Repeat(" ", m.width)
@@ -631,9 +649,22 @@ func (m *rootModel) renderTemplatesArea(workH int) string {
 func (m *rootModel) enterVault() tea.Cmd {
 	m.area = workAreaVault
 	m.welcome = nil // GC old model
-	m.vaultTree = newVaultTreeModel(m.mgr, m.actions, m.messages)
-	m.secretDetail = newSecretDetailModel(m.mgr, m.actions, m.messages)
+	m.vaultTree = newVaultTreeModel(m.mgr, m.actions, m.messages, m.theme)
+	m.secretDetail = newSecretDetailModel(m.mgr, m.actions, m.messages, m.theme)
 	m.vaultTree.SetSize(m.width/2, m.height-4)
 	m.secretDetail.SetSize(m.width-m.width/2, m.height-4)
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tickMsg(t) })
+}
+
+// applyTheme propagates the current theme to all active child models and modals.
+func (m *rootModel) applyTheme() {
+	for _, child := range m.liveWorkChildren() {
+		child.ApplyTheme(m.theme)
+	}
+	for _, modal := range m.modals {
+		// Modals should implement ApplyTheme if they need theme changes.
+		if themeableModal, ok := modal.(interface{ ApplyTheme(*Theme) }); ok {
+			themeableModal.ApplyTheme(m.theme)
+		}
+	}
 }

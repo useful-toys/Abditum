@@ -12,16 +12,22 @@ import (
 // Open/create vault flows are orchestrated via the modal stack, not this model.
 type welcomeModel struct {
 	actions *ActionManager
+	theme   *Theme
 	width   int
 	height  int
+}
+
+// ApplyTheme applies the given theme to the welcomeModel.
+func (m *welcomeModel) ApplyTheme(t *Theme) {
+	m.theme = t
 }
 
 // Compile-time assertion: welcomeModel satisfies childModel.
 var _ childModel = &welcomeModel{}
 
 // newWelcomeModel creates a new welcome screen model.
-func newWelcomeModel(actions *ActionManager) *welcomeModel {
-	return &welcomeModel{actions: actions}
+func newWelcomeModel(actions *ActionManager, theme *Theme) *welcomeModel {
+	return &welcomeModel{actions: actions, theme: theme}
 }
 
 // Update processes messages for the welcome screen.
@@ -32,8 +38,8 @@ func (m *welcomeModel) Update(msg tea.Msg) tea.Cmd {
 
 // View renders the ASCII art logo centered on screen.
 func (m *welcomeModel) View() string {
-	logoBlock := lipgloss.NewStyle().Width(43).Render(RenderLogo())
-	hint := lipgloss.NewStyle().Foreground(lipgloss.Color("245")).
+	logoBlock := lipgloss.NewStyle().Width(43).Render(RenderLogo(m.theme))
+	hint := lipgloss.NewStyle().Foreground(m.theme.SemanticInfo).
 		Render("No vault open")
 	content := logoBlock + "\n\n" + hint
 
@@ -50,9 +56,9 @@ func (m *welcomeModel) SetSize(w, h int) {
 }
 
 // renderHints renders a list of hint lines using the muted style.
-func renderHints(items []string) string {
+func renderHints(items []string, t *Theme) string {
 	var b strings.Builder
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
+	style := lipgloss.NewStyle().Foreground(t.SemanticInfo)
 	for _, item := range items {
 		b.WriteString(style.Render(item) + "\n")
 	}

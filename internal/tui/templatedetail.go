@@ -12,16 +12,22 @@ type templateDetailModel struct {
 	mgr     *vault.Manager
 	actions *ActionManager
 	msgs    *MessageManager
+	theme   *Theme
 	width   int
 	height  int
+}
+
+// ApplyTheme applies the given theme to the templateDetailModel.
+func (m *templateDetailModel) ApplyTheme(t *Theme) {
+	m.theme = t
 }
 
 // Compile-time assertion: templateDetailModel satisfies childModel.
 var _ childModel = &templateDetailModel{}
 
 // newTemplateDetailModel creates a new template detail stub.
-func newTemplateDetailModel(mgr *vault.Manager, actions *ActionManager, msgs *MessageManager) *templateDetailModel {
-	return &templateDetailModel{mgr: mgr, actions: actions, msgs: msgs}
+func newTemplateDetailModel(mgr *vault.Manager, actions *ActionManager, msgs *MessageManager, theme *Theme) *templateDetailModel {
+	return &templateDetailModel{mgr: mgr, actions: actions, msgs: msgs, theme: theme}
 }
 
 // Update processes messages for the template detail panel.
@@ -31,7 +37,7 @@ func (m *templateDetailModel) Update(msg tea.Msg) tea.Cmd {
 
 // View renders a placeholder for the template detail panel.
 func (m *templateDetailModel) View() string {
-	return lipgloss.NewStyle().Foreground(lipgloss.Color("245")).
+	return lipgloss.NewStyle().Foreground(m.theme.SemanticInfo).
 		Render("[template detail - Phase 8]")
 }
 

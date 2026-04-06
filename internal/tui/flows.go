@@ -8,6 +8,7 @@ type childModel interface {
 	Update(tea.Msg) tea.Cmd
 	View() string
 	SetSize(w, h int)
+	ApplyTheme(*Theme)
 }
 
 // Shortcut is a key+label pair displayed in the command bar while a modal is active.

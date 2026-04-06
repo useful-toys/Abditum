@@ -12,16 +12,22 @@ type templateListModel struct {
 	mgr     *vault.Manager
 	actions *ActionManager
 	msgs    *MessageManager
+	theme   *Theme
 	width   int
 	height  int
+}
+
+// ApplyTheme applies the given theme to the templateListModel.
+func (m *templateListModel) ApplyTheme(t *Theme) {
+	m.theme = t
 }
 
 // Compile-time assertion: templateListModel satisfies childModel.
 var _ childModel = &templateListModel{}
 
 // newTemplateListModel creates a new template list stub.
-func newTemplateListModel(mgr *vault.Manager, actions *ActionManager, msgs *MessageManager) *templateListModel {
-	return &templateListModel{mgr: mgr, actions: actions, msgs: msgs}
+func newTemplateListModel(mgr *vault.Manager, actions *ActionManager, msgs *MessageManager, theme *Theme) *templateListModel {
+	return &templateListModel{mgr: mgr, actions: actions, msgs: msgs, theme: theme}
 }
 
 // Update processes messages for the template list panel.
@@ -31,7 +37,7 @@ func (m *templateListModel) Update(msg tea.Msg) tea.Cmd {
 
 // View renders a placeholder for the template list panel.
 func (m *templateListModel) View() string {
-	return lipgloss.NewStyle().Foreground(lipgloss.Color("245")).
+	return lipgloss.NewStyle().Foreground(m.theme.SemanticInfo).
 		Render("[template list - Phase 8]")
 }
 

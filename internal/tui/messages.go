@@ -11,6 +11,9 @@ import (
 // Define locally in each model's Init() via: tea.Tick(time.Second, func(t time.Time) tea.Msg { return TickMsg(t) })
 type TickMsg time.Time
 
+// toggleThemeMsg is sent to rootModel to switch the theme.
+type toggleThemeMsg struct{}
+
 // MsgKind classifies the semantic type of a status bar message.
 type MsgKind int
 
@@ -112,8 +115,8 @@ func (m *MessageManager) HandleInput() {
 // RenderMessageBar renders the message bar (1 line) with full-width continuous border.
 // When msg == nil, renders a plain border line. Exported for PoC and rootModel use.
 // Anatomy when msg != nil: ── <symbol> <text> ─...─  (fills to width)
-func RenderMessageBar(msg *DisplayMessage, width int) string {
-	borderStyle := StyleBorder()
+func RenderMessageBar(msg *DisplayMessage, width int, theme *Theme) string {
+	borderStyle := lipgloss.NewStyle().Foreground(theme.SurfaceRaised)
 	borderChar := SymBorder
 
 	if msg == nil || width <= 0 {
@@ -128,26 +131,26 @@ func RenderMessageBar(msg *DisplayMessage, width int) string {
 	switch msg.Kind {
 	case MsgSuccess:
 		symbol = SymSuccess
-		symStyle = StyleSymbol(MsgSuccess)
+		symStyle = lipgloss.NewStyle().Foreground(theme.SemanticSuccess)
 	case MsgInfo:
 		symbol = SymInfo
-		symStyle = StyleSymbol(MsgInfo)
+		symStyle = lipgloss.NewStyle().Foreground(theme.SemanticInfo)
 	case MsgWarn:
 		symbol = SymWarn
-		symStyle = StyleSymbol(MsgWarn)
+		symStyle = lipgloss.NewStyle().Foreground(theme.SemanticWarning)
 	case MsgError:
 		symbol = SymError
-		symStyle = StyleSymbol(MsgError)
+		symStyle = lipgloss.NewStyle().Foreground(theme.SemanticError).Bold(true)
 	case MsgBusy:
 		symbol = SpinnerFrame(msg.Frame)
-		symStyle = StyleSymbol(MsgBusy)
+		symStyle = lipgloss.NewStyle().Foreground(theme.AccentPrimary)
 	default: // MsgHint
 		symbol = SymHint
-		symStyle = StyleSymbol(MsgHint)
+		symStyle = lipgloss.NewStyle().Foreground(theme.AccentSecondary).Italic(true)
 	}
 
 	// Prefix: "── " (2 border chars + space = 3 visible chars)
-	prefix := borderStyle.Render("──") + " "
+	prefix := borderStyle.Render(strings.Repeat(borderChar, 2)) + " "
 	// Suffix start: " ─" (1 space + 1 border = 2 visible chars)
 	suffixStart := " " + borderStyle.Render(borderChar)
 
