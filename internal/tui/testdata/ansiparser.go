@@ -127,7 +127,14 @@ func ParseANSIStyle(output string) []StyleTransition {
 				BG:    currentState.bg,
 				Style: styleMapToArray(currentState.style),
 			}
-			result = append(result, transition)
+			// Se a última transição registrada está na mesma posição (line, col),
+			// substitui em vez de adicionar — múltiplos SGR na mesma coluna resultam
+			// em apenas uma transição (o estado final prevalece).
+			if len(result) > 0 && result[len(result)-1].Line == line && result[len(result)-1].Col == col {
+				result[len(result)-1] = transition
+			} else {
+				result = append(result, transition)
+			}
 			lastStateKey = newStateKey
 		}
 	}
@@ -220,7 +227,7 @@ func colorCode16(code int) string {
 // styleMapToArray converte map de estilos para array ordenado
 func styleMapToArray(styleMap map[string]bool) []string {
 	styles := []string{"bold", "italic", "underline", "strikethrough", "faint", "blink", "reverse"}
-	var active []string
+	active := []string{}
 	for _, s := range styles {
 		if styleMap[s] {
 			active = append(active, s)
