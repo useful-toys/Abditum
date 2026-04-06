@@ -282,3 +282,38 @@ func TestKeyPress_CallsHandleInput(t *testing.T) {
 		t.Error("messages.HandleInput() must be called on every KeyPressMsg, including unhandled keys")
 	}
 }
+
+// TestDecisionDialog_ModalStackIntegration verifies that:
+// 1. An Acknowledge cmd pushes a DecisionDialog onto the modal stack.
+// 2. View() renders without panic with a modal present.
+// 3. Enter triggers popModalMsg, clearing the modal stack.
+func TestDecisionDialog_ModalStackIntegration(t *testing.T) {
+	m := NewRootModel()
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+
+	// Push DecisionDialog via its Cmd — uses Acknowledge (ℹ Cofre criado)
+	cmd := Acknowledge(SeverityInformative, "Cofre criado", "O cofre foi criado com sucesso em ~/documentos/pessoal.abditum.", nil)
+	msg := cmd()
+	m.Update(msg)
+
+	if len(m.modals) != 1 {
+		t.Fatalf("expected 1 modal after push, got %d", len(m.modals))
+	}
+
+	// Verify View() doesn't panic with modal on stack
+	_ = m.View()
+
+	// Send Enter — should trigger popModalMsg from DecisionDialog.
+	// DecisionDialog.Update returns a cmd that returns popModalMsg when executed.
+	// We must execute that cmd and feed the result back to rootModel.Update.
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24}) // ensure sized
+	_, popCmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if popCmd != nil {
+		popMsg := popCmd()
+		m.Update(popMsg)
+	}
+
+	if len(m.modals) != 0 {
+		t.Errorf("expected modal stack empty after Enter, got %d modal(s)", len(m.modals))
+	}
+}
