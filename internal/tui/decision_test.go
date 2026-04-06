@@ -3,6 +3,8 @@ package tui
 import (
 	"strings"
 	"testing"
+
+	tea "charm.land/bubbletea/v2"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -316,5 +318,116 @@ func TestDecisionDialog_BorderChars(t *testing.T) {
 	}
 	if !strings.Contains(out, "╰") {
 		t.Errorf("View() missing bottom-left corner ╰\ngot:\n%s", out)
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Interaction tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+// TestDecisionDialog_EnterTriggersDefault: pocKeyF (Neutro 3-action: Salvar/Não salvar/Voltar),
+// send KeyEnter, assert returned tea.Cmd is non-nil.
+func TestDecisionDialog_EnterTriggersDefault(t *testing.T) {
+	d := pocKeyF()
+	cmd := d.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if cmd == nil {
+		t.Error("Enter should return a non-nil tea.Cmd (popModal + optional user cmd)")
+	}
+}
+
+// TestDecisionDialog_EscTriggersCancel: pocKey2 (Destrutivo 2-action: Excluir/Cancelar),
+// send esc key, assert cmd is non-nil.
+func TestDecisionDialog_EscTriggersCancel(t *testing.T) {
+	d := pocKey2()
+	cmd := d.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if cmd == nil {
+		t.Error("Esc should return a non-nil tea.Cmd (popModal)")
+	}
+}
+
+// TestDecisionDialog_ArrowCyclesFocus: pocKey3 (Destrutivo 3-action: Excluir/Mover/Cancelar),
+// send right → focus=1, right again → focus=0 (wraps, only 2 non-cancel actions).
+func TestDecisionDialog_ArrowCyclesFocus(t *testing.T) {
+	d := pocKey3()
+
+	if d.focus != 0 {
+		t.Fatalf("initial focus should be 0, got %d", d.focus)
+	}
+
+	// Send right arrow — advance focus
+	d.Update(tea.KeyPressMsg{Code: tea.KeyRight})
+	if d.focus != 1 {
+		t.Errorf("after right: expected focus=1, got %d", d.focus)
+	}
+
+	// Send right again — should wrap back to 0 (2 non-cancel actions)
+	d.Update(tea.KeyPressMsg{Code: tea.KeyRight})
+	if d.focus != 0 {
+		t.Errorf("after second right (wrap): expected focus=0, got %d", d.focus)
+	}
+}
+
+// TestDecisionDialog_UnknownKeyIgnored: pocKeyE (Neutro 2-action),
+// send key "z", assert cmd is nil.
+func TestDecisionDialog_UnknownKeyIgnored(t *testing.T) {
+	d := pocKeyE()
+	cmd := d.Update(tea.KeyPressMsg{Code: 'z'})
+	if cmd != nil {
+		t.Error("unknown key 'z' should return nil cmd")
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Edge case tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+// TestDecisionDialog_LongBodyWraps: body with 150+ chars, SetSize(80,24),
+// View() should contain \n (multi-line body).
+func TestDecisionDialog_LongBodyWraps(t *testing.T) {
+	longBody := "Esta é uma mensagem muito longa para testar o sistema de quebra de linha do corpo do diálogo que deve quebrar em múltiplas linhas quando excede a largura disponível da caixa do diálogo."
+	if len([]rune(longBody)) < 150 {
+		t.Fatal("test precondition: longBody must be 150+ chars")
+	}
+	d := NewDecisionDialog(SeverityNeutral, IntentionAcknowledge,
+		"Título", longBody,
+		[]DecisionAction{{Key: "Enter", Label: "OK", Default: true}})
+	d.SetSize(80, 24)
+	out := d.View()
+	if !strings.Contains(out, "\n") {
+		t.Error("View() with long body should contain newlines (multi-line wrapping)")
+	}
+}
+
+// TestDecisionDialog_ShortBodyFits: single short body, SetSize(50,10),
+// View() is non-empty and does not panic.
+func TestDecisionDialog_ShortBodyFits(t *testing.T) {
+	d := NewDecisionDialog(SeverityNeutral, IntentionAcknowledge,
+		"Título", "OK?",
+		[]DecisionAction{{Key: "Enter", Label: "OK", Default: true}})
+	d.SetSize(50, 10)
+	out := d.View()
+	if out == "" {
+		t.Error("View() with short body should return non-empty string")
+	}
+}
+
+// TestDecisionDialog_AcknowledgeHasNoCancel: pocKey1 (Destrutivo 1-action),
+// output should NOT contain "Esc".
+func TestDecisionDialog_AcknowledgeHasNoCancel(t *testing.T) {
+	d := pocKey1()
+	out := d.View()
+	if strings.Contains(out, "Esc") {
+		t.Errorf("Acknowledge dialog should not render 'Esc' in output\ngot:\n%s", out)
+	}
+}
+
+// TestDecisionDialog_SmallSizeUsesMinWidth: pocKey4 with SetSize(20,10) (below minimum),
+// View() is non-empty and does not panic (falls back to boxWidth=40 floor).
+func TestDecisionDialog_SmallSizeUsesMinWidth(t *testing.T) {
+	d := pocKey4()
+	d.SetSize(20, 10) // override the 80,24 set by pocKey4
+	out := d.View()
+	if out == "" {
+		t.Error("View() with small terminal size should return non-empty string (uses min width floor)")
 	}
 }
