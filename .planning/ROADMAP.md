@@ -191,7 +191,8 @@ Plans:
 **Goal:** Implement golden test architecture for 4 TUI components: message bar, command bar, help modal, and decision dialog. Parser SGR reutilizável, 36 pares de golden files (72 arquivos), flag `-update` para regeneração.
 **Requirements**: TBD
 **Depends on:** Phase 05
-**Plans:** 8/9 plans complete
+**Plans:** 9/9 plans complete
+(completed 2026-04-06)
 
 Plans:
 - [x] 05.7-01-PLAN.md — Refactor: RenderCommandBar pure fn + helpModal decoupled from ActionManager (Wave 1)
@@ -243,10 +244,8 @@ Plans:
 **Goal:** [Urgent work - to be planned]
 **Requirements**: TBD
 **Depends on:** Phase 5.2.1
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 05.2.1.1 to break down)
+**Plans:** 0/0 plans complete
+(completed 2026-04-06)
 
 ### Phase 05.1: 05-tui-scaffold-root-model-fix (INSERTED)
 
