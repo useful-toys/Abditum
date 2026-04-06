@@ -1,84 +1,70 @@
 [
-  {
-    "line": 0,
-    "col": 0,
-    "fg": null,
-    "bg": "#0000ff",
-    "style": [
+  [
+    0,
+    0,
+    null,
+    "#0000ff",
+    [
       "faint"
     ]
-  },
-  {
-    "line": 0,
-    "col": 2,
-    "fg": null,
-    "bg": null,
-    "style": null
-  },
-  {
-    "line": 0,
-    "col": 3,
-    "fg": "#000000",
-    "bg": null,
-    "style": [
+  ],
+  [
+    0,
+    2,
+    null,
+    null,
+    []
+  ],
+  [
+    0,
+    3,
+    "#000000",
+    null,
+    [
       "italic",
       "faint"
     ]
-  },
-  {
-    "line": 0,
-    "col": 6,
-    "fg": null,
-    "bg": null,
-    "style": null
-  },
-  {
-    "line": 0,
-    "col": 6,
-    "fg": "#000000",
-    "bg": null,
-    "style": [
+  ],
+  [
+    0,
+    6,
+    "#000000",
+    null,
+    [
       "italic",
       "faint"
     ]
-  },
-  {
-    "line": 0,
-    "col": 56,
-    "fg": null,
-    "bg": null,
-    "style": null
-  },
-  {
-    "line": 0,
-    "col": 57,
-    "fg": null,
-    "bg": "#0000ff",
-    "style": [
+  ],
+  [
+    0,
+    56,
+    null,
+    null,
+    []
+  ],
+  [
+    0,
+    57,
+    null,
+    "#0000ff",
+    [
       "faint"
     ]
-  },
-  {
-    "line": 0,
-    "col": 58,
-    "fg": null,
-    "bg": null,
-    "style": null
-  },
-  {
-    "line": 0,
-    "col": 58,
-    "fg": null,
-    "bg": "#0000ff",
-    "style": [
+  ],
+  [
+    0,
+    58,
+    null,
+    "#0000ff",
+    [
       "faint"
     ]
-  },
-  {
-    "line": 0,
-    "col": 60,
-    "fg": null,
-    "bg": null,
-    "style": null
-  }
+  ],
+  [
+    0,
+    60,
+    null,
+    null,
+    []
+  ]
 ]

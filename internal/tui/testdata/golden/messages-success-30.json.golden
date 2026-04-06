@@ -1,82 +1,59 @@
 [
-  {
-    "line": 0,
-    "col": 0,
-    "fg": null,
-    "bg": "#0000ff",
-    "style": [
+  [
+    0,
+    0,
+    null,
+    "#0000ff",
+    [
       "faint"
     ]
-  },
-  {
-    "line": 0,
-    "col": 2,
-    "fg": null,
-    "bg": null,
-    "style": null
-  },
-  {
-    "line": 0,
-    "col": 3,
-    "fg": null,
-    "bg": "#00ffff",
-    "style": [
+  ],
+  [
+    0,
+    2,
+    null,
+    null,
+    []
+  ],
+  [
+    0,
+    3,
+    null,
+    "#00ffff",
+    [
       "faint"
     ]
-  },
-  {
-    "line": 0,
-    "col": 6,
-    "fg": null,
-    "bg": null,
-    "style": null
-  },
-  {
-    "line": 0,
-    "col": 6,
-    "fg": null,
-    "bg": "#00ffff",
-    "style": [
+  ],
+  [
+    0,
+    6,
+    null,
+    "#00ffff",
+    [
       "faint"
     ]
-  },
-  {
-    "line": 0,
-    "col": 29,
-    "fg": null,
-    "bg": null,
-    "style": null
-  },
-  {
-    "line": 0,
-    "col": 30,
-    "fg": null,
-    "bg": "#0000ff",
-    "style": [
+  ],
+  [
+    0,
+    29,
+    null,
+    null,
+    []
+  ],
+  [
+    0,
+    30,
+    null,
+    "#0000ff",
+    [
       "faint"
     ]
-  },
-  {
-    "line": 0,
-    "col": 31,
-    "fg": null,
-    "bg": null,
-    "style": null
-  },
-  {
-    "line": 0,
-    "col": 31,
-    "fg": null,
-    "bg": "#0000ff",
-    "style": [
-      "faint"
-    ]
-  },
-  {
-    "line": 0,
-    "col": 31,
-    "fg": null,
-    "bg": null,
-    "style": null
-  }
+  ],
+  [
+    0,
+    31,
+    null,
+    null,
+    []
+  ]
 ]

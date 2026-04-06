@@ -470,151 +470,145 @@ func TestDecisionDialog_Golden(t *testing.T) {
 		dialog  *DecisionDialog
 	}
 
+	// Helper: build a dialog constructor for a given width.
+	// Each named scenario is rendered at both 30x24 and 60x24 to cover the full
+	// 10-scenarios × 2-widths × 2-formats = 40-file matrix required by the spec.
+	newDestructive1Short := func(w int) *DecisionDialog {
+		d := NewDecisionDialog(SeverityDestructive, IntentionAcknowledge,
+			"Excluir segredo",
+			"Gmail será excluído permanentemente.",
+			[]DecisionAction{{Key: "Enter", Label: "Excluir", Default: true}})
+		d.SetSize(w, 24)
+		return d
+	}
+	newDestructive2Long := func(w int) *DecisionDialog {
+		d := NewDecisionDialog(SeverityDestructive, IntentionConfirm,
+			"Excluir permanentemente este segredo do cofre atual?",
+			"Esta ação não pode ser desfeita. Todos os dados associados serão removidos.",
+			[]DecisionAction{
+				{Key: "Enter", Label: "Excluir", Default: true},
+				{Key: "Esc", Label: "Cancelar", Cancel: true},
+			})
+		d.SetSize(w, 24)
+		return d
+	}
+	newError3Short := func(w int) *DecisionDialog {
+		d := NewDecisionDialog(SeverityError, IntentionConfirm,
+			"Cofre corrompido",
+			"O arquivo está corrompido. Deseja tentar recuperar?",
+			[]DecisionAction{
+				{Key: "Enter", Label: "Recuperar", Default: true},
+				{Key: "A", Label: "Abrir backup"},
+				{Key: "Esc", Label: "Cancelar", Cancel: true},
+			})
+		d.SetSize(w, 24)
+		return d
+	}
+	newError1Long := func(w int) *DecisionDialog {
+		d := NewDecisionDialog(SeverityError, IntentionAcknowledge,
+			"Erro crítico ao acessar o cofre — arquivo danificado",
+			"Não foi possível decodificar o arquivo. Verifique se o disco está íntegro e tente novamente.",
+			[]DecisionAction{{Key: "Enter", Label: "OK", Default: true}})
+		d.SetSize(w, 24)
+		return d
+	}
+	newAlert2Short := func(w int) *DecisionDialog {
+		d := NewDecisionDialog(SeverityAlert, IntentionConfirm,
+			"Sobrescrever?",
+			"Já existe um segredo com este nome. Deseja substituir o existente?",
+			[]DecisionAction{
+				{Key: "Enter", Label: "Sim", Default: true},
+				{Key: "Esc", Label: "Não", Cancel: true},
+			})
+		d.SetSize(w, 24)
+		return d
+	}
+	newAlert3Long := func(w int) *DecisionDialog {
+		d := NewDecisionDialog(SeverityAlert, IntentionConfirm,
+			"Conflito de nome ao salvar novo segredo no cofre",
+			"Um segredo chamado 'github-token' já existe.",
+			[]DecisionAction{
+				{Key: "Enter", Label: "Substituir", Default: true},
+				{Key: "R", Label: "Renomear"},
+				{Key: "Esc", Label: "Cancelar", Cancel: true},
+			})
+		d.SetSize(w, 24)
+		return d
+	}
+	newInformative1Short := func(w int) *DecisionDialog {
+		d := NewDecisionDialog(SeverityInformative, IntentionAcknowledge,
+			"Dica",
+			"Pressione Ctrl+N para criar um novo cofre.",
+			[]DecisionAction{{Key: "Enter", Label: "Entendi", Default: true}})
+		d.SetSize(w, 24)
+		return d
+	}
+	newInformative2Long := func(w int) *DecisionDialog {
+		d := NewDecisionDialog(SeverityInformative, IntentionConfirm,
+			"Segredo copiado para a área de transferência com sucesso",
+			"O conteúdo será limpo automaticamente em 30 segundos por segurança.",
+			[]DecisionAction{
+				{Key: "Enter", Label: "Copiar", Default: true},
+				{Key: "Esc", Label: "Fechar", Cancel: true},
+			})
+		d.SetSize(w, 24)
+		return d
+	}
+	newNeutral3Short := func(w int) *DecisionDialog {
+		d := NewDecisionDialog(SeverityNeutral, IntentionConfirm,
+			"Continuar?",
+			"Tem certeza que deseja prosseguir?",
+			[]DecisionAction{
+				{Key: "Enter", Label: "Sim", Default: true},
+				{Key: "N", Label: "Não"},
+				{Key: "Esc", Label: "Talvez", Cancel: true},
+			})
+		d.SetSize(w, 24)
+		return d
+	}
+	newNeutral2Long := func(w int) *DecisionDialog {
+		d := NewDecisionDialog(SeverityNeutral, IntentionConfirm,
+			"Confirmar alterações pendentes antes de fechar o cofre?",
+			"Existem 3 modificações não salvas. Se fechar sem salvar, as alterações serão perdidas.",
+			[]DecisionAction{
+				{Key: "Enter", Label: "Confirmar", Default: true},
+				{Key: "Esc", Label: "Cancelar", Cancel: true},
+			})
+		d.SetSize(w, 24)
+		return d
+	}
+
 	cases := []testCase{
-		// 1. Destructive 1-action short title width=30
-		{
-			variant: "destructive-1action-short-30x24",
-			dialog: func() *DecisionDialog {
-				d := NewDecisionDialog(SeverityDestructive, IntentionAcknowledge,
-					"Excluir segredo",
-					"Gmail será excluído permanentemente.",
-					[]DecisionAction{{Key: "Enter", Label: "Excluir", Default: true}})
-				d.SetSize(30, 24)
-				return d
-			}(),
-		},
-		// 2. Destructive 2-action long title+body width=60
-		{
-			variant: "destructive-2action-long-60x24",
-			dialog: func() *DecisionDialog {
-				d := NewDecisionDialog(SeverityDestructive, IntentionConfirm,
-					"Excluir permanentemente este segredo do cofre atual?",
-					"Esta ação não pode ser desfeita. Todos os dados associados serão removidos.",
-					[]DecisionAction{
-						{Key: "Enter", Label: "Excluir", Default: true},
-						{Key: "Esc", Label: "Cancelar", Cancel: true},
-					})
-				d.SetSize(60, 24)
-				return d
-			}(),
-		},
-		// 3. Error 3-action short title width=30
-		{
-			variant: "error-3action-short-30x24",
-			dialog: func() *DecisionDialog {
-				d := NewDecisionDialog(SeverityError, IntentionConfirm,
-					"Cofre corrompido",
-					"O arquivo está corrompido. Deseja tentar recuperar?",
-					[]DecisionAction{
-						{Key: "Enter", Label: "Recuperar", Default: true},
-						{Key: "A", Label: "Abrir backup"},
-						{Key: "Esc", Label: "Cancelar", Cancel: true},
-					})
-				d.SetSize(30, 24)
-				return d
-			}(),
-		},
-		// 4. Error 1-action long title+body width=60
-		{
-			variant: "error-1action-long-60x24",
-			dialog: func() *DecisionDialog {
-				d := NewDecisionDialog(SeverityError, IntentionAcknowledge,
-					"Erro crítico ao acessar o cofre — arquivo danificado",
-					"Não foi possível decodificar o arquivo. Verifique se o disco está íntegro e tente novamente.",
-					[]DecisionAction{{Key: "Enter", Label: "OK", Default: true}})
-				d.SetSize(60, 24)
-				return d
-			}(),
-		},
-		// 5. Alert 2-action short title, 2-line body width=30
-		{
-			variant: "alert-2action-short-30x24",
-			dialog: func() *DecisionDialog {
-				d := NewDecisionDialog(SeverityAlert, IntentionConfirm,
-					"Sobrescrever?",
-					"Já existe um segredo com este nome. Deseja substituir o existente?",
-					[]DecisionAction{
-						{Key: "Enter", Label: "Sim", Default: true},
-						{Key: "Esc", Label: "Não", Cancel: true},
-					})
-				d.SetSize(30, 24)
-				return d
-			}(),
-		},
-		// 6. Alert 3-action long title, 1-line body width=60
-		{
-			variant: "alert-3action-long-60x24",
-			dialog: func() *DecisionDialog {
-				d := NewDecisionDialog(SeverityAlert, IntentionConfirm,
-					"Conflito de nome ao salvar novo segredo no cofre",
-					"Um segredo chamado 'github-token' já existe.",
-					[]DecisionAction{
-						{Key: "Enter", Label: "Substituir", Default: true},
-						{Key: "R", Label: "Renomear"},
-						{Key: "Esc", Label: "Cancelar", Cancel: true},
-					})
-				d.SetSize(60, 24)
-				return d
-			}(),
-		},
-		// 7. Informative 1-action short title, 1-line body width=60
-		{
-			variant: "informative-1action-short-60x24",
-			dialog: func() *DecisionDialog {
-				d := NewDecisionDialog(SeverityInformative, IntentionAcknowledge,
-					"Dica",
-					"Pressione Ctrl+N para criar um novo cofre.",
-					[]DecisionAction{{Key: "Enter", Label: "Entendi", Default: true}})
-				d.SetSize(60, 24)
-				return d
-			}(),
-		},
-		// 8. Informative 2-action long title, 2-line body width=30
-		{
-			variant: "informative-2action-long-30x24",
-			dialog: func() *DecisionDialog {
-				d := NewDecisionDialog(SeverityInformative, IntentionConfirm,
-					"Segredo copiado para a área de transferência com sucesso",
-					"O conteúdo será limpo automaticamente em 30 segundos por segurança.",
-					[]DecisionAction{
-						{Key: "Enter", Label: "Copiar", Default: true},
-						{Key: "Esc", Label: "Fechar", Cancel: true},
-					})
-				d.SetSize(30, 24)
-				return d
-			}(),
-		},
-		// 9. Neutral 3-action short title, 1-line body width=30
-		{
-			variant: "neutral-3action-short-30x24",
-			dialog: func() *DecisionDialog {
-				d := NewDecisionDialog(SeverityNeutral, IntentionConfirm,
-					"Continuar?",
-					"Tem certeza que deseja prosseguir?",
-					[]DecisionAction{
-						{Key: "Enter", Label: "Sim", Default: true},
-						{Key: "N", Label: "Não"},
-						{Key: "Esc", Label: "Talvez", Cancel: true},
-					})
-				d.SetSize(30, 24)
-				return d
-			}(),
-		},
-		// 10. Neutral 2-action long title, 2-line body width=60
-		{
-			variant: "neutral-2action-long-60x24",
-			dialog: func() *DecisionDialog {
-				d := NewDecisionDialog(SeverityNeutral, IntentionConfirm,
-					"Confirmar alterações pendentes antes de fechar o cofre?",
-					"Existem 3 modificações não salvas. Se fechar sem salvar, as alterações serão perdidas.",
-					[]DecisionAction{
-						{Key: "Enter", Label: "Confirmar", Default: true},
-						{Key: "Esc", Label: "Cancelar", Cancel: true},
-					})
-				d.SetSize(60, 24)
-				return d
-			}(),
-		},
+		// Scenario 1: Destructive 1-action short title — 2 widths
+		{variant: "destructive-1action-short-30x24", dialog: newDestructive1Short(30)},
+		{variant: "destructive-1action-short-60x24", dialog: newDestructive1Short(60)},
+		// Scenario 2: Destructive 2-action long title+body — 2 widths
+		{variant: "destructive-2action-long-30x24", dialog: newDestructive2Long(30)},
+		{variant: "destructive-2action-long-60x24", dialog: newDestructive2Long(60)},
+		// Scenario 3: Error 3-action short title — 2 widths
+		{variant: "error-3action-short-30x24", dialog: newError3Short(30)},
+		{variant: "error-3action-short-60x24", dialog: newError3Short(60)},
+		// Scenario 4: Error 1-action long title+body — 2 widths
+		{variant: "error-1action-long-30x24", dialog: newError1Long(30)},
+		{variant: "error-1action-long-60x24", dialog: newError1Long(60)},
+		// Scenario 5: Alert 2-action short title, 2-line body — 2 widths
+		{variant: "alert-2action-short-30x24", dialog: newAlert2Short(30)},
+		{variant: "alert-2action-short-60x24", dialog: newAlert2Short(60)},
+		// Scenario 6: Alert 3-action long title, 1-line body — 2 widths
+		{variant: "alert-3action-long-30x24", dialog: newAlert3Long(30)},
+		{variant: "alert-3action-long-60x24", dialog: newAlert3Long(60)},
+		// Scenario 7: Informative 1-action short title, 1-line body — 2 widths
+		{variant: "informative-1action-short-30x24", dialog: newInformative1Short(30)},
+		{variant: "informative-1action-short-60x24", dialog: newInformative1Short(60)},
+		// Scenario 8: Informative 2-action long title, 2-line body — 2 widths
+		{variant: "informative-2action-long-30x24", dialog: newInformative2Long(30)},
+		{variant: "informative-2action-long-60x24", dialog: newInformative2Long(60)},
+		// Scenario 9: Neutral 3-action short title, 1-line body — 2 widths
+		{variant: "neutral-3action-short-30x24", dialog: newNeutral3Short(30)},
+		{variant: "neutral-3action-short-60x24", dialog: newNeutral3Short(60)},
+		// Scenario 10: Neutral 2-action long title, 2-line body — 2 widths
+		{variant: "neutral-2action-long-30x24", dialog: newNeutral2Long(30)},
+		{variant: "neutral-2action-long-60x24", dialog: newNeutral2Long(60)},
 	}
 
 	for _, tc := range cases {

@@ -1,82 +1,68 @@
 [
-  {
-    "line": 0,
-    "col": 0,
-    "fg": null,
-    "bg": "#0000ff",
-    "style": [
+  [
+    0,
+    0,
+    null,
+    "#0000ff",
+    [
       "faint"
     ]
-  },
-  {
-    "line": 0,
-    "col": 2,
-    "fg": null,
-    "bg": null,
-    "style": null
-  },
-  {
-    "line": 0,
-    "col": 3,
-    "fg": null,
-    "bg": null,
-    "style": [
+  ],
+  [
+    0,
+    2,
+    null,
+    null,
+    []
+  ],
+  [
+    0,
+    3,
+    null,
+    null,
+    [
       "faint"
     ]
-  },
-  {
-    "line": 0,
-    "col": 6,
-    "fg": null,
-    "bg": null,
-    "style": null
-  },
-  {
-    "line": 0,
-    "col": 6,
-    "fg": null,
-    "bg": null,
-    "style": [
+  ],
+  [
+    0,
+    6,
+    null,
+    null,
+    [
       "faint"
     ]
-  },
-  {
-    "line": 0,
-    "col": 53,
-    "fg": null,
-    "bg": null,
-    "style": null
-  },
-  {
-    "line": 0,
-    "col": 54,
-    "fg": null,
-    "bg": "#0000ff",
-    "style": [
+  ],
+  [
+    0,
+    53,
+    null,
+    null,
+    []
+  ],
+  [
+    0,
+    54,
+    null,
+    "#0000ff",
+    [
       "faint"
     ]
-  },
-  {
-    "line": 0,
-    "col": 55,
-    "fg": null,
-    "bg": null,
-    "style": null
-  },
-  {
-    "line": 0,
-    "col": 55,
-    "fg": null,
-    "bg": "#0000ff",
-    "style": [
+  ],
+  [
+    0,
+    55,
+    null,
+    "#0000ff",
+    [
       "faint"
     ]
-  },
-  {
-    "line": 0,
-    "col": 60,
-    "fg": null,
-    "bg": null,
-    "style": null
-  }
+  ],
+  [
+    0,
+    60,
+    null,
+    null,
+    []
+  ]
 ]

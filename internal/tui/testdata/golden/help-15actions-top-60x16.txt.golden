@@ -1,0 +1,16 @@
+╭── Ajuda — Atalhos e Ações ─────────────╮
+│                                        │
+│  Arquivo                               ■
+│    f2  Novo cofre                      │
+│    f3  Abrir cofre existente           │
+│    f4  Salvar cofre atual              │
+│    f5  Fechar cofre                    │
+│    f6  Exportar cofre                  │
+│  Edição                                │
+│    ctrl+n  Novo segredo                │
+│    ctrl+d  Duplicar segredo            │
+│    ctrl+x  Cortar segredo              │
+│    ctrl+v  Colar segredo               │
+│    del  Excluir segredo                ↓
+│                                        │
+╰─────────────────────────── Esc Fechar ─╯
