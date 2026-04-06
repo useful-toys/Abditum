@@ -170,7 +170,8 @@ func (a *ActionManager) All() []Action {
 // Tokens per DS spec: key = accent.primary bold, label = text.primary, separator = text.secondary.
 // The command bar uses the application's default background (surface.base) — no explicit bg set.
 // F1 action is right-anchored; all other actions are left-padded with 2 spaces.
-// Callers should pass am.Visible() to obtain the sorted visible action slice.
+// Actions are sorted by Priority descending before rendering — callers may pass unsorted slices.
+// Callers should pass am.Visible() to obtain the visible action slice.
 func RenderCommandBar(actions []Action, width int) string {
 	keyStyle := StyleCommandKey()
 	labelStyle := StyleCommandLabel()
@@ -181,7 +182,13 @@ func RenderCommandBar(actions []Action, width int) string {
 		return keyStyle.Render(key) + " " + labelStyle.Render(label)
 	}
 
-	visible := actions
+	// Sort a copy of actions by Priority descending so callers may pass unsorted slices.
+	sorted := make([]Action, len(actions))
+	copy(sorted, actions)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].Priority > sorted[j].Priority
+	})
+	visible := sorted
 
 	// Separate F1 anchor from body actions.
 	var bodyActions []Action

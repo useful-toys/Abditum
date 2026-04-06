@@ -1,0 +1,35 @@
+[
+  {
+    "line": 0,
+    "col": 52,
+    "fg": null,
+    "bg": null,
+    "style": [
+      "bold",
+      "faint"
+    ]
+  },
+  {
+    "line": 0,
+    "col": 54,
+    "fg": null,
+    "bg": null,
+    "style": null
+  },
+  {
+    "line": 0,
+    "col": 55,
+    "fg": null,
+    "bg": null,
+    "style": [
+      "faint"
+    ]
+  },
+  {
+    "line": 0,
+    "col": 60,
+    "fg": null,
+    "bg": null,
+    "style": null
+  }
+]

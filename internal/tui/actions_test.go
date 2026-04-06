@@ -1,9 +1,12 @@
 package tui
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	testdatapkg "github.com/useful-toys/abditum/internal/tui/testdata"
 )
 
 // TestActionManager_DispatchScopeLocal verifies that ScopeLocal actions are
@@ -323,4 +326,93 @@ func containsSubstring(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// TestRenderCommandBar_Golden validates the visual output of RenderCommandBar
+// against golden files for all 5 scenarios × 2 widths (= 10 sub-tests).
+//
+// Each sub-test produces two golden files:
+//   - .txt.golden — raw ANSI output, validated byte-for-byte
+//   - .json.golden — style transitions from ParseANSIStyle, validated byte-for-byte
+//
+// First run (no golden files present) auto-generates the baselines.
+// Subsequent runs compare against the recorded baselines.
+// Run with -update to intentionally regenerate all baselines.
+func TestRenderCommandBar_Golden(t *testing.T) {
+	type testCase struct {
+		variant string
+		actions []Action
+	}
+
+	// Scenario 3: typical — F4 Salvar(90), F2 Novo(80), F3 Abrir(70), F5 Deletar(50), F1 Ajuda(0)
+	// (Priority desc order: Salvar, Novo, Abrir, Deletar; F1 is right-anchored)
+	typicalActions := []Action{
+		{Keys: []string{"f2"}, Label: "Novo", Priority: 80, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f3"}, Label: "Abrir", Priority: 70, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f4"}, Label: "Salvar", Priority: 90, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f5"}, Label: "Deletar", Priority: 50, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f1"}, Label: "Ajuda", Priority: 0, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+	}
+
+	// Scenario 4: unsorted — same actions but passed in reverse priority order.
+	// RenderCommandBar must sort them → golden output identical to "typical".
+	unsortedActions := []Action{
+		{Keys: []string{"f1"}, Label: "Ajuda", Priority: 0, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f5"}, Label: "Deletar", Priority: 50, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f4"}, Label: "Salvar", Priority: 90, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f3"}, Label: "Abrir", Priority: 70, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f2"}, Label: "Novo", Priority: 80, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+	}
+
+	// Scenario 5: many — 7 body actions + F1 anchor
+	manyActions := []Action{
+		{Keys: []string{"f2"}, Label: "Novo", Priority: 70, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f3"}, Label: "Abrir", Priority: 60, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f4"}, Label: "Salvar", Priority: 50, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f5"}, Label: "Fechar", Priority: 40, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f6"}, Label: "Exportar", Priority: 30, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f7"}, Label: "Importar", Priority: 20, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f8"}, Label: "Config", Priority: 10, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f1"}, Label: "Ajuda", Priority: 0, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+	}
+
+	cases := []testCase{
+		// Scenario 1: no-actions — empty slice
+		{"no-actions", []Action{}},
+		// Scenario 2: f1-only — single F1 anchor
+		{"f1-only", []Action{
+			{Keys: []string{"f1"}, Label: "Ajuda", Priority: 0, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		}},
+		// Scenario 3: typical — 5 actions, mixed priorities
+		{"typical", typicalActions},
+		// Scenario 4: unsorted — same as typical but reverse order (tests sorting)
+		{"unsorted", unsortedActions},
+		// Scenario 5: many — 8 actions, truncates at narrow widths
+		{"many", manyActions},
+	}
+	widths := []int{30, 60}
+
+	for _, tc := range cases {
+		for _, w := range widths {
+			tc := tc
+			w := w
+			name := fmt.Sprintf("%s-%d", tc.variant, w)
+			t.Run(name, func(t *testing.T) {
+				out := RenderCommandBar(tc.actions, w)
+
+				// .txt.golden: raw ANSI output
+				txtPath := goldenPath("commandbar", tc.variant, w, "txt")
+				checkOrUpdateGolden(t, txtPath, out)
+
+				// .json.golden: style transitions
+				transitions := testdatapkg.ParseANSIStyle(out)
+				jsonBytes, err := json.MarshalIndent(transitions, "", "  ")
+				if err != nil {
+					t.Fatalf("marshal transitions: %v", err)
+				}
+				jsonPath := goldenPath("commandbar", tc.variant, w, "json")
+				checkOrUpdateGolden(t, jsonPath, string(jsonBytes))
+			})
+		}
+	}
 }

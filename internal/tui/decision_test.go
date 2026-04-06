@@ -1,10 +1,15 @@
 package tui
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	testdatapkg "github.com/useful-toys/abditum/internal/tui/testdata"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -407,5 +412,226 @@ func TestDecisionDialog_SmallSizeUsesMinWidth(t *testing.T) {
 	out := d.View()
 	if out == "" {
 		t.Error("View() with small terminal size should return non-empty string (uses min width floor)")
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Golden test helpers (decision-specific)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// decisionGoldenPath returns the golden file path for a decision dialog scenario.
+// The variant string already includes the width (e.g. "destructive-1action-short-30"),
+// so we do NOT append a separate width field (unlike the generic goldenPath helper).
+func decisionGoldenPath(variant, ext string) string {
+	name := fmt.Sprintf("decision-%s.%s.golden", variant, ext)
+	return filepath.Join("testdata", "golden", name)
+}
+
+// checkOrUpdateDecisionGolden compares output against the golden file for a decision scenario,
+// or writes it if the -update flag is set or the file is missing (first run).
+func checkOrUpdateDecisionGolden(t *testing.T, variant, ext, got string) {
+	t.Helper()
+	path := decisionGoldenPath(variant, ext)
+	if *update {
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatalf("mkdirall %s: %v", filepath.Dir(path), err)
+		}
+		if err := os.WriteFile(path, []byte(got), 0644); err != nil {
+			t.Fatalf("write golden %s: %v", path, err)
+		}
+		return
+	}
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		// First run: auto-generate golden file instead of failing.
+		if err2 := os.MkdirAll(filepath.Dir(path), 0755); err2 != nil {
+			t.Fatalf("mkdirall %s: %v", filepath.Dir(path), err2)
+		}
+		if err2 := os.WriteFile(path, []byte(got), 0644); err2 != nil {
+			t.Fatalf("write golden %s: %v", path, err2)
+		}
+		return
+	}
+	if err != nil {
+		t.Fatalf("read golden %s: %v", path, err)
+	}
+	if string(data) != got {
+		t.Errorf("golden mismatch for %s:\nwant:\n%s\ngot:\n%s", path, string(data), got)
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TestDecisionDialog_Golden — 10 scenarios × (txt + json) = 20 golden files
+// ─────────────────────────────────────────────────────────────────────────────
+
+func TestDecisionDialog_Golden(t *testing.T) {
+	type testCase struct {
+		variant string
+		dialog  *DecisionDialog
+	}
+
+	cases := []testCase{
+		// 1. Destructive 1-action short title width=30
+		{
+			variant: "destructive-1action-short-30",
+			dialog: func() *DecisionDialog {
+				d := NewDecisionDialog(SeverityDestructive, IntentionAcknowledge,
+					"Excluir segredo",
+					"Gmail será excluído permanentemente.",
+					[]DecisionAction{{Key: "Enter", Label: "Excluir", Default: true}})
+				d.SetSize(30, 24)
+				return d
+			}(),
+		},
+		// 2. Destructive 2-action long title+body width=60
+		{
+			variant: "destructive-2action-long-60",
+			dialog: func() *DecisionDialog {
+				d := NewDecisionDialog(SeverityDestructive, IntentionConfirm,
+					"Excluir permanentemente este segredo do cofre atual?",
+					"Esta ação não pode ser desfeita. Todos os dados associados serão removidos.",
+					[]DecisionAction{
+						{Key: "Enter", Label: "Excluir", Default: true},
+						{Key: "Esc", Label: "Cancelar", Cancel: true},
+					})
+				d.SetSize(60, 24)
+				return d
+			}(),
+		},
+		// 3. Error 3-action short title width=30
+		{
+			variant: "error-3action-short-30",
+			dialog: func() *DecisionDialog {
+				d := NewDecisionDialog(SeverityError, IntentionConfirm,
+					"Cofre corrompido",
+					"O arquivo está corrompido. Deseja tentar recuperar?",
+					[]DecisionAction{
+						{Key: "Enter", Label: "Recuperar", Default: true},
+						{Key: "A", Label: "Abrir backup"},
+						{Key: "Esc", Label: "Cancelar", Cancel: true},
+					})
+				d.SetSize(30, 24)
+				return d
+			}(),
+		},
+		// 4. Error 1-action long title+body width=60
+		{
+			variant: "error-1action-long-60",
+			dialog: func() *DecisionDialog {
+				d := NewDecisionDialog(SeverityError, IntentionAcknowledge,
+					"Erro crítico ao acessar o cofre — arquivo danificado",
+					"Não foi possível decodificar o arquivo. Verifique se o disco está íntegro e tente novamente.",
+					[]DecisionAction{{Key: "Enter", Label: "OK", Default: true}})
+				d.SetSize(60, 24)
+				return d
+			}(),
+		},
+		// 5. Alert 2-action short title, 2-line body width=30
+		{
+			variant: "alert-2action-short-30",
+			dialog: func() *DecisionDialog {
+				d := NewDecisionDialog(SeverityAlert, IntentionConfirm,
+					"Sobrescrever?",
+					"Já existe um segredo com este nome. Deseja substituir o existente?",
+					[]DecisionAction{
+						{Key: "Enter", Label: "Sim", Default: true},
+						{Key: "Esc", Label: "Não", Cancel: true},
+					})
+				d.SetSize(30, 24)
+				return d
+			}(),
+		},
+		// 6. Alert 3-action long title, 1-line body width=60
+		{
+			variant: "alert-3action-long-60",
+			dialog: func() *DecisionDialog {
+				d := NewDecisionDialog(SeverityAlert, IntentionConfirm,
+					"Conflito de nome ao salvar novo segredo no cofre",
+					"Um segredo chamado 'github-token' já existe.",
+					[]DecisionAction{
+						{Key: "Enter", Label: "Substituir", Default: true},
+						{Key: "R", Label: "Renomear"},
+						{Key: "Esc", Label: "Cancelar", Cancel: true},
+					})
+				d.SetSize(60, 24)
+				return d
+			}(),
+		},
+		// 7. Informative 1-action short title, 1-line body width=60
+		{
+			variant: "informative-1action-short-60",
+			dialog: func() *DecisionDialog {
+				d := NewDecisionDialog(SeverityInformative, IntentionAcknowledge,
+					"Dica",
+					"Pressione Ctrl+N para criar um novo cofre.",
+					[]DecisionAction{{Key: "Enter", Label: "Entendi", Default: true}})
+				d.SetSize(60, 24)
+				return d
+			}(),
+		},
+		// 8. Informative 2-action long title, 2-line body width=30
+		{
+			variant: "informative-2action-long-30",
+			dialog: func() *DecisionDialog {
+				d := NewDecisionDialog(SeverityInformative, IntentionConfirm,
+					"Segredo copiado para a área de transferência com sucesso",
+					"O conteúdo será limpo automaticamente em 30 segundos por segurança.",
+					[]DecisionAction{
+						{Key: "Enter", Label: "Copiar", Default: true},
+						{Key: "Esc", Label: "Fechar", Cancel: true},
+					})
+				d.SetSize(30, 24)
+				return d
+			}(),
+		},
+		// 9. Neutral 3-action short title, 1-line body width=30
+		{
+			variant: "neutral-3action-short-30",
+			dialog: func() *DecisionDialog {
+				d := NewDecisionDialog(SeverityNeutral, IntentionConfirm,
+					"Continuar?",
+					"Tem certeza que deseja prosseguir?",
+					[]DecisionAction{
+						{Key: "Enter", Label: "Sim", Default: true},
+						{Key: "N", Label: "Não"},
+						{Key: "Esc", Label: "Talvez", Cancel: true},
+					})
+				d.SetSize(30, 24)
+				return d
+			}(),
+		},
+		// 10. Neutral 2-action long title, 2-line body width=60
+		{
+			variant: "neutral-2action-long-60",
+			dialog: func() *DecisionDialog {
+				d := NewDecisionDialog(SeverityNeutral, IntentionConfirm,
+					"Confirmar alterações pendentes antes de fechar o cofre?",
+					"Existem 3 modificações não salvas. Se fechar sem salvar, as alterações serão perdidas.",
+					[]DecisionAction{
+						{Key: "Enter", Label: "Confirmar", Default: true},
+						{Key: "Esc", Label: "Cancelar", Cancel: true},
+					})
+				d.SetSize(60, 24)
+				return d
+			}(),
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.variant, func(t *testing.T) {
+			out := tc.dialog.View()
+
+			// .txt.golden: raw ANSI output
+			checkOrUpdateDecisionGolden(t, tc.variant, "txt", out)
+
+			// .json.golden: style transitions
+			transitions := testdatapkg.ParseANSIStyle(out)
+			jsonBytes, err := json.MarshalIndent(transitions, "", "  ")
+			if err != nil {
+				t.Fatalf("marshal transitions: %v", err)
+			}
+			checkOrUpdateDecisionGolden(t, tc.variant, "json", string(jsonBytes))
+		})
 	}
 }
