@@ -14,6 +14,18 @@ type TickMsg time.Time
 // toggleThemeMsg is sent to rootModel to switch the theme.
 type toggleThemeMsg struct{}
 
+// pwdEnteredMsg is emitted by passwordEntryModal when user enters a password.
+// Password field contains the raw password bytes (caller must zero after use).
+type pwdEnteredMsg struct {
+	Password []byte
+}
+
+// pwdCreatedMsg is emitted by passwordCreateModal when user creates a new password.
+// Password field contains the confirmed password bytes (caller must zero after use).
+type pwdCreatedMsg struct {
+	Password []byte
+}
+
 // MsgKind classifies the semantic type of a status bar message.
 type MsgKind int
 

@@ -58,17 +58,31 @@ func Confirm(dtype DialogType, title, message string, onYes, onNo tea.Cmd) tea.C
 	}
 }
 
-// PasswordEntry creates a stub password-entry modal.
+// PasswordEntry creates a password-entry modal.
 func PasswordEntry(title string) tea.Cmd {
 	return func() tea.Msg {
-		return pushModalMsg{modal: &passwordEntryModal{title: title}}
+		m := &passwordEntryModal{title: title}
+		m.theme = ThemeTokyoNight
+		m.messages = NewMessageManager()
+		cmd := m.Init()
+		return tea.Batch(
+			func() tea.Msg { return pushModalMsg{modal: m} },
+			cmd,
+		)
 	}
 }
 
-// PasswordCreate creates a stub password-creation modal.
+// PasswordCreate creates a password-creation modal.
 func PasswordCreate(title string) tea.Cmd {
 	return func() tea.Msg {
-		return pushModalMsg{modal: &passwordCreateModal{title: title}}
+		m := &passwordCreateModal{title: title}
+		m.theme = ThemeTokyoNight
+		m.messages = NewMessageManager()
+		cmd := m.Init()
+		return tea.Batch(
+			func() tea.Msg { return pushModalMsg{modal: m} },
+			cmd,
+		)
 	}
 }
 
@@ -80,32 +94,6 @@ func FilePicker(title string, mode FilePickerMode, extension string) tea.Cmd {
 		return pushModalMsg{modal: fpk}
 	}
 }
-
-// --- Stub modal implementations for Phase 5.1 ---
-
-type passwordEntryModal struct{ title string }
-
-func (m *passwordEntryModal) Update(msg tea.Msg) tea.Cmd {
-	return tea.Batch(
-		func() tea.Msg { return popModalMsg{} },
-		func() tea.Msg { return passwordEntryResult{Cancelled: true} },
-	)
-}
-func (m *passwordEntryModal) View() string          { return "[PasswordEntry stub - Phase 6]" }
-func (m *passwordEntryModal) Shortcuts() []Shortcut { return nil }
-func (m *passwordEntryModal) SetSize(w, h int)      {}
-
-type passwordCreateModal struct{ title string }
-
-func (m *passwordCreateModal) Update(msg tea.Msg) tea.Cmd {
-	return tea.Batch(
-		func() tea.Msg { return popModalMsg{} },
-		func() tea.Msg { return passwordCreateResult{Cancelled: true} },
-	)
-}
-func (m *passwordCreateModal) View() string          { return "[PasswordCreate stub - Phase 6]" }
-func (m *passwordCreateModal) Shortcuts() []Shortcut { return nil }
-func (m *passwordCreateModal) SetSize(w, h int)      {}
 
 type filePickerModal struct {
 	title       string

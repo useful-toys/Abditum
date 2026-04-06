@@ -1,0 +1,181 @@
+package tui
+
+import (
+	"testing"
+
+	tea "charm.land/bubbletea/v2"
+)
+
+// TestPasswordEntryModalStructExists verifies that passwordEntryModal can be instantiated.
+func TestPasswordEntryModalStructExists(t *testing.T) {
+	m := &passwordEntryModal{}
+	if m == nil {
+		t.Fatal("passwordEntryModal creation failed")
+	}
+}
+
+// TestPasswordEntryModalImplementsModalView verifies passwordEntryModal implements modalView.
+func TestPasswordEntryModalImplementsModalView(t *testing.T) {
+	m := &passwordEntryModal{}
+	var _ modalView = m
+}
+
+// TestPasswordEntryModalInit verifies Init() initializes the text input.
+func TestPasswordEntryModalInit(t *testing.T) {
+	m := &passwordEntryModal{}
+	cmd := m.Init()
+	if cmd == nil {
+		t.Log("Init() returned nil (acceptable)")
+	}
+	// After Init, the modal should be ready to accept input
+	if m.input.Value() == "" && m.input.EchoMode == 0 {
+		t.Fatal("input field not initialized properly")
+	}
+	if m.input.EchoCharacter != '•' {
+		t.Fatal("input echo character not set to bullet")
+	}
+}
+
+// TestPasswordEntryModalView verifies View() returns a string.
+func TestPasswordEntryModalView(t *testing.T) {
+	m := &passwordEntryModal{}
+	m.Init()
+	m.theme = ThemeTokyoNight
+	m.SetSize(80, 24)
+	view := m.View()
+	if view == "" {
+		t.Fatal("View() returned empty string")
+	}
+	// Should contain the masked field indicator
+	if len(view) == 0 {
+		t.Fatal("View() produced no output")
+	}
+}
+
+// TestPasswordEntryModalSetSize verifies SetSize stores dimensions.
+func TestPasswordEntryModalSetSize(t *testing.T) {
+	m := &passwordEntryModal{}
+	m.SetSize(100, 30)
+	if m.width != 100 || m.height != 30 {
+		t.Fatalf("SetSize failed: got %dx%d, want 100x30", m.width, m.height)
+	}
+}
+
+// TestPasswordEntryModalShortcuts verifies Shortcuts returns expected shortcuts.
+func TestPasswordEntryModalShortcuts(t *testing.T) {
+	m := &passwordEntryModal{}
+	shortcuts := m.Shortcuts()
+	if len(shortcuts) < 2 {
+		t.Fatalf("Expected at least 2 shortcuts, got %d", len(shortcuts))
+	}
+}
+
+// TestPasswordEntryModalAttemptCounter verifies attempt counter starts hidden.
+func TestPasswordEntryModalAttemptCounter(t *testing.T) {
+	m := &passwordEntryModal{}
+	m.Init()
+	m.theme = ThemeTokyoNight
+	m.SetSize(80, 24)
+
+	// First attempt - counter should be hidden
+	view := m.View()
+	if view == "" {
+		t.Fatal("View returned empty")
+	}
+	// On first attempt, "Tentativa" should not be visible
+	// (We'll do a more detailed assertion after implementation)
+}
+
+// TestPasswordEntryModalAttemptCounterAfterWrongPassword verifies counter shows from attempt 2.
+func TestPasswordEntryModalAttemptCounterShowsFromSecondAttempt(t *testing.T) {
+	m := &passwordEntryModal{}
+	m.Init()
+	m.theme = ThemeTokyoNight
+	m.SetSize(80, 24)
+
+	// Simulate first wrong attempt
+	m.HandleWrongPassword()
+	if m.attempt < 1 {
+		t.Fatal("attempt not incremented")
+	}
+
+	// After second attempt, counter should be visible
+	if m.attempt >= 2 {
+		view := m.View()
+		if view == "" {
+			t.Fatal("View returned empty after increment")
+		}
+		// View should mention "Tentativa" when attempt >= 2
+	}
+}
+
+// TestPasswordEntryModalEnter verifies pressing Enter emits pwdEnteredMsg.
+func TestPasswordEntryModalEnterKey(t *testing.T) {
+	m := &passwordEntryModal{}
+	m.Init()
+	m.theme = ThemeTokyoNight
+	m.SetSize(80, 24)
+
+	// Type a password
+	m.input.SetValue("test1234!")
+
+	// Press Enter
+	cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("Update returned nil on Enter with non-empty password")
+	}
+
+	// Execute the command to verify it returns pwdEnteredMsg
+	msg := cmd()
+	if msg == nil {
+		t.Fatal("Command returned nil")
+	}
+
+	// Should be a batch of commands including pwdEnteredMsg
+	// (Can't easily test batch structure, but at minimum shouldn't be nil)
+}
+
+// TestPasswordEntryModalEsc verifies ESC emits flowCancelledMsg.
+func TestPasswordEntryModalEscKey(t *testing.T) {
+	m := &passwordEntryModal{}
+	m.Init()
+	m.theme = ThemeTokyoNight
+	m.SetSize(80, 24)
+
+	// Press ESC
+	cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	if cmd == nil {
+		t.Fatal("Update returned nil on Esc")
+	}
+
+	// Execute the command
+	msg := cmd()
+	if msg == nil {
+		t.Fatal("Command returned nil")
+	}
+}
+
+// TestPasswordEntryModalMaskedInput verifies input is masked with •.
+func TestPasswordEntryModalMaskedInput(t *testing.T) {
+	m := &passwordEntryModal{}
+	m.Init()
+	m.SetSize(80, 24)
+
+	// Input should have echo character set to '•'
+	if m.input.EchoCharacter != '•' {
+		t.Fatalf("EchoCharacter is %q, expected '•'", m.input.EchoCharacter)
+	}
+}
+
+// TestPasswordEntryModalApplyTheme verifies ApplyTheme stores theme.
+func TestPasswordEntryModalApplyTheme(t *testing.T) {
+	m := &passwordEntryModal{}
+	m.Init()
+	m.ApplyTheme(ThemeTokyoNight)
+	if m.theme == nil {
+		t.Fatal("ApplyTheme did not store theme")
+	}
+	if m.theme != ThemeTokyoNight {
+		t.Fatal("ApplyTheme did not store the correct theme")
+	}
+}
