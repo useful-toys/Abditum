@@ -18,6 +18,7 @@ Quando algo é específico de uma tela ou componente (ex: quais campos o diálog
 
 ## Sumário
 
+- [Atalhos da Aplicação](#atalhos-da-aplicação)
 - [Diálogos de Decisão](#diálogos-de-decisão)
   - [Referência Visual por Severidade](#referência-visual-por-severidade)
   - [Exemplo: Confirmação × Destrutivo — Excluir segredo](#exemplo-confirmação--destrutivo--excluir-segredo)
@@ -39,6 +40,44 @@ Quando algo é específico de uma tela ou componente (ex: quais campos o diálog
   - [Painel Direito: Detalhe do Segredo — Modo Leitura](#painel-direito-detalhe-do-segredo--modo-leitura)
 - [Telas](#telas)
   - [Boas-vindas](#boas-vindas)
+
+---
+
+## Atalhos da Aplicação
+
+Este documento detalha as atribuições específicas de teclas para os fluxos e funções da aplicação. As políticas transversais de teclado e o agrupamento de teclas F por categoria de ação são definidos no [Design System — Mapa de Teclas](tui-design-system-novo.md#mapa-de-teclas).
+
+### Atalhos Globais
+
+| Tecla | Ação (Fluxo ou Função) | Escopo | Notas |
+|---|---|---|---|
+| `F1` | Abrir / fechar modal de Ajuda | Global | |
+| `F12` | Alternar Tema | Global | |
+| `Ctrl+Q` | Sair da Aplicação (Fluxos 3, 4, 5) | Global | Gerencia todas as saídas com as devidas confirmações |
+| `Ctrl+Alt+Shift+Q` | Bloquear Cofre (Fluxo 6) | Global | Bloqueio emergencial, descarta alterações, sem confirmação. Atalho "complicado" para evitar acidentes. |
+
+### Atalhos de Área de Trabalho (Fluxos Principais)
+
+Os seguintes atalhos disparam os fluxos principais da aplicação quando a área de trabalho tem foco (sem diálogos abertos). Eles seguem os agrupamentos de teclas F definidos no Design System.
+
+| Tecla | Ação (Fluxo) | Notas |
+|---|---|---|
+| `F2` | Modo Cofre (aba) | Só com cofre aberto |
+| `F3` | Modo Modelos (aba) | Só com cofre aberto |
+| `F4` | Modo Configurações (aba) | Abrange o Fluxo 14: Configurar o Cofre |
+| `F5` | Criar Novo Cofre (Fluxo 2) | |
+| `F6` | Abrir Cofre Existente (Fluxo 1) | |
+| `Shift+F6` | Descartar Alterações e Recarregar Cofre (Fluxo 10) | Similaridade semântica com F6 |
+| `F7` | Salvar Cofre no Arquivo Atual (Fluxo 8) | |
+| `Shift+F7` | Salvar Cofre em Outro Arquivo (Fluxo 9) | |
+| `Ctrl+F7` | Alterar Senha Mestra (Fluxo 11) | Implica salvamento |
+| `F8` | (Livre) | Reservado para futuras ações de persistência |
+| `F9` | Exportar Cofre (Fluxo 12) | |
+| `Shift+F9` | Importar Cofre (Fluxo 13) | |
+| `F10` | (Livre) | |
+| `F11` | (Livre) | |
+
+> **Fluxo 7 — Aviso de Bloqueio Iminente por Inatividade:** É um fluxo iniciado pelo sistema, não requer um atalho manual do usuário.
 
 ---
 
