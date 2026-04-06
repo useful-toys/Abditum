@@ -16,13 +16,15 @@ import (
 // Never store children as childModel interface values (typed nil trap).
 type rootModel struct {
 	// State machine
-	area      workArea
-	mgr       *vault.Manager
-	vaultPath string
-	width     int
-	height    int
-	theme     *Theme
-	header    headerModel
+	area        workArea
+	mgr         *vault.Manager
+	vaultPath   string
+	initialPath string // Path passed via CLI, for fast-path
+	isDirty     bool
+	width       int
+	height      int
+	theme       *Theme
+	header      headerModel
 
 	// Child models - nil = inactive. NEVER store as childModel interface.
 	welcome        *welcomeModel
@@ -52,13 +54,19 @@ type rootModel struct {
 var _ tea.Model = &rootModel{}
 
 // NewRootModel is the exported constructor for main.go (PoC mode, D-04).
-func NewRootModel() *rootModel {
-	return newRootModel()
+// Optional initialPath parameter enables CLI fast-path for vault opening.
+func NewRootModel(initialPath ...string) *rootModel {
+	path := ""
+	if len(initialPath) > 0 {
+		path = initialPath[0]
+	}
+	return newRootModel(path)
 }
 
 // newRootModel constructs a fully initialized rootModel in PoC mode.
 // mgr is nil, vaultPath is "", area is workAreaWelcome (D-02, D-03, D-05).
-func newRootModel() *rootModel {
+// If initialPath is non-empty, the CLI fast-path will be initiated in Init().
+func newRootModel(initialPath string) *rootModel {
 	actions := NewActionManager()
 	messages := NewMessageManager()
 
@@ -66,6 +74,8 @@ func newRootModel() *rootModel {
 		area:         workAreaWelcome,
 		mgr:          nil, // PoC mode — no vault (D-02)
 		vaultPath:    "",
+		initialPath:  initialPath,
+		isDirty:      false,
 		actions:      actions,
 		messages:     messages,
 		lastActionAt: time.Now(),
@@ -149,6 +159,21 @@ func newRootModel() *rootModel {
 			Group: 0, Scope: ScopeLocal, Priority: 10, HideFromBar: false,
 			Enabled: func() bool { return true },
 			Handler: func() tea.Cmd { return tea.Quit }},
+		// Vault actions (pre-vault scope)
+		Action{Keys: []string{"o"}, Label: "Abrir", Description: "Abrir cofre existente",
+			Group: 4, Scope: ScopeLocal, Priority: 95, HideFromBar: false,
+			Enabled: func() bool { return m.area == workAreaWelcome },
+			Handler: func() tea.Cmd {
+				flow := newOpenVaultFlow(m.mgr, m.messages, actions, m.theme)
+				return func() tea.Msg { return startFlowMsg{flow: flow} }
+			}},
+		Action{Keys: []string{"n"}, Label: "Novo", Description: "Criar novo cofre",
+			Group: 4, Scope: ScopeLocal, Priority: 94, HideFromBar: false,
+			Enabled: func() bool { return m.area == workAreaWelcome },
+			Handler: func() tea.Cmd {
+				flow := newCreateVaultFlow(m.mgr, m.messages, actions, m.theme)
+				return func() tea.Msg { return startFlowMsg{flow: flow} }
+			}},
 		// Global action for F12 to toggle theme
 		Action{Keys: []string{"f12"}, Label: "Toggle Theme", Description: "Alternar tema visual (Tokyo Night / Cyberpunk)",
 			Group: 0, Scope: ScopeGlobal, Priority: 100, HideFromBar: true,
@@ -164,6 +189,7 @@ func newRootModel() *rootModel {
 	actions.RegisterGroupLabel(1, "Mensagens")
 	actions.RegisterGroupLabel(2, "Status")
 	actions.RegisterGroupLabel(3, "Diálogos")
+	actions.RegisterGroupLabel(4, "Cofre")
 
 	// Group 3 — Dialog PoC (5 severidades × 3 nº ações)
 	actions.Register(m,
@@ -312,8 +338,25 @@ func newRootModel() *rootModel {
 }
 
 // Init satisfies tea.Model. Always starts global tick for message TTL (D-10, D-11).
+// If initialPath is set (CLI fast-path), start openVaultFlow immediately.
 func (m *rootModel) Init() tea.Cmd {
-	return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tickMsg(t) })
+	tickCmd := tea.Tick(time.Second, func(t time.Time) tea.Msg { return tickMsg(t) })
+
+	// CLI fast-path: if initialPath is non-empty, start openVaultFlow
+	if m.initialPath != "" {
+		return tea.Batch(
+			tickCmd,
+			func() tea.Msg {
+				// Create temporary vault manager for the flow
+				// It will be populated when vault is opened
+				flow := newOpenVaultFlow(nil, m.messages, m.actions, m.theme)
+				flow.cliPath = m.initialPath // Set CLI path for fast-path
+				return startFlowMsg{flow: flow}
+			},
+		)
+	}
+
+	return tickCmd
 }
 
 // Update satisfies tea.Model. Implements the D-09 dispatch order.
@@ -354,6 +397,15 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.activeFlow = nil
 		return m, nil
 
+	// --- Vault opened: transition to work area and store vault (D-08) ---
+	case vaultOpenedMsg:
+		// TODO: In Phase 9+, populate m.mgr with the opened vault
+		// For now, just transition to vault area
+		m.area = workAreaVault
+		m.vaultPath = msg.Path
+		m.isDirty = false
+		return m, nil
+
 	// --- Modal result: route ONLY to activeFlow (D-03) ---
 	case modalResult:
 		if m.activeFlow != nil {
@@ -380,6 +432,22 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.lastActionAt = time.Now()
 		key := msg.String()
 		inFlowOrModal := m.activeFlow != nil || len(m.modals) > 0
+
+		// Check for Ctrl+Q (exit flow) before any other key handling
+		if key == "ctrl+q" {
+			// If there are unsaved changes, prompt the user
+			if m.mgr != nil && m.mgr.IsModified() {
+				return m, func() tea.Msg {
+					return Decision(SeverityNeutral, "Alterações não salvas",
+						"Deseja salvar as alterações antes de sair?",
+						DecisionAction{Key: "Enter", Label: "Salvar", Default: true},
+						[]DecisionAction{{Key: "D", Label: "Descartar"}},
+						DecisionAction{Key: "Esc", Label: "Voltar"})
+				}
+			}
+			// No unsaved changes, exit immediately
+			return m, tea.Quit
+		}
 
 		// Check for F12 theme toggle before any other key handling
 		if key == "f12" {

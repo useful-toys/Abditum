@@ -11,6 +11,7 @@ import (
 
 // openVaultFlow implements the state machine for opening an existing vault.
 // States: stateCheckDirty -> statePickFile -> statePwdEntry -> statePreload -> done.
+// If cliPath is set (CLI fast-path), skip file picker and go directly to password entry.
 type openVaultFlow struct {
 	state           int // current state in the state machine
 	width           int
@@ -20,6 +21,7 @@ type openVaultFlow struct {
 	messages        *MessageManager
 	actions         *ActionManager
 	pickedPath      string // path selected by user
+	cliPath         string // path provided via CLI (for fast-path)
 	vaultMetadata   storage.FileMetadata
 	passwordAttempt int
 }
@@ -45,6 +47,7 @@ func newOpenVaultFlow(mgr *vault.Manager, messages *MessageManager, actions *Act
 }
 
 // Init starts the flow. If there are unsaved changes, prompt the user.
+// If CLI path is set (fast-path), skip file selection and go directly to password entry.
 // Otherwise, proceed directly to file selection.
 func (f *openVaultFlow) Init() tea.Cmd {
 	if f.mgr != nil && f.mgr.IsModified() {
@@ -55,6 +58,18 @@ func (f *openVaultFlow) Init() tea.Cmd {
 				"Existem alterações não salvas. Abrir outro cofre descartará as mudanças.", nil)
 		}
 	}
+
+	// CLI fast-path: skip file picker if cliPath is set
+	if f.cliPath != "" {
+		f.pickedPath = f.cliPath
+		f.state = statePwdEntry
+		f.passwordAttempt = 0
+		// Push password entry modal
+		return func() tea.Msg {
+			return pushModalMsg{modal: &passwordEntryModal{}}
+		}
+	}
+
 	f.state = statePickFile
 	// Push file picker modal
 	return func() tea.Msg {
