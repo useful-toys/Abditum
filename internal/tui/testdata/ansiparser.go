@@ -41,6 +41,43 @@ func (st StyleTransition) MarshalJSON() ([]byte, error) {
 	return json.Marshal(tuple{st.Line, st.Col, fg, bg, style})
 }
 
+// MarshalStyleTransitions serializa uma fatia de StyleTransition no formato legível:
+// array externo com indentação, cada tupla em uma única linha compacta.
+//
+// Exemplo:
+//
+//	[
+//	  [0, 2, null, null, ["bold", "faint"]],
+//	  [0, 9, "#d08c00", null, []]
+//	]
+//
+// Isso é equivalente a json.MarshalIndent mas com cada tupla colapsada em uma linha,
+// tornando o arquivo .json.golden fácil de ler e diff-friendly.
+func MarshalStyleTransitions(transitions []StyleTransition) ([]byte, error) {
+	if transitions == nil {
+		return []byte("null"), nil
+	}
+	if len(transitions) == 0 {
+		return []byte("[]"), nil
+	}
+	var buf strings.Builder
+	buf.WriteString("[\n")
+	for i, t := range transitions {
+		b, err := json.Marshal(t) // compacto por MarshalJSON acima
+		if err != nil {
+			return nil, err
+		}
+		buf.WriteString("  ")
+		buf.Write(b)
+		if i < len(transitions)-1 {
+			buf.WriteByte(',')
+		}
+		buf.WriteByte('\n')
+	}
+	buf.WriteString("]")
+	return []byte(buf.String()), nil
+}
+
 // ansiState holds the current rendering state during ANSI sequence parsing.
 type ansiState struct {
 	fg    *string // cor foreground em hex, ou nil

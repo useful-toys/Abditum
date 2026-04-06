@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -236,7 +235,7 @@ func TestRenderMessageBar_Golden(t *testing.T) {
 
 				// .json.golden: style transitions — validates colors and font attributes
 				transitions := testdatapkg.ParseANSIStyle(out)
-				jsonBytes, err := json.MarshalIndent(transitions, "", "  ")
+				jsonBytes, err := testdatapkg.MarshalStyleTransitions(transitions)
 				if err != nil {
 					t.Fatalf("marshal transitions: %v", err)
 				}

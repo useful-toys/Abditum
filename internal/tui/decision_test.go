@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -621,7 +620,7 @@ func TestDecisionDialog_Golden(t *testing.T) {
 
 			// .json.golden: style transitions
 			transitions := testdatapkg.ParseANSIStyle(out)
-			jsonBytes, err := json.MarshalIndent(transitions, "", "  ")
+			jsonBytes, err := testdatapkg.MarshalStyleTransitions(transitions)
 			if err != nil {
 				t.Fatalf("marshal transitions: %v", err)
 			}
