@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 06
-status: planning
-last_updated: "2026-04-05T03:31:28.687Z"
+current_phase: 05.6
+status: executing
+last_updated: "2026-04-06T01:32:35.492Z"
 progress:
-  total_phases: 19
-  completed_phases: 12
-  total_plans: 40
-  completed_plans: 40
+  total_phases: 21
+  completed_phases: 13
+  total_plans: 42
+  completed_plans: 42
 ---
 
 # Project State — Abditum
 
 **Last updated:** 2026-04-01T03:03:16Z
-**Current phase:** 06
+**Current phase:** 05.6
 **Milestone:** v1.0
 
 ## Status
@@ -34,23 +34,30 @@ progress:
 
 ## Current Phase
 
-**Phase 05: TUI Scaffold + Root Model** — Complete ✓
+**Phase 05.6: TUI Scaffold Dialogs** — Planning ✓
 
-Plans executed:
+Plans to execute:
 
-- ✓ 05-01: Core TUI type contracts (childModel, FlowContext, FlowRegistry, domain messages, workArea)
-- ✓ 05-02: Shared services + presentation primitives (ActionManager, MessageManager, modalModel, dialog factories)
-- ✓ 05-03: Child model stubs (7 models: preVaultModel, vaultTreeModel, secretDetailModel, templateListModel, templateDetailModel, settingsModel, helpModal)
-- ✓ 05-04: rootModel — sole tea.Model, workArea state machine, modal stack, FlowRegistry, frame compositor
-- ✓ 05-05: main.go TUI bootstrap + NewRootModel export + 5 rootModel unit tests
+- [ ] 05.6-01: Fix compilation errors in decision.go (unused titleStyle, missing BorderTitle) + rewrite View() with manual top-border construction
+- [ ] 05.6-02: 10 matrix fixture constructors + 3 rendering tests (symbol presence, border chars, matrix render)
+- [ ] 05.6-03: 4 interaction tests (Enter/Esc/arrows/unknown) + 4 edge case tests
+- [ ] 05.6-04: 1 integration test (Acknowledge → modal stack push/Enter → pop) + final build+vet verification
 
-**Next:** Phase 05.1 (TUI scaffold root model fix — realinhamento com tui-elm-architecture.md)
+**Pre-conditions (current state):**
+
+- `go test ./internal/tui/...` FAILS (build error in decision.go)
+- Error 1: `titleStyle` declared and not used (line 179)
+- Error 2: `borderStyle.BorderTitle` undefined (lipgloss v2 has no such method)
+- All other packages compile and test clean
+
+**Next:** Execute Plan 01 (fix compilation errors)
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 
 - Phase 12 added: 05 tui-scaffold-action-arch
+- Phase 05.6 added: tui-scaffold-dialogs
 
 - Phase 05.2.2 inserted after Phase 05.2: tui-scaffold-message-arch-fixes (INSERTED REFINEMENT)
   - **Purpose:** Test message truncation with >100 char long messages + F10 action in PoC
@@ -76,7 +83,7 @@ Plans executed:
 
 ### Phase 04.1: Refinamento da Camada de Domínio (Completed 2026-03-31)
 
-**Status:** Ready to plan
+**Status:** Executing Phase 05.6
 
 **Key Deliverables:**
 
@@ -227,6 +234,11 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 05-05]: CGO_ENABLED=0 go test -race fails on Windows — race detector requires CGO; use CI (Linux) for race detection; local tests verified without -race
 - [Phase 05.3]: tokens.go created with centralized semantic colors, symbols, and style helpers — messages.go, actions.go, help.go refactored to consume tokens (zero hardcoding)
 - [Phase 05.3]: NewRootModel() takes no parameters (PoC mode), all 15 actions registered, Init() starts global tick, header simplified to Abditum only
+- [Phase 05.6]: decision.go View() must build the top border manually — lipgloss v2 has no BorderTitle method; formula: "╭── " + styledTitle + dashes(fill) + " ──╮"
+- [Phase 05.6]: wrapBody() uses stdlib only (strings.Split + rune counting); no external wrapping dependency
+- [Phase 05.6]: Test assertions on View() use plain-text content checks only — ANSI color code assertions are fragile and deferred to Phase 06+ visual integration tests
+- [Phase 05.6]: View() builds top border manually (╭── styledTitle dashes ──╮) — lipgloss v2 has no BorderTitle method
+- [Phase 05.6]: Plain-text test assertions on View() — ANSI escape code assertions are fragile and deferred to Phase 06+
 
 ### Phase 02 Decisions
 

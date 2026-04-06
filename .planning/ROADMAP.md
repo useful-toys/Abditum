@@ -411,6 +411,16 @@ Plans:
 
 **Pitfall watch:** Golden files generated at different terminal sizes produce different output � always use `teatest.WithInitialTermSize(80, 24)` in every `teatest` test; consider adding a test helper that enforces this. Golden files must never contain real passwords, credit card numbers, or API keys � use obviously fictional values and clear comments marking them as test fixtures in the golden file scanner allowlist.
 
+### Phase 12: tui-scaffold-dialogs
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 11
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 12 to break down)
+
 ---
 
 ## Traceability Matrix
@@ -499,3 +509,24 @@ Plans:
 Plans:
 - [ ] 05.4-01-PLAN.md — Update root.go action registrations (multi-key, HideFromBar, priorities, groups) + help.go group 0 skip
 - [ ] 05.4-02-PLAN.md — 6 new unit tests: multi-key dispatch, HideFromBar visibility, RenderCommandBar truncation/anchor/narrow
+
+### Phase 05.6: tui-scaffold-dialogs (INSERTED)
+
+**Goal:** Fix DecisionDialog compilation errors (decision.go), complete View() with manual top-border construction (lipgloss v2 has no BorderTitle), and validate with comprehensive unit + integration tests covering all 10 severity × intention combinations.
+**Requirements**: *(foundational TUI infrastructure — prerequisite for Phase 06 flows)*
+**Depends on:** Phase 05.4
+**Plans:** 1/1 plans complete
+
+Plans:
+- [x] 05.6-01-PLAN — Fix compilation errors, rewrite View() with manual border construction, add wrapBody() helper
+- [ ] 05.6-02-PLAN — 10 matrix fixture constructors + 3 rendering tests (matrix, symbols, border chars)
+- [ ] 05.6-03-PLAN — 4 interaction tests (Enter/Esc/arrows/unknown) + 4 edge case tests (long body, short body, Ack no-Esc, small size)
+- [ ] 05.6-04-PLAN — 1 integration test in root_test.go + final verification (build + vet + all tests)
+
+**UAT:**
+- [ ] `go build ./...` compiles clean (zero errors)
+- [ ] `go test ./internal/tui/...` — 44+ tests, all pass
+- [ ] Confirmação × Destrutivo renders `⚠` symbol + `semantic.warning` border + `semantic.error` default key
+- [ ] Reconhecimento renders only `Enter OK` action (no Esc)
+- [ ] Enter key on any DecisionDialog triggers popModalMsg (modal stack decrements)
+- [ ] All existing 33+ tui tests still passing (zero regressions)
