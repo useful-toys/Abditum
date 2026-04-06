@@ -154,8 +154,10 @@ The textinput.Model in bubbles v2 doesn't have an Init() method. Code was callin
 
 ### Build Status
 - ✅ `go build ./internal/tui` succeeds
-- ✅ All tests pass without compiler warnings
+- ✅ `go build ./cmd/abditum` succeeds
+- ✅ All password modal tests pass (24/24) without warnings
 - ✅ Code compiles with Go 1.22+
+- ℹ️ **Golden file tests:** Pre-existing failures in help/decision/message-bar snapshot tests (out of scope for this plan)
 
 ## API Compliance
 
