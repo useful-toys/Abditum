@@ -1,8 +1,19 @@
 package tui
 
 import (
+	"encoding/json"
+	"flag"
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
+
+	testdatapkg "github.com/useful-toys/abditum/internal/tui/testdata"
 )
+
+// update flag: when set, golden files are regenerated instead of compared.
+// Usage: go test ./internal/tui/... -run TestRenderMessageBar_Golden -update
+var update = flag.Bool("update", false, "regenerate golden files")
 
 // TestMessageManager_InitiallyEmpty verifies Current() is nil before any Show.
 func TestMessageManager_InitiallyEmpty(t *testing.T) {
@@ -121,5 +132,109 @@ func TestMessageManager_HandleInput_Persistent(t *testing.T) {
 	mm.HandleInput()
 	if mm.Current() == nil {
 		t.Error("message with clearOnInput=false must NOT be cleared by HandleInput()")
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Golden test helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+// goldenPath returns the path to a golden file for a test case.
+// Files are stored under testdata/golden/ with the naming convention:
+//
+//	{component}-{variant}-{width}.{ext}.golden
+//
+// Example: testdata/golden/messages-success-30.txt.golden
+func goldenPath(component, variant string, width int, ext string) string {
+	name := fmt.Sprintf("%s-%s-%d.%s.golden", component, variant, width, ext)
+	return filepath.Join("testdata", "golden", name)
+}
+
+// checkOrUpdateGolden compares output against a golden file, or writes it if
+// -update is set or the file does not yet exist (first run auto-generation).
+// On mismatch, the test is failed with a diff showing want vs got.
+func checkOrUpdateGolden(t *testing.T, path, got string) {
+	t.Helper()
+	if *update {
+		// Explicit regeneration: overwrite unconditionally.
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatalf("mkdirall %s: %v", filepath.Dir(path), err)
+		}
+		if err := os.WriteFile(path, []byte(got), 0644); err != nil {
+			t.Fatalf("write golden %s: %v", path, err)
+		}
+		return
+	}
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		// First run: auto-create the golden file (treated as baseline).
+		if err2 := os.MkdirAll(filepath.Dir(path), 0755); err2 != nil {
+			t.Fatalf("mkdirall %s: %v", filepath.Dir(path), err2)
+		}
+		if err2 := os.WriteFile(path, []byte(got), 0644); err2 != nil {
+			t.Fatalf("write golden %s: %v", path, err2)
+		}
+		return
+	}
+	if err != nil {
+		t.Fatalf("read golden %s: %v", path, err)
+	}
+	if string(data) != got {
+		t.Errorf("golden mismatch for %s:\nwant:\n%s\ngot:\n%s", path, string(data), got)
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TestRenderMessageBar_Golden
+// ─────────────────────────────────────────────────────────────────────────────
+
+// TestRenderMessageBar_Golden validates the visual output of RenderMessageBar
+// against golden files for all 6 message kinds × 2 terminal widths (= 12 sub-tests).
+//
+// Each sub-test produces two golden files:
+//   - .txt.golden — raw ANSI output, validated byte-for-byte
+//   - .json.golden — style transitions from ParseANSIStyle, validated byte-for-byte
+//
+// First run (no golden files present) auto-generates the baselines.
+// Subsequent runs compare against the recorded baselines.
+// Run with -update to intentionally regenerate all baselines.
+func TestRenderMessageBar_Golden(t *testing.T) {
+	type testCase struct {
+		variant string
+		msg     *DisplayMessage
+	}
+
+	cases := []testCase{
+		{"success", &DisplayMessage{Text: "Cofre salvo com sucesso — 12 segredos sincronizados", Kind: MsgSuccess, Frame: 0}},
+		{"error", &DisplayMessage{Text: "Falha ao salvar o cofre — verifique permissões do arquivo", Kind: MsgError, Frame: 0}},
+		{"warn", &DisplayMessage{Text: "Cofre modificado externamente — revisar antes de salvar", Kind: MsgWarn, Frame: 0}},
+		{"info", &DisplayMessage{Text: "Cofre aberto — 12 segredos, 3 pastas, 2 modelos", Kind: MsgInfo, Frame: 0}},
+		{"busy", &DisplayMessage{Text: "Carregando cofre, por favor aguarde...", Kind: MsgBusy, Frame: 0}},
+		{"hint", &DisplayMessage{Text: "Pressione F1 para ver todos os atalhos disponíveis", Kind: MsgHint, Frame: 0}},
+	}
+	widths := []int{30, 60}
+
+	for _, tc := range cases {
+		for _, w := range widths {
+			tc := tc // capture loop vars
+			w := w
+			name := fmt.Sprintf("%s-%d", tc.variant, w)
+			t.Run(name, func(t *testing.T) {
+				out := RenderMessageBar(tc.msg, w)
+
+				// .txt.golden: raw ANSI output — validates layout, spacing, truncation, borders
+				txtPath := goldenPath("messages", tc.variant, w, "txt")
+				checkOrUpdateGolden(t, txtPath, out)
+
+				// .json.golden: style transitions — validates colors and font attributes
+				transitions := testdatapkg.ParseANSIStyle(out)
+				jsonBytes, err := json.MarshalIndent(transitions, "", "  ")
+				if err != nil {
+					t.Fatalf("marshal transitions: %v", err)
+				}
+				jsonPath := goldenPath("messages", tc.variant, w, "json")
+				checkOrUpdateGolden(t, jsonPath, string(jsonBytes))
+			})
+		}
 	}
 }
