@@ -10,11 +10,7 @@ Este documento define **fundações** e **padrões reutilizáveis** — o que ca
 A composição dessas peças em telas, wireframes e fluxos concretos pertence ao documento de especificação:
 - [`tui-specification-novo.md`](tui-specification-novo.md) — telas, wireframes de componentes e fluxos visuais
 
-### Teste de fronteira
-
-> *Se eu trocar o nome do item concreto (ex: "Gmail" por qualquer outro segredo) e a regra continuar válida, é **padrão** — fica neste documento. Se a regra só faz sentido para aquela tela ou componente específico, é **composição** — vai para a especificação.*
-
-> **Regra de governança:** toda decisão de UI/UX deste projeto deve ser compatível com os princípios definidos aqui. Em caso de conflito entre uma especificação local e um princípio, o princípio prevalece e a especificação deve ser ajustada.
+> **Regra de governança:** toda decisão de UI/UX deve ser compatível com os princípios definidos aqui. Em conflito entre especificação local e princípio, o princípio prevalece.
 
 ---
 
@@ -47,8 +43,6 @@ A composição dessas peças em telas, wireframes e fluxos concretos pertence ao
 ---
 
 ## O Terminal como Meio
-
-O Abditum é uma aplicação TUI. As propriedades do terminal não são restrições a superar — são o material com o qual trabalhamos. Todo o design opera dentro deste perímetro.
 
 **O que o terminal oferece:**
 - Grade fixa de caracteres monospaced — alinhamento perfeito é gratuito
@@ -323,13 +317,7 @@ Inventário completo dos caracteres Unicode usados pela interface.
 
 ### Critérios de seleção
 
-A escolha de cada símbolo segue restrições práticas do terminal como meio:
-
-- **BMP apenas (U+0000–U+FFFF).** Caracteres do Basic Multilingual Plane têm suporte consistente em terminais Windows (ConHost, Windows Terminal), macOS (Terminal.app, iTerm2) e Linux (gnome-terminal, Alacritty, kitty). Caracteres fora do BMP (emojis, suplementares) dependem de fontes e renderizadores que não controlamos.
-- **Largura previsível.** Todos os símbolos ocupam exatamente 1 coluna terminal, exceto `<╡` (2 colunas, por composição). Símbolos de "largura ambígua" no Unicode (que podem ser renderizados como 1 ou 2 colunas dependendo do locale) são evitados.
-- **Sem emojis.** Emojis ocupam 2 colunas, dependem de fontes coloridas e têm renderização inconsistente entre terminais — especialmente no Windows. São excluídos do inventário.
-- **Sem Nerd Fonts.** Glifos de Nerd Fonts (~U+E000–U+F8FF, Private Use Area) só existem em fontes instaladas pelo usuário. O Abditum não pode assumir que essas fontes estão disponíveis.
-- **Semântica sobre estética.** Cada símbolo é escolhido pelo significado que comunica, não pela aparência. `✗` (exclusão) e `✕` (erro) são visualmente similares mas semanticamente distintos — ambos permanecem no inventário porque servem papéis diferentes.
+> **Restrições:** BMP apenas (U+0000–U+FFFF) — emojis e Nerd Fonts excluídos. Todos os símbolos ocupam 1 coluna, exceto `<╡` (2 colunas, por composição). Símbolos de largura ambígua (locale-dependente) são evitados. Semântica prevalece sobre estética: `✗` (exclusão) e `✕` (erro) são distintos e ambos necessários.
 
 ### Inventário
 
@@ -445,16 +433,6 @@ Todo diálogo de decisão exibe suas ações na borda inferior. O número de aç
 **1 ação (reconhecimento):**
 ```
 ╰── Enter OK ──────────────────────────────────╯
-```
-
-**2 ações (confirmação binária):**
-```
-╰── Enter Excluir ───────────────────── Esc Cancelar ──╯
-```
-
-**3+ ações (confirmação com alternativas):**
-```
-╰── Enter Salvar ── A Salvar como ─────── Esc Cancelar ──╯
 ```
 
 **2 ações (confirmação binária):**
@@ -748,10 +726,10 @@ Anti-padrões documentam o que **não deve ser feito** na interface do Abditum. 
 | **Máscara Apenas Visual** *(Alto)* | `••••••••` exibido mas copiável sem feedback | Proteção ilusória; dado sensível exposto em clipboard |
 | **Campo Sensível Indistinguível** *(Alto)* | Campos sensíveis e comuns têm mesma aparência | Revelação acidental ou proteção ignorada |
 | **Countdown Invisível** *(Médio)* | Cópia bem-sucedida mas sem indicação de TTL da clipboard | Usuário não sabe se o dado ainda está disponível |
-| **Limpeza de Clipboard Assíncrona ao Encerrar** *(Alto)* | A limpeza ao bloquear/encerrar é delegada a uma goroutine ou `time.AfterFunc` — que pode ser interrompida antes de executar quando `os.Exit` é chamado, anulando a garantia de limpeza. Mecanismo correto especificado em [`arquitetura.md` § Clipboard](arquitetura.md) | Dado sensível permanece na clipboard após o usuário encerrar ou bloquear o cofre, contrariando a garantia de limpeza ao sair |
+| **Limpeza de Clipboard Assíncrona ao Encerrar** *(Alto)* | Limpeza delegada a goroutine ou `time.AfterFunc`, que pode ser interrompida antes de `os.Exit`. Ver [`arquitetura.md` § Clipboard](arquitetura.md) | Dado sensível permanece na clipboard após encerrar/bloquear |
 | **Exportação Sem Cerimônia** *(Crítico)* | Exportação (arquivo não criptografado) com tratamento de ação rotineira | Usuário exporta para local inseguro sem compreender risco |
 | **Dirty State Apenas Global** *(Crítico)* | Indicador `•` só no cabeçalho, sem `✦ ✎ ✗` por item | Usuário não consegue auditar o que será salvo |
-| **Scrollback Não Limpo ao Encerrar** *(Alto)* | Saída ou bloqueio limpa apenas a tela visível, sem limpar o scrollback — dados revelados durante a sessão ficam acessíveis no histórico do terminal. Sequência correta e coordenação com Bubble Tea especificadas em [`arquitetura.md` § Clear screen](arquitetura.md) | Qualquer pessoa com acesso ao terminal após encerrar o Abditum pode rolar o scrollback e ler campos sensíveis revelados durante a sessão |
+| **Scrollback Não Limpo ao Encerrar** *(Alto)* | Saída/bloqueio limpa apenas a tela visível, sem limpar o scrollback. Ver [`arquitetura.md` § Clear screen](arquitetura.md) | Campos sensíveis revelados na sessão ficam acessíveis no histórico do terminal |
 
 ---
 
@@ -786,9 +764,7 @@ Anti-padrões documentam o que **não deve ser feito** na interface do Abditum. 
 | **Pilha de Modais Sem Profundidade** *(Médio)* | Modal abre modal abre modal sem indicação | Desorientação; fechamento acidental com Esc repetido |
 | **Ação Default Ausente** *(Médio)* | Ação default desaparece quando inativa | Usuário não sabe o que falta preencher |
 | **Confirmação Assimétrica** *(Crítico)* | "Salvar e Sair" pede dupla confirmação; "Descartar" não | Incentivo perverso aumenta perdas de dados |
-| **Saída Sem Confirmação** *(Crítico)* | Aplicação encerra sem confirmar quando há alterações pendentes | Perda silenciosa de dados não salvos |
-| **Fechamento de Cofre Sem Confirmação** *(Crítico)* | Fechar/bloquear cofre com modificações não salvas sem confirmar | Perda silenciosa de dados não salvos |
-| **Ação Destrutiva Sem Confirmação** *(Crítico)* | Ação irreversível ou com perda de dados executa sem diálogo de confirmação e opção de desistir | Dado perdido sem chance de recuperação |
+| **Ação Destrutiva/Irreversível Sem Confirmação** *(Crítico)* | Qualquer ação com perda de dados executa sem confirmação e opção de desistir — inclui: encerrar app com mudanças pendentes, fechar/bloquear cofre com mudanças pendentes, excluir itens | Dado perdido sem chance de recuperação |
 | **Fluxo Sem Saída** *(Alto)* | Fluxo de múltiplos passos sem opção de desistir (cancelar) ou voltar ao passo anterior | Usuário preso; forçado a concluir ou matar o processo |
 | **Borda como Menu** *(Alto)* | Diálogo com 4 ou mais ações na borda inferior — transforma a moldura num "roteador" de escolhas | Sobrecarga cognitiva; usuário não sabe qual ação escolher; a borda perde o papel de confirmação e vira menu disfarçado |
 | **Ação Fantasma na Barra** *(Alto)* | Exibir na barra de comandos uma ação que não se aplica ao contexto atual (`Enabled = false`) — mesmo que em estilo dim/disabled | Usuário tenta acionar, recebe erro silencioso; poluição visual; quebra a confiança na barra como indicador de ações disponíveis |
@@ -822,9 +798,7 @@ Anti-padrões documentam o que **não deve ser feito** na interface do Abditum. 
 | **Última Linha Causa Scroll** *(Médio)* | Escrever em `(linhas, colunas)` aciona scroll | Barra de comandos "cai"; layout deslocado |
 | **Cursor Desalinhado** *(Alto)* | Cursor em coluna errada durante edição (bytes vs runes) | Backspace apaga caractere errado |
 | **Campo Edição Sem Scroll H** *(Alto)* | Campo longo truncado ou overflow sem scroll | Usuário não vê valor completo |
-| **Scroll Sem Teclado** *(Alto)* | Painel com scroll não responde a `Home`/`End`/`PgUp`/`PgDn` — só a `↑`/`↓` | Navegação lenta e frustrante em listas longas |
-| **Scroll Sem Mouse** *(Médio)* | Painel com scroll não responde ao scroll do mouse | Usuário espera interatividade padrão e não encontra |
-| **Scroll Invertido** *(Alto)* | `PgUp` desce ou `PgDn` sobe; `Home` vai ao fim | Quebra de expectativa; desorientação imediata |
+| **Scroll Mal Implementado** *(Alto)* | Painel com scroll não responde a `Home`/`End`/`PgUp`/`PgDn`; não responde ao scroll do mouse; ou `PgUp`/`PgDn`/`Home`/`End` funcionam invertidos | Navegação lenta, inacessível ou desorientadora |
 
 ---
 
