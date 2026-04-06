@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 05.7
 status: executing
-last_updated: "2026-04-06T10:40:02.899Z"
+last_updated: "2026-04-06T10:52:32.866Z"
 progress:
   total_phases: 22
   completed_phases: 13
   total_plans: 48
-  completed_plans: 44
+  completed_plans: 46
 ---
 
 # Project State — Abditum
@@ -246,6 +246,9 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 05.7-golden-test-architecture-for-tui-modals]: RenderCommandBar receives []Action as parameter — callers pass am.Visible() explicitly, keeping the function pure and testable without an ActionManager
 - [Phase 05.7-golden-test-architecture-for-tui-modals]: helpModal.groupLabel stored as func(int) string field — preserves GroupLabel fallback logic without ActionManager dependency, enabling plain []Action fixture injection in tests
 - [Phase 05.7]: RenderCommandBar sorts actions by Priority desc internally — callers may pass unsorted slices
+- [Phase 05.7]: helpGoldenPath uses variant-only (no width param) — variant already encodes size+scroll position
+- [Phase 05.7]: Negative scroll sentinel (-1 → maxScroll) simplifies fixture setup for bottom-scroll scenarios in help_test.go
+- [Phase 05.7-04]: Variant-embedded width in decision golden path helper — decisionGoldenPath(variant, ext) does not append width suffix since variant already encodes it (e.g. destructive-1action-short-30)
 
 ### Phase 02 Decisions
 
