@@ -1,14 +1,25 @@
-# Arquitetura de Testes de View para Componentes de Tela
+# Arquitetura de Testes Golden para Componentes TUI
 
 ## Objetivo
 
-Validar que `View()` de componentes (modais, diálogos, telas) renderizam **texto, espaçamento, bordas e cores** corretos, detectando regressões visuais sutis (faltas de espaço, cores erradas, alinhamentos incorretos).
+Validar que `View()` de componentes TUI (modais, diálogos, linhas de status) renderizam **texto, espaçamento, bordas e cores** corretos, detectando regressões visuais sutis que testes convencionais não conseguem capturar.
 
-Essa arquitetura é **genérica** e aplicável a qualquer componente que implemente `View() string`. Exemplos: `DecisionDialog`, `HelpDialog`, `PromptDialog`, futuras modais ou telas full-screen.
+Esta arquitetura é **genérica** e aplicável a qualquer componente que implemente uma função de renderização que retorne `string` (preferencialmente ANSI).
 
-### Escopo
+### Aplicabilidade
 
-Golden files validam **apenas o conteúdo do componente retornado por `View()`**, não o entorno do terminal ou o contexto externo:
+Exemplos de componentes que se beneficiam desta arquitetura:
+- `DecisionDialog` (modal de decisão)
+- `HelpDialog` (modal de ajuda)
+- `RenderMessageBar` (linha de mensagem)
+- `RenderCommandBar` (linha de ações/comandos)
+- Futuros modais, telas full-screen, ou elementos de UI independentes.
+
+### Escopo dos Golden Files
+
+Golden files validam **apenas o conteúdo visual do componente retornado pela sua função de renderização**, não o entorno do terminal ou o contexto externo (como o componente é posicionado na tela). O posicionamento é responsabilidade de quem chama (ex: `rootModel.Render()` via `lipgloss.Place()`) e não é testado aqui, pois seria imprevisível variar de terminal para terminal.
+
+**Exemplo (DecisionDialog):** O `View()` retorna apenas o box do diálogo, ilustrando os elementos visuais que serão validados por esta arquitetura de testes:
 
 ```
 ╭── ⚠  Excluir segredo ─────────────────────────────────────╮
@@ -19,66 +30,96 @@ Golden files validam **apenas o conteúdo do componente retornado por `View()`**
 ╰── Enter Excluir ───────────────────────── Esc Cancelar ──╯
 ```
 
-**Exemplo (DecisionDialog):** O `View()` retorna exatamente essas linhas. O posicionamento na tela (centrado, canto, padding externo) é responsabilidade de `rootModel.Render()` via `lipgloss.Place()` e não é testado aqui — seria imprevisível variar de terminal para terminal.
+Neste exemplo de `DecisionDialog`:
+- O **título** (`⚠ Excluir segredo`) é renderizado com **fonte bold** e sua cor (vermelho no caso de "⚠") e a cor da borda superior (`╭──`) se alinham à **severidade da mensagem**.
+- As **ações** na barra inferior (`Enter Excluir`, `Esc Cancelar`) são **destacadas** (com suas respectivas teclas em bold e cor de destaque) e corretamente espaçadas.
 
-Para componentes full-screen (sem envolvimento em `Place()`), `View()` retorna o conteúdo completo esperado na tela — todo o espaço reservado.
+Esta arquitetura visa validar que **evoluções no código não causarão regressões** nesses aspectos visuais cruciais, garantindo a consistência da UI textual.
 
-## Problema
+Para componentes full-screen (sem envolvimento em `lipgloss.Place()`), a função de renderização retorna o conteúdo completo esperado na tela — todo o espaço reservado.
 
-Testes unitários convencionais (`strings.Contains`, asserções de propriedade) não capturam regressões visuais:
-- Espaçamento errado entre elementos
-- Cores incorretas em posições específicas
-- Alinhamento quebrado em wrapping de texto
-- Caracteres de borda ou estrutura desalinhados
+## Problema: Limitações dos Testes Atuais
 
-**Exemplo real:** O bug de espaçamento em `DecisionDialog.renderActionBar()` passou em todos os testes existentes porque nenhum verificava se havia espaço após o último token de ação. O output visualmente ficava "backup──────" em vez de "backup ──────".
+Testes unitários convencionais, baseados em `strings.Contains()` ou asserções de propriedades simples, são insuficientes para garantir a fidelidade visual de interfaces textuais. Eles não capturam regressões como:
+- Espaçamento incorreto entre elementos (`"texto──"` vs `"texto ──"`)
+- Cores ou estilos errados em posições específicas
+- Alinhamento quebrado ou wrapping de texto inesperado
+- Caracteres de borda ou símbolos desalinhados
 
-## Solução: Golden Files com Dois Níveis
+**Exemplo real:** O bug de espaçamento na `DecisionDialog.renderActionBar()` (commit `6325967`) passou em todos os testes existentes porque nenhum verificava a presença de um espaço crucial. O output visualmente ficava `"backup──────"` em vez de `"backup ──────"`.
 
-### Nível 1: `.txt.golden` — Layout Visual
+## Solução: Golden Files com Dois Níveis de Validação
+
+Para capturar tanto a estrutura visual quanto o estilo de forma robusta e canônica, utilizamos uma abordagem de dois arquivos golden por caso de teste. Cada arquivo possui uma responsabilidade distinta e complementar:
+
+1.  **`.txt.golden` (Estrutura Visual Canônica):** Valida o layout, espaçamento e conteúdo textual, removendo toda a formatação ANSI para focar no "desenho" puro da tela.
+2.  **`.json.golden` (Estilo Visual Canônico):** Valida cores, estilos de fonte (bold, itálico), etc., de forma agnóstica aos códigos ANSI exatos, focando no resultado visual da formatação.
+
+### Nível 1: `.txt.golden` — O Desenho Canônico do Layout
 
 **Arquivo:** `{package}/testdata/golden/{component}-{variant}-{size}.txt.golden`
 
-**Conteúdo:** Output ANSI cru de `View()` — o conteúdo exato que o componente renderiza.
+**Conteúdo:** A representação **canônica da estrutura visual** do componente. Contém **apenas texto visível**, com todos os códigos de escape ANSI (cores, bold, etc.) removidos. O resultado é um arquivo de texto puro, legível por humanos, que isola o "desenho" da tela da sua formatação.
 
-**Valida:**
-- Caracteres de borda, símbolos, ícones
-- Espaçamento exato entre elementos
-- Wrapping de texto e alinhamento
-- Estrutura visual completa
-
-**Não valida:**
-- Padding ou entorno externo (responsabilidade de quem chama `View()`)
-- Posicionamento relativo à tela (ex: centralizado via `lipgloss.Place()`)
-
-**Exemplos:**
 ```
-# Para DecisionDialog (modal)
-decision-destructive-1action-80x24.txt.golden
-decision-destructive-2action-80x24.txt.golden
-decision-destructive-3action-80x24.txt.golden
-decision-error-1action-80x24.txt.golden
-decision-neutral-2action-30x25.txt.golden
-
-# Para HelpDialog (futuro)
-help-default-80x24.txt.golden
-help-long-content-50x25.txt.golden
-
-# Para PromptDialog (futuro)
-prompt-text-input-60x5.txt.golden
-prompt-password-input-60x5.txt.golden
+╭── ⚠  Excluir segredo ─────────────────────────────────────╮
+│                                                              │
+│  Gmail será excluído permanentemente. Esta ação não pode    │
+│  ser desfeita.                                               │
+│                                                              │
+╰── Enter Excluir ───────────────────────── Esc Cancelar ──╯
 ```
 
-O padrão é: `{component}-{variant}-{size}.txt.golden`
-- `component`: nome do tipo/componente (`decision`, `help`, `prompt`)
-- `variant`: diferenciador (severidade, tipo, estilo, etc.)
-- `size`: terminal size (`80x24`, `30x25`, etc.)
+**Propósito:** Validar a integridade do layout, o posicionamento dos elementos e a consistência do texto.
 
-### Nível 2: `.json.golden` — Estilo por Posição
+**Valida (O quê e Onde):**
+- Caracteres de borda, símbolos e ícones.
+- Espaçamento exato entre todos os elementos visíveis.
+- Quebras de linha (wrapping) e alinhamento do texto.
+- Estrutura geral, incluindo o número total de linhas e a largura visual de cada linha.
+
+**NÃO Valida (Como):**
+- **Cores:** Uma mudança na cor de um elemento (ex: de `Error` para `Success`) **não** quebraria este teste, pois a cor é removida.
+- **Estilos de Fonte:** A aplicação ou remoção de `bold`, `italic`, `underline`, etc., **não** quebraria este teste.
+- *A validação de estilo é responsabilidade exclusiva do Nível 2: `.json.golden`.*
+
+**Exemplo de Regressão que este arquivo PEGA:**
+O bug de espaçamento em `DecisionDialog.renderActionBar()` (`"backup──────"` em vez de `"backup ──────"`) teria sido capturado imediatamente, pois a sequência de caracteres visíveis é diferente.
+
+**Convenção de Nomes para Golden Files:**
+O padrão de nomes segue `{component}-{variant}-{size}.txt.golden` ou `.json.golden`:
+- `component`: Nome do tipo/componente (ex: `decision`, `help`, `messages`, `commandbar`, `prompt`).
+- `variant`: Um diferenciador para o cenário (ex: `destructive-1action`, `f1only`, `success`, `long-content`).
+- `size`: As dimensões do terminal (ex: `80x24`, `30x25`). Para componentes de uma linha, apenas a largura (ex: `80`, `30`).
+
+*Exemplos de nomes de arquivo para diferentes componentes:*
+- **DecisionDialog:** `decision-destructive-1action-80x24.txt.golden`, `decision-error-2action-30x25.txt.golden`.
+- **HelpDialog:** `help-fewactions-60x12.txt.golden`, `help-15actions-bottom-30x16.txt.golden`.
+- **MessageBar:** `messages-success-60.txt.golden`, `messages-error-30.txt.golden`.
+- **CommandBar:** `commandbar-typical-60.txt.golden`, `commandbar-many-30.txt.golden`.
+- **PromptDialog (futuro):** `prompt-text-input-60x5.txt.golden`, `prompt-password-input-60x5.txt.golden`.
+
+
+### Nível 2: `.json.golden` — O Estilo Canônico por Posição
 
 **Arquivo:** `{package}/testdata/golden/{component}-{variant}-{size}.json.golden`
 
-**Conteúdo:** Lista de tuplas registrando **transições visuais de estilo** — APENAS onde a cor/fonte **muda realmente**.
+**Conteúdo:** A representação **canônica do estilo visual** do componente. É uma lista de tuplas que registram **transições de estilo visual**, ou seja, os pontos exatos (linha, coluna) onde a cor do foreground, background ou qualquer atributo de fonte (bold, italic, etc.) muda.
+
+Este arquivo é gerado por um parser SGR que analisa o output ANSI **original** da função de renderização e o converte para uma forma padronizada. Ele é **agnóstico aos códigos ANSI brutos** — significa que diferentes sequências de escape SGR que produzem o mesmo efeito visual são normalizadas para a mesma tupla canônica.
+
+**Propósito:** Validar a aplicação correta de cores e estilos, garantindo que a formatação visual esteja de acordo com a especificação, complementando a validação estrutural do `.txt.golden`.
+
+**Valida (Como):**
+- **Cores corretas** em cada posição de mudança (ex: a cor de `Error` é de fato a cor vermelha especificada).
+- **Estilos de Fonte corretos** (bold, italic, underline, etc.) são aplicados e removidos nas posições exatas.
+
+**NÃO Valida (O quê e Onde):**
+- Espaçamento, alinhamento ou conteúdo textual (responsabilidade do Nível 1: `.txt.golden`).
+
+**Exemplo de Regressão que este arquivo PEGA:**
+- Mudar a cor de um título de erro de vermelho para cinza quebraria este teste, mas não o `.txt.golden`.
+- Remover o `bold` de uma tecla de atalho quebraria este teste, mas não o `.txt.golden`.
 
 **IMPORTANTE:** O `.json.golden` é **canônico, compacto e agnóstico a SGR**.
 
@@ -158,91 +199,68 @@ Não valida:
 
 **VSCode Integration:** Cores hex são renderizadas com color swatch na gutter — legibilidade visual direta. Abra o arquivo `.json.golden` no VSCode e veja as cores reais ao lado das tuplas.
 
+#### Convenção de Nomes para Golden Files
+O padrão de nomes segue `{component}-{variant}-{size}.json.golden`:
+- `component`: Nome do tipo/componente (ex: `decision`, `help`, `messages`, `commandbar`, `prompt`).
+- `variant`: Um diferenciador para o cenário (ex: `destructive-1action`, `f1only`, `success`, `long-content`).
+- `size`: As dimensões do terminal (ex: `80x24`, `30x25`). Para componentes de uma linha, apenas a largura (ex: `80`, `30`).
+
+*Exemplos de nomes de arquivo para diferentes componentes:*
+- **DecisionDialog:** `decision-destructive-1action-80x24.json.golden`, `decision-error-2action-30x25.json.golden`.
+- **HelpDialog:** `help-fewactions-60x12.json.golden`, `help-15actions-bottom-30x16.json.golden`.
+- **MessageBar:** `messages-success-60.json.golden`, `messages-error-30.json.golden`.
+- **CommandBar:** `commandbar-typical-60.json.golden`, `commandbar-many-30.json.golden`.
+- **PromptDialog (futuro):** `prompt-text-input-60x5.json.golden`, `prompt-password-input-60x5.json.golden`.
+
 ---
 
-## Matriz de Cobertura
+## Princípios de Cobertura
 
-A matriz é **específica para cada componente**. Esta fase cobre **apenas Camada 1** — golden files visuais (`.txt.golden` + `.json.golden`) em **3 tamanhos de terminal** (30, 60, 80 cols) + testes de `Update()`.
+A definição da matriz de testes para cada componente deve seguir os seguintes princípios arquiteturais para garantir robustez sem cair na exaustividade de combinações cartesianas.
 
-### DecisionDialog — Golden Files (Camada 1)
+### 1. Tamanhos de Terminal
+A preferência é testar com **2 tamanhos de largura**:
+*   **30 colunas:** Cenário restrito (truncamento, wrapping agressivo).
+*   **60 colunas:** Cenário padrão (layout ideal).
+*   *Nota:* Outros tamanhos podem ser discutidos para casos com necessidades específicas de validação.
 
-**5 severidades × 3 layouts × 3 tamanhos = 45 pares**
+### 2. Variantes de Construção
+Recomenda-se testar **todas as variantes de construção** da view definidas pelo componente.
+*   *Exemplo:* No diálogo, testar para cada severidade.
 
-| Severidade | 1-action (30/60/80) | 2-action (30/60/80) | 3-action (30/60/80) |
-|-----------|---------------------|---------------------|---------------------|
-| Destructive | ✓✓✓ | ✓✓✓ | ✓✓✓ |
-| Error | ✓✓✓ | ✓✓✓ | ✓✓✓ |
-| Alert | ✓✓✓ | ✓✓✓ | ✓✓✓ |
-| Informative | ✓✓✓ | ✓✓✓ | ✓✓✓ |
-| Neutral | ✓✓✓ | ✓✓✓ | ✓✓✓ |
+### 3. Variantes de Popular o Modelo
+Além das variantes de construção, deve-se testar **diferentes formas de popular o modelo** com dados para cobrir casos de uso complexos.
+*   *Exemplo:* Na barra de ações, testar com várias actions, cada qual configurada de forma peculiar (ex: teclas especiais como F1, labels longos, ações desabilitadas).
+*   *Exemplo:* No diálogo de ajuda, popular com grupos de ações variados para forçar scroll e testar a renderização de cabeçalhos de grupo.
 
-**Total:** 45 pares `.txt.golden` + `.json.golden` = 90 arquivos
+### 4. Diversidade de Conteúdo e Estados do Modelo
+Deve-se explorar a renderização com diferentes tipos de conteúdo textual e diferentes estados do modelo para validar o layout dinâmico e interativo:
+*   **Títulos:** Curtos e longos (para testar truncamento ou ajuste).
+*   **Corpo do Texto:**
+    *   Linhas curtas.
+    *   Múltiplas linhas (com separadores explícitos).
+    *   Linhas longas que forçam a quebra automática (wrapping).
+    *   Conteúdo extenso que força o surgimento de scroll.
+*   **Estados de Scroll:** Para componentes com scroll, testar a representação visual em diferentes posições: início (topo), meio (indicador de posição) e fim (últimas linhas visíveis).
+*   **Foco/Seleção:** Foco em diferentes ações ou itens da lista (se aplicável ao componente).
 
-### DecisionDialog — Testes de Update
+### Estratégia de Combinação
+Não deve explorar todas as combinações possíveis, mas deve fazer uma **boa cobertura**.
+*   *Evitar:* Matriz cartesiana completa.
+*   *Adotar:* Seleção inteligente de cenários onde cada teste valida múltiplas dimensões simultaneamente.
 
-**8 cenários de estado** (Enter/Esc/tecla explícita/tecla desconhecida × variações de layout)
+### Matriz de Exemplo (Conceitual)
 
-### HelpDialog — Golden Files (Camada 1)
+Esta é uma matriz de exemplo **ilustrativa** para um componente genérico (`GenericComponent`), demonstrando os princípios de cobertura. As matrizes reais para cada componente devem ser detalhadas em seus respectivos documentos de contexto ou plano.
 
-**2 variantes × 3 tamanhos = 6 pares**
+| # | Golden Name | Variant | Content Type | State | Width (30/60) | Captura |
+|---|-------------|---------|--------------|-------|---------------|---------|
+| 1 | `generic-default-short-30` | Default | Título Curto | Padrão | 30 | Layout básico, truncamento |
+| 2 | `generic-default-long-60` | Default | Título Longo | Padrão | 60 | Wrapping, layout completo |
+| 3 | `generic-error-multiline-30` | Error | Múltiplas Linhas | Padrão | 30 | Cor, símbolos, wrapping |
+| 4 | `generic-warning-scroll-60` | Warning | Conteúdo extenso | Scroll Meio | 60 | Scrollbar, posição |
 
-| Variante | 30 cols | 60 cols | 80 cols |
-|----------|---------|---------|---------|
-| Poucas ações (sem scroll) | ✓ | ✓ | ✓ |
-| Muitas ações (com scroll) | ✓ | ✓ | ✓ |
-
-**Total:** 6 pares = 12 arquivos
-
-### HelpDialog — Testes de Update
-
-**8 cenários de estado** (Esc/F1/Up/Down/PgUp/PgDown/Home/End × boundary conditions)
-
-### Linha de Mensagem — Golden Files (Camada 1)
-
-**6 kinds × 3 tamanhos = 18 pares**
-
-| Kind | 30 cols | 60 cols | 80 cols |
-|------|---------|---------|---------|
-| Success | ✓ | ✓ | ✓ |
-| Info | ✓ | ✓ | ✓ |
-| Warn | ✓ | ✓ | ✓ |
-| Error | ✓ | ✓ | ✓ |
-| Busy (frame 0) | ✓ | ✓ | ✓ |
-| Hint | ✓ | ✓ | ✓ |
-
-**Total:** 18 pares = 36 arquivos
-
-### Linha de Ações — Golden Files (Camada 1)
-
-**3 cenários × 3 tamanhos = 9 pares**
-
-| Cenário | 30 cols | 60 cols | 80 cols |
-|---------|---------|---------|---------|
-| Sem ações | ✓ | ✓ | ✓ |
-| 2 ações | ✓ | ✓ | ✓ |
-| 5 ações + F1 anchor | ✓ | ✓ | ✓ |
-
-**Total:** 9 pares = 18 arquivos
-
-### Total Geral — Camada 1
-
-| Componente | Golden Pairs | Arquivos | Testes Update |
-|-----------|-------------|----------|---------------|
-| DecisionDialog | 45 | 90 | 8 cenários |
-| HelpDialog | 6 | 12 | 8 cenários |
-| Linha de Mensagem | 18 | 36 | — (função pura) |
-| Linha de Ações | 9 | 18 | — (função pura) |
-| **Total** | **78 pares** | **156 arquivos** | **16 cenários** |
-
-### Por que 3 tamanhos (30, 60, 80)
-
-| Tamanho | O que captura |
-|---------|--------------|
-| **30 cols** | Extremo apertado — wrapping agressivo, truncamento de texto, tokens de ação comprimidos, box width mínimo |
-| **60 cols** | Intermediário — wrapping moderado, layout balanceado, comportamento típico de terminais médios |
-| **80 cols** | Padrão — layout "ideal", sem wrapping, espaçamento completo |
-
-Cada par de golden files em tamanho diferente é uma **fotografia do layout naquele ponto exato**. Se uma mudança no código alterar o wrapping, o spacing, ou a responsividade, o golden file daquele tamanho específico será o primeiro a quebrar — dando um feedback preciso sobre onde o problema ocorreu.
+**Total Conceitual:** `N` pares de golden files (`.txt.golden` + `.json.golden`) + `M` cenários de `Update()`.
 
 ---
 
@@ -304,40 +322,31 @@ Responsabilidades:
 
 ### 3. Golden Test Runner (Genérico)
 
-Padrão reutilizável em testes de cada componente:
+Padrão reutilizável em testes de cada componente, demonstrando a separação:
 
 ```go
 func TestComponentViewGolden(t *testing.T) {
-    tests := []struct {
-        name      string
-        component tea.Model // ou interface específica com View()
-        golden    string    // ex: "destructive-1action-80x24"
-    }{
-        // Preencher conforme matriz do componente
-        {"Destructive 1-action", pocKey1(), "decision-destructive-1action-80x24"},
-        {"Destructive 2-action", pocKey2(), "decision-destructive-2action-80x24"},
-        ...
-        {"Layout 1-action 30x25", pocKey1_30x25(), "decision-destructive-1action-30x25"},
-        ...
-    }
+    // ... setup do loop de testes ...
     
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            out := tt.component.View()
+            // 1. Gera o output ANSI completo uma vez
+            outWithANSI := tt.component.View()
             
-            // Nível 1: .txt.golden
+            // 2. Teste de Nível 1: Layout Canônico (.txt.golden)
             txtPath := filepath.Join("testdata/golden", tt.golden+".txt.golden")
+            visibleText := stripANSI(outWithANSI) // Remove códigos de escape
             if *flagUpdate {
-                os.WriteFile(txtPath, []byte(out), 0644)
+                os.WriteFile(txtPath, []byte(visibleText), 0644)
             } else {
                 expected, _ := os.ReadFile(txtPath)
-                if string(expected) != out {
-                    t.Errorf("View() output mismatch:\nexpected:\n%s\n\ngot:\n%s", expected, out)
+                if string(expected) != visibleText {
+                    t.Errorf("Layout mismatch (.txt.golden):\nexpected:\n%s\n\ngot:\n%s", expected, visibleText)
                 }
             }
             
-            // Nível 2: .json.golden
-            styles := ParseANSIStyle(out)
+            // 3. Teste de Nível 2: Estilo Canônico (.json.golden)
+            styles := ParseANSIStyle(outWithANSI) // Processa o output original com ANSI
             jsonPath := filepath.Join("testdata/golden", tt.golden+".json.golden")
             jsonBytes, _ := json.MarshalIndent(styles, "", "  ")
             if *flagUpdate {
@@ -345,11 +354,17 @@ func TestComponentViewGolden(t *testing.T) {
             } else {
                 expectedJSON, _ := os.ReadFile(jsonPath)
                 if string(expectedJSON) != string(jsonBytes) {
-                    t.Errorf("Style mismatch:\nexpected:\n%s\n\ngot:\n%s", expectedJSON, jsonBytes)
+                    t.Errorf("Style mismatch (.json.golden):\nexpected:\n%s\n\ngot:\n%s", expectedJSON, jsonBytes)
                 }
             }
         })
     }
+}
+
+// stripANSI remove todas as sequências de escape ANSI de uma string.
+func stripANSI(s string) string {
+    re := regexp.MustCompile(`\x1b\[[0-9;]*m`)
+    return re.ReplaceAllString(s, "")
 }
 ```
 
@@ -489,30 +504,35 @@ Do lipgloss v2, os estilos inline capturados:
 
 ## Casos de Uso
 
-### 1. Regressão de espaçamento (como o bug atual)
+### 1. Regressão de espaçamento (como o bug de `renderActionBar`)
 ```
-Encontrado em .txt.golden:
+# Teste falha com diff claro no `.txt.golden`:
 - expected: "Abrir backup ──────"
 + got:      "Abrir backup──────"
-→ Teste falha imediatamente
 ```
+**Capturado por:** `.txt.golden` (validação estrutural).
 
 ### 2. Regressão de cor
 ```
-Encontrado em .json.golden:
-- expected: [0, 4, "#d08c00", null, ["bold"]]
-+ got:      [0, 4, "#a0a0a0", null, ["bold"]]
-→ Teste falha, diff visual no VSCode (color swatches)
+# Teste falha com diff no `.json.golden`:
+- expected: [0, 4, "#d08c00", null, ["bold"]]  // Laranja
++ got:      [0, 4, "#a0a0a0", null, ["bold"]]  // Cinza
 ```
+**Capturado por:** `.json.golden` (validação de estilo). O `.txt.golden` passaria, pois o texto e o espaçamento não mudaram.
 
 ### 3. Mudança intencional de severidade (ex: novo estilo Warning)
 ```
-Dev muda ColorWarn em colors.go
-Tests quebram (esperado)
-Dev roda: go test -update
-VSCode mostra novas cores nos .json.golden
-Dev valida visualmente e commita
+# Dev muda ColorWarn em colors.go
+# go test ./... falha em ambos os arquivos:
+# - .txt.golden: quebra se o símbolo mudar (ex: ⚠ → !)
+# - .json.golden: quebra porque a cor mudou de amarelo para a nova cor
+
+# Dev regenera os arquivos:
+go test ./internal/tui/... -update
+
+# Dev valida a mudança visual nos arquivos gerados e commita.
 ```
+**Capturado por:** Ambos. O `.txt.golden` pega a mudança do símbolo `⚠` e o `.json.golden` pega a mudança da cor.
 
 ---
 
