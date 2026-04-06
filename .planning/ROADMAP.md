@@ -186,6 +186,20 @@ Plans:
 
 ---
 
+### Phase 05.7: Golden test architecture for TUI modals (INSERTED)
+
+**Goal:** Implement golden test architecture for 4 TUI components: message bar, command bar, help modal, and decision dialog. Parser SGR reutilizável, 36 pares de golden files (72 arquivos), flag `-update` para regeneração.
+**Requirements**: TBD
+**Depends on:** Phase 05
+**Plans:** 5 plans in 2 waves
+
+Plans:
+- [ ] 05.7-01-PLAN.md — Refactor: RenderCommandBar pure fn + helpModal decoupled from ActionManager (Wave 1)
+- [ ] 05.7-02-PLAN.md — MessageBar golden tests: 6 kinds × 2 widths = 24 files (Wave 2)
+- [ ] 05.7-03-PLAN.md — CommandBar golden tests: 5 scenarios × 2 widths = 20 files (Wave 2)
+- [ ] 05.7-04-PLAN.md — DecisionDialog golden tests: 10 scenarios = 20 files + 8 Update() tests (Wave 2)
+- [ ] 05.7-05-PLAN.md — HelpModal golden tests: 8 scenarios = 16 files + 8 Update() tests (Wave 2)
+
 ### Phase 05.2: tui-scaffold-message-arch (INSERTED)
 
 **Goal:** Refactor the message bar and command bar architecture — split MsgKind, export RenderMessageBar, extend Action with Priority/HideFromBar/Group-as-int, rewrite RenderCommandBar with spec-correct tokens and F1 right anchor — and validate the full system with a standalone `cmd/poc-mensagens` PoC binary.
