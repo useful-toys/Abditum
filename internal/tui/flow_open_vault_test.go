@@ -2,6 +2,8 @@ package tui
 
 import (
 	"testing"
+
+	testdatapkg "github.com/useful-toys/abditum/internal/tui/testdata"
 )
 
 // TestOpenVaultFlowStructExists validates the openVaultFlow struct exists.
@@ -94,4 +96,29 @@ func TestOpenVaultFlowEmitsVaultOpenedMsg(t *testing.T) {
 	if _, ok := msg.(vaultOpenedMsg); !ok {
 		t.Error("vaultOpenedMsg should be a valid message type")
 	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Golden File Tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+// TestOpenVaultFlow_Golden validates flow view rendering against golden files.
+func TestOpenVaultFlow_Golden(t *testing.T) {
+	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow.state = stateCheckDirty
+
+	view := flow.View(80, 24)
+
+	// .txt.golden: plain text render
+	txtPath := goldenPath("flow-open-vault", "initial", 80, "txt")
+	checkOrUpdateGolden(t, txtPath, stripANSI(view))
+
+	// .json.golden: style transitions
+	transitions := testdatapkg.ParseANSIStyle(view)
+	jsonBytes, err := testdatapkg.MarshalStyleTransitions(transitions)
+	if err != nil {
+		t.Fatalf("marshal transitions: %v", err)
+	}
+	jsonPath := goldenPath("flow-open-vault", "initial", 80, "json")
+	checkOrUpdateGolden(t, jsonPath, string(jsonBytes))
 }

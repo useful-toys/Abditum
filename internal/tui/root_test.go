@@ -5,6 +5,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	testdatapkg "github.com/useful-toys/abditum/internal/tui/testdata"
 )
 
 // --- Test stubs ---
@@ -315,5 +316,138 @@ func TestDecisionDialog_ModalStackIntegration(t *testing.T) {
 
 	if len(m.modals) != 0 {
 		t.Errorf("expected modal stack empty after Enter, got %d modal(s)", len(m.modals))
+	}
+}
+
+// TestRootModel_Golden verifies the root model's view rendering with welcome screen
+// and flow orchestration integration across different terminal widths.
+func TestRootModel_Golden(t *testing.T) {
+	tests := []struct {
+		name   string
+		width  int
+		height int
+		setup  func(*rootModel)
+	}{
+		{
+			name:   "welcome-initial",
+			width:  80,
+			height: 24,
+			setup:  func(m *rootModel) {},
+		},
+		{
+			name:   "welcome-narrow",
+			width:  40,
+			height: 24,
+			setup:  func(m *rootModel) {},
+		},
+		{
+			name:   "with-decision-modal",
+			width:  80,
+			height: 24,
+			setup: func(m *rootModel) {
+				cmd := Acknowledge(SeverityInformative, "Test Dialog", "This is a test message.", nil)
+				msg := cmd()
+				m.Update(msg)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := NewRootModel()
+			m.Update(tea.WindowSizeMsg{Width: tt.width, Height: tt.height})
+			tt.setup(m)
+
+			viewObj := m.View()
+			got := viewObj.Content
+
+			// Check/update golden files
+			txtPath := goldenPath("root", tt.name, tt.width, "txt")
+			jsonPath := goldenPath("root", tt.name, tt.width, "json")
+
+			checkOrUpdateGolden(t, txtPath, stripANSI(got))
+
+			// Parse ANSI styles and marshal to JSON
+			styles := testdatapkg.ParseANSIStyle(got)
+			styleJSON, err := testdatapkg.MarshalStyleTransitions(styles)
+			if err != nil {
+				t.Fatalf("marshal transitions: %v", err)
+			}
+			checkOrUpdateGolden(t, jsonPath, string(styleJSON))
+		})
+	}
+}
+
+// TestRootModel_CtrlQQuit verifies that Ctrl+Q triggers quit behavior
+// (actionQuit returns Quit cmd) and root model responds appropriately.
+func TestRootModel_CtrlQQuit(t *testing.T) {
+	m := NewRootModel()
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+
+	// Send Ctrl+Q
+	_, cmd := m.Update(makeKeyPress("ctrl+q"))
+
+	// actionQuit should return tea.Quit(), which produces a Quit tea.Msg
+	if cmd != nil {
+		msg := cmd()
+		// The cmd returned should be tea.Quit() or a function that produces tea.QuitMsg
+		switch msg.(type) {
+		case tea.QuitMsg:
+			// Success - quit message was generated
+		default:
+			t.Errorf("expected tea.QuitMsg from Ctrl+Q, got %T", msg)
+		}
+	}
+}
+
+// TestRootModel_FlowOrchestration_Golden tests root model rendering during flow orchestration,
+// verifying that the UI correctly displays welcome screen while a flow is active.
+func TestRootModel_FlowOrchestration_Golden(t *testing.T) {
+	m := NewRootModel()
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+
+	// Render initial welcome screen
+	initialViewObj := m.View()
+	initialView := initialViewObj.Content
+
+	// Start a flow (in real code, this would be OpenVaultFlow or CreateVaultFlow)
+	flow := &stubFlow{}
+	m.Update(startFlowMsg{flow: flow})
+
+	// The view should still render the welcome screen while flow is active
+	// (flows manage their own state internally; root just delegates input)
+	flowViewObj := m.View()
+	flowView := flowViewObj.Content
+
+	// Both should be non-empty
+	if len(initialView) == 0 {
+		t.Error("initial view should not be empty")
+	}
+	if len(flowView) == 0 {
+		t.Error("view during active flow should not be empty")
+	}
+
+	// Save flow rendering to golden file
+	txtPath := goldenPath("root", "flow-active", 80, "txt")
+	jsonPath := goldenPath("root", "flow-active", 80, "json")
+
+	checkOrUpdateGolden(t, txtPath, stripANSI(flowView))
+
+	styles := testdatapkg.ParseANSIStyle(flowView)
+	styleJSON, err := testdatapkg.MarshalStyleTransitions(styles)
+	if err != nil {
+		t.Fatalf("marshal transitions: %v", err)
+	}
+	checkOrUpdateGolden(t, jsonPath, string(styleJSON))
+
+	// Verify flow is active
+	if m.activeFlow != flow {
+		t.Error("flow should be active")
+	}
+
+	// End flow
+	m.Update(endFlowMsg{})
+	if m.activeFlow != nil {
+		t.Error("flow should be cleared after endFlowMsg")
 	}
 }
