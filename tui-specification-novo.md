@@ -25,6 +25,7 @@
   - [Busca de Segredos](#busca-de-segredos)
   - [Painel Direito: Detalhe do Segredo — Modo Leitura](#painel-direito-detalhe-do-segredo--modo-leitura)
 - [Ações na Árvore de Segredos](#ações-na-árvore-de-segredos)
+  - [⌃R e ⌃C na árvore — Atalhos de campo sensível](#r-e-c-na-árvore--atalhos-de-campo-sensível)
 - [Telas](#telas)
   - [Boas-vindas](#boas-vindas)
 
@@ -1597,8 +1598,50 @@ Esta seção detalha as ações disponíveis ao interagir com a árvore de segre
 | `Ctrl+I` | Novo segredo                             | Atalho alternativo para criar um novo segredo.                             |
 | `^E`     | Editar segredo                           | Entra no modo de edição para o segredo selecionado.                        |
 | `⌃S`     | Favoritar / Desfavoritar segredo         | Toggle — alterna entre favoritado e não favoritado.                        |
+| `⌃R`     | Revelar primeiro campo sensível          | Visível apenas se o segredo tiver pelo menos um campo sensível. Abre/atualiza o painel direito. |
+| `⌃C`     | Copiar primeiro campo sensível           | Visível apenas se o segredo tiver pelo menos um campo sensível. Agenda limpeza da clipboard. |
 | `Delete` | Excluir segredo                          | Marca o segredo selecionado para exclusão (reversível até o salvamento).   |
 
+#### ⌃R e ⌃C na árvore — Atalhos de campo sensível
+
+**Contexto:** foco na árvore com cursor em um segredo que possui pelo menos um campo sensível.
+
+**Campo alvo:** sempre o **primeiro campo sensível** do segredo (menor índice de posição no tipo).
+
+**Visibilidade dos atalhos:**
+- `⌃R` e `⌃C` aparecem na barra de comandos **somente** quando o cursor da árvore está em um segredo com pelo menos um campo sensível.
+- Quando o cursor está em uma pasta ou em um segredo sem campos sensíveis, os atalhos são omitidos da barra e não têm efeito.
+
+##### Comportamento de ⌃R na árvore
+
+- `⌃R` cicla o estado de reveal do primeiro campo sensível usando o **mesmo mecanismo de 3 estados do painel de detalhe**: mascarado → dica (3 primeiros chars + `••`) → completo → mascarado.
+- O painel direito é aberto (ou atualizado) automaticamente exibindo o segredo com o campo sensível já no estado correspondente ao toque atual:
+  - **1º toque:** painel exibe o campo sensível em estado de dica.
+  - **2º toque:** painel exibe o campo sensível revelado completamente.
+  - **3º toque:** campo re-mascarado; painel permanece aberto.
+- As mesmas regras de re-mascaramento do painel se aplicam: trocar de segredo na árvore ou timeout expirado re-mascara o campo silenciosamente.
+- A barra de comandos reflete o estado atual do reveal (igual ao painel):
+  - Mascarado: `⌃R Revelar`
+  - Dica ativa: `⌃R Mostrar tudo`
+  - Revelado: `⌃R Ocultar`
+
+##### Comportamento de ⌃C na árvore
+
+- `⌃C` copia o valor **completo** do primeiro campo sensível para a clipboard — independentemente do estado de reveal atual (não é necessário revelar antes de copiar).
+- Agenda limpeza automática da clipboard (mesmo comportamento do `⌃C` no painel de detalhe).
+- O painel direito é aberto (ou atualizado) automaticamente exibindo o segredo, mas o estado de reveal do campo **não muda** — a cópia não desencadeia reveal.
+- A barra de mensagens exibe confirmação: `✓ [Rótulo do campo] copiado para a área de transferência`.
+
+##### Barra de comandos contextualizada (árvore, cursor em segredo)
+
+| Condição | Barra de comandos |
+|---|---|
+| Segredo sem campo sensível | `Enter Detalhes · ⌃E Editar · ⌃S Favoritar · Del Excluir · F1 Ajuda` |
+| Segredo com campo sensível — reveal mascarado | `Enter Detalhes · ⌃E Editar · ⌃S Favoritar · ⌃R Revelar · ⌃C Copiar · Del Excluir · F1 Ajuda` |
+| Segredo com campo sensível — reveal com dica | `Enter Detalhes · ⌃E Editar · ⌃S Favoritar · ⌃R Mostrar tudo · ⌃C Copiar · Del Excluir · F1 Ajuda` |
+| Segredo com campo sensível — reveal completo | `Enter Detalhes · ⌃E Editar · ⌃S Favoritar · ⌃R Ocultar · ⌃C Copiar · Del Excluir · F1 Ajuda` |
+
+---
 
 ### Painel Direito: Detalhe do Segredo — Modo Leitura
 
