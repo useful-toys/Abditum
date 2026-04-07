@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 7
-status: planning
-last_updated: "2026-04-07T05:11:27.267Z"
+current_phase: 06.3
+status: executing
+last_updated: "2026-04-07T13:15:36.421Z"
 progress:
-  total_phases: 18
+  total_phases: 19
   completed_phases: 11
-  total_plans: 50
-  completed_plans: 49
+  total_plans: 55
+  completed_plans: 50
 ---
 
 # Project State — Abditum
 
 **Last updated:** 2026-04-07 (Phase 06.2 planned — 4 plans ready)
-**Current phase:** 7
+**Current phase:** 06.3
 **Milestone:** v1.0
 
 ## Status
@@ -77,7 +77,7 @@ progress:
 
 ### Phase 04.1: Refinamento da Camada de Domínio (Completed 2026-03-31)
 
-**Status:** Ready to plan
+**Status:** Executing Phase 06.3
 
 **Key Deliverables:**
 
@@ -251,6 +251,7 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 06.2-adequacao-design-system]: createVaultSaveBeforeMsg type added for save-before-new-vault dirty-check; stateSaveAsNew guards filePickerResult in saveAndExitFlow; Desvio 8 default inverted to P Prosseguir; Esc cancels entire flow
 - [Phase 06.2]: Erros de senha e arquivo em openVaultFlow usam Acknowledge(SeverityError) em vez de MessageManager.Show() — conformidade com Catálogo de Diálogos
 - [Phase 06.2]: dirty-check em openVaultFlow: Decision(SeverityAlert, 'Abrir cofre') com 3 ações S Salvar / D Descartar / Esc Voltar; openVaultSaveBeforeMsg implementa isModalResult() para routing pelo rootModel
+- [Phase 06.3-reimplement-file-picker]: filePickerModal skeleton: FilePickerOpen/FilePickerSave enum, all D-00-D-22 fields, ColorBorderFocused/ColorSurfaceInput tokens added
 
 ### Phase 02 Decisions
 
