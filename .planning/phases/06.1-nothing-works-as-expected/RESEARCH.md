@@ -486,6 +486,70 @@ return m, func() tea.Msg {
 
 ---
 
+## VIII. Keybindings Analysis (Extended Scope)
+
+As part of Phase 06.1 specification compliance review, keybindings have been analyzed against `@tui-specification-novo.md`. See `KEYBINDINGS-SPEC.md` for full analysis; this section summarizes findings.
+
+### Current Keybindings vs. Specification
+
+**Welcome Screen (Phase 06 Scope):**
+
+| Spec Requirement | Current Implementation | Status | Scope |
+|---|---|---|---|
+| F5 → Criar Novo Cofre (Fluxo 2) | N key (not F5) | ⚠️ WRONG KEY | Phase 06.1 (easy fix) |
+| F6 → Abrir Cofre Existente (Fluxo 1) | O key (not F6) | ⚠️ WRONG KEY | Phase 06.1 (easy fix) |
+| F1 → Help | F1 ✓ | ✅ SPEC-COMPLIANT | Phase 06 |
+| Ctrl+Q → Exit | Ctrl+Q ✓ | ⚠️ PARTIAL (handler broken for Fluxo 5) | Phase 06.1 (fix via saveAndExitFlow) |
+| F12 → Toggle Theme | F12 ✓ | ❌ NOT IN SPEC | Decision needed |
+
+**Workspace Tabs (Phase 06.5+ Scope):**
+
+| Spec Requirement | Current Implementation | Status | Scope |
+|---|---|---|---|
+| F2 → Modo Cofre | *Not implemented* | ❌ NOT IMPLEMENTED | Phase 06.5+ |
+| F3 → Modo Modelos | *Not implemented* | ❌ NOT IMPLEMENTED | Phase 06.5+ |
+| F4 → Modo Configurações | *Not implemented* | ❌ NOT IMPLEMENTED | Phase 06.5+ |
+
+**Save/Export/Import (Phase 7+ Scope):**
+
+| Spec Requirement | Current Implementation | Status | Scope |
+|---|---|---|---|
+| F7 → Salvar Atual | *Not implemented* | ❌ NOT IMPLEMENTED | Phase 7+ (Fluxo 8) |
+| Shift+F7 → Salvar Como | *Not implemented* | ❌ NOT IMPLEMENTED | Phase 7+ (Fluxo 9) |
+| Ctrl+F7 → Alterar Senha | *Not implemented* | ❌ NOT IMPLEMENTED | Phase 7+ (Fluxo 11) |
+| F9 → Exportar | *Not implemented* | ❌ NOT IMPLEMENTED | Phase 7+ (Fluxo 12) |
+| Shift+F9 → Importar | *Not implemented* | ❌ NOT IMPLEMENTED | Phase 7+ (Fluxo 13) |
+| Shift+F6 → Recarregar | *Not implemented* | ❌ NOT IMPLEMENTED | Phase 7+ (Fluxo 10) |
+| Ctrl+Alt+Shift+Q → Lock Vault | *Not implemented* | ❌ NOT IMPLEMENTED | Phase 6.5+ or 7+ (Fluxo 6) |
+
+### Keybindings Gaps Summary
+
+| ID | Gap | Severity | Impact | Remediation |
+|:--:|-----|----------|--------|-------------|
+| K.1 | O/N should be F5/F6 | MEDIUM | Users can't find expected F-keys | Change Keys arrays in root.go |
+| K.2 | F12 (Toggle) not in spec | LOW | Feature exists but not documented | Decision: keep/remove/defer |
+| K.3-K.6 | F2-F4, F7-F9, variants not implemented | LOW | No blocker; depends on future phases | Document in PLAN.md |
+
+### Remediation for Phase 06.1
+
+**Include in Phase 06.1 PLAN.md:**
+- Task K.1: Migrate O→F6, N→F5 (~10 minutes)
+- Task K.2: Document F12 decision (~5 minutes)
+- Task K.3: Document deferred keybindings (~5 minutes)
+
+**Total effort:** 1-1.5 hours (non-blocking, can be parallelized)
+
+### Keybindings Architecture Notes
+
+- Action registration in `root.go:109-142` uses `Keys: []string{...}` array
+- Dispatch in `actions.go:92-120` matches all keys in the array
+- Help modal groups actions by Group ID
+- Command bar shows `Keys[0]` for display; all keys trigger the action
+- F1 is right-anchored; other actions left-padded
+- Spec defines semantic F-key groupings: F1/F12 (global), F2-F4 (tabs), F5-F6 (entry), F7-F9 (persist)
+
+---
+
 ## Conclusion
 
-Phase 06 implementation has **significant specification deviations** that prevent core workflows from functioning as documented. The most critical issue is **Fluxo 5 "Salvar e sair" being completely non-functional**. Phase 06.1 must address all CRITICAL and HIGH severity gaps before vault operations can be considered compliant with specification.
+Phase 06 implementation has **significant specification deviations** that prevent core workflows from functioning as documented. The most critical issue is **Fluxo 5 "Salvar e sair" being completely non-functional**. Phase 06.1 must address all CRITICAL and HIGH severity gaps before vault operations can be considered compliant with specification. Keybindings alignment (Phase 06.1 extension) improves UX and spec compliance without blocking core functionality.

@@ -856,6 +856,107 @@ Assuming 1 developer:
 
 ---
 
+## IX. Keybindings Remediation (Scope Extension)
+
+**Note:** Keybindings are NOT blocking for Phase 06.1 completion but are part of broader spec compliance effort. See `KEYBINDINGS-SPEC.md` for full analysis.
+
+### Phase 06.1 Keybindings Tasks
+
+#### Task K.1: Migrate O→F6, N→F5
+
+**File:** `internal/tui/root.go`  
+**Lines:** 116-129  
+**Effort:** ~10 minutes
+
+**Change:**
+```go
+// Current (lines 116-122):
+Action{Keys: []string{"o"}, Label: "Abrir", ...},
+
+// Change to:
+Action{Keys: []string{"f6"}, Label: "Abrir", ...},
+
+// Current (lines 123-129):
+Action{Keys: []string{"n"}, Label: "Novo", ...},
+
+// Change to:
+Action{Keys: []string{"f5"}, Label: "Novo", ...},
+```
+
+**Testing:**
+- Verify F5 triggers "Criar Novo Cofre" flow
+- Verify F6 triggers "Abrir Cofre Existente" flow
+- Verify help modal shows F5/F6 (automatic via ActionManager)
+- Update any tests that hardcode "o" or "n" key presses
+
+**Spec Reference:** `tui-specification-novo.md` lines 68-69
+
+**Definition of Done:**
+- ✓ F5/F6 keys work
+- ✓ O/N keys no longer trigger actions
+- ✓ Help modal displays correctly
+- ✓ Tests pass
+
+---
+
+#### Task K.2: Document F12 (Toggle Theme) Decision
+
+**File:** This PLAN.md section + decision documentation
+
+**Options:**
+1. **KEEP:** Add F12 to spec, formalize as feature
+2. **REMOVE:** Delete theme toggle code (~40 lines)
+3. **DEFER:** Keep code, mark experimental, plan for Phase 8+
+
+**Recommended:** Option 1 (KEEP) — Theme accessibility is valuable
+
+**Effort if removing:** ~30 minutes (delete code, update tests, update help modal)
+
+**Effort if keeping:** ~5 minutes (document decision, add to spec review)
+
+**Definition of Done:**
+- ✓ Decision documented
+- ✓ If kept: spec updated or noted as "experimental"
+- ✓ If removed: code deleted, tests updated
+
+---
+
+#### Task K.3: Document Deferred Keybindings
+
+**File:** This PLAN.md + KEYBINDINGS-SPEC.md
+
+**Keybindings deferred to Phase 06.5+:**
+- F2, F3, F4 (Workspace tabs) — depends on vaultTree/templateList/settings models
+
+**Keybindings deferred to Phase 7+:**
+- F7, Shift+F7, Ctrl+F7 (Save variants) — depends on Fluxo 8, 9, 11
+- F9, Shift+F9 (Export/Import) — depends on Fluxo 12, 13
+- Shift+F6 (Reload) — depends on Fluxo 10
+- Ctrl+Alt+Shift+Q (Lock vault) — depends on Fluxo 6
+
+**Effort:** ~5 minutes (already documented in KEYBINDINGS-SPEC.md)
+
+**Definition of Done:**
+- ✓ Deferred keybindings listed in PLAN.md
+- ✓ Phase dependencies documented
+- ✓ Roadmap clarity improved
+
+---
+
+### Keybindings Success Criteria
+
+Phase 06.1 keybindings work:
+
+1. ✓ F5/F6 migrate from O/N (spec compliance)
+2. ✓ F12 decision documented (feature or removed)
+3. ✓ Deferred keybindings identified (Phase 06.5+, Phase 7+)
+4. ✓ Help modal reflects new keybindings (automatic)
+5. ✓ Tests updated for F5/F6
+
+**Estimated Effort:** 1-1.5 hours total
+
+---
+
 ## Conclusion
 
-Phase 06.1 is a **focused remediation phase** that fixes critical specification compliance gaps discovered in Phase 06. The work is divided into three tiers with clear dependencies, allowing parallel execution of independent tasks. Upon completion, vault operations will fully comply with the `@fluxos` specification.
+Phase 06.1 is a **focused remediation phase** that fixes critical specification compliance gaps discovered in Phase 06. The work is divided into three tiers with clear dependencies, allowing parallel execution of independent tasks. A keybindings extension is included to improve spec alignment and user experience. Upon completion, vault operations will fully comply with the `@fluxos` specification, and keybindings will align with `@tui-specification-novo.md`.
