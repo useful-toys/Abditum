@@ -82,8 +82,10 @@ var _ modalView = &filePickerModal{}
 func (m *filePickerModal) SetSize(w, h int) {
 	m.width = w
 	m.height = h
-	// Re-adjust scroll after receiving terminal dimensions so the initial
-	// cursor position (set by Init to the currentPath node) is visible (D-14).
+	// Reset scroll to 0 then re-adjust so the cursor is visible with the real
+	// viewport height. Without the reset, a bogus scroll computed during Init
+	// (when height was 0) would persist and hide parent nodes above the cursor.
+	m.treeScroll = 0
 	m.adjustTreeScroll()
 }
 
@@ -163,11 +165,10 @@ func (m *filePickerModal) Init() tea.Cmd {
 			break
 		}
 	}
-	// Ensure the cursor is visible in the viewport (D-14).
-	// adjustTreeScroll needs visibleTreeHeight, which depends on m.height.
-	// If height is not yet set (zero), defer to the first SetSize call via adjustTreeScroll
-	// being called on every navigation. Here we do a best-effort adjust if height is known.
-	m.adjustTreeScroll()
+	// Do NOT call adjustTreeScroll() here: m.height is 0 at Init time (SetSize
+	// has not been called yet). A scroll computed from height=0 would be wrong
+	// and would hide parent nodes above the cursor. SetSize resets treeScroll=0
+	// and then adjusts correctly once real dimensions are known.
 
 	// 8. Load initial file list
 	m.loadFilesForCursor()

@@ -761,35 +761,31 @@ func TestFilePickerUpdateBehavior(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // TestFilePickerModal_Golden validates visual output against golden files.
+// Uses newGoldenFPK to avoid CWD dependency and produce deterministic output.
 func TestFilePickerModal_Golden(t *testing.T) {
 	testDir := t.TempDir()
 
-	// Create test file structure
+	// Create test file structure (5 vaults)
+	fixedTime := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 	for i := 0; i < 5; i++ {
-		f, err := os.Create(testDir + "/" + fmt.Sprintf("vault%d.abditum", i))
-		if err != nil {
+		p := filepath.Join(testDir, fmt.Sprintf("vault%d.abditum", i))
+		if err := os.WriteFile(p, []byte{}, 0644); err != nil {
 			t.Fatalf("failed to create test file: %v", err)
 		}
-		f.Close()
+		if err := os.Chtimes(p, fixedTime, fixedTime); err != nil {
+			t.Fatalf("chtimes: %v", err)
+		}
 	}
-
 	// Create some directories
 	for i := 0; i < 3; i++ {
-		os.Mkdir(testDir+"/"+fmt.Sprintf("Folder%d", i), 0755)
+		os.Mkdir(filepath.Join(testDir, fmt.Sprintf("Folder%d", i)), 0755)
 	}
 
-	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen}
-	fpk.Init()
-	// Inject fixed time formatter for deterministic golden output
-	fixedTime, _ := time.Parse("02/01/06 15:04", "01/01/24 12:00")
+	fpk := newGoldenFPK(FilePickerOpen, "", testDir, 80, 24)
+	// Override timeFmt for fully deterministic output
 	fpk.timeFmt = func(time.Time) string { return fixedTime.Format("02/01/06 15:04") }
-	fpk.currentPath = testDir
+	// Files panel focused (same as original test intent)
 	fpk.focusPanel = 1
-	fpk.loadFilesForCursor()
-	// Override currentPath to a fixed value for deterministic golden rendering
-	fpk.currentPath = "/home/user/cofres"
-	fpk.SetSize(80, 24)
-	fpk.theme = ThemeTokyoNight
 
 	out := fpk.View()
 
