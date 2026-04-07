@@ -1,6 +1,5 @@
 ╭── ⚠  Conflito de nome ao salvar novo segredo no cofre ───╮
-│                                              │
-│  Um segredo chamado 'github-token' já        │
-│  existe.                                     │
-│                                              │
-╰── Enter Substituir ── R Renomear ─ Esc Cancelar ──╯
+│                                                          │
+│  Um segredo chamado 'github-token' já existe.            │
+│                                                          │
+╰── Enter Substituir ── R Renomear ──────── Esc Cancelar ──╯

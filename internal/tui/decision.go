@@ -311,20 +311,83 @@ func (d *DecisionDialog) symbol() string {
 	}
 }
 
-// boxWidth returns the dialog width. Uses 80% of terminal width when known,
-// capped between 40 and 80 columns.
+// boxWidth returns the dialog width. Sized to fit content, capped at 80% of
+// terminal width (or 80 columns absolute max). Never smaller than 40 columns.
 func (d *DecisionDialog) boxWidth() int {
+	maxW := 80 // absolute max
 	if d.width > 0 {
-		w := d.width * 80 / 100
-		if w < 40 {
-			return 40
+		pct := d.width * 80 / 100
+		if pct < maxW {
+			maxW = pct
 		}
-		if w > 80 {
-			return 80
-		}
-		return w
 	}
-	return 50 // default for tests without SetSize
+	if maxW < 40 {
+		maxW = 40
+	}
+
+	// Minimum width needed to render the top border without truncation:
+	// "╭── {symbol}  {title} ──╮" = leftAnchorW + titleW + rightAnchorW + 1 fill
+	symbol := d.symbol()
+	titleText := d.title
+	if symbol != "" {
+		titleText = symbol + "  " + titleText
+	}
+	titleW := lipgloss.Width(titleText)
+	const leftAnchorW = 4  // "╭── "
+	const rightAnchorW = 4 // " ──╮"
+	minForTitle := leftAnchorW + titleW + rightAnchorW + 1
+
+	// Minimum width needed to render the action bar without truncation.
+	actionMinW := d.actionBarMinWidth()
+
+	// Minimum width needed for a readable body (at least 20 chars of content).
+	const minBodyInner = 20
+	minForBody := minBodyInner + 4 + 2 // padding (4) + borders (2)
+
+	minW := minForTitle
+	if actionMinW > minW {
+		minW = actionMinW
+	}
+	if minForBody > minW {
+		minW = minForBody
+	}
+	if minW < 40 {
+		minW = 40
+	}
+
+	// Use the minimum content width, but never exceed maxW.
+	if minW > maxW {
+		return minW
+	}
+	return minW
+}
+
+// actionBarMinWidth returns the minimum box width needed to render the action
+// bar with at least 1 fill dash between left and right portions.
+func (d *DecisionDialog) actionBarMinWidth() int {
+	// Acknowledgement: "╰── seg ──╯" = 2(corners) + 2(lead) + 1(sp) + actionW + 1(sp) + 2(trail)
+	// Confirmation:    "╰── left ──[fill]── right ──╯"
+	// We compute plain-text widths of left + right + 2 corners + 1 fill min.
+
+	var cancelW int
+	var leftW int
+
+	leftW += 4 // "╰── "
+	for i, a := range d.actions {
+		plain := a.Key + " " + a.Label
+		if a.Cancel {
+			cancelW = 1 + len([]rune(plain)) + 4 // " plain ──╯"
+		} else {
+			leftW += len([]rune(plain))
+			if i < len(d.actions)-1 && !d.actions[i+1].Cancel {
+				leftW += 4 // " ── "
+			} else {
+				leftW += 1 // trailing space
+			}
+		}
+	}
+
+	return leftW + 1 + cancelW // +1 for at least one fill dash
 }
 
 // renderActionBar builds the bottom border line with embedded action tokens.

@@ -1,7 +1,6 @@
 ╭── Confirmar alterações pendentes antes de fechar o cofre? ───╮
-│                                              │
-│  Existem 3 modificações não salvas. Se       │
-│  fechar sem salvar, as alterações serão      │
-│  perdidas.                                   │
-│                                              │
-╰── Enter Confirmar ─────────── Esc Cancelar ──╯
+│                                                              │
+│  Existem 3 modificações não salvas. Se fechar sem salvar,    │
+│  as alterações serão perdidas.                               │
+│                                                              │
+╰── Enter Confirmar ─────────────────────────── Esc Cancelar ──╯
