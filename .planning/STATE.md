@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 7
 status: planning
-last_updated: "2026-04-06T23:58:34.061Z"
+last_updated: "2026-04-07T04:54:10.201Z"
 progress:
-  total_phases: 17
+  total_phases: 18
   completed_phases: 10
-  total_plans: 46
-  completed_plans: 45
+  total_plans: 50
+  completed_plans: 47
 ---
 
 # Project State — Abditum
@@ -244,6 +244,7 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 05.7-golden-test-architecture-for-tui-modals]: stripANSI uses spec pattern for plain-text golden files; decision/help use WxH naming convention
 - [Phase 05.7-golden-test-architecture-for-tui-modals]: ﻿commandbar-no-actions JSON files contain null (not []) — nil slice from ParseANSIStyle marshals to JSON null, spec-compliant for zero-transition scenarios
 - [Phase 05.7-golden-test-architecture-for-tui-modals]: ﻿help-3actions-30x12.txt.golden has 15 lines (not 12) — text wrapping at narrow width is expected rendering behavior; tests stable
+- [Phase 06.2]: formatKeyForHelp: simple ctrl uses ⌃ symbol; complex multi-modifier uses Title Case — applied at both buildContentLines() render sites in help.go
 
 ### Phase 02 Decisions
 
