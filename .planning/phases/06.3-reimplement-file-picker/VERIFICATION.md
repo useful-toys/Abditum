@@ -14,6 +14,10 @@ commits:
   - 09472fd  # Wave 4: summary
   - 7b6841c  # Wave 5: golden tests + 16 golden files
   - da2cd99  # Wave 5: summary
+  - 134519e  # Wave 6: layout gap fixes
+  - e874b81  # Wave 6: golden files regenerated
+  - 555a281  # Wave 6: summary
+  - da2cd99  # Wave 5: summary
 ---
 
 # Phase 06.3 — Verification Report
