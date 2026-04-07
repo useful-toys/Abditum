@@ -82,3 +82,15 @@ type popModalMsg struct{}
 type vaultOpenedMsg struct {
 	Path string // path to the opened vault file
 }
+
+// overwriteConfirmedMsg - emitted by the overwrite Decision dialog in the create
+// vault flow when the user chooses "Sobrescrever". Routed to activeFlow via modalResult.
+type overwriteConfirmedMsg struct{}
+
+func (overwriteConfirmedMsg) isModalResult() {}
+
+// overwriteCancelledMsg - emitted by the overwrite Decision dialog in the create
+// vault flow when the user chooses "Voltar". Returns to file picker.
+type overwriteCancelledMsg struct{}
+
+func (overwriteCancelledMsg) isModalResult() {}

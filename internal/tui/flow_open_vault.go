@@ -115,7 +115,7 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 					f.messages.Show(MsgWarn, "Senha incorreta. Tente novamente", 3, false)
 					return pushModalMsg{modal: &passwordEntryModal{}}
 				}
-				// Other errors: show error dialog
+				// Other errors: show error and return to file picker (spec: Fluxo 1 error recovery)
 				errMsg := "Não foi possível abrir o cofre. Arquivo corrompido ou inacessível."
 				if errors.Is(err, storage.ErrInvalidMagic) {
 					errMsg = "Arquivo não é um cofre válido."
@@ -125,7 +125,8 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 					errMsg = "Cofre corrompido e não pode ser recuperado."
 				}
 				f.messages.Show(MsgError, errMsg, 5, false)
-				return endFlow()
+				f.state = statePickFile
+				return pushModalMsg{modal: &filePickerModal{}}
 			}
 			// Success: store metadata and notify rootModel
 			f.vaultMetadata = metadata

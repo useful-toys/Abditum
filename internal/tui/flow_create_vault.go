@@ -73,9 +73,11 @@ func (f *createVaultFlow) Update(msg tea.Msg) tea.Cmd {
 			return func() tea.Msg {
 				return Decision(SeverityDestructive, "Arquivo existe",
 					"Um cofre já existe neste caminho. Deseja sobrescrever?",
-					DecisionAction{Key: "Enter", Label: "Sobrescrever", Default: true},
+					DecisionAction{Key: "Enter", Label: "Sobrescrever", Default: true,
+						Cmd: func() tea.Msg { return overwriteConfirmedMsg{} }},
 					nil,
-					DecisionAction{Key: "Esc", Label: "Voltar"})
+					DecisionAction{Key: "Esc", Label: "Voltar",
+						Cmd: func() tea.Msg { return overwriteCancelledMsg{} }})
 			}
 		}
 		// File doesn't exist - proceed to password creation
@@ -104,6 +106,20 @@ func (f *createVaultFlow) Update(msg tea.Msg) tea.Cmd {
 			}
 			// Success
 			return vaultOpenedMsg{Path: path}
+		}
+
+	case overwriteConfirmedMsg:
+		// User confirmed overwrite - proceed to password creation
+		f.state = statePwdCreate
+		return func() tea.Msg {
+			return pushModalMsg{modal: &passwordCreateModal{}}
+		}
+
+	case overwriteCancelledMsg:
+		// User chose "Voltar" - return to file picker
+		f.state = statePickFile
+		return func() tea.Msg {
+			return pushModalMsg{modal: &filePickerModal{mode: FilePickerFile}}
 		}
 
 	case flowCancelledMsg:
