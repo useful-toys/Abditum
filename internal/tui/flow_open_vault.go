@@ -68,10 +68,7 @@ func (f *openVaultFlow) Init() tea.Cmd {
 				Cmd: func() tea.Msg { return openVaultSaveBeforeMsg{} }},
 			[]DecisionAction{
 				{Key: "D", Label: "Descartar",
-					Cmd: func() tea.Msg {
-						// Discard changes and proceed to file picker
-						return pushModalMsg{modal: &filePickerModal{}}
-					}},
+					Cmd: FilePicker("Abrir cofre", FilePickerOpen, ".abditum", f.messages, f.theme)},
 			},
 			DecisionAction{Key: "Esc", Label: "Voltar"})
 	}
@@ -89,9 +86,7 @@ func (f *openVaultFlow) Init() tea.Cmd {
 
 	f.state = statePickFile
 	// Push file picker modal
-	return func() tea.Msg {
-		return pushModalMsg{modal: &filePickerModal{}}
-	}
+	return FilePicker("Abrir cofre", FilePickerOpen, ".abditum", f.messages, f.theme)
 }
 
 // Update processes messages from modals and transitions states.
@@ -119,7 +114,7 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 				messages.Show(MsgError, "Não foi possível salvar o cofre.", 5, false)
 				return endFlowMsg{}
 			}
-			return pushModalMsg{modal: &filePickerModal{}}
+			return FilePicker("Abrir cofre", FilePickerOpen, ".abditum", messages, nil)()
 		}
 
 	case pwdEnteredMsg:
@@ -152,12 +147,12 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 				if errors.Is(err, storage.ErrInvalidMagic) || errors.Is(err, storage.ErrVersionTooNew) {
 					return Acknowledge(SeverityError, "Abrir cofre",
 						"Arquivo inválido ou versão não suportada. Necessário corrigir.",
-						func() tea.Msg { return pushModalMsg{modal: &filePickerModal{}} })()
+						func() tea.Msg { return FilePicker("Abrir cofre", FilePickerOpen, ".abditum", f.messages, f.theme)() })()
 				}
 				// ErrCorrupted and generic errors
 				return Acknowledge(SeverityError, "Abrir cofre",
 					"Arquivo corrompido ou inválido. Necessário fechar.",
-					func() tea.Msg { return pushModalMsg{modal: &filePickerModal{}} })()
+					func() tea.Msg { return FilePicker("Abrir cofre", FilePickerOpen, ".abditum", f.messages, f.theme)() })()
 			}
 			// Success: store metadata and notify rootModel
 			f.vaultMetadata = metadata
