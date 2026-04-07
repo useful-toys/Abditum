@@ -309,7 +309,7 @@ Plans:
 **Goal:** Corrigir 10 desvios de spec nos diálogos de decisão/reconhecimento dos fluxos já implementados (sair, criar cofre, abrir cofre, salvar e sair) para conformidade total com o Catálogo de Diálogos da spec; implementar Fluxo 6 (bloqueio emergencial Ctrl+Alt+Shift+Q); e corrigir a formatação de teclas no modal de ajuda.
 **Requirements:** DS-DIALOG-01 through DS-DIALOG-09, DS-HELP-01, FLOW-6
 **Depends on:** Phase 06.1
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 06.2-01-PLAN.md — root.go: corrigir diálogos Ctrl+Q (desvios 1 e 2) + implementar Fluxo 6 (Ctrl+Alt+Shift+Q)
