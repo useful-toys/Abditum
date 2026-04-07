@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 06.3
+current_phase: 06.2
 status: executing
-last_updated: "2026-04-07T13:15:36.421Z"
+last_updated: "2026-04-07"
 progress:
   total_phases: 19
-  completed_phases: 11
+  completed_phases: 12
   total_plans: 55
-  completed_plans: 50
+  completed_plans: 55
 ---
 
 # Project State — Abditum
 
-**Last updated:** 2026-04-07 (Phase 06.2 planned — 4 plans ready)
-**Current phase:** 06.3
+**Last updated:** 2026-04-07 (Phase 06.3 complete — file picker reimplemented)
+**Current phase:** 06.2
 **Milestone:** v1.0
 
 ## Status
@@ -34,9 +34,9 @@ progress:
 
 ## Current Phase
 
-**Phase 06.2: adequacao-design-system** — Planned ✓ (4 plans ready for execution)
+**Phase 06.2: adequacao-design-system** — Planned ✓ (4 plans, plan 02 pending)
 
-**Next:** Execute Phase 06.2 (start with Plan 01)
+**Next:** Execute Phase 06.2 Plan 02 (flow_open_vault.go dirty-check + error dialogs)
 
 ## Accumulated Context
 
@@ -74,6 +74,26 @@ progress:
 ---
 
 ## Phase History
+
+### Phase 06.3: Reimplement File Picker (Completed 2026-04-07)
+
+**Status:** Complete
+
+**Key Deliverables:**
+
+- `internal/tui/filepicker.go` — spec-compliant two-panel `filePickerModal` (1136 lines)
+- `FilePickerOpen` / `FilePickerSave` mode enum replacing old stub constants
+- Lazy `treeNode` tree with ▶/▼/▷ indicators, 2-space depth indentation
+- `Init()` with CWD/home/root fallback chain, builds tree from root to current dir
+- Full `Update()` keyboard handling: Tab focus cycling, ↑↓ navigation, Enter, Esc, Home/End/PgDn
+- `View()` with spec-accurate borders, ├┬┴┤ junctions, scroll indicators ↑/■/↓
+- Path header (Caminho:), metadata format dd/mm/aa HH:MM
+- MessageManager wiring via `emitHint()` 
+- 3 flow call sites migrated: `flow_open_vault.go`, `flow_create_vault.go`, `flow_save_and_exit.go`
+- 38 tests total: 17 legacy + 18 behavioral (D-07) + 8 golden snapshots (16 golden files)
+- Bug fixed: `renderCaminhoHeader` loop-infinite on multi-byte `…` in long paths
+
+**Commits:** f7f76c4, fea7ca3, 8539cef, ba369e5, d908beb, d809f00, 5047bf8, 229481a, 09472fd, 7b6841c, da2cd99
 
 ### Phase 04.1: Refinamento da Camada de Domínio (Completed 2026-03-31)
 
