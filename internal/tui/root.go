@@ -250,13 +250,26 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		key := msg.String()
 		inFlowOrModal := m.activeFlow != nil || len(m.modals) > 0
 
+		// Fluxo 6: Emergency vault lock — discards all unsaved changes immediately.
+		// Must be checked BEFORE ctrl+q to guarantee it is always handled first.
+		if key == "ctrl+alt+shift+q" {
+			m.mgr = nil
+			m.vaultPath = ""
+			m.vaultMetadata = storage.FileMetadata{}
+			m.isDirty = false
+			m.activeFlow = nil
+			m.modals = m.modals[:0]
+			m.area = workAreaWelcome
+			return m, nil
+		}
+
 		// Check for Ctrl+Q (exit flow) before any other key handling
 		if key == "ctrl+q" {
 			// Fluxo 5: vault is open AND has unsaved changes
 			if m.mgr != nil && m.mgr.IsModified() {
-				return m, Decision(SeverityNeutral, "Alterações não salvas",
-					"Deseja salvar as alterações antes de sair?",
-					DecisionAction{Key: "Enter", Label: "Salvar", Default: true,
+				return m, Decision(SeverityAlert, "Sair do Abditum",
+					"Cofre modificado. Salvar ou descartar?",
+					DecisionAction{Key: "S", Label: "Salvar", Default: true,
 						Cmd: func() tea.Msg {
 							flow := newSaveAndExitFlow(m.mgr, m.vaultPath, m.vaultMetadata, m.messages, m.theme)
 							return startFlowMsg{flow: flow}
@@ -266,10 +279,10 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			// Fluxos 3 & 4: no vault open (or vault open but clean) — confirm exit
 			return m, Decision(SeverityNeutral, "Sair do Abditum",
-				"Tem certeza que deseja sair?",
-				DecisionAction{Key: "Enter", Label: "Sim", Default: true, Cmd: tea.Quit},
+				"Sair do Abditum?",
+				DecisionAction{Key: "Enter", Label: "Sair", Default: true, Cmd: tea.Quit},
 				nil,
-				DecisionAction{Key: "Esc", Label: "Não"})
+				DecisionAction{Key: "Esc", Label: "Voltar"})
 		}
 
 		// Check for F12 theme toggle before any other key handling
