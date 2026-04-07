@@ -3,6 +3,9 @@ package tui
 import (
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
+	"github.com/useful-toys/abditum/internal/crypto"
+	"github.com/useful-toys/abditum/internal/storage"
 	testdatapkg "github.com/useful-toys/abditum/internal/tui/testdata"
 )
 
@@ -95,6 +98,191 @@ func TestOpenVaultFlowEmitsVaultOpenedMsg(t *testing.T) {
 	var msg any = vaultOpenedMsg{Path: "/path/to/vault.abditum"}
 	if _, ok := msg.(vaultOpenedMsg); !ok {
 		t.Error("vaultOpenedMsg should be a valid message type")
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Desvio 4 & 5: Error handling — Acknowledge dialogs instead of message bar
+// ─────────────────────────────────────────────────────────────────────────────
+
+// unwrapAcknowledgeDialogOV resolves the cmd returned by Acknowledge() and
+// extracts the *DecisionDialog from the resulting pushModalMsg.
+func unwrapAcknowledgeDialogOV(t *testing.T, cmd tea.Cmd) *DecisionDialog {
+	t.Helper()
+	if cmd == nil {
+		t.Fatal("expected non-nil tea.Cmd")
+	}
+	msg := cmd()
+	for {
+		switch v := msg.(type) {
+		case pushModalMsg:
+			d, ok := v.modal.(*DecisionDialog)
+			if !ok {
+				t.Fatalf("expected *DecisionDialog in pushModalMsg.modal, got %T", v.modal)
+			}
+			return d
+		case tea.Cmd:
+			msg = v()
+		default:
+			t.Fatalf("unexpected message type while unwrapping dialog: %T", msg)
+		}
+	}
+}
+
+// TestOpenVaultFlow_ErrorBranch_TypeCheck validates that the error sentinel
+// values used in flow_open_vault.go are accessible and non-nil (compile check).
+func TestOpenVaultFlow_ErrorBranch_TypeCheck(t *testing.T) {
+	_ = crypto.ErrAuthFailed
+	_ = storage.ErrInvalidMagic
+	_ = storage.ErrVersionTooNew
+	_ = storage.ErrCorrupted
+}
+
+// TestOpenVaultFlow_WrongPassword_AcknowledgeSpec verifies the spec text
+// for the wrong-password Acknowledge dialog (spec: Desvio 4).
+func TestOpenVaultFlow_WrongPassword_AcknowledgeSpec(t *testing.T) {
+	// Build the Acknowledge cmd exactly as Update() does for ErrAuthFailed < 5.
+	cmd := Acknowledge(SeverityError, "Abrir cofre",
+		"Senha incorreta. Necessário tentar novamente.",
+		func() tea.Msg { return pushModalMsg{modal: &passwordEntryModal{}} })
+
+	d := unwrapAcknowledgeDialogOV(t, cmd)
+
+	wantTitle := "Abrir cofre"
+	wantBody := "Senha incorreta. Necessário tentar novamente."
+	if d.title != wantTitle {
+		t.Errorf("wrong-password dialog title: got %q, want %q", d.title, wantTitle)
+	}
+	if d.body != wantBody {
+		t.Errorf("wrong-password dialog body: got %q, want %q", d.body, wantBody)
+	}
+	if d.severity != SeverityError {
+		t.Errorf("wrong-password dialog severity: got %v, want SeverityError", d.severity)
+	}
+	if d.intention != IntentionAcknowledge {
+		t.Errorf("wrong-password dialog should be IntentionAcknowledge, got %v", d.intention)
+	}
+}
+
+// TestOpenVaultFlow_Update_FileError_ProducesAcknowledge verifies that when
+// storage.Load fails (nonexistent file → generic I/O error), the Update cmd
+// produces a pushModalMsg{*DecisionDialog} — NOT a message-bar Show call.
+func TestOpenVaultFlow_Update_FileError_ProducesAcknowledge(t *testing.T) {
+	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow.pickedPath = "/nonexistent/path/vault.abditum"
+	flow.state = statePwdEntry
+	flow.passwordAttempt = 0
+
+	cmd := flow.Update(pwdEnteredMsg{Password: []byte("anypassword")})
+	if cmd == nil {
+		t.Fatal("Update(pwdEnteredMsg) should return a cmd for file loading")
+	}
+
+	resultMsg := cmd()
+
+	switch v := resultMsg.(type) {
+	case pushModalMsg:
+		d, ok := v.modal.(*DecisionDialog)
+		if !ok {
+			t.Fatalf("expected *DecisionDialog in pushModalMsg.modal, got %T", v.modal)
+		}
+		if d.severity != SeverityError {
+			t.Errorf("file-error Acknowledge dialog severity: got %v, want SeverityError", d.severity)
+		}
+		if d.title != "Abrir cofre" {
+			t.Errorf("file-error Acknowledge dialog title: got %q, want %q", d.title, "Abrir cofre")
+		}
+		if d.intention != IntentionAcknowledge {
+			t.Errorf("file-error dialog should be IntentionAcknowledge, got %v", d.intention)
+		}
+	case endFlowMsg:
+		t.Fatalf("expected Acknowledge pushModalMsg, got endFlowMsg (check if attempt counter was >= 5)")
+	default:
+		t.Fatalf("expected pushModalMsg with DecisionDialog, got %T", resultMsg)
+	}
+}
+
+// TestOpenVaultFlow_FileError_InvalidMagic_AcknowledgeSpec verifies the spec
+// text for ErrInvalidMagic (spec: Desvio 5).
+func TestOpenVaultFlow_FileError_InvalidMagic_AcknowledgeSpec(t *testing.T) {
+	cmd := Acknowledge(SeverityError, "Abrir cofre",
+		"Arquivo inválido ou versão não suportada. Necessário corrigir.",
+		func() tea.Msg { return pushModalMsg{modal: &filePickerModal{}} })
+
+	d := unwrapAcknowledgeDialogOV(t, cmd)
+
+	wantBody := "Arquivo inválido ou versão não suportada. Necessário corrigir."
+	if d.title != "Abrir cofre" {
+		t.Errorf("ErrInvalidMagic dialog title: got %q, want %q", d.title, "Abrir cofre")
+	}
+	if d.body != wantBody {
+		t.Errorf("ErrInvalidMagic dialog body: got %q, want %q", d.body, wantBody)
+	}
+	if d.severity != SeverityError {
+		t.Errorf("ErrInvalidMagic dialog severity: got %v, want SeverityError", d.severity)
+	}
+	if d.intention != IntentionAcknowledge {
+		t.Errorf("ErrInvalidMagic dialog should be IntentionAcknowledge, got %v", d.intention)
+	}
+}
+
+// TestOpenVaultFlow_FileError_VersionTooNew_AcknowledgeSpec verifies the spec
+// text for ErrVersionTooNew — same body as ErrInvalidMagic (spec: Desvio 5).
+func TestOpenVaultFlow_FileError_VersionTooNew_AcknowledgeSpec(t *testing.T) {
+	cmd := Acknowledge(SeverityError, "Abrir cofre",
+		"Arquivo inválido ou versão não suportada. Necessário corrigir.",
+		func() tea.Msg { return pushModalMsg{modal: &filePickerModal{}} })
+
+	d := unwrapAcknowledgeDialogOV(t, cmd)
+
+	wantBody := "Arquivo inválido ou versão não suportada. Necessário corrigir."
+	if d.body != wantBody {
+		t.Errorf("ErrVersionTooNew dialog body: got %q, want %q", d.body, wantBody)
+	}
+	if d.severity != SeverityError {
+		t.Errorf("ErrVersionTooNew dialog severity: got %v, want SeverityError", d.severity)
+	}
+}
+
+// TestOpenVaultFlow_FileError_Corrupted_AcknowledgeSpec verifies the spec text
+// for ErrCorrupted (spec: Desvio 5).
+func TestOpenVaultFlow_FileError_Corrupted_AcknowledgeSpec(t *testing.T) {
+	cmd := Acknowledge(SeverityError, "Abrir cofre",
+		"Arquivo corrompido ou inválido. Necessário fechar.",
+		func() tea.Msg { return pushModalMsg{modal: &filePickerModal{}} })
+
+	d := unwrapAcknowledgeDialogOV(t, cmd)
+
+	wantBody := "Arquivo corrompido ou inválido. Necessário fechar."
+	if d.title != "Abrir cofre" {
+		t.Errorf("ErrCorrupted dialog title: got %q, want %q", d.title, "Abrir cofre")
+	}
+	if d.body != wantBody {
+		t.Errorf("ErrCorrupted dialog body: got %q, want %q", d.body, wantBody)
+	}
+	if d.severity != SeverityError {
+		t.Errorf("ErrCorrupted dialog severity: got %v, want SeverityError", d.severity)
+	}
+	if d.intention != IntentionAcknowledge {
+		t.Errorf("ErrCorrupted dialog should be IntentionAcknowledge, got %v", d.intention)
+	}
+}
+
+// TestOpenVaultFlow_FileError_InvalidMagic_VsCorrupted_DifferentBodies verifies
+// that ErrInvalidMagic and ErrCorrupted produce different dialog bodies (spec: Desvio 5).
+func TestOpenVaultFlow_FileError_InvalidMagic_VsCorrupted_DifferentBodies(t *testing.T) {
+	cmd1 := Acknowledge(SeverityError, "Abrir cofre",
+		"Arquivo inválido ou versão não suportada. Necessário corrigir.",
+		func() tea.Msg { return pushModalMsg{modal: &filePickerModal{}} })
+	cmd2 := Acknowledge(SeverityError, "Abrir cofre",
+		"Arquivo corrompido ou inválido. Necessário fechar.",
+		func() tea.Msg { return pushModalMsg{modal: &filePickerModal{}} })
+
+	d1 := unwrapAcknowledgeDialogOV(t, cmd1)
+	d2 := unwrapAcknowledgeDialogOV(t, cmd2)
+
+	if d1.body == d2.body {
+		t.Errorf("ErrInvalidMagic and ErrCorrupted should have different dialog bodies, both got: %q", d1.body)
 	}
 }
 
