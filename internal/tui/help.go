@@ -9,6 +9,90 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
+// formatKeyForHelp converts a raw bubbletea key string to the display format
+// defined by the Abditum design system (tui-specification-novo.md §573-596).
+//
+// Rules:
+//   - Simple ctrl (ctrl+single-letter): "ctrl+q" → "⌃Q"
+//   - Complex multi-modifier: "ctrl+alt+shift+q" → "Ctrl+Alt+Shift+Q"
+//   - Function keys: "f1" → "F1", "shift+f6" → "Shift+F6"
+//   - Named special keys: "esc" → "Esc", "del" → "Delete", etc.
+//   - Arrow keys: "up" → "↑", "down" → "↓", "left" → "←", "right" → "→"
+//   - Fallback: strings.ToUpper(raw)
+func formatKeyForHelp(raw string) string {
+	// Named specials (must check before generic prefix handling)
+	switch raw {
+	case "esc":
+		return "Esc"
+	case "enter":
+		return "Enter"
+	case "space":
+		return "Space"
+	case "backspace":
+		return "Backspace"
+	case "tab":
+		return "Tab"
+	case "del":
+		return "Delete"
+	case "insert":
+		return "Insert"
+	case "pgup":
+		return "PgUp"
+	case "pgdown":
+		return "PgDn"
+	case "home":
+		return "Home"
+	case "end":
+		return "End"
+	case "up":
+		return "↑"
+	case "down":
+		return "↓"
+	case "left":
+		return "←"
+	case "right":
+		return "→"
+	}
+	// Function keys: f1–f12 (bare function key with no modifier prefix)
+	if len(raw) >= 2 && raw[0] == 'f' {
+		suffix := raw[1:]
+		allDigits := true
+		for _, c := range suffix {
+			if c < '0' || c > '9' {
+				allDigits = false
+				break
+			}
+		}
+		if allDigits && len(suffix) > 0 {
+			return "F" + suffix
+		}
+	}
+	// Ctrl combinations
+	if strings.HasPrefix(raw, "ctrl+") {
+		rest := raw[5:] // after "ctrl+"
+		// Simple ctrl: exactly one letter after "ctrl+" (e.g. "ctrl+q" → rest == "q")
+		if len(rest) == 1 && rest[0] >= 'a' && rest[0] <= 'z' {
+			return "⌃" + strings.ToUpper(rest)
+		}
+		// Complex multi-modifier (e.g. "ctrl+alt+shift+q"):
+		// Title-case each segment separated by "+"
+		parts := strings.Split(raw, "+")
+		for i, p := range parts {
+			if len(p) > 0 {
+				parts[i] = strings.ToUpper(p[:1]) + p[1:]
+			}
+		}
+		return strings.Join(parts, "+")
+	}
+	// shift+fN (e.g. "shift+f6" → "Shift+F6")
+	if strings.HasPrefix(raw, "shift+") {
+		rest := raw[6:]
+		return "Shift+" + formatKeyForHelp(rest)
+	}
+	// Fallback: uppercase the entire string
+	return strings.ToUpper(raw)
+}
+
 // helpModal is the global keyboard shortcut reference overlay.
 // Pushed onto the modal stack when the user presses F1.
 // Dismissed via ESC or F1.
@@ -231,7 +315,7 @@ func (m *helpModal) buildContentLines(actions []Action) []string {
 				if len(act.Keys) == 0 {
 					continue
 				}
-				lines = append(lines, "  "+keyStyle.Render(act.Keys[0])+"  "+act.Description)
+				lines = append(lines, "  "+keyStyle.Render(formatKeyForHelp(act.Keys[0]))+"  "+act.Description)
 			}
 			continue
 		}
@@ -243,7 +327,7 @@ func (m *helpModal) buildContentLines(actions []Action) []string {
 			if len(act.Keys) == 0 {
 				continue
 			}
-			lines = append(lines, "  "+keyStyle.Render(act.Keys[0])+"  "+act.Description)
+			lines = append(lines, "  "+keyStyle.Render(formatKeyForHelp(act.Keys[0]))+"  "+act.Description)
 		}
 	}
 

@@ -1,29 +1,27 @@
 ╭── Ajuda — Atalhos e Ações ─╮
 │                   │
 │  Edição           ↑
-│    ctrl+n  Novo 
+│    ⌃N  Novo     
 segredo          │
-│    ctrl+d       
-Duplicar       
+│    ⌃D  Duplicar 
 segredo          │
-│    ctrl+x       
-Cortar segredo   │
-│    ctrl+v  Colar
+│    ⌃X  Cortar   
 segredo          │
-│    del  Excluir 
+│    ⌃V  Colar    
 segredo          │
+│    Delete       
+Excluir segredo  │
 │  Geral            │
-│    ctrl+c       
-Copiar valor     │
-│    ctrl+s       
-Salvar         
+│    ⌃C  Copiar   
+valor            │
+│    ⌃S  Salvar   
 alterações       │
-│    ctrl+f       
-Buscar segredos  │
-│    ctrl+r       
+│    ⌃F  Buscar   
+segredos         │
+│    ⌃R           
 Recarregar     
 cofre            │
-│    f1  Esta     
+│    F1  Esta     
 ajuda            ■
 │                   │
 ╰────── Esc Fechar ─╯

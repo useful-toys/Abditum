@@ -1,28 +1,26 @@
 ╭── Ajuda — Atalhos e Ações ─╮
 │                   │
-│    f4  Salvar   
+│    F4  Salvar   
 cofre atual      ↑
-│    f5  Fechar   
+│    F5  Fechar   
 cofre            │
-│    f6  Exportar 
+│    F6  Exportar 
 cofre            │
 │  Edição           │
-│    ctrl+n  Novo 
+│    ⌃N  Novo     
 segredo          │
-│    ctrl+d       
-Duplicar       
+│    ⌃D  Duplicar 
 segredo          │
-│    ctrl+x       
-Cortar segredo   ■
-│    ctrl+v  Colar
+│    ⌃X  Cortar   
+segredo          ■
+│    ⌃V  Colar    
 segredo          │
-│    del  Excluir 
-segredo          │
+│    Delete       
+Excluir segredo  │
 │  Geral            │
-│    ctrl+c       
-Copiar valor     │
-│    ctrl+s       
-Salvar         
+│    ⌃C  Copiar   
+valor            │
+│    ⌃S  Salvar   
 alterações       ↓
 │                   │
 ╰────── Esc Fechar ─╯
