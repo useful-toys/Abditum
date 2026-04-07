@@ -697,9 +697,9 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 │  Segredo                                                         │
 │  Ctrl+R      Revelar / ocultar campo sensível                    │
 │  Ctrl+C      Copiar valor para área de transferência             │
-│  F21         Novo segredo                                        │
-│  F22         Editar segredo                                      │
-│  F23         Excluir segredo                                     │
+│  Insert      Novo segredo                                        │
+│  ^E          Editar segredo                                      │
+│  Delete      Excluir segredo                                     │
 │                                                                  │
 │  Cofre                                                           │
 │  ^S          Salvar cofre                                        │
@@ -977,13 +977,13 @@ Cada ação na barra segue o formato: **TECLA Label** — tecla em `accent.prima
 **Estado normal:**
 
 ```
-  F21 Novo · F22 Editar · F23 Excluir · ^S Salvar                              F1 Ajuda
+  ^I Novo · ^E Editar · Del Excluir · ^S Salvar                              F1 Ajuda
 ```
 
 **Com ação desabilitada (nenhum segredo selecionado):**
 
 ```
-  F21 Novo · F22 Editar · ^S Salvar                                              F1 Ajuda
+  ^I Novo · ^E Editar · ^S Salvar                                              F1 Ajuda
 ```
 
 Ações com `Enabled = false` não aparecem na barra — só no modal de Ajuda. O espaço colapsa; separadores `·` são re-calculados entre ações visíveis.
@@ -999,7 +999,7 @@ Ações do ActionManager ficam ocultas. A barra mostra apenas as ações interna
 **Espaço restrito:**
 
 ```
-  F21 Novo                                                                    F1 Ajuda
+  ^I Novo                                                                    F1 Ajuda
 ```
 
 Ações de menor prioridade são ocultadas quando não há espaço. `F1` permanece sempre visível — é via Help que o usuário descobre as ações ocultas.

@@ -343,13 +343,14 @@ func TestRenderCommandBar_Golden(t *testing.T) {
 		actions []Action
 	}
 
-	// Scenario 3: typical — F4 Salvar(90), F2 Novo(80), F3 Abrir(70), F5 Deletar(50), F1 Ajuda(0)
-	// (Priority desc order: Salvar, Novo, Abrir, Deletar; F1 is right-anchored)
+	// Scenario 3: typical — F7 Salvar(90), F5 Novo(80), F6 Abrir(70), F9 Exportar(50), F1 Ajuda(0)
+	// Per spec: F5-F8 are vault persistence (create, open, save, reload); F9+ are complementary (export, import)
+	// (Priority desc order: Salvar, Novo, Abrir, Exportar; F1 is right-anchored)
 	typicalActions := []Action{
-		{Keys: []string{"f2"}, Label: "Novo", Priority: 80, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
-		{Keys: []string{"f3"}, Label: "Abrir", Priority: 70, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
-		{Keys: []string{"f4"}, Label: "Salvar", Priority: 90, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
-		{Keys: []string{"f5"}, Label: "Deletar", Priority: 50, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f5"}, Label: "Novo", Priority: 80, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f6"}, Label: "Abrir", Priority: 70, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f7"}, Label: "Salvar", Priority: 90, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f9"}, Label: "Exportar", Priority: 50, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
 		{Keys: []string{"f1"}, Label: "Ajuda", Priority: 0, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
 	}
 
@@ -357,21 +358,23 @@ func TestRenderCommandBar_Golden(t *testing.T) {
 	// RenderCommandBar must sort them → golden output identical to "typical".
 	unsortedActions := []Action{
 		{Keys: []string{"f1"}, Label: "Ajuda", Priority: 0, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
-		{Keys: []string{"f5"}, Label: "Deletar", Priority: 50, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
-		{Keys: []string{"f4"}, Label: "Salvar", Priority: 90, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
-		{Keys: []string{"f3"}, Label: "Abrir", Priority: 70, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
-		{Keys: []string{"f2"}, Label: "Novo", Priority: 80, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f9"}, Label: "Exportar", Priority: 50, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f7"}, Label: "Salvar", Priority: 90, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f6"}, Label: "Abrir", Priority: 70, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f5"}, Label: "Novo", Priority: 80, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
 	}
 
-	// Scenario 5: many — 7 body actions + F1 anchor
+	// Scenario 5: many — 8 actions following spec groupings
+	// Per spec: F2-F4 tabs, F5-F8 persistence, F9-F11 complementary
+	// This scenario spans across groups to test rendering with diverse key ranges
 	manyActions := []Action{
-		{Keys: []string{"f2"}, Label: "Novo", Priority: 70, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
-		{Keys: []string{"f3"}, Label: "Abrir", Priority: 60, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
-		{Keys: []string{"f4"}, Label: "Salvar", Priority: 50, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
-		{Keys: []string{"f5"}, Label: "Fechar", Priority: 40, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
-		{Keys: []string{"f6"}, Label: "Exportar", Priority: 30, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
-		{Keys: []string{"f7"}, Label: "Importar", Priority: 20, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
-		{Keys: []string{"f8"}, Label: "Config", Priority: 10, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f5"}, Label: "Novo", Priority: 70, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f6"}, Label: "Abrir", Priority: 60, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f7"}, Label: "Salvar", Priority: 50, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f8"}, Label: "Recarregar", Priority: 40, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f9"}, Label: "Exportar", Priority: 30, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"shift+f9"}, Label: "Importar", Priority: 20, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
+		{Keys: []string{"f4"}, Label: "Config", Priority: 10, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
 		{Keys: []string{"f1"}, Label: "Ajuda", Priority: 0, Enabled: func() bool { return true }, Handler: func() tea.Cmd { return nil }},
 	}
 
