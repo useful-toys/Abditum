@@ -778,6 +778,8 @@ flowchart TD
 
 **Contexto necessário:** cofre carregado no entorno global; segredo em foco.
 
+**Nota de UX:** na TUI, iniciado por `⌃D` com cursor na árvore sobre o segredo. Não requer confirmação — a operação é instantânea e reversível via exclusão do duplicado. Ver [spec — ⌃D Duplicar segredo](tui-specification-novo.md#d--duplicar-segredo).
+
 **Passos:**
 
 1. O usuário solicita duplicar o segredo em foco.
@@ -869,6 +871,8 @@ flowchart TD
 
 **Contexto necessário:** cofre carregado no entorno global; segredo em foco.
 
+**Nota de UX:** na TUI, iniciado por `⌃M` com cursor na árvore sobre o segredo. A seleção do destino ocorre inline na própria árvore (modo mover), sem diálogo modal. Não disponível na pasta virtual Favoritos. Ver [spec — ⌃M Mover para outra pasta](tui-specification-novo.md#m--mover-para-outra-pasta).
+
 **Passos:**
 
 1. O usuário solicita mover o segredo.
@@ -885,6 +889,8 @@ flowchart TD
 ## Fluxo 26 — Reordenar segredo dentro da mesma pasta
 
 **Contexto necessário:** cofre carregado no entorno global; segredo em foco.
+
+**Nota de UX:** na TUI, realizado por `!↑` (Alt+↑) e `!↓` (Alt+↓) com cursor na árvore sobre o segredo. Cada toque desloca uma posição. Não disponível na pasta virtual Favoritos. Ver [spec — !↑ / !↓ Reordenar segredo na lista](tui-specification-novo.md#--reordenar-segredo-na-lista).
 
 **Passos:**
 

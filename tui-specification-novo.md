@@ -25,6 +25,9 @@
   - [Busca de Segredos](#busca-de-segredos)
   - [Painel Direito: Detalhe do Segredo — Modo Leitura](#painel-direito-detalhe-do-segredo--modo-leitura)
 - [Ações na Árvore de Segredos](#ações-na-árvore-de-segredos)
+  - [⌃D — Duplicar segredo](#d--duplicar-segredo)
+  - [⌃M — Mover para outra pasta](#m--mover-para-outra-pasta)
+  - [!↑ / !↓ — Reordenar segredo na lista](#--reordenar-segredo-na-lista)
   - [⌃R e ⌃C na árvore — Atalhos de campo sensível](#r-e-c-na-árvore--atalhos-de-campo-sensível)
 - [Telas](#telas)
   - [Boas-vindas](#boas-vindas)
@@ -1592,12 +1595,95 @@ Esta seção detalha as ações disponíveis ao interagir com a árvore de segre
 |----------|------------------------------------------|----------------------------------------------------------------------------|
 | `Enter`  | Focar no painel de detalhes do segredo   | Comporta-se de forma similar ao `Tab` quando o foco está em um segredo.    |
 | `Insert` | Novo segredo                             | Cria um novo segredo na pasta atualmente focada.                           |
-| `Ctrl+I` | Novo segredo                             | Atalho alternativo para criar um novo segredo.                             |
-| `^E`     | Editar segredo                           | Entra no modo de edição para o segredo selecionado.                        |
+| `⌃I`     | Novo segredo                             | Atalho alternativo para criar um novo segredo.                             |
+| `⌃E`     | Editar segredo                           | Entra no modo de edição para o segredo selecionado.                        |
+| `⌃D`     | Duplicar segredo                         | Cria uma cópia do segredo imediatamente após o original na mesma pasta.    |
+| `⌃M`     | Mover para outra pasta                   | Entra no modo de seleção de destino inline na árvore.                      |
+| `!↑`     | Mover para cima na lista                 | Desloca o segredo uma posição acima dentro da mesma pasta. Desabilitado na pasta Favoritos e quando o segredo já é o primeiro. |
+| `!↓`     | Mover para baixo na lista                | Desloca o segredo uma posição abaixo dentro da mesma pasta. Desabilitado na pasta Favoritos e quando o segredo já é o último. |
 | `⌃S`     | Favoritar / Desfavoritar segredo         | Toggle — alterna entre favoritado e não favoritado.                        |
 | `⌃R`     | Revelar primeiro campo sensível          | Visível apenas se o segredo tiver pelo menos um campo sensível. Abre/atualiza o painel direito. |
 | `⌃C`     | Copiar primeiro campo sensível           | Visível apenas se o segredo tiver pelo menos um campo sensível. Agenda limpeza da clipboard. |
 | `Delete` | Excluir segredo                          | Marca o segredo selecionado para exclusão (reversível até o salvamento).   |
+
+#### ⌃D — Duplicar segredo
+
+**Contexto:** foco na árvore com cursor em um segredo. Elegível em qualquer pasta (inclusive Favoritos, onde opera sobre a pasta real do segredo).
+
+**Comportamento:**
+- Cria uma cópia do segredo com todos os campos, valores e histórico de modelo idênticos ao original.
+- O novo segredo recebe automaticamente um nome único na mesma pasta com sufixo numérico — ex: `Gmail (1)` se `Gmail` já existe; `Gmail (2)` se `Gmail (1)` também já existe.
+- O novo segredo é posicionado imediatamente **após o original** na lista da pasta.
+- O novo segredo entra em estado `incluido`.
+- O cursor da árvore permanece no segredo original após a duplicação — o usuário pode navegar para o novo com `↓`.
+- A operação é instantânea, sem diálogo de confirmação.
+
+**Feedback:** barra de mensagens exibe `✓ "[Nome original]" duplicado como "[Novo nome]"`.
+
+**Referência:** [Fluxo 19 — Duplicar segredo](fluxos.md#fluxo-19--duplicar-segredo)
+
+---
+
+#### ⌃M — Mover para outra pasta
+
+**Contexto:** foco na árvore com cursor em um segredo. Não disponível na pasta virtual Favoritos (a pasta Favoritos é somente leitura — mover deve ocorrer na pasta real).
+
+**Modo de seleção inline:**
+
+A árvore entra em **modo mover** — um estado visual distinto:
+- O segredo em foco recebe um indicador de "em movimento" (ex: ícone `↷` ou destaque diferenciado em `accent.secondary`) e o cursor passa a navegar pela estrutura de pastas como destino.
+- A barra de mensagens exibe `• Navegue até a pasta de destino e pressione Enter para confirmar`.
+- A barra de comandos muda para: `Enter Mover aqui · Esc Cancelar`.
+- O usuário navega com `↑↓←→` entre as pastas visíveis.
+- Pastas que resultariam em conflito de nome (já contêm um segredo com o mesmo nome) são marcadas visualmente como inválidas — o cursor pode passar por elas, mas `Enter` sobre elas exibe mensagem de erro na barra e aguarda nova seleção.
+- `Enter` sobre uma pasta válida confirma o movimento; o segredo é movido para a pasta de destino, o modo mover é encerrado e o cursor acompanha o segredo para a nova posição.
+- `Esc` cancela o modo mover sem efeito colateral; o cursor retorna ao segredo original.
+
+**Referência:** [Fluxo 25 — Mover segredo para outra pasta](fluxos.md#fluxo-25--mover-segredo-para-outra-pasta)
+
+---
+
+#### !↑ / !↓ — Reordenar segredo na lista
+
+**Contexto:** foco na árvore com cursor em um segredo, dentro de uma pasta real (não Favoritos).
+
+**Comportamento:**
+- `!↑` desloca o segredo uma posição acima na lista da pasta atual; `!↓` desloca uma posição abaixo.
+- A operação é instantânea e pode ser repetida sucessivamente.
+- O cursor acompanha o segredo — após o deslocamento, o cursor permanece sobre o mesmo segredo na nova posição.
+- Múltiplos deslocamentos antes de salvar resultam apenas no estado final — o histórico de movimentos intermediários é descartado.
+- A operação não tem feedback de mensagem — o deslocamento visual imediato é o feedback.
+
+**Limites:**
+- `!↑` não tem efeito quando o segredo já está na primeira posição da pasta.
+- `!↓` não tem efeito quando o segredo já está na última posição da pasta.
+- Ambos ficam **ocultos na barra de comandos** e inativos quando o cursor está na pasta virtual Favoritos.
+
+**Indicador de modo ativo:** a barra de status/cabeçalho não precisa de indicador de modo para reordenação direta — a operação é pontual e sem estado persistente.
+
+**Referência:** [Fluxo 26 — Reordenar segredo dentro da mesma pasta](fluxos.md#fluxo-26--reordenar-segredo-dentro-da-mesma-pasta)
+
+---
+
+#### Barra de comandos contextualizada (árvore, cursor em segredo — completa)
+
+A tabela abaixo consolida todas as variações da barra de comandos para segredos na árvore, incluindo os atalhos anteriores (`⌃R`, `⌃C`) e os novos (`⌃D`, `⌃M`, `!↑`, `!↓`).
+
+| Condição | Barra de comandos |
+|---|---|
+| Pasta real — segredo sem campo sensível — posição intermediária | `Enter Detalhes · ⌃E Editar · ⌃D Duplicar · ⌃M Mover · !↑ !↓ Reordenar · ⌃S Favoritar · Del Excluir · F1 Ajuda` |
+| Pasta real — segredo sem campo sensível — primeiro da lista | `Enter Detalhes · ⌃E Editar · ⌃D Duplicar · ⌃M Mover · !↓ Mover para baixo · ⌃S Favoritar · Del Excluir · F1 Ajuda` |
+| Pasta real — segredo sem campo sensível — último da lista | `Enter Detalhes · ⌃E Editar · ⌃D Duplicar · ⌃M Mover · !↑ Mover para cima · ⌃S Favoritar · Del Excluir · F1 Ajuda` |
+| Pasta real — segredo com campo sensível — reveal mascarado | `Enter Detalhes · ⌃E Editar · ⌃D Duplicar · ⌃M Mover · !↑ !↓ Reordenar · ⌃S Favoritar · ⌃R Revelar · ⌃C Copiar · Del Excluir · F1 Ajuda` |
+| Pasta real — segredo com campo sensível — reveal com dica | `Enter Detalhes · ⌃E Editar · ⌃D Duplicar · ⌃M Mover · !↑ !↓ Reordenar · ⌃S Favoritar · ⌃R Mostrar tudo · ⌃C Copiar · Del Excluir · F1 Ajuda` |
+| Pasta real — segredo com campo sensível — reveal completo | `Enter Detalhes · ⌃E Editar · ⌃D Duplicar · ⌃M Mover · !↑ !↓ Reordenar · ⌃S Favoritar · ⌃R Ocultar · ⌃C Copiar · Del Excluir · F1 Ajuda` |
+| Pasta Favoritos — segredo sem campo sensível | `Enter Detalhes · ⌃E Editar · ⌃D Duplicar · ⌃S Desfavoritar · Del Excluir · F1 Ajuda` |
+| Pasta Favoritos — segredo com campo sensível | `Enter Detalhes · ⌃E Editar · ⌃D Duplicar · ⌃S Desfavoritar · ⌃R Revelar · ⌃C Copiar · Del Excluir · F1 Ajuda` |
+| Modo mover ativo (⌃M pressionado) | `Enter Mover aqui · Esc Cancelar` |
+
+> **Nota sobre tamanho da barra:** as entradas acima são o conjunto completo de ações disponíveis. Em terminais estreitos, a barra de comandos trunca à direita — as ações mais prioritárias devem aparecer primeiro. A ordem na barra segue a frequência de uso esperada.
+
+---
 
 #### ⌃R e ⌃C na árvore — Atalhos de campo sensível
 
@@ -1628,15 +1714,6 @@ Esta seção detalha as ações disponíveis ao interagir com a árvore de segre
 - Agenda limpeza automática da clipboard (mesmo comportamento do `⌃C` no painel de detalhe).
 - O painel direito é aberto (ou atualizado) automaticamente exibindo o segredo, mas o estado de reveal do campo **não muda** — a cópia não desencadeia reveal.
 - A barra de mensagens exibe confirmação: `✓ [Rótulo do campo] copiado para a área de transferência`.
-
-##### Barra de comandos contextualizada (árvore, cursor em segredo)
-
-| Condição | Barra de comandos |
-|---|---|
-| Segredo sem campo sensível | `Enter Detalhes · ⌃E Editar · ⌃S Favoritar · Del Excluir · F1 Ajuda` |
-| Segredo com campo sensível — reveal mascarado | `Enter Detalhes · ⌃E Editar · ⌃S Favoritar · ⌃R Revelar · ⌃C Copiar · Del Excluir · F1 Ajuda` |
-| Segredo com campo sensível — reveal com dica | `Enter Detalhes · ⌃E Editar · ⌃S Favoritar · ⌃R Mostrar tudo · ⌃C Copiar · Del Excluir · F1 Ajuda` |
-| Segredo com campo sensível — reveal completo | `Enter Detalhes · ⌃E Editar · ⌃S Favoritar · ⌃R Ocultar · ⌃C Copiar · Del Excluir · F1 Ajuda` |
 
 ---
 
