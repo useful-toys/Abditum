@@ -64,7 +64,7 @@ func (f *createVaultFlow) Init() tea.Cmd {
 				[]DecisionAction{
 					{Key: "D", Label: "Descartar",
 						Cmd: func() tea.Msg {
-							return pushModalMsg{modal: &filePickerModal{mode: FilePickerFile}}
+							return pushModalMsg{modal: &filePickerModal{mode: FilePickerSave}}
 						}},
 				},
 				DecisionAction{Key: "Esc", Label: "Voltar"})
@@ -73,7 +73,7 @@ func (f *createVaultFlow) Init() tea.Cmd {
 	f.state = statePickFile
 	// Push file picker modal (in save mode)
 	return func() tea.Msg {
-		return pushModalMsg{modal: &filePickerModal{mode: FilePickerFile}}
+		return pushModalMsg{modal: &filePickerModal{mode: FilePickerSave}}
 	}
 }
 
@@ -89,7 +89,7 @@ func (f *createVaultFlow) Update(msg tea.Msg) tea.Cmd {
 				messages.Show(MsgError, "Não foi possível salvar o cofre.", 5, false)
 				return endFlowMsg{}
 			}
-			return pushModalMsg{modal: &filePickerModal{mode: FilePickerFile}}
+			return pushModalMsg{modal: &filePickerModal{mode: FilePickerSave}}
 		}
 
 	case filePickerResult:
@@ -174,7 +174,7 @@ func (f *createVaultFlow) Update(msg tea.Msg) tea.Cmd {
 		// User chose "Voltar" or "Outro caminho" - return to file picker
 		f.state = statePickFile
 		return func() tea.Msg {
-			return pushModalMsg{modal: &filePickerModal{mode: FilePickerFile}}
+			return pushModalMsg{modal: &filePickerModal{mode: FilePickerSave}}
 		}
 
 	case flowCancelledMsg:

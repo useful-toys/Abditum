@@ -135,7 +135,7 @@ func (f *saveAndExitFlow) Update(msg tea.Msg) tea.Cmd {
 		_ = msg
 		f.state = stateSaveAsNew
 		return func() tea.Msg {
-			return pushModalMsg{modal: &filePickerModal{mode: FilePickerFile}}
+			return pushModalMsg{modal: &filePickerModal{mode: FilePickerSave}}
 		}
 
 	case filePickerResult:
