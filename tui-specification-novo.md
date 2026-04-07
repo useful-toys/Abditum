@@ -1260,27 +1260,34 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 Esta seção detalha as ações disponíveis ao interagir com a árvore de segredos (painel esquerdo do Modo Cofre) e seus respectivos atalhos de teclado. As regras gerais de navegação e atribuição de teclas são definidas no [Design System — Mapa de Teclas](tui-design-system-novo.md#mapa-de-teclas).
 
-### Navegação na Árvore e Seleção
+### Navegação na árvore (geral)
+
+| Tecla           | Ação                                     | Notas                                            |
+|-----------------|------------------------------------------|--------------------------------------------------|
+| `↑` / `↓`       | Mover cursor na lista / árvore           |                                                  |
+| `Home` / `End`  | Mover para o primeiro / último item visível |                                                  |
+| `PgUp` / `PgDn` | Rolar uma página para cima / baixo       |                                                  |
+| `Tab`           | Alternar foco entre painéis              | Move o foco para o painel direito (Detalhe) e vice-versa. |
+
+### Ações em pastas
 
 | Tecla           | Ação                                     | Notas                                                                      |
 |-----------------|------------------------------------------|----------------------------------------------------------------------------|
-| `↑` / `↓`       | Mover cursor na lista / árvore           |                                                                            |
-| `→`             | Expandir pasta ou selecionar segredo     |                                                                            |
-| `Enter`         | Ativar item selecionado                  | Quando o foco está em uma pasta, expande/contrai. Quando em um segredo, foca no painel de detalhes (comportamento similar ao `Tab`). |
-| `←`             | Recolher pasta ou subir para pasta pai   |                                                                            |
-| `Home` / `End`  | Mover para o primeiro / último item visível |                                                                            |
-| `PgUp` / `PgDn` | Rolar uma página para cima / baixo       |                                                                            |
-| `Tab`           | Alternar foco entre painéis              | Move o foco para o painel direito (Detalhe) e vice-versa.                  |
+| `→`             | Expandir pasta                           |                                                                            |
+| `←`             | Recolher pasta                           |                                                                            |
+| `Enter`         | Expandir / Recolher pasta                | Quando o foco está em uma pasta, expande/contrai.                          |
 
-### Ações em Segredos (Contextuais ao item focado)
+### Ações em segredos
 
 | Tecla    | Ação                                     | Notas                                                                      |
 |----------|------------------------------------------|----------------------------------------------------------------------------|
+| `Enter`  | Focar no painel de detalhes do segredo   | Comporta-se de forma similar ao `Tab` quando o foco está em um segredo.    |
 | `Insert` | Novo segredo                             | Cria um novo segredo na pasta atualmente focada.                           |
 | `^E`     | Editar segredo                           | Entra no modo de edição para o segredo selecionado.                        |
 | `Delete` | Excluir segredo                          | Marca o segredo selecionado para exclusão (reversível até o salvamento).   |
 | `Ctrl+R` | Revelar / ocultar campo sensível         | Aplica-se ao campo sensível em foco no painel de detalhes.                 |
 | `Ctrl+C` | Copiar valor para área de transferência  | Copia o valor do campo em foco no painel de detalhes.                      |
+
 
 ### Painel Direito: Detalhe do Segredo — Modo Leitura
 
