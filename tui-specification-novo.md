@@ -6,25 +6,10 @@
 > **Documento de fundação:**
 > - [`tui-design-system-novo.md`](tui-design-system-novo.md) — princípios, tokens, estados, padrões transversais
 
-## Fronteira deste documento
-
-Este documento define **composições** — telas, wireframes de componentes e fluxos visuais concretos.
-
-Quando algo é específico de uma tela ou componente (ex: quais campos o diálogo PasswordCreate exibe, como a árvore de pastas é indentada), pertence aqui. Quando é uma regra que se aplica a qualquer tela (ex: anatomia da moldura de diálogos, tokens de cor, regras de foco), pertence ao [design system](tui-design-system-novo.md).
-
-> **Teste de fronteira:** se eu trocar o nome do item concreto e a regra continuar válida, é **padrão** e pertence ao design system. Se a regra só faz sentido para esta tela ou componente, pertence aqui.
-
----
-
 ## Sumário
 
 - [Atalhos da Aplicação](#atalhos-da-aplicação)
 - [Diálogos de Decisão](#diálogos-de-decisão)
-  - [Referência Visual por Severidade](#referência-visual-por-severidade)
-  - [Exemplo: Confirmação × Destrutivo — Excluir segredo](#exemplo-confirmação--destrutivo--excluir-segredo)
-  - [Exemplo: Confirmação × Neutro — Alterações não salvas](#exemplo-confirmação--neutro--alterações-não-salvas)
-  - [Exemplo: Reconhecimento × Informativo — Conflito detectado](#exemplo-reconhecimento--informativo--conflito-detectado)
-  - [Exemplo: Reconhecimento × Erro — Falha ao abrir cofre](#exemplo-reconhecimento--erro--falha-ao-abrir-cofre)
 - [Diálogos Funcionais](#diálogos-funcionais)
   - [PasswordEntry](#passwordentry)
   - [PasswordCreate](#passwordcreate)
@@ -83,138 +68,20 @@ Os seguintes atalhos disparam os fluxos principais da aplicação quando a área
 
 ## Diálogos de Decisão
 
-Todos os diálogos de decisão seguem a anatomia comum e o modelo bidimensional (Intenção × Severidade) definidos no [design system — Sobreposição](tui-design-system-novo.md#sobreposição). Esta seção define a tabela de referência visual completa e apresenta wireframes ilustrativos de combinações típicas.
+Todos os diálogos de decisão seguem a anatomia comum e os padrões de interação definidos no [design system — Sobreposição](tui-design-system-novo.md#sobreposição), incluindo a [Referência Visual por Severidade](tui-design-system-novo.md#severidade) e as [Regras de Ações na Borda Inferior](tui-design-system-novo.md#ações-na-borda-inferior).
 
 ---
 
-### Referência Visual por Severidade
+## Catálogo de Diálogos de Decisão
 
-A severidade governa **todo** o tratamento visual da moldura. A intenção define apenas a barra de ações (múltiplas opções vs. `Enter OK`). A tabela abaixo é a referência completa — qualquer diálogo de decisão pode ser estilizado a partir dela, sem consultar os exemplos.
+Esta seção lista todas as instâncias de diálogos de decisão da aplicação, especificando seu contexto, título, mensagem no corpo e ações na borda. A estrutura visual é definida na seção [Sobreposição](tui-design-system-novo.md#sobreposição) do Design System.
 
-| Severidade | Símbolo | Token: borda e título | Token: tecla default | Token: demais ações | Título: atributo |
+| Ação | Situação | Tipo | Título | Mensagem no Corpo | Ações na Borda |
 |---|---|---|---|---|---|
-| **Destrutivo** | `⚠` | `semantic.warning` | `semantic.error` | `semantic.warning` | **bold** |
-| **Erro** | `✕` | `semantic.error` | `accent.primary` | `semantic.error` | **bold** |
-| **Alerta** | `⚠` | `semantic.warning` | `accent.primary` | `semantic.warning` | **bold** |
-| **Informativo** | `ℹ` | `semantic.info` | `accent.primary` | `semantic.info` | **bold** |
-| **Neutro** | — | `border.focused` | `accent.primary` | `border.focused` | **bold** |
-
-**Associação implícita de teclas:**
-
-Qualquer tecla pode ser atribuída a uma ação na borda. O diálogo aplica implicitamente:
-- `Enter` → primeira ação (mesmo que já possua outra tecla)
-- `Esc` → última ação (mesmo que já possua outra tecla)
-- 1 ação apenas → `Enter` e `Esc` acionam a mesma ação
-
-**Barra de ações por quantidade:**
-
-| Ações | Layout | Uso |
-|---|---|---|
-| **1 ação** | Alinhada à **direita** | Reconhecimento — o usuário apenas toma ciência |
-| **2 ações** | Default à **esquerda**, Cancelar à **direita** | Confirmação binária |
-| **3 ações** | Default à **esquerda**, alternativa no meio, Cancelar à **direita** | Confirmação com alternativa |
-
-> **Limite prático:** 3 ações é o máximo tolerável. Diálogos com 4 ou mais ações na borda indicam falha de design — o usuário não deve ler um menu de opções na moldura.
-
----
-
-### Exemplo: Confirmação × Destrutivo — Excluir segredo
-
-**Intenção:** Confirmação | **Severidade:** Destrutivo (`⚠`)
-**Token de borda:** `semantic.warning`
-**Ação default:** `S Excluir` — token `semantic.error` + **bold** (ação destrutiva)
-
-```
-╭── ⚠  Excluir segredo ───────────╮
-│                                  │
-│  Gmail será excluído             │
-│  permanentemente.                │
-│  Esta ação não pode ser desfeita.│
-│                                  │
-╰── Enter Excluir ───────────── Esc Cancelar ──╯
-```
-
-| Elemento | Token | Atributo |
-|---|---|---|
-| Borda e título `⚠ Excluir segredo` | `semantic.warning` | **bold** (título) |
-| Mensagem | `text.primary` | — |
-| Nome do item (`Gmail`) | `text.primary` | **bold** |
-| Tecla `S` + label `Excluir` | `semantic.error` | **bold** |
-| Tecla `N` + label `Cancelar` | `semantic.warning` | — |
-
----
-
-### Exemplo: Confirmação × Neutro — Alterações não salvas
-
-**Intenção:** Confirmação | **Severidade:** Neutro (—)
-**Token de borda:** `border.focused`
-**Ação default:** `S Salvar` — token `accent.primary` + **bold**
-
-```
-╭── Alterações não salvas ────────╮
-│                                  │
-│  Deseja salvar antes de sair?    │
-│                                  │
-╰── Enter Salvar ── N Descartar ── Esc Voltar ──╯
-```
-
-| Elemento | Token | Atributo |
-|---|---|---|
-| Borda e título `Alterações não salvas` | `border.focused` | **bold** (título) |
-| Mensagem | `text.primary` | — |
-| Tecla `S` + label `Salvar` | `accent.primary` | **bold** |
-| Tecla `N` + label `Descartar` | `border.focused` | — |
-| `Esc` + label `Voltar` | `border.focused` | — |
-
-> **Nota:** severidade Neutro não usa símbolo — o título aparece sem prefixo.
-
----
-
-### Exemplo: Reconhecimento × Informativo — Conflito detectado
-
-**Intenção:** Reconhecimento | **Severidade:** Informativo (`ℹ`)
-**Token de borda:** `semantic.info`
-**Ação default:** `Enter OK` — token `accent.primary` + **bold**
-
-```
-╭── ℹ  Conflito detectado ───────╮
-│                                  │
-│  O arquivo foi modificado        │
-│  externamente.                   │
-│                                  │
-╰────────────────────────────── Enter OK ──╯
-```
-
-| Elemento | Token | Atributo |
-|---|---|---|
-| Borda e título `ℹ Conflito detectado` | `semantic.info` | **bold** (título) |
-| Mensagem | `text.primary` | — |
-| `Enter` + label `OK` | `accent.primary` | **bold** |
-
-> **Nota:** diálogos de reconhecimento têm apenas uma ação (`Enter OK`). `Esc` também fecha o diálogo (equivalente a OK para reconhecimento).
-
----
-
-### Exemplo: Reconhecimento × Erro — Falha ao abrir cofre
-
-**Intenção:** Reconhecimento | **Severidade:** Erro (`✕`)
-**Token de borda:** `semantic.error`
-**Ação default:** `Enter OK` — token `accent.primary` + **bold**
-
-```
-╭── ✕  Falha ao abrir cofre ─────╮
-│                                  │
-│  O arquivo está corrompido ou    │
-│  não é um cofre válido.          │
-│                                  │
-╰────────────────────────────── Enter OK ──╯
-```
-
-| Elemento | Token | Atributo |
-|---|---|---|
-| Borda e título `✕ Falha ao abrir cofre` | `semantic.error` | **bold** (título) |
-| Mensagem | `text.primary` | — |
-| `Enter` + label `OK` | `accent.primary` | **bold** |
+| **Sair** | Sem alterações | Confirmação × Neutro | `Sair do Abditum` | `Sair do Abditum?` | `Enter Sair`, `Esc Voltar` |
+| **Sair** | Com alterações | Confirmação × Alerta | `⚠ Sair do Abditum` | `Cofre modificado. Salvar ou descartar?` | `S Salvar`, `D Descartar`, `Esc Voltar` |
+| **Salvar** | Conflito externo | Confirmação × Informativo | `ℹ Salvar cofre` | `Arquivo modificado externamente. Sobrescrever?` | `Enter Sobrescrever`, `Esc Voltar` |
+| **Abrir cofre** | Falha (arquivo inválido) | Reconhecimento × Erro | `✕ Falha ao abrir cofre` | `Arquivo corrompido ou inválido. Fechar?` | `Enter OK` |
 
 ---
 
