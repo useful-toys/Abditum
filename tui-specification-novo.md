@@ -733,7 +733,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 |---|---|---|
 | Título `Ajuda — Atalhos e Ações` | `text.primary` | **bold** |
 | Label do grupo (`Navegação`, `Segredo`, `Cofre`) | `text.secondary` | **bold** |
-| Tecla (ex: `Ctrl+R`, `F21`, `^S`) | `accent.primary` | — |
+| Tecla (ex: `Ctrl+R`, `Insert`, `^S`) | `accent.primary` | — |
 | Descrição da ação | `text.primary` | — |
 | Seta de scroll (`↑` / `↓` na borda direita) | `text.secondary` | — |
 | Thumb de posição (`■` na borda direita) | `text.secondary` | — |
@@ -1010,7 +1010,7 @@ Ações de menor prioridade são ocultadas quando não há espaço. `F1` permane
 
 | Elemento | Token | Atributo |
 |---|---|---|
-| Tecla da ação (ex: `F21`) | `accent.primary` | **bold** |
+| Tecla da ação (ex: `Insert`) | `accent.primary` | **bold** |
 | Label da ação (ex: `Novo`) | `text.primary` | — |
 | Separador `·` | `text.secondary` | — |
 | `F1` (Ajuda) | `accent.primary` | **bold** |
@@ -1420,7 +1420,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
   Observação     Conta pessoal principal — criada em 2018
 ```
 
-Barra de comandos: `F16 Revelar · F17 Copiar · F22 Editar · F1 Ajuda`
+Barra de comandos: `⌃R Revelar · ⌃C Copiar · ⌃E Editar · Del Excluir · F1 Ajuda`
 
 **Wireframe (campo sensível revelado):**
 
@@ -1435,7 +1435,7 @@ Barra de comandos: `F16 Revelar · F17 Copiar · F22 Editar · F1 Ajuda`
   Observação     Conta pessoal principal — criada em 2018
 ```
 
-Barra de comandos: `F16 Ocultar · F17 Copiar · F22 Editar · F1 Ajuda`
+Barra de comandos: `⌃R Ocultar · ⌃C Copiar · ⌃E Editar · Del Excluir · F1 Ajuda`
 
 **Wireframe (scroll ativo — coluna 1 char reservada à direita):**
 
