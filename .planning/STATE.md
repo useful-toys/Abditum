@@ -42,6 +42,8 @@ progress:
 
 ### Roadmap Evolution
 
+- Phase 06.3 inserted after Phase 06: Reimplement file picker (URGENT)
+
 - Phase 06.2 inserted after Phase 06: adequacao-design-system (URGENT)
 
 - Phase 05.7 inserted after Phase 05: golden-test-architecture-for-tui-modals (INSERTED URGENT)
