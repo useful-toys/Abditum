@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -9,6 +10,7 @@ import (
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // FilePickerMode controls which picker behavior is active.
@@ -659,8 +661,478 @@ func (m *filePickerModal) Update(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
-// View renders the two-panel modal box.
-// Implemented in Plan 03.
+// padRight pads s to exactly width visual columns (ANSI-aware via lipgloss.Width).
+func padRight(s string, width int) string {
+	w := lipgloss.Width(s)
+	if w >= width {
+		return s
+	}
+	return s + strings.Repeat(" ", width-w)
+}
+
+// renderTopBorder draws the top rounded border with the modal title centered (D-08, D-09).
+func (m *filePickerModal) renderTopBorder(modalW int, theme *Theme) string {
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
+	titleSt := lipgloss.NewStyle().Foreground(theme.TextPrimary).Bold(true)
+
+	title := " " + m.title + " "
+	titleRendered := titleSt.Render(title)
+	prefixDashes := "── "
+	suffixPrefix := " "
+	used := len(prefixDashes) + lipgloss.Width(title) + len(suffixPrefix)
+	remaining := modalW - 2 - used
+	if remaining < 1 {
+		remaining = 1
+	}
+	dashes := strings.Repeat("─", remaining)
+	return borderSt.Render("╭") + borderSt.Render(prefixDashes) + titleRendered +
+		borderSt.Render(suffixPrefix+dashes+"╮")
+}
+
+// renderCaminhoHeader draws the "Caminho: /path/to/dir" row (D-20).
+func (m *filePickerModal) renderCaminhoHeader(innerW int, theme *Theme) string {
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
+	labelSt := lipgloss.NewStyle().Foreground(theme.TextSecondary)
+	valueSt := lipgloss.NewStyle().Foreground(theme.TextPrimary)
+
+	label := "Caminho: "
+	path := m.currentPath
+	avail := innerW - lipgloss.Width(label)
+	if avail < 3 {
+		avail = 3
+	}
+	// Truncate path from left with … if too wide
+	for lipgloss.Width(path) > avail && len(path) > 1 {
+		// drop first rune
+		for i := 1; i <= len(path); i++ {
+			if path[i-1] < 0x80 || path[i-1] >= 0xC0 {
+				path = "…" + path[i:]
+				break
+			}
+		}
+	}
+	content := labelSt.Render(label) + valueSt.Render(path)
+	content = padRight(content, innerW)
+	return borderSt.Render("│") + content + borderSt.Render("│")
+}
+
+// renderPanelSeparator draws the ├── Estrutura ──┬── Arquivos ──┤ line (D-08, D-09).
+func (m *filePickerModal) renderPanelSeparator(innerW, treeW, filesW int, theme *Theme) string {
+	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderDefault))
+	headerSt := lipgloss.NewStyle().Foreground(theme.TextSecondary).Bold(true)
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
+
+	treeLabel := " Estrutura "
+	treeLabelW := lipgloss.Width(treeLabel)
+	treeDashes := treeW - treeLabelW
+	if treeDashes < 0 {
+		treeDashes = 0
+	}
+	treeLeft := strings.Repeat("─", treeDashes/2)
+	treeRight := strings.Repeat("─", treeDashes-treeDashes/2)
+
+	filesLabel := " Arquivos "
+	filesLabelW := lipgloss.Width(filesLabel)
+	filesDashes := filesW - filesLabelW
+	if filesDashes < 0 {
+		filesDashes = 0
+	}
+	filesLeft := strings.Repeat("─", filesDashes/2)
+	filesRight := strings.Repeat("─", filesDashes-filesDashes/2)
+
+	return borderSt.Render("├") +
+		sepSt.Render(treeLeft) + headerSt.Render(treeLabel) + sepSt.Render(treeRight) +
+		sepSt.Render("┬") +
+		sepSt.Render(filesLeft) + headerSt.Render(filesLabel) + sepSt.Render(filesRight) +
+		borderSt.Render("┤")
+}
+
+// renderTreeSepChar returns the character for the tree│files separator column at row i.
+// Replaces │ with ↑/■/↓ scroll indicators when tree content overflows (D-08).
+func renderTreeSepChar(scroll, total, visibleH, row int) string {
+	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderDefault))
+	indSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextSecondary))
+	if total <= visibleH {
+		return sepSt.Render("│")
+	}
+	if row == 0 && scroll > 0 {
+		return indSt.Render("↑")
+	}
+	if row == visibleH-1 && scroll+visibleH < total {
+		return indSt.Render("↓")
+	}
+	thumbPos := 0
+	if total-visibleH > 0 {
+		thumbPos = (scroll * (visibleH - 2)) / (total - visibleH)
+		if thumbPos < 0 {
+			thumbPos = 0
+		}
+		if thumbPos > visibleH-3 {
+			thumbPos = visibleH - 3
+		}
+	}
+	if row == thumbPos+1 {
+		return indSt.Render("■")
+	}
+	return sepSt.Render("│")
+}
+
+// renderFileSepChar returns the right modal border char at row i.
+// Replaces │ with ↑/■/↓ scroll indicators when files content overflows (D-08).
+func renderFileSepChar(scroll, total, visibleH, row int) string {
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
+	indSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextSecondary))
+	if total <= visibleH {
+		return borderSt.Render("│")
+	}
+	if row == 0 && scroll > 0 {
+		return indSt.Render("↑")
+	}
+	if row == visibleH-1 && scroll+visibleH < total {
+		return indSt.Render("↓")
+	}
+	thumbPos := 0
+	if total-visibleH > 0 {
+		thumbPos = (scroll * (visibleH - 2)) / (total - visibleH)
+		if thumbPos < 0 {
+			thumbPos = 0
+		}
+		if thumbPos > visibleH-3 {
+			thumbPos = visibleH - 3
+		}
+	}
+	if row == thumbPos+1 {
+		return indSt.Render("■")
+	}
+	return borderSt.Render("│")
+}
+
+// renderTreeContent returns visibleH lines for the tree (Estrutura) panel (D-01, D-09, D-11).
+func (m *filePickerModal) renderTreeContent(treeW, visibleH int, theme *Theme) []string {
+	selectedSt := lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
+	normalSt := lipgloss.NewStyle().Foreground(theme.TextPrimary)
+	indicatorSt := lipgloss.NewStyle().Foreground(theme.AccentSecondary)
+
+	var lines []string
+	end := m.treeScroll + visibleH
+	if end > len(m.visibleNodes) {
+		end = len(m.visibleNodes)
+	}
+	for i := m.treeScroll; i < end; i++ {
+		node := m.visibleNodes[i].node
+		indent := strings.Repeat("  ", node.depth)
+
+		var indicator string
+		switch {
+		case node.depth == 0:
+			indicator = "  " // root — no indicator
+		case !node.hasSubdirs:
+			indicator = "▷ "
+		case node.expanded:
+			indicator = "▼ "
+		default:
+			indicator = "▶ "
+		}
+
+		nameText := indent + node.name
+		indicatorW := lipgloss.Width(indicator)
+		maxNameW := treeW - indicatorW
+		if maxNameW < 1 {
+			maxNameW = 1
+		}
+		if lipgloss.Width(nameText) > maxNameW {
+			nameText = nameText[:maxNameW-1] + "…"
+		}
+
+		indRendered := indicatorSt.Render(indicator)
+		var nameRendered string
+		if i == m.treeCursor {
+			nameRendered = selectedSt.Render(nameText)
+		} else {
+			nameRendered = normalSt.Render(nameText)
+		}
+		lines = append(lines, indRendered+nameRendered)
+	}
+	for len(lines) < visibleH {
+		lines = append(lines, "")
+	}
+	return lines
+}
+
+// renderFilesContent returns visibleH lines for the files (Arquivos) panel (D-09, D-11, D-15).
+func (m *filePickerModal) renderFilesContent(filesW, visibleH int, theme *Theme) []string {
+	normalSt := lipgloss.NewStyle().Foreground(theme.TextPrimary)
+	bulletSt := lipgloss.NewStyle().Foreground(theme.TextSecondary)
+	metaSt := lipgloss.NewStyle().Foreground(theme.TextSecondary)
+	disabledSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextSecondary))
+	selectedBg := lipgloss.Color("#3d59a1") // special.highlight — hardcoded per D-09
+	selectedSt := lipgloss.NewStyle().Background(selectedBg).Foreground(theme.TextPrimary).Bold(true)
+
+	if len(m.files) == 0 {
+		msg := "Nenhum cofre neste diretório"
+		msgW := lipgloss.Width(msg)
+		pad := (filesW - msgW) / 2
+		if pad < 0 {
+			pad = 0
+		}
+		emptyLine := strings.Repeat(" ", pad) + disabledSt.Render(msg)
+		var lines []string
+		emptyRow := visibleH / 2
+		for i := 0; i < visibleH; i++ {
+			if i == emptyRow {
+				lines = append(lines, padRight(emptyLine, filesW))
+			} else {
+				lines = append(lines, "")
+			}
+		}
+		return lines
+	}
+
+	// Column layout: ● name<nameW>  size<8>  date<14>
+	const dateW = 14
+	const sizeW = 8
+	const colSep = 2
+	nameW := filesW - 1 - 1 - sizeW - colSep - dateW - colSep // 1=bullet 1=space
+	if nameW < 4 {
+		nameW = 4
+	}
+
+	var lines []string
+	end := m.fileScroll + visibleH
+	if end > len(m.files) {
+		end = len(m.files)
+	}
+	for i := m.fileScroll; i < end; i++ {
+		name := m.files[i]
+		if lipgloss.Width(name) > nameW {
+			name = name[:nameW-1] + "…"
+		}
+
+		var sizePart, datePart string
+		if i < len(m.fileInfos) && m.fileInfos[i] != nil {
+			sizePart = fmt.Sprintf("%*s", sizeW, formatFileSize(m.fileInfos[i].Size()))
+			datePart = m.timeFmt(m.fileInfos[i].ModTime())
+		}
+
+		namePadded := padRight(name, nameW)
+		if i == m.fileCursor {
+			rowText := " " + namePadded + strings.Repeat(" ", colSep) + sizePart +
+				strings.Repeat(" ", colSep) + datePart
+			rowText = padRight(rowText, filesW-1)
+			line := bulletSt.Render("●") + selectedSt.Render(rowText)
+			lines = append(lines, padRight(line, filesW))
+		} else {
+			bullet := bulletSt.Render("●")
+			nameR := normalSt.Render(" " + namePadded)
+			sizeR := metaSt.Render(strings.Repeat(" ", colSep) + sizePart)
+			dateR := metaSt.Render(strings.Repeat(" ", colSep) + datePart)
+			lines = append(lines, padRight(bullet+nameR+sizeR+dateR, filesW))
+		}
+	}
+	for len(lines) < visibleH {
+		lines = append(lines, "")
+	}
+	return lines
+}
+
+// renderFieldSeparator draws the ├────┴────┤ separator above the Save mode campo nome (D-08).
+func (m *filePickerModal) renderFieldSeparator(innerW, treeW int) string {
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
+	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderDefault))
+
+	leftDashes := strings.Repeat("─", treeW)
+	junctionCol := treeW + 1
+	rightLen := innerW - junctionCol - 1
+	if rightLen < 0 {
+		rightLen = 0
+	}
+	rightDashes := strings.Repeat("─", rightLen)
+	return borderSt.Render("├") + sepSt.Render(leftDashes) + sepSt.Render("┴") +
+		sepSt.Render(rightDashes) + borderSt.Render("┤")
+}
+
+// renderFieldRow draws the filename textinput row for Save mode (D-12, D-09).
+func (m *filePickerModal) renderFieldRow(innerW int, theme *Theme) string {
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
+	fieldBgSt := lipgloss.NewStyle().Background(lipgloss.Color(ColorSurfaceInput))
+
+	isFocused := m.focusPanel == 2
+	var labelSt lipgloss.Style
+	if isFocused {
+		labelSt = lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
+	} else {
+		labelSt = lipgloss.NewStyle().Foreground(theme.TextSecondary)
+	}
+
+	label := labelSt.Render("Nome do arquivo") + " "
+	labelW := lipgloss.Width("Nome do arquivo ")
+	fieldW := innerW - labelW - 2
+	if fieldW < 4 {
+		fieldW = 4
+	}
+
+	val := m.nameField.Value()
+	var fieldContent string
+	if isFocused {
+		cursor := lipgloss.NewStyle().Foreground(theme.TextPrimary).Render("▌")
+		fieldContent = val + cursor
+	} else {
+		fieldContent = val
+	}
+	if lipgloss.Width(fieldContent) > fieldW {
+		// keep rightmost part
+		runes := []rune(fieldContent)
+		for lipgloss.Width(string(runes)) > fieldW && len(runes) > 1 {
+			runes = runes[1:]
+		}
+		fieldContent = "…" + string(runes)
+	}
+	fieldRendered := fieldBgSt.Render(padRight(" "+fieldContent+" ", fieldW+2))
+
+	content := label + fieldRendered
+	content = padRight(content, innerW)
+	return borderSt.Render("│") + content + borderSt.Render("│")
+}
+
+// renderBottomBorder draws the bottom rounded border with action text state (D-08, D-09).
+func (m *filePickerModal) renderBottomBorder(innerW, treeW int, theme *Theme) string {
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
+	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderDefault))
+	activeSt := lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
+	disabledSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextDisabled))
+	cancelSt := lipgloss.NewStyle().Foreground(theme.TextPrimary)
+
+	var actionActive bool
+	if m.mode == FilePickerOpen {
+		actionActive = len(m.files) > 0
+	} else {
+		actionActive = m.nameField.Value() != ""
+	}
+
+	var actionLabel string
+	if m.mode == FilePickerOpen {
+		actionLabel = "Enter Abrir"
+	} else {
+		actionLabel = "Enter Salvar"
+	}
+	var actionRendered string
+	if actionActive {
+		actionRendered = " " + activeSt.Render(actionLabel) + " "
+	} else {
+		actionRendered = " " + disabledSt.Render(actionLabel) + " "
+	}
+	cancelRendered := " " + cancelSt.Render("Esc Cancelar") + " "
+
+	actionW := lipgloss.Width(actionRendered)
+	cancelW := lipgloss.Width(cancelRendered)
+	// innerW used for fill: subtract action, cancel, and the two "── " side pads (2 each)
+	fillW := innerW - actionW - cancelW - 4
+	if fillW < 0 {
+		fillW = 0
+	}
+
+	var mid string
+	if m.mode == FilePickerOpen && fillW > 0 {
+		// Insert ┴ at treeW position in the fill to close the panel separator
+		leftFill := treeW - 2
+		if leftFill < 0 {
+			leftFill = 0
+		}
+		rightFill := fillW - leftFill - 1
+		if rightFill < 0 {
+			rightFill = 0
+			leftFill = fillW - 1
+			if leftFill < 0 {
+				leftFill = 0
+			}
+		}
+		mid = sepSt.Render(strings.Repeat("─", leftFill) + "┴" + strings.Repeat("─", rightFill))
+	} else {
+		mid = sepSt.Render(strings.Repeat("─", fillW))
+	}
+
+	return borderSt.Render("╰") +
+		sepSt.Render("── ") +
+		actionRendered +
+		mid +
+		cancelRendered +
+		sepSt.Render(" ──") +
+		borderSt.Render("╯")
+}
+
+// View renders the spec-accurate two-panel file picker modal (D-08, D-09, D-20).
 func (m *filePickerModal) View() string {
-	return "" // implemented in Plan 03
+	// Nil-safe theme fallback (D-17)
+	theme := m.theme
+	if theme == nil {
+		theme = ThemeTokyoNight
+	}
+
+	// Layout dimensions (D-08)
+	modalW := min(70, m.width*8/10)
+	if modalW < 20 {
+		modalW = 20
+	}
+	modalH := m.height * 8 / 10
+	if modalH < 6 {
+		modalH = 6
+	}
+	innerW := modalW - 2
+	treeW := innerW * 40 / 100
+	if treeW < 8 {
+		treeW = 8
+	}
+	filesW := innerW - treeW - 1
+	if filesW < 8 {
+		filesW = 8
+	}
+	visibleH := modalH - 4 // top border + Caminho + panel sep + bottom border
+	if m.mode == FilePickerSave {
+		visibleH -= 3 // field separator + field row + bottom padding
+	}
+	if visibleH < 1 {
+		visibleH = 1
+	}
+
+	var lines []string
+
+	// 1. Top border
+	lines = append(lines, m.renderTopBorder(modalW, theme))
+
+	// 2. Caminho header
+	lines = append(lines, m.renderCaminhoHeader(innerW, theme))
+
+	// 3. Panel separator ├─ Estrutura ─┬─ Arquivos ─┤
+	lines = append(lines, m.renderPanelSeparator(innerW, treeW, filesW, theme))
+
+	// 4. Panel content rows
+	treeLines := m.renderTreeContent(treeW, visibleH, theme)
+	filesLines := m.renderFilesContent(filesW, visibleH, theme)
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
+	for i := 0; i < visibleH; i++ {
+		tl := ""
+		fl := ""
+		if i < len(treeLines) {
+			tl = treeLines[i]
+		}
+		if i < len(filesLines) {
+			fl = filesLines[i]
+		}
+		tl = padRight(tl, treeW)
+		fl = padRight(fl, filesW)
+		sep := renderTreeSepChar(m.treeScroll, len(m.visibleNodes), visibleH, i)
+		rightBorder := renderFileSepChar(m.fileScroll, len(m.files), visibleH, i)
+		lines = append(lines, borderSt.Render("│")+tl+sep+fl+rightBorder)
+	}
+
+	// 5. Save mode campo nome section
+	if m.mode == FilePickerSave {
+		lines = append(lines, m.renderFieldSeparator(innerW, treeW))
+		lines = append(lines, m.renderFieldRow(innerW, theme))
+	}
+
+	// 6. Bottom border
+	lines = append(lines, m.renderBottomBorder(innerW, treeW, theme))
+
+	return strings.Join(lines, "\n")
 }
