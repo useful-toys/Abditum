@@ -86,6 +86,12 @@ func (m *passwordEntryModal) Update(msg tea.Msg) tea.Cmd {
 
 // View renders the modal.
 func (m *passwordEntryModal) View() string {
+	// Nil-safe theme fallback
+	theme := m.theme
+	if theme == nil {
+		theme = ThemeTokyoNight
+	}
+
 	width := 50
 	if m.width > 0 {
 		width = m.width
@@ -99,7 +105,7 @@ func (m *passwordEntryModal) View() string {
 	// Title
 	if m.title != "" {
 		content.WriteString(lipgloss.NewStyle().
-			Foreground(m.theme.TextPrimary).
+			Foreground(theme.TextPrimary).
 			Bold(true).
 			Render(m.title))
 		content.WriteString("\n\n")
@@ -108,14 +114,14 @@ func (m *passwordEntryModal) View() string {
 	// Masked input field (always show 8 dots)
 	maskedDisplay := strings.Repeat("•", 8)
 	inputStyle := lipgloss.NewStyle().
-		Foreground(m.theme.TextPrimary)
+		Foreground(theme.TextPrimary)
 	content.WriteString(inputStyle.Render(maskedDisplay))
 	content.WriteString("\n")
 
 	// Attempt counter (visible from attempt 2 onward)
 	if m.attempt >= 2 {
 		counterStyle := lipgloss.NewStyle().
-			Foreground(m.theme.TextSecondary)
+			Foreground(theme.TextSecondary)
 		counter := counterStyle.Render("\nTentativa " + string(rune('0'+m.attempt)) + " de 5")
 		content.WriteString(counter)
 		content.WriteString("\n")
@@ -123,14 +129,14 @@ func (m *passwordEntryModal) View() string {
 
 	// Action hints
 	hintsStyle := lipgloss.NewStyle().
-		Foreground(m.theme.TextSecondary)
+		Foreground(theme.TextSecondary)
 	hints := hintsStyle.Render("\n\nEnter Confirmar    Esc Cancelar")
 	content.WriteString(hints)
 
 	// Render with border
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(m.theme.SemanticOff).
+		BorderForeground(theme.SemanticOff).
 		Padding(1, 2).
 		Width(width).
 		Render(content.String())

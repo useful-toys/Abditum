@@ -82,6 +82,9 @@ var _ modalView = &filePickerModal{}
 func (m *filePickerModal) SetSize(w, h int) {
 	m.width = w
 	m.height = h
+	// Re-adjust scroll after receiving terminal dimensions so the initial
+	// cursor position (set by Init to the currentPath node) is visible (D-14).
+	m.adjustTreeScroll()
 }
 
 // Shortcuts returns the keyboard shortcuts shown in the command bar (D-18).
@@ -160,6 +163,11 @@ func (m *filePickerModal) Init() tea.Cmd {
 			break
 		}
 	}
+	// Ensure the cursor is visible in the viewport (D-14).
+	// adjustTreeScroll needs visibleTreeHeight, which depends on m.height.
+	// If height is not yet set (zero), defer to the first SetSize call via adjustTreeScroll
+	// being called on every navigation. Here we do a best-effort adjust if height is known.
+	m.adjustTreeScroll()
 
 	// 8. Load initial file list
 	m.loadFilesForCursor()
@@ -170,22 +178,31 @@ func (m *filePickerModal) Init() tea.Cmd {
 	return tea.Batch(warnCmd, hintCmd)
 }
 
-// buildTreeChain creates a treeNode chain from root "/" down to targetPath,
+// buildTreeChain creates a treeNode chain from the filesystem root down to targetPath,
 // with each ancestor expanded. Returns the root node.
 // Only the path-chain child is expanded at each level; siblings start collapsed.
+// Works on both Unix ("/") and Windows ("C:\").
 func (m *filePickerModal) buildTreeChain(targetPath string) *treeNode {
-	// Split targetPath into components: e.g. "/home/user/docs" → ["", "home", "user", "docs"]
+	// Determine the filesystem root: "C:\" on Windows, "/" on Unix.
+	vol := filepath.VolumeName(targetPath)       // "C:" on Windows, "" on Unix
+	rootPath := vol + string(filepath.Separator) // "C:\" or "/"
+
+	root := &treeNode{path: rootPath, name: rootPath, depth: 0, expanded: true, loaded: true}
+
+	// Split the path below the root into components.
+	// filepath.ToSlash normalises separators; splitting on "/" works cross-platform.
+	// e.g. "C:/g/Abditum" → ["C:", "g", "Abditum"] — skip the volume part.
+	// e.g. "/home/user"   → ["", "home", "user"]    — skip the empty first element.
 	parts := strings.Split(filepath.ToSlash(targetPath), "/")
-	// Build chain top-down starting at root "/"
-	root := &treeNode{path: "/", name: "/", depth: 0, expanded: true, loaded: true}
 	current := root
-	currentBuiltPath := "/"
-	for i := 1; i < len(parts); i++ {
-		if parts[i] == "" {
-			continue
+	currentBuiltPath := rootPath
+	depth := 1
+	for _, part := range parts {
+		if part == "" || part == vol {
+			continue // skip empty segment (Unix root split) and Windows drive letter
 		}
-		childPath := filepath.Join(currentBuiltPath, parts[i])
-		// Load children of current node to determine hasSubdirs
+		childPath := filepath.Join(currentBuiltPath, part)
+		// Determine hasSubdirs for the current node
 		entries, _ := os.ReadDir(current.path)
 		hasSubdirs := false
 		for _, e := range entries {
@@ -195,18 +212,22 @@ func (m *filePickerModal) buildTreeChain(targetPath string) *treeNode {
 			}
 		}
 		current.hasSubdirs = hasSubdirs
-		// Create the path-chain child: expand intermediates; leaf starts collapsed
+		// Create the path-chain child: intermediates are expanded, the leaf is not.
+		// Mark intermediates as loaded=true so buildVisibleNodes does not call expandNode
+		// on them and destroy the single-child chain we just built (D-01).
+		isLeaf := childPath == targetPath
 		child := &treeNode{
 			path:     childPath,
-			name:     parts[i],
-			depth:    i,
-			expanded: i < len(parts)-1, // intermediate nodes are expanded; leaf is not
-			loaded:   false,
+			name:     part,
+			depth:    depth,
+			expanded: !isLeaf,
+			loaded:   !isLeaf, // intermediates: children already set; leaf: lazy-load on expand
 		}
 		current.children = []*treeNode{child}
 		current.loaded = true
 		current = child
 		currentBuiltPath = childPath
+		depth++
 	}
 	return root
 }
@@ -329,25 +350,25 @@ func (m *filePickerModal) emitHint() tea.Cmd {
 	switch m.focusPanel {
 	case 0: // tree panel
 		if m.mode == FilePickerOpen {
-			text = "• Navegue pelas pastas e selecione um cofre"
+			text = "Navegue pelas pastas e selecione um cofre"
 		} else {
-			text = "• Navegue pelas pastas e escolha onde salvar"
+			text = "Navegue pelas pastas e escolha onde salvar"
 		}
 	case 1: // files panel
 		if m.mode == FilePickerOpen {
 			if len(m.files) > 0 {
-				text = "• Selecione o cofre para abrir"
+				text = "Selecione o cofre para abrir"
 			} else {
-				text = "• Nenhum cofre neste diretório — navegue para outra pasta"
+				text = "Nenhum cofre neste diretório — navegue para outra pasta"
 			}
 		} else {
-			text = "• Arquivos existentes neste diretório"
+			text = "Arquivos existentes neste diretório"
 		}
 	case 2: // campo nome (Save mode only)
 		if m.nameField.Value() == "" {
-			text = "• Digite o nome do arquivo — " + m.ext + " será adicionado automaticamente"
+			text = "Digite o nome do arquivo — " + m.ext + " será adicionado automaticamente"
 		} else {
-			text = "• Confirme para salvar o cofre"
+			text = "Confirme para salvar o cofre"
 		}
 	}
 	m.messages.Show(MsgHint, text, 0, true)
@@ -526,7 +547,15 @@ func (m *filePickerModal) updateTree(msg tea.KeyPressMsg) tea.Cmd {
 		}
 		// no files → no-op
 	case tea.KeyTab:
-		m.focusPanel = 1
+		// Only move to the files panel if there are files to interact with.
+		// If the panel is empty, skip it: in Open mode stay in tree; in Save mode go to campo nome.
+		if len(m.files) > 0 {
+			m.focusPanel = 1
+		} else if m.mode == FilePickerSave {
+			m.focusPanel = 2
+			m.nameField.Focus()
+		}
+		// else: Open mode + empty dir → no-op, stay in tree
 		return m.emitHint()
 	}
 	m.adjustTreeScroll()
@@ -679,7 +708,7 @@ func (m *filePickerModal) renderTopBorder(modalW int, theme *Theme) string {
 	titleRendered := titleSt.Render(title)
 	prefixDashes := "── "
 	suffixPrefix := " "
-	used := len(prefixDashes) + lipgloss.Width(title) + len(suffixPrefix)
+	used := lipgloss.Width(prefixDashes) + lipgloss.Width(title) + lipgloss.Width(suffixPrefix)
 	remaining := modalW - 2 - used
 	if remaining < 1 {
 		remaining = 1
@@ -716,7 +745,7 @@ func (m *filePickerModal) renderCaminhoHeader(innerW int, theme *Theme) string {
 
 // renderPanelSeparator draws the ├── Estrutura ──┬── Arquivos ──┤ line (D-08, D-09).
 func (m *filePickerModal) renderPanelSeparator(innerW, treeW, filesW int, theme *Theme) string {
-	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderDefault))
+	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
 	headerSt := lipgloss.NewStyle().Foreground(theme.TextSecondary).Bold(true)
 	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
 
@@ -748,7 +777,7 @@ func (m *filePickerModal) renderPanelSeparator(innerW, treeW, filesW int, theme 
 // renderTreeSepChar returns the character for the tree│files separator column at row i.
 // Replaces │ with ↑/■/↓ scroll indicators when tree content overflows (D-08).
 func renderTreeSepChar(scroll, total, visibleH, row int) string {
-	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderDefault))
+	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
 	indSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextSecondary))
 	if total <= visibleH {
 		return sepSt.Render("│")
@@ -807,7 +836,15 @@ func renderFileSepChar(scroll, total, visibleH, row int) string {
 
 // renderTreeContent returns visibleH lines for the tree (Estrutura) panel (D-01, D-09, D-11).
 func (m *filePickerModal) renderTreeContent(treeW, visibleH int, theme *Theme) []string {
-	selectedSt := lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
+	// Highlight the selected dir only when the tree panel has focus (D-09).
+	// When another panel is focused the tree shows a passive cursor (bold + accent, no bg).
+	var selectedSt lipgloss.Style
+	if m.focusPanel == 0 {
+		selectedBg := lipgloss.Color("#3d59a1") // special.highlight
+		selectedSt = lipgloss.NewStyle().Background(selectedBg).Foreground(theme.AccentPrimary).Bold(true)
+	} else {
+		selectedSt = lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
+	}
 	normalSt := lipgloss.NewStyle().Foreground(theme.TextPrimary)
 	indicatorSt := lipgloss.NewStyle().Foreground(theme.AccentSecondary)
 
@@ -843,13 +880,16 @@ func (m *filePickerModal) renderTreeContent(treeW, visibleH int, theme *Theme) [
 		}
 
 		indRendered := indicatorSt.Render(indicator)
-		var nameRendered string
+		var line string
 		if i == m.treeCursor {
-			nameRendered = selectedSt.Render(nameText)
+			// Fill remaining space so background highlight covers full panel width (D-09)
+			rowText := padRight(nameText, treeW-indicatorW)
+			line = indRendered + selectedSt.Render(rowText)
 		} else {
-			nameRendered = normalSt.Render(nameText)
+			nameRendered := normalSt.Render(nameText)
+			line = indRendered + nameRendered
 		}
-		lines = append(lines, indRendered+nameRendered)
+		lines = append(lines, line)
 	}
 	for len(lines) < visibleH {
 		lines = append(lines, "")
@@ -863,8 +903,15 @@ func (m *filePickerModal) renderFilesContent(filesW, visibleH int, theme *Theme)
 	bulletSt := lipgloss.NewStyle().Foreground(theme.TextSecondary)
 	metaSt := lipgloss.NewStyle().Foreground(theme.TextSecondary)
 	disabledSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextSecondary))
-	selectedBg := lipgloss.Color("#3d59a1") // special.highlight — hardcoded per D-09
-	selectedSt := lipgloss.NewStyle().Background(selectedBg).Foreground(theme.TextPrimary).Bold(true)
+	// Highlight the selected file only when the files panel has focus (D-09).
+	// When the tree panel is focused the files panel shows a passive cursor (bold only, no bg).
+	var selectedSt lipgloss.Style
+	if m.focusPanel == 1 {
+		selectedBg := lipgloss.Color("#3d59a1") // special.highlight
+		selectedSt = lipgloss.NewStyle().Background(selectedBg).Foreground(theme.TextPrimary).Bold(true)
+	} else {
+		selectedSt = lipgloss.NewStyle().Foreground(theme.TextPrimary).Bold(true)
+	}
 
 	if len(m.files) == 0 {
 		msg := "Nenhum cofre neste diretório"
@@ -936,7 +983,7 @@ func (m *filePickerModal) renderFilesContent(filesW, visibleH int, theme *Theme)
 // renderFieldSeparator draws the ├────┴────┤ separator above the Save mode campo nome (D-08).
 func (m *filePickerModal) renderFieldSeparator(innerW, treeW int) string {
 	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
-	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderDefault))
+	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
 
 	leftDashes := strings.Repeat("─", treeW)
 	// rightLen: innerW total = treeW(─) + 1(┴) + rightLen(─)
@@ -998,7 +1045,7 @@ func (m *filePickerModal) renderFieldRow(innerW int, theme *Theme) string {
 // renderBottomBorder draws the bottom rounded border with action text state (D-08, D-09).
 func (m *filePickerModal) renderBottomBorder(innerW, treeW int, theme *Theme) string {
 	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
-	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderDefault))
+	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
 	activeSt := lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
 	disabledSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextDisabled))
 	cancelSt := lipgloss.NewStyle().Foreground(theme.TextPrimary)
@@ -1036,8 +1083,11 @@ func (m *filePickerModal) renderBottomBorder(innerW, treeW int, theme *Theme) st
 
 	var mid string
 	if m.mode == FilePickerOpen && fillW > 0 {
-		// Insert ┴ at treeW position in the fill to close the panel separator
-		leftFill := treeW - 2
+		// Insert ┴ at treeW position in the fill to close the panel separator.
+		// The │ separator sits at column (1 + treeW) from the left edge of the modal.
+		// The mid region starts at column (1 + 3 + actionW).
+		// So leftFill = (1 + treeW) - (1 + 3 + actionW) = treeW - 3 - actionW.
+		leftFill := treeW - 3 - actionW
 		if leftFill < 0 {
 			leftFill = 0
 		}
@@ -1072,7 +1122,7 @@ func (m *filePickerModal) View() string {
 	}
 
 	// Layout dimensions (D-08)
-	modalW := min(70, m.width*8/10)
+	modalW := m.width * 95 / 100
 	if modalW < 20 {
 		modalW = 20
 	}

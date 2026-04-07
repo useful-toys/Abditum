@@ -811,17 +811,18 @@ flowchart TD
 
 **Contexto necessário:** cofre carregado no entorno global; segredo aberto; modo alteração de estrutura ativo.
 
-**Nota:** este fluxo cobre adição, renomeação, reordenação e exclusão de campos. A Observação não pode ser movida, renomeada ou excluída; o tipo de um campo não pode ser alterado.
+**Nota:** este fluxo cobre adição, renomeação, reordenação e exclusão de campos. A Observação não pode ser movida, renomeada ou excluída; o tipo de um campo não pode ser alterado após criação (apenas na inserção).
+
+**Nota de UX:** ativado por `⌃E` na árvore, no painel em Modo Leitura ou no painel em Modo Edição de Valores. Atalhos no modo estrutura: `Enter` renomeia rótulo; `!↑`/`!↓` reordenam; `!Ins` insere campo abaixo do foco (com toggle de tipo via `⌃T` durante inserção); `!Del` exclui campo em foco. Ver [spec — Modo Edição de Estrutura](tui-specification-novo.md#painel-direito-detalhe-do-segredo--modo-edição-de-estrutura).
 
 **Passos:**
 
-1. O usuário realiza as alterações de estrutura desejadas: adiciona campos (informando nome e tipo), renomeia campos, reordena campos ou exclui campos. O usuário pode desistir e abandonar o fluxo a qualquer momento, descartando as alterações em andamento.
-2. O usuário confirma as alterações.
-3. As alterações de estrutura são aplicadas ao segredo em memória. O segredo passa ao estado `modificado` (ou permanece `incluido`, se já estava nesse estado).
+1. O usuário realiza as alterações de estrutura desejadas: adiciona campos (informando nome e tipo), renomeia campos, reordena campos ou exclui campos. Cada operação é aplicada em memória imediatamente ao ser confirmada. O usuário pode sair do modo estrutura a qualquer momento via `Esc` ou `Tab` (as operações já confirmadas são mantidas).
+2. As alterações de estrutura são persistidas em memória por operação. O segredo passa ao estado `modificado` (ou permanece `incluido`, se já estava nesse estado) na primeira operação confirmada.
 
 **Contexto resultante:**
-- Fluxo abandonado → estrutura do segredo inalterada.
-- Sucesso → cofre `alterado`; segredo em estado `modificado` (ou `incluido`).
+- Fluxo encerrado sem operações confirmadas → estrutura do segredo inalterada.
+- Sucesso → cofre `alterado`; segredo em estado `modificado` (ou `incluido`); estrutura atualizada conforme as operações confirmadas.
 
 ---
 

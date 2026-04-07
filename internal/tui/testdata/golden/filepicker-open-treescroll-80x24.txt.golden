@@ -1,0 +1,19 @@
+╭──  Abrir cofre  ─────────────────────────────────────────────────────────╮
+│ /golden/stub/path                                                        │
+├───────── Estrutura ─────────┬───────────────── Arquivos ─────────────────┤
+│▷   pasta04                  ↑                                            │
+│▷   pasta05                  │                                            │
+│▷   pasta06                  │                                            │
+│▷   pasta07                  │                                            │
+│▷   pasta08                  │                                            │
+│▷   pasta09                  │                                            │
+│▷   pasta10                  │                                            │
+│▷   pasta11                  │        Nenhum cofre neste diretório        │
+│▷   pasta12                  │                                            │
+│▷   pasta13                  │                                            │
+│▷   pasta14                  │                                            │
+│▷   pasta15                  ■                                            │
+│▷   pasta16                  │                                            │
+│▷   pasta17                  │                                            │
+│▷   pasta18                  ↓                                            │
+╰──  Enter Abrir ─────────────┴─────────────────────────── Esc Cancelar  ──╯

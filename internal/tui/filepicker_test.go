@@ -248,11 +248,21 @@ func TestFilePickerModalNavigationUp(t *testing.T) {
 	}
 }
 
-// TestFilePickerModalTabFocus verifies Tab cycles focus between panels.
+// TestFilePickerModalTabFocus verifies Tab cycles focus between panels when files exist.
 func TestFilePickerModalTabFocus(t *testing.T) {
-	fpk := newTestFilePickerModal()
+	// Create a dir with 1 .abditum file so Tab can advance to the files panel.
+	testDir := t.TempDir()
+	f, _ := os.Create(filepath.Join(testDir, "vault0.abditum"))
+	if f != nil {
+		f.Close()
+	}
+	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen, currentPath: testDir}
+	fpk.Init()
+	fpk.currentPath = testDir
+	fpk.loadFilesForCursor()
+	fpk.SetSize(80, 24)
 
-	initialFocus := fpk.focusPanel
+	initialFocus := fpk.focusPanel // 0 (tree)
 	fpk.Update(tea.KeyPressMsg{Code: tea.KeyTab})
 
 	if fpk.focusPanel == initialFocus {
@@ -461,6 +471,32 @@ func TestFilePickerUpdateBehavior(t *testing.T) {
 			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
 				if fpk.focusPanel != 1 {
 					t.Errorf("Tab in tree (Open): expected focusPanel=1, got %d", fpk.focusPanel)
+				}
+			},
+		},
+		{
+			name: "Tab in tree (Open) empty dir: no-op, stays in tree",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 0) // no .abditum files
+				return makeFPK(t, FilePickerOpen, dir, 0)
+			},
+			key: tea.Key{Code: tea.KeyTab},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if fpk.focusPanel != 0 {
+					t.Errorf("Tab in tree (Open) empty dir: expected focusPanel=0 (no-op), got %d", fpk.focusPanel)
+				}
+			},
+		},
+		{
+			name: "Tab in tree (Save) empty dir: skips files, goes to campo nome",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 0) // no .abditum files
+				return makeFPK(t, FilePickerSave, dir, 0)
+			},
+			key: tea.Key{Code: tea.KeyTab},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if fpk.focusPanel != 2 {
+					t.Errorf("Tab in tree (Save) empty dir: expected focusPanel=2, got %d", fpk.focusPanel)
 				}
 			},
 		},
@@ -809,11 +845,12 @@ func makeFilePickerFixture(t *testing.T) string {
 	return dir
 }
 
-// makeScrollTreeFixture creates a temp dir with 8 subdirectories (no .abditum files).
+// makeScrollTreeFixture creates a temp dir with 20 subdirectories (no .abditum files).
+// 20 nodes > visibleH(15) so ↑/■/↓ scroll indicators are always rendered.
 func makeScrollTreeFixture(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	for i := 0; i < 8; i++ {
+	for i := 0; i < 20; i++ {
 		subdir := filepath.Join(dir, fmt.Sprintf("pasta%02d", i))
 		if err := os.Mkdir(subdir, 0755); err != nil {
 			t.Fatalf("mkdir %s: %v", subdir, err)
@@ -822,14 +859,42 @@ func makeScrollTreeFixture(t *testing.T) string {
 	return dir
 }
 
-// makeScrollFilesFixture creates a temp dir with 10 .abditum files of varying sizes.
+// makeScrollBothFixture creates a temp dir with 20 subdirectories AND 20 .abditum files,
+// so both the tree panel and the files panel show ↑/■/↓ scroll indicators simultaneously.
+func makeScrollBothFixture(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	// 20 subdirectories
+	for i := 0; i < 20; i++ {
+		subdir := filepath.Join(dir, fmt.Sprintf("pasta%02d", i))
+		if err := os.Mkdir(subdir, 0755); err != nil {
+			t.Fatalf("mkdir %s: %v", subdir, err)
+		}
+	}
+	// 20 .abditum files in the root dir
+	mt := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	for i := 0; i < 20; i++ {
+		p := filepath.Join(dir, fmt.Sprintf("vault%02d.abditum", i))
+		size := int64((i + 1) * 102400) // 100KB, 200KB, ..., 2MB
+		if err := os.WriteFile(p, make([]byte, size), 0644); err != nil {
+			t.Fatalf("create %s: %v", p, err)
+		}
+		if err := os.Chtimes(p, mt, mt); err != nil {
+			t.Fatalf("chtimes %s: %v", p, err)
+		}
+	}
+	return dir
+}
+
+// makeScrollFilesFixture creates a temp dir with 20 .abditum files of varying sizes.
+// 20 files > visibleH(15) so ↑/■/↓ scroll indicators are always rendered.
 func makeScrollFilesFixture(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 	mt := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
 		p := filepath.Join(dir, fmt.Sprintf("vault%02d.abditum", i))
-		size := int64((i + 1) * 102400) // 100KB, 200KB, ..., 1MB
+		size := int64((i + 1) * 102400) // 100KB, 200KB, ..., 2MB
 		if err := os.WriteFile(p, make([]byte, size), 0644); err != nil {
 			t.Fatalf("create %s: %v", p, err)
 		}
@@ -893,73 +958,7 @@ func runFPKGolden(t *testing.T, fpk *filePickerModal, variant string) {
 	checkOrUpdateGolden(t, fpkGoldenPath(variant, "json"), string(jsonBytes))
 }
 
-// TestGoldenFilePickerOpenWithFiles60x24: Open mode, dir with 3 files, first selected.
-func TestGoldenFilePickerOpenWithFiles60x24(t *testing.T) {
-	dir := makeFilePickerFixture(t)
-	fpk := newGoldenFPK(FilePickerOpen, "Abrir cofre", dir, 60, 24)
-	fpk.focusPanel = 0
-	runFPKGolden(t, fpk, "open-withfiles-60x24")
-}
-
-// TestGoldenFilePickerOpenNoFiles60x24: Open mode, empty dir, action disabled.
-func TestGoldenFilePickerOpenNoFiles60x24(t *testing.T) {
-	dir := t.TempDir() // no .abditum files
-	fpk := newGoldenFPK(FilePickerOpen, "Abrir cofre", dir, 60, 24)
-	runFPKGolden(t, fpk, "open-nofiles-60x24")
-}
-
-// TestGoldenFilePickerSaveFieldEmpty60x24: Save mode, empty field, focus on campo nome.
-func TestGoldenFilePickerSaveFieldEmpty60x24(t *testing.T) {
-	dir := t.TempDir()
-	fpk := newGoldenFPK(FilePickerSave, "Salvar cofre", dir, 60, 24)
-	fpk.focusPanel = 2
-	fpk.nameField.Focus()
-	runFPKGolden(t, fpk, "save-fieldempty-60x24")
-}
-
-// TestGoldenFilePickerSaveFieldFilled60x24: Save mode, "meu-cofre" in field, action active.
-func TestGoldenFilePickerSaveFieldFilled60x24(t *testing.T) {
-	dir := makeFilePickerFixture(t)
-	fpk := newGoldenFPK(FilePickerSave, "Salvar cofre", dir, 60, 24)
-	fpk.focusPanel = 2
-	fpk.nameField.Focus()
-	fpk.nameField.SetValue("meu-cofre")
-	runFPKGolden(t, fpk, "save-fieldfilled-60x24")
-}
-
-// TestGoldenFilePickerOpenTreeScroll60x24: Open mode, 8 subdirs expanded, mid-scroll.
-func TestGoldenFilePickerOpenTreeScroll60x24(t *testing.T) {
-	dir := makeScrollTreeFixture(t)
-	fpk := newGoldenFPK(FilePickerOpen, "Abrir cofre", dir, 60, 24)
-	// Expand root so its 8 children are visible
-	if fpk.root != nil {
-		if err := fpk.expandNode(fpk.root); err == nil {
-			fpk.visibleNodes = nil
-			fpk.buildVisibleNodes(fpk.root, &fpk.visibleNodes)
-		}
-	}
-	// Set mid-scroll: put treeScroll at 2 and cursor at 4 (both ↑ and ↓ visible)
-	if len(fpk.visibleNodes) > 5 {
-		fpk.treeScroll = 2
-		fpk.treeCursor = 4
-	}
-	runFPKGolden(t, fpk, "open-treescroll-60x24")
-}
-
-// TestGoldenFilePickerOpenFileScroll60x24: Open mode, 10 files mid-scroll.
-func TestGoldenFilePickerOpenFileScroll60x24(t *testing.T) {
-	dir := makeScrollFilesFixture(t)
-	fpk := newGoldenFPK(FilePickerOpen, "Abrir cofre", dir, 60, 24)
-	fpk.focusPanel = 1
-	// Set mid-scroll for files panel
-	if len(fpk.files) >= 6 {
-		fpk.fileScroll = 2
-		fpk.fileCursor = 5
-	}
-	runFPKGolden(t, fpk, "open-filescroll-60x24")
-}
-
-// TestGoldenFilePickerOpenWithFiles80x24: Open mode, same fixture, wider terminal.
+// TestGoldenFilePickerOpenWithFiles80x24: Open mode, dir with 3 files, first selected.
 func TestGoldenFilePickerOpenWithFiles80x24(t *testing.T) {
 	dir := makeFilePickerFixture(t)
 	fpk := newGoldenFPK(FilePickerOpen, "Abrir cofre", dir, 80, 24)
@@ -967,7 +966,23 @@ func TestGoldenFilePickerOpenWithFiles80x24(t *testing.T) {
 	runFPKGolden(t, fpk, "open-withfiles-80x24")
 }
 
-// TestGoldenFilePickerSaveFieldFilled80x24: Save mode, field filled, 80-col terminal.
+// TestGoldenFilePickerOpenNoFiles80x24: Open mode, empty dir, action disabled.
+func TestGoldenFilePickerOpenNoFiles80x24(t *testing.T) {
+	dir := t.TempDir() // no .abditum files
+	fpk := newGoldenFPK(FilePickerOpen, "Abrir cofre", dir, 80, 24)
+	runFPKGolden(t, fpk, "open-nofiles-80x24")
+}
+
+// TestGoldenFilePickerSaveFieldEmpty80x24: Save mode, empty field, focus on campo nome.
+func TestGoldenFilePickerSaveFieldEmpty80x24(t *testing.T) {
+	dir := t.TempDir()
+	fpk := newGoldenFPK(FilePickerSave, "Salvar cofre", dir, 80, 24)
+	fpk.focusPanel = 2
+	fpk.nameField.Focus()
+	runFPKGolden(t, fpk, "save-fieldempty-80x24")
+}
+
+// TestGoldenFilePickerSaveFieldFilled80x24: Save mode, "meu-cofre" in field, action active.
 func TestGoldenFilePickerSaveFieldFilled80x24(t *testing.T) {
 	dir := makeFilePickerFixture(t)
 	fpk := newGoldenFPK(FilePickerSave, "Salvar cofre", dir, 80, 24)
@@ -975,4 +990,71 @@ func TestGoldenFilePickerSaveFieldFilled80x24(t *testing.T) {
 	fpk.nameField.Focus()
 	fpk.nameField.SetValue("meu-cofre")
 	runFPKGolden(t, fpk, "save-fieldfilled-80x24")
+}
+
+// TestGoldenFilePickerOpenTreeScroll80x24: Open mode, 20 subdirs expanded, mid-scroll.
+// treeScroll=5 with 21 total nodes (root + 20 subdirs) and visibleH=15:
+// scroll > 0 → ↑ shown; scroll+visibleH(20) < total(21) → ↓ shown; ■ at thumb position.
+func TestGoldenFilePickerOpenTreeScroll80x24(t *testing.T) {
+	dir := makeScrollTreeFixture(t)
+	fpk := newGoldenFPK(FilePickerOpen, "Abrir cofre", dir, 80, 24)
+	// Expand root so all 20 children are visible nodes
+	if fpk.root != nil {
+		if err := fpk.expandNode(fpk.root); err == nil {
+			fpk.visibleNodes = nil
+			fpk.buildVisibleNodes(fpk.root, &fpk.visibleNodes)
+		}
+	}
+	// Mid-scroll: treeScroll=5, cursor=10 — ensures ↑, ■, and ↓ are all shown
+	if len(fpk.visibleNodes) > 15 {
+		fpk.treeScroll = 5
+		fpk.treeCursor = 10
+	}
+	runFPKGolden(t, fpk, "open-treescroll-80x24")
+}
+
+// TestGoldenFilePickerOpenFileScroll80x24: Open mode, 20 files mid-scroll.
+// fileScroll=5 with 20 total files and visibleH=15:
+// scroll > 0 → ↑ shown; scroll+visibleH(20) = total(20) → ↓ NOT shown (at end).
+// Use fileScroll=3 so scroll+visibleH(18) < total(20) → ↓ shown too.
+func TestGoldenFilePickerOpenFileScroll80x24(t *testing.T) {
+	dir := makeScrollFilesFixture(t)
+	fpk := newGoldenFPK(FilePickerOpen, "Abrir cofre", dir, 80, 24)
+	fpk.focusPanel = 1
+	// Mid-scroll: fileScroll=3, cursor=8 — ensures ↑, ■, and ↓ are all shown
+	if len(fpk.files) > 15 {
+		fpk.fileScroll = 3
+		fpk.fileCursor = 8
+	}
+	runFPKGolden(t, fpk, "open-filescroll-80x24")
+}
+
+// TestGoldenFilePickerOpenBothScroll80x24: Open mode, tree AND files both mid-scroll.
+// Both panels have 20+ items > visibleH(15), so ↑/■/↓ are shown in both separators.
+func TestGoldenFilePickerOpenBothScroll80x24(t *testing.T) {
+	dir := makeScrollBothFixture(t)
+	fpk := newGoldenFPK(FilePickerOpen, "Abrir cofre", dir, 80, 24)
+	// Expand root so all 20 subdirectory children are visible
+	if fpk.root != nil {
+		if err := fpk.expandNode(fpk.root); err == nil {
+			fpk.visibleNodes = nil
+			fpk.buildVisibleNodes(fpk.root, &fpk.visibleNodes)
+		}
+	}
+	// Tree mid-scroll: treeScroll=5, cursor=10 — ↑, ■, ↓ all shown
+	if len(fpk.visibleNodes) > 15 {
+		fpk.treeScroll = 5
+		fpk.treeCursor = 10
+	}
+	// Files panel: load files for root (which has 20 .abditum files), then mid-scroll
+	fpk.currentPath = dir
+	fpk.loadFilesForCursor()
+	fpk.currentPath = "/golden/stub/path"
+	fpk.focusPanel = 1
+	// File mid-scroll: fileScroll=3, cursor=8 — ↑, ■, ↓ all shown
+	if len(fpk.files) > 15 {
+		fpk.fileScroll = 3
+		fpk.fileCursor = 8
+	}
+	runFPKGolden(t, fpk, "open-bothscroll-80x24")
 }

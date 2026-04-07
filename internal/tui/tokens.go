@@ -1,22 +1,22 @@
-﻿package tui
+package tui
 
 import (
 	"charm.land/lipgloss/v2"
 )
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 // Semantic color constants (D-17)
-// All hex values centralized â€” zero hardcoding in consumers (D-18).
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// All hex values centralized — zero hardcoding in consumers (D-18).
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Message bar semantic colors (MsgKind palette).
 const (
-	ColorSuccess = "#9ece6a" // MsgSuccess â€” operaÃ§Ã£o concluÃ­da
-	ColorInfo    = "#7dcfff" // MsgInfo    â€” informaÃ§Ã£o neutra
-	ColorWarn    = "#e0af68" // MsgWarn    â€” atenÃ§Ã£o
-	ColorError   = "#f7768e" // MsgError   â€” falha
-	ColorBusy    = "#7aa2f7" // MsgBusy    â€” spinner
-	ColorHint    = "#565f89" // MsgHint    â€” dica contextual
+	ColorSuccess = "#9ece6a" // MsgSuccess — operação concluída
+	ColorInfo    = "#7dcfff" // MsgInfo    — informação neutra
+	ColorWarn    = "#e0af68" // MsgWarn    — atenção
+	ColorError   = "#f7768e" // MsgError   — falha
+	ColorBusy    = "#7aa2f7" // MsgBusy    — spinner
+	ColorHint    = "#565f89" // MsgHint    — dica contextual
 )
 
 // Border and structural colors.
@@ -47,9 +47,9 @@ const (
 
 // Command bar colors.
 const (
-	ColorCommandKey   = "#7aa2f7" // action key token (bold) â€” accent.primary
-	ColorCommandLabel = "#a9b1d6" // action label text â€” text.primary
-	ColorSeparator    = "#565f89" // separator dots â€” text.secondary
+	ColorCommandKey   = "#7aa2f7" // action key token (bold) — accent.primary
+	ColorCommandLabel = "#a9b1d6" // action label text — text.primary
+	ColorSeparator    = "#565f89" // separator dots — text.secondary
 )
 
 // Help modal colors (lipgloss 256-color palette indices as strings).
@@ -60,27 +60,27 @@ const (
 	ColorHelpGroup = "14"  // group label
 )
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 // Symbol constants
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 
 const (
-	SymSuccess  = "âœ“"
-	SymInfo     = "â„¹"
-	SymWarn     = "âš "
-	SymError    = "âœ•"
-	SymHint     = "â€¢"
-	SymBorder   = "â”€"
-	SymEllipsis = "â€¦"
-	SymBullet   = "â€¢"
+	SymSuccess  = "✓"
+	SymInfo     = "ℹ"
+	SymWarn     = "⚠"
+	SymError    = "✕"
+	SymHint     = "•"
+	SymBorder   = "─"
+	SymEllipsis = "…"
+	SymBullet   = "•"
 )
 
-// SpinnerFrames in display order: â— â—“ â—‘ â—’
-var SpinnerFrames = []string{"â—", "â—“", "â—‘", "â—’"}
+// SpinnerFrames in display order: ◐ ◓ ◑ ◒
+var SpinnerFrames = []string{"◐", "◓", "◑", "◒"}
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 // Pre-built lipgloss style helpers (functions, not package-level vars)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 
 // StyleSymbol returns a lipgloss.Style with the correct color and formatting
 // for the given MsgKind. Matches the switch in messages.go lines 131-150.
@@ -116,9 +116,9 @@ func StyleCommandLabel() lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(ColorCommandLabel))
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 // Helper functions
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 
 // SymbolForKind returns the correct symbol character for a MsgKind.
 func SymbolForKind(kind MsgKind) string {

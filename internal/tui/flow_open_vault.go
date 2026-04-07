@@ -78,10 +78,7 @@ func (f *openVaultFlow) Init() tea.Cmd {
 		f.pickedPath = f.cliPath
 		f.state = statePwdEntry
 		f.passwordAttempt = 0
-		// Push password entry modal
-		return func() tea.Msg {
-			return pushModalMsg{modal: &passwordEntryModal{}}
-		}
+		return PasswordEntry("Abrir cofre")
 	}
 
 	f.state = statePickFile
@@ -99,10 +96,7 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 		f.pickedPath = msg.Path
 		f.state = statePwdEntry
 		f.passwordAttempt = 0
-		// Push password entry modal
-		return func() tea.Msg {
-			return pushModalMsg{modal: &passwordEntryModal{}}
-		}
+		return PasswordEntry("Abrir cofre")
 
 	case openVaultSaveBeforeMsg:
 		// Save current vault, then proceed to file picker.
@@ -139,7 +133,7 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 					f.state = statePwdEntry
 					return Acknowledge(SeverityError, "Abrir cofre",
 						"Senha incorreta. Necessário tentar novamente.",
-						func() tea.Msg { return pushModalMsg{modal: &passwordEntryModal{}} })()
+						PasswordEntry("Abrir cofre"))()
 				}
 				// File errors: show Acknowledge dialog (spec: Desvio 5).
 				// Two cases: invalid format/version vs corrupted/generic.

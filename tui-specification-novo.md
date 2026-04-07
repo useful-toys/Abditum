@@ -25,6 +25,7 @@
   - [Busca de Segredos](#busca-de-segredos)
   - [Painel Direito: Detalhe do Segredo — Modo Leitura](#painel-direito-detalhe-do-segredo--modo-leitura)
   - [Painel Direito: Detalhe do Segredo — Modo Edição de Valores](#painel-direito-detalhe-do-segredo--modo-edição-de-valores)
+  - [Painel Direito: Detalhe do Segredo — Modo Edição de Estrutura](#painel-direito-detalhe-do-segredo--modo-edição-de-estrutura)
 - [Ações na Árvore de Segredos](#ações-na-árvore-de-segredos)
   - [⌃D — Duplicar segredo](#d--duplicar-segredo)
   - [⌃M — Mover para outra pasta](#m--mover-para-outra-pasta)
@@ -1728,7 +1729,7 @@ A tabela abaixo consolida todas as variações da barra de comandos para segredo
 **Largura:** ~65% da área de trabalho.
 **Responsabilidade:** Exibir o nome, o caminho de pastas, os campos e a observação do segredo selecionado na árvore; permitir navegação entre campos, cópia de valores e reveal de campos sensíveis.
 
-> Este documento especifica apenas o **modo leitura**. O modo edição de valores e o modo edição de estrutura são especificados separadamente.
+> Este documento especifica apenas o **modo leitura**. O modo edição de valores é especificado em [Modo Edição de Valores](#painel-direito-detalhe-do-segredo--modo-edição-de-valores). O modo edição de estrutura é especificado em [Modo Edição de Estrutura](#painel-direito-detalhe-do-segredo--modo-edição-de-estrutura).
 
 ---
 
@@ -2072,7 +2073,7 @@ A tabela abaixo consolida todas as variações da barra de comandos para segredo
 **Largura:** ~65% da área de trabalho (igual ao Modo Leitura).
 **Responsabilidade:** Permitir editar o valor de cada campo do segredo individualmente, com persistência imediata por campo, sem estado global pendente.
 
-> O modo edição de estrutura (renomear campos, adicionar/remover campos, reordenar) é especificado separadamente (Fluxo 21).
+> O modo edição de estrutura (renomear campos, adicionar/remover campos, reordenar) é especificado em [Modo Edição de Estrutura](#painel-direito-detalhe-do-segredo--modo-edição-de-estrutura).
 
 ---
 
@@ -2325,6 +2326,278 @@ O Modo Edição de Valores é uma camada sobre o Modo Leitura. O layout do paine
 - **Validação do nome** — o nome não pode ser vazio; não pode duplicar o nome de outro segredo na mesma pasta; a validação ocorre ao pressionar `Enter` no input do nome; erros mantêm o input aberto
 - **Sair do modo edição** — `Esc` sem input aberto ou `Tab` encerram o modo edição; o indicador `[editando]` é removido; o painel retorna ao Modo Leitura com o mesmo campo em foco
 - **Scroll** — o comportamento de scroll é idêntico ao Modo Leitura; a coluna da trilha é sempre reservada
+
+---
+
+### Painel Direito: Detalhe do Segredo — Modo Edição de Estrutura
+
+**Contexto:** Área de trabalho — Modo Cofre. Ativado quando o usuário pressiona `⌃E` na árvore, no painel em Modo Leitura ou no painel em Modo Edição de Valores.
+**Largura:** ~65% da área de trabalho (igual ao Modo Leitura).
+**Responsabilidade:** Permitir alterar a estrutura dos campos do segredo — renomear rótulos, inserir campos, excluir campos e reordenar campos. Valores dos campos não são editados neste modo.
+
+> Restrições do domínio que este modo deve respeitar:
+> - A **Observação** é não-deletável, não-renomeável e não-movível — ocupa sempre a última posição e é excluída da navegação do cursor neste modo
+> - O **tipo** de um campo (`texto` / `texto_sensivel`) não pode ser alterado após criação — apenas na inserção
+> - Nomes de campo **não têm restrição de unicidade**
+
+---
+
+#### Anatomia do modo
+
+O Modo Edição de Estrutura é uma camada sobre o painel de detalhe. O layout permanece o mesmo (cabeçalho, separador, campos, observação, scroll). O que muda:
+
+1. **Indicador de modo** — `[estrutura]` em `accent.primary` **bold** no cabeçalho, no lugar de `[editando]`
+2. **Cursor de campo** — `special.highlight` no bloco do campo em foco, como nos outros modos; o cursor navega apenas entre campos editáveis (Observação excluída)
+3. **Rótulo em destaque** — o rótulo do campo em foco recebe ênfase adicional (`text.primary` **bold**) para comunicar que é o alvo das ações de estrutura
+4. **Input inline de rótulo** — quando um rótulo está em edição, o texto do rótulo é substituído por um input na mesma linha
+5. **Barra de comandos** — exibe as ações do modo estrutura
+
+---
+
+#### Anatomia do cabeçalho em modo estrutura
+
+```
+  Gmail [estrutura] ★                    Geral › Sites e Apps
+  ──────────────────────────────────────────────────────────
+```
+
+- Nome do segredo: `text.primary` **bold**
+- `[estrutura]`: `accent.primary` **bold**, separado do nome por um espaço
+- `★` e breadcrumb: inalterados
+
+---
+
+#### Wireframes
+
+**Cursor no campo, sem input aberto:**
+
+```
+  Gmail [estrutura] ★              Geral › Sites e Apps
+  ──────────────────────────────────────────────────────
+  URL
+  https://accounts.google.com/login
+
+  Usuário                                                ← special.highlight no bloco; rótulo bold
+  fulano@gmail.com
+
+  Senha
+  ••••••••••
+
+  ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  Conta pessoal principal.
+```
+
+> Barra: `Enter Renomear · !↑ Mover cima · !↓ Mover baixo · !Ins Inserir · !Del Excluir · Tab Árvore · Esc Sair · F1 Ajuda`
+> Observação não tem cursor de foco — está visível mas excluída da navegação do modo estrutura.
+
+**Input de rótulo aberto (`Enter`):**
+
+```
+  Gmail [estrutura] ★              Geral › Sites e Apps
+  ──────────────────────────────────────────────────────
+  URL
+  https://accounts.google.com/login
+
+  ░Usuário▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  ← input inline na linha do rótulo
+  fulano@gmail.com
+
+  Senha
+  ••••••••••
+```
+
+> `░` marca o fundo do input (`input.background`); `▌` é o cursor de texto. O valor do campo permanece visível abaixo (leitura, sem alteração). Barra: `Enter Confirmar · Esc Cancelar · F1 Ajuda`
+
+**Input de rótulo aberto — campo sensível:**
+
+```
+  Gmail [estrutura] ★              Geral › Sites e Apps
+  ──────────────────────────────────────────────────────
+  URL
+  https://accounts.google.com/login
+
+  Usuário
+  fulano@gmail.com
+
+  ░Senha▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  ← input do rótulo
+  ••••••••••                                             ← valor permanece mascarado
+```
+
+> Campo sensível permanece mascarado no modo estrutura — não há reveal automático ao editar o rótulo.
+
+**Inserção de novo campo (`!Ins`):**
+
+```
+  Gmail [estrutura] ★              Geral › Sites e Apps
+  ──────────────────────────────────────────────────────
+  URL
+  https://accounts.google.com/login
+
+  Usuário                                                ← campo com foco antes de !Ins
+  fulano@gmail.com
+
+  ░▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  [texto] ⌃T  ← novo campo inserido abaixo; input vazio + badge de tipo
+                                                         ← valor vazio (campo novo)
+  Senha
+  ••••••••••
+```
+
+> O novo campo é inserido imediatamente abaixo do campo em foco e acima da Observação (se o foco estiver no último campo editável, o novo campo é inserido entre ele e a Observação). O input do rótulo abre automaticamente com o cursor. O badge `[texto]` indica o tipo atual; `⌃T` alterna entre `[texto]` e `[sensível]` enquanto o input está aberto. Barra: `Enter Confirmar · ⌃T Tipo · Esc Cancelar · F1 Ajuda`
+
+**Badge de tipo alternado para sensível:**
+
+```
+  ░▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  [sensível] ⌃T
+```
+
+> Após `⌃T`, o badge muda para `[sensível]`. O campo ainda não tem rótulo nem valor. `Enter` confirma nome e tipo.
+
+**Reordenar campo (`!↑` / `!↓`):**
+
+```
+  Gmail [estrutura] ★              Geral › Sites e Apps
+  ──────────────────────────────────────────────────────
+  URL
+  https://accounts.google.com/login
+
+  Senha                                                  ← campo movido para cima com !↑ (era abaixo de Usuário)
+  ••••••••••
+
+  Usuário                                                ← special.highlight — campo em foco, foi deslocado para baixo
+  fulano@gmail.com
+```
+
+> A reordenação é imediata e visível — o bloco do campo em foco se desloca e o cursor acompanha. O foco permanece no campo que foi movido.
+
+---
+
+#### Mapa de teclas
+
+**Com cursor de campo, sem input aberto:**
+
+| Tecla | Efeito | Condição |
+|---|---|---|
+| `↑` / `↓` | Move cursor para o campo anterior / próximo | Apenas entre campos editáveis (Observação excluída) |
+| `Home` / `End` | Cursor vai ao primeiro / último campo editável | — |
+| `Enter` | Abre input inline no rótulo do campo em foco | — |
+| `!↑` | Move o campo em foco uma posição acima | Sem efeito no primeiro campo editável |
+| `!↓` | Move o campo em foco uma posição abaixo | Sem efeito no último campo editável (antes da Observação) |
+| `!Ins` | Insere novo campo abaixo do campo em foco; input do rótulo abre automaticamente | — |
+| `!Del` | Exclui o campo em foco imediatamente e irreversivelmente | — |
+| `Tab` | Foco → árvore; sai do modo estrutura | — |
+| `Esc` | Sai do modo estrutura; retorna ao Modo Leitura | — |
+| `⌃E` | — (sem efeito — já está no modo estrutura) | — |
+
+**Com input de rótulo aberto (`Enter` ou via `!Ins`):**
+
+| Tecla | Efeito |
+|---|---|
+| Texto / Backspace / Delete | Edita o nome do rótulo |
+| `⌃T` | Alterna o tipo do campo entre `texto` e `texto_sensivel` (apenas disponível em inserção — ver nota) |
+| `Enter` | Valida e persiste o rótulo (e tipo, se inserção); fecha input; cursor permanece no campo |
+| `Esc` | Cancela; restaura o rótulo anterior (ou descarta inserção); fecha input |
+| `↑` | Persiste implicitamente; fecha input; move cursor para o campo anterior |
+| `↓` | Persiste implicitamente; fecha input; move cursor para o próximo campo |
+| `Tab` | Persiste implicitamente; fecha input; foco vai para a árvore; sai do modo estrutura |
+
+> **`⌃T` (toggle de tipo) só está disponível durante a inserção** (`!Ins`). Em renomeação de campo existente, o tipo é imutável — `⌃T` não tem efeito e o badge de tipo não é exibido.
+
+---
+
+#### Tokens
+
+| Elemento | Token | Atributo |
+|---|---|---|
+| Nome do segredo (cabeçalho) | `text.primary` | **bold** |
+| `[estrutura]` | `accent.primary` | **bold** |
+| `★` favorito | `accent.secondary` | — |
+| Breadcrumb de pasta | `text.secondary` | — |
+| Fundo do campo em foco (sem input) | `special.highlight` | — |
+| Rótulo do campo em foco (sem input) | `text.primary` | **bold** |
+| Rótulo dos campos fora do foco | `text.secondary` | **bold** |
+| Fundo do input de rótulo | `input.background` | — |
+| Texto dentro do input de rótulo | `text.primary` | — |
+| Cursor de texto no input | terminal padrão | — |
+| Badge de tipo `[texto]` / `[sensível]` | `text.secondary` | — |
+| Valores dos campos (leitura) | inalterados do Modo Leitura | — |
+| Separador `───` cabeçalho | `border.default` | — |
+| Separador `╌╌╌` da Observação | `border.default` | — |
+| Observação (texto) | `text.secondary` | *italic* (diferenciada do modo leitura para comunicar inatividade) |
+
+> A Observação recebe `text.secondary` *italic* no modo estrutura para sinalizar visualmente que está excluída da navegação e das ações.
+
+---
+
+#### Estados dos componentes
+
+| Componente | Estado | Condição |
+|---|---|---|
+| Indicador `[estrutura]` | visível no cabeçalho | Modo estrutura ativo |
+| Cursor de campo | `special.highlight` no bloco | Sempre (modo estrutura tem foco implícito) |
+| Cursor de campo | ausente na Observação | Observação nunca recebe foco no modo estrutura |
+| Rótulo do campo em foco | `text.primary` **bold** | — |
+| Input de rótulo | ausente | `Enter` não pressionado |
+| Input de rótulo | aberto sobre a linha do rótulo | `Enter` pressionado; ou `!Ins` executado |
+| Badge `[texto]` / `[sensível]` | visível à direita do input | Apenas durante inserção (`!Ins`) |
+| Badge `[texto]` / `[sensível]` | ausente | Renomeação de campo existente |
+| Observação | visível, não focável, `text.secondary` *italic* | Sempre no modo estrutura |
+| Campo sensível | mascarado `••••••••` | Sempre no modo estrutura (sem reveal) |
+| Campo recém-inserido | input do rótulo aberto, vazio | Imediatamente após `!Ins` |
+
+---
+
+#### Mensagens
+
+| Contexto | Tipo | Texto |
+|---|---|---|
+| Modo estrutura ativado | Dica | `• Enter para renomear · !Ins inserir · !Del excluir · !↑↓ mover` |
+| Rótulo renomeado confirmado | Sucesso (3s) | `✓ Campo renomeado` |
+| Campo inserido | Sucesso (3s) | `✓ Campo "[nome]" adicionado` |
+| Campo excluído | Sucesso (3s) | `✓ Campo "[nome]" excluído` |
+| Rótulo vazio ao confirmar | Erro | `✗ O nome do campo não pode ser vazio` |
+| `!Del` no único campo editável | Erro | `✗ O segredo deve ter pelo menos um campo` |
+| `!↑` no primeiro campo | — | Sem mensagem — ação sem efeito silenciosa |
+| `!↓` no último campo editável | — | Sem mensagem — ação sem efeito silenciosa |
+
+---
+
+#### Eventos
+
+| Evento | Efeito |
+|---|---|
+| `⌃E` no Modo Leitura | Modo estrutura ativado; indicador `[estrutura]` aparece; cursor vai ao primeiro campo editável |
+| `⌃E` no Modo Edição de Valores | Modo valores encerrado (sem persistência pendente — imediata); modo estrutura ativado |
+| `⌃E` na árvore | Painel recebe foco; modo estrutura ativado; cursor vai ao primeiro campo editável |
+| `↑` / `↓` sem input aberto | Cursor move entre campos editáveis (Observação ignorada) |
+| `Enter` sem input aberto | Input do rótulo abre no campo em foco |
+| `Enter` com input aberto | Rótulo validado; se válido: persistido, input fechado, cursor permanece; se inválido (vazio): mensagem de erro, input permanece |
+| `Esc` com input aberto (renomeação) | Rótulo descartado; rótulo anterior restaurado; input fechado |
+| `Esc` com input aberto (inserção) | Campo recém-inserido descartado; cursor retorna ao campo que estava em foco antes de `!Ins` |
+| `!↑` | Campo em foco sobe uma posição; cursor acompanha; persistido imediatamente |
+| `!↓` | Campo em foco desce uma posição; cursor acompanha; persistido imediatamente |
+| `!Ins` | Novo campo inserido abaixo do campo em foco (tipo `texto`); input do rótulo abre automaticamente com cursor; badge `[texto]` visível |
+| `⌃T` com input de inserção aberto | Tipo alterna entre `texto` e `texto_sensivel`; badge atualiza imediatamente |
+| `Enter` com input de inserção | Rótulo e tipo confirmados; campo inserido definitivamente; input fechado; cursor no novo campo |
+| `!Del` | Campo em foco excluído imediatamente; cursor vai ao campo seguinte (ou anterior se era o último editável) |
+| `Esc` sem input aberto | Modo estrutura encerrado; retorna ao Modo Leitura; indicador `[estrutura]` removido |
+| `Tab` sem input aberto | Foco vai para a árvore; modo estrutura encerrado |
+| `Tab` com input aberto | Rótulo persistido implicitamente; input fechado; foco vai para a árvore; modo encerrado |
+| `⌃Q` | Saída da aplicação; persiste o que já foi confirmado (imediato por operação) |
+
+---
+
+#### Comportamento
+
+- **Persistência imediata por operação** — cada ação confirmada (renomear, inserir, mover, excluir) persiste em memória imediatamente; não há um "cancelar tudo" ao sair do modo. `Esc` só cancela o input atualmente aberto, não as operações já confirmadas
+- **Observação excluída da navegação** — o cursor de campo nunca vai para a Observação no modo estrutura; `↑`/`↓`/`Home`/`End` ignoram a Observação; `!↓` no último campo editável não tem efeito (não pode ultrapassar a Observação)
+- **Tipo imutável em campos existentes** — `⌃T` só funciona durante a inserção de novo campo (`!Ins`); o badge de tipo só é exibido nesse contexto; em renomeação, o tipo não é alterável e o badge não aparece
+- **`!Del` é irreversível** — a exclusão ocorre imediatamente ao pressionar `!Del`, sem confirmação; o campo e seu valor são descartados; se o segredo tiver apenas um campo editável, a exclusão é bloqueada com mensagem de erro
+- **`!Del` move o cursor** — após excluir, o cursor vai para o campo seguinte; se era o último campo editável, vai para o anterior
+- **Input inline de rótulo** — o input substitui visualmente a linha do rótulo; o valor do campo permanece visível abaixo em modo leitura durante a edição do rótulo (o modo estrutura não altera valores)
+- **Campo sensível permanece mascarado** — no modo estrutura, campos sensíveis exibem `••••••••`; não há reveal nem `⌃R`
+- **Inserção abaixo do foco, acima da Observação** — se o foco está no último campo editável, o novo campo é inserido imediatamente antes da Observação; se o foco está em outro campo, é inserido imediatamente abaixo do campo em foco
+- **Troca de modo** — `⌃E` no Modo Edição de Valores troca para o modo estrutura sem diálogo; a persistência imediata do modo valores garante que não há dado pendente a perder
+- **Sair do modo** — `Esc` sem input aberto ou `Tab` encerram o modo estrutura; o indicador `[estrutura]` é removido; o painel retorna ao Modo Leitura
+- **Scroll** — idêntico ao Modo Leitura; a coluna da trilha é sempre reservada
 
 ---
 
