@@ -714,8 +714,9 @@ As teclas são atribuídas seguindo uma hierarquia de escopos e agrupamentos fí
 -   `↑↓←→` são para navegação direcional em listas, árvores e campos.
 -   `Home` / `End` navegam ao primeiro / último item visível ou início/fim de linha em campos.
 -   `PgUp` / `PgDn` realizam scroll por página (viewport − 1) em conteúdo com scroll.
--   **`Ctrl + <tecla>`**: Preferencialmente para ações **locais** no contexto da área de trabalho ou componente ativo.
--   **`Alt + <tecla>`**: Para ações alternativas ou modificadores, se `Ctrl` estiver esgotado ou for ambíguo.
+-   **`Ctrl`**: Representado por `^` (ex: `^C` para `Ctrl+C`). Preferencialmente para ações **locais** no contexto da área de trabalho ou componente ativo.
+-   **`Shift`**: Representado por `+` (ex: `+Insert` para `Shift+Insert`). Usado para ações secundárias ou modificadores de navegação.
+-   **`Alt`**: Representado por `!` (ex: `!S` para `Alt+S`). Para ações alternativas ou modificadores, se `Ctrl` estiver esgotado ou for ambíguo.
 -   **`Insert`**: Sugerido para ações de inserção/criação (no contexto do foco).
 -   **`Del`**: Sugerido para ações de exclusão (no contexto do foco).
 -   Se uma tecla precisa ter significado diferente em dois contextos, isso deve ser documentado e justificado na especificação.

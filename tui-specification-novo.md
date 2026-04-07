@@ -1276,6 +1276,9 @@ Esta seção detalha as ações disponíveis ao interagir com a árvore de segre
 | `→`             | Expandir pasta                           |                                                                            |
 | `←`             | Recolher pasta                           |                                                                            |
 | `Enter`         | Expandir / Recolher pasta                | Quando o foco está em uma pasta, expande/contrai.                          |
+| `Shift+Insert`  | Criar nova pasta                         | Cria uma nova pasta no mesmo nível da pasta focada ou dentro dela, se não houver nenhuma pasta focada. |
+| `Ctrl+Shift+I`  | Criar nova pasta                         | Atalho alternativo para criar uma nova pasta.                              |
+| `Delete`        | Remover pasta                            | Marca a pasta selecionada para remoção (reversível até o salvamento).      |
 
 ### Ações em segredos
 
@@ -1283,6 +1286,7 @@ Esta seção detalha as ações disponíveis ao interagir com a árvore de segre
 |----------|------------------------------------------|----------------------------------------------------------------------------|
 | `Enter`  | Focar no painel de detalhes do segredo   | Comporta-se de forma similar ao `Tab` quando o foco está em um segredo.    |
 | `Insert` | Novo segredo                             | Cria um novo segredo na pasta atualmente focada.                           |
+| `Ctrl+I` | Novo segredo                             | Atalho alternativo para criar um novo segredo.                             |
 | `^E`     | Editar segredo                           | Entra no modo de edição para o segredo selecionado.                        |
 | `Delete` | Excluir segredo                          | Marca o segredo selecionado para exclusão (reversível até o salvamento).   |
 | `Ctrl+R` | Revelar / ocultar campo sensível         | Aplica-se ao campo sensível em foco no painel de detalhes.                 |
