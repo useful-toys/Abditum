@@ -709,26 +709,7 @@ flowchart TD
 
 ---
 
-## Consulta dos Segredos
-
-## Fluxo 15 — Buscar segredos
-
-**Contexto necessário:** cofre carregado no entorno global; modo busca ativo.
-
-**Nota sobre o modo busca:** o modo busca é uma variante do modo de visualização/navegação do cofre. A ativação e o encerramento do modo busca são gestos de navegação, não fluxos — não há contexto necessário adicional para ativá-lo. Este fluxo descreve o que acontece dentro do modo busca.
-
-**Passos:**
-
-1. O usuário informa o termo de busca.
-2. O sistema filtra os segredos cujo nome, nome de campo, valor de campo comum ou observação contenham o termo, ignorando acentuação e capitalização. Segredos marcados para exclusão não aparecem nos resultados. Valores de campos sensíveis não participam da busca; nomes de campos sensíveis participam normalmente.
-3. O sistema exibe os resultados. O usuário pode refinar o termo a qualquer momento, voltando ao passo 2.
-
-**Contexto resultante:**
-- Busca ativa → lista de segredos filtrada pelos resultados; modo busca permanece ativo.
-
----
-
-## Fluxo 16 — Exibir valor de campo sensível temporariamente
+## Fluxo 15 — Exibir valor de campo sensível temporariamente
 
 **Contexto necessário:** cofre carregado no entorno global; campo sensível em foco.
 
