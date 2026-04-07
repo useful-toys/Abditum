@@ -1,7 +1,10 @@
 package tui
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/useful-toys/abditum/internal/crypto"
@@ -30,6 +33,12 @@ const (
 	stateStrengthCheck // intermediate: weak password decision pending
 )
 
+// createVaultSaveBeforeMsg — emitted by "S Salvar" in dirty-check dialog when
+// creating a new vault. Triggers saving the current vault before opening the file picker.
+type createVaultSaveBeforeMsg struct{}
+
+func (createVaultSaveBeforeMsg) isModalResult() {}
+
 // newCreateVaultFlow creates and initializes a createVaultFlow.
 func newCreateVaultFlow(mgr *vault.Manager, messages *MessageManager, actions *ActionManager, theme *Theme) *createVaultFlow {
 	return &createVaultFlow{
@@ -46,10 +55,19 @@ func newCreateVaultFlow(mgr *vault.Manager, messages *MessageManager, actions *A
 func (f *createVaultFlow) Init() tea.Cmd {
 	if f.mgr != nil && f.mgr.IsModified() {
 		f.state = stateCheckDirty
-		// Push confirmation dialog for unsaved changes
+		// Desvio 6: Decision(SeverityAlert) with save/discard/back actions (not Acknowledge).
 		return func() tea.Msg {
-			return Acknowledge(SeverityNeutral, "Alterações não salvas",
-				"Existem alterações não salvas. Criar um novo cofre descartará as mudanças.", nil)
+			return Decision(SeverityAlert, "Criar novo cofre",
+				"Cofre modificado. Salvar ou descartar?",
+				DecisionAction{Key: "S", Label: "Salvar", Default: true,
+					Cmd: func() tea.Msg { return createVaultSaveBeforeMsg{} }},
+				[]DecisionAction{
+					{Key: "D", Label: "Descartar",
+						Cmd: func() tea.Msg {
+							return pushModalMsg{modal: &filePickerModal{mode: FilePickerFile}}
+						}},
+				},
+				DecisionAction{Key: "Esc", Label: "Voltar"})
 		}
 	}
 	f.state = statePickFile
@@ -62,6 +80,18 @@ func (f *createVaultFlow) Init() tea.Cmd {
 // Update processes messages from modals and transitions states.
 func (f *createVaultFlow) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
+	case createVaultSaveBeforeMsg:
+		// User chose "S Salvar" in dirty-check dialog: save current vault then open file picker.
+		mgr := f.mgr
+		messages := f.messages
+		return func() tea.Msg {
+			if err := mgr.Salvar(); err != nil {
+				messages.Show(MsgError, "Não foi possível salvar o cofre.", 5, false)
+				return endFlowMsg{}
+			}
+			return pushModalMsg{modal: &filePickerModal{mode: FilePickerFile}}
+		}
+
 	case filePickerResult:
 		if msg.Cancelled {
 			return endFlow()
@@ -70,13 +100,19 @@ func (f *createVaultFlow) Update(msg tea.Msg) tea.Cmd {
 		f.state = stateCheckOverwrite
 		// Check if file exists
 		if _, err := os.Stat(f.targetPath); err == nil {
-			// File exists - show overwrite confirmation
+			// Desvio 7: File exists — show overwrite confirmation with interpolated filename,
+			// SeverityAlert (not Destructive), key S (not Enter), and "I Outro caminho" middle action.
+			baseName := strings.TrimSuffix(filepath.Base(f.targetPath), ".abditum")
+			overwriteMsg := fmt.Sprintf("Arquivo '%s' já existe. Sobrescrever?", baseName)
 			return func() tea.Msg {
-				return Decision(SeverityDestructive, "Arquivo existe",
-					"Um cofre já existe neste caminho. Deseja sobrescrever?",
-					DecisionAction{Key: "Enter", Label: "Sobrescrever", Default: true,
+				return Decision(SeverityAlert, "Criar novo cofre",
+					overwriteMsg,
+					DecisionAction{Key: "S", Label: "Sobrescrever", Default: true,
 						Cmd: func() tea.Msg { return overwriteConfirmedMsg{} }},
-					nil,
+					[]DecisionAction{
+						{Key: "I", Label: "Outro caminho",
+							Cmd: func() tea.Msg { return overwriteCancelledMsg{} }},
+					},
 					DecisionAction{Key: "Esc", Label: "Voltar",
 						Cmd: func() tea.Msg { return overwriteCancelledMsg{} }})
 			}
@@ -92,17 +128,25 @@ func (f *createVaultFlow) Update(msg tea.Msg) tea.Cmd {
 		// Spec Gap 2.1: Gate on password strength before proceeding to save
 		if crypto.EvaluatePasswordStrength(password) < crypto.StrengthStrong {
 			f.state = stateStrengthCheck
+			// Desvio 8: Default action is now P Prosseguir (not R Revisar).
+			// Esc cancels the entire flow (endFlow), not proceeds.
 			return func() tea.Msg {
-				return Decision(SeverityAlert, "Senha fraca",
-					"A senha não atende aos critérios de segurança recomendados.\n\nDeseja prosseguir mesmo assim ou revisar a senha?",
-					DecisionAction{Key: "R", Label: "Revisar", Default: true,
+				return Decision(SeverityAlert, "Criar novo cofre",
+					"Senha é fraca. Prosseguir ou revisar?",
+					DecisionAction{Key: "P", Label: "Prosseguir", Default: true,
+						Cmd: func() tea.Msg { return weakPwdProceedMsg{Password: password} }},
+					[]DecisionAction{
+						{Key: "R", Label: "Revisar",
+							Cmd: func() tea.Msg {
+								crypto.Wipe(password) // discard weak password on revise
+								return weakPwdReviseMsg{}
+							}},
+					},
+					DecisionAction{Key: "Esc", Label: "Voltar",
 						Cmd: func() tea.Msg {
-							crypto.Wipe(password) // discard weak password on revise
-							return weakPwdReviseMsg{}
-						}},
-					nil,
-					DecisionAction{Key: "Esc", Label: "Prosseguir",
-						Cmd: func() tea.Msg { return weakPwdProceedMsg{Password: password} }})
+							crypto.Wipe(password) // discard password, cancel entire flow
+							return endFlowMsg{}
+						}})
 			}
 		}
 		// Strong password: proceed directly to save
@@ -127,7 +171,7 @@ func (f *createVaultFlow) Update(msg tea.Msg) tea.Cmd {
 		}
 
 	case overwriteCancelledMsg:
-		// User chose "Voltar" - return to file picker
+		// User chose "Voltar" or "Outro caminho" - return to file picker
 		f.state = statePickFile
 		return func() tea.Msg {
 			return pushModalMsg{modal: &filePickerModal{mode: FilePickerFile}}
