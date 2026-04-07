@@ -18,14 +18,16 @@ type vaultSaver interface {
 // States:
 //
 //	stateCheckExtMod -> stateSaveAndExit -> stateDoneExit
+//	stateCheckExtMod -> stateSaveAsNew (user chose "N Salvar como novo")
 //
 // Flow:
 //  1. Init: check for external file modifications (background I/O).
-//  2. If external mod detected: show "Conflito de Modificação" decision dialog.
-//  3. If user chooses "Sobrescrever e sair": proceed to save.
-//  4. If user chooses "Voltar": end flow (no save, no exit).
-//  5. On successful save: tea.Quit.
-//  6. On save error: show error message, end flow (stay in app).
+//  2. If external mod detected: show "Salvar cofre" decision dialog (S/N/Esc).
+//  3. If user chooses "S Sobrescrever": proceed to save.
+//  4. If user chooses "N Salvar como novo": open file picker for alternate path.
+//  5. If user chooses "Esc Voltar": end flow (no save, no exit).
+//  6. On successful save: tea.Quit.
+//  7. On save error: show error message, end flow (stay in app).
 type saveAndExitFlow struct {
 	state    int
 	mgr      vaultSaver
@@ -40,6 +42,7 @@ const (
 	stateCheckExtMod = iota + 20
 	stateSaveAndExit
 	stateDoneExit
+	stateSaveAsNew // user chose "N Salvar como novo" — waiting for new path from file picker
 )
 
 // extModDetectedMsg - emitted when an external file modification is detected during
@@ -48,17 +51,23 @@ type extModDetectedMsg struct{}
 
 func (extModDetectedMsg) isModalResult() {}
 
-// extModOverwriteMsg - emitted by the "Conflito de Modificação" decision dialog
-// when the user chooses "Sobrescrever e sair".
+// extModOverwriteMsg - emitted by the conflict decision dialog when the user
+// chooses "S Sobrescrever".
 type extModOverwriteMsg struct{}
 
 func (extModOverwriteMsg) isModalResult() {}
 
-// extModCancelMsg - emitted by the "Conflito de Modificação" decision dialog
-// when the user chooses "Voltar" (cancel the save-and-exit).
+// extModCancelMsg - emitted by the conflict dialog when the user chooses "Voltar"
+// (cancel the save-and-exit).
 type extModCancelMsg struct{}
 
 func (extModCancelMsg) isModalResult() {}
+
+// extModSaveAsNewMsg - emitted by the conflict dialog when the user chooses
+// "N Salvar como novo". Opens a file picker to choose an alternate save path.
+type extModSaveAsNewMsg struct{}
+
+func (extModSaveAsNewMsg) isModalResult() {}
 
 // saveAndExitReadyMsg - internal signal that no external mod was detected;
 // the flow may proceed directly to save. Not a modalResult.
@@ -98,33 +107,62 @@ func (f *saveAndExitFlow) Init() tea.Cmd {
 
 // Update processes flow messages and transitions states.
 func (f *saveAndExitFlow) Update(msg tea.Msg) tea.Cmd {
-	switch msg.(type) {
+	switch msg := msg.(type) {
 	case saveAndExitReadyMsg:
-		// No external modification detected — proceed to save
+		// No external modification detected — proceed to save.
+		_ = msg
 		return f.doSave()
 
 	case extModDetectedMsg:
-		// External modification detected: ask user what to do
+		// Desvio 9: External modification detected — show "Salvar cofre" dialog with
+		// three actions: S Sobrescrever, N Salvar como novo, Esc Voltar.
+		_ = msg
 		return func() tea.Msg {
-			return Decision(SeverityDestructive, "Conflito de Modificação",
-				"O arquivo do cofre foi modificado externamente desde a última vez que foi carregado.\n\nSobrescrever descartará as alterações externas.",
-				DecisionAction{Key: "Enter", Label: "Sobrescrever e sair", Default: true,
+			return Decision(SeverityDestructive, "Salvar cofre",
+				"Arquivo modificado externamente. Sobrescrever ou salvar como novo?",
+				DecisionAction{Key: "S", Label: "Sobrescrever", Default: true,
 					Cmd: func() tea.Msg { return extModOverwriteMsg{} }},
-				nil,
+				[]DecisionAction{
+					{Key: "N", Label: "Salvar como novo",
+						Cmd: func() tea.Msg { return extModSaveAsNewMsg{} }},
+				},
 				DecisionAction{Key: "Esc", Label: "Voltar",
 					Cmd: func() tea.Msg { return extModCancelMsg{} }})
 		}
 
+	case extModSaveAsNewMsg:
+		// User chose "N Salvar como novo": open file picker to choose alternate save path.
+		_ = msg
+		f.state = stateSaveAsNew
+		return func() tea.Msg {
+			return pushModalMsg{modal: &filePickerModal{mode: FilePickerFile}}
+		}
+
+	case filePickerResult:
+		// Only handled when in stateSaveAsNew (user chose alternate path after external conflict).
+		if f.state != stateSaveAsNew {
+			return nil
+		}
+		if msg.Cancelled {
+			return endFlow()
+		}
+		// Update path to the new location chosen by the user, then proceed to save.
+		f.path = msg.Path
+		return f.doSave()
+
 	case extModOverwriteMsg:
-		// User confirmed overwrite: proceed to save
+		// User confirmed overwrite: proceed to save.
+		_ = msg
 		return f.doSave()
 
 	case extModCancelMsg:
-		// User cancelled: end flow without saving or exiting
+		// User cancelled: end flow without saving or exiting.
+		_ = msg
 		return endFlow()
 
 	case saveAndExitOKMsg:
-		// Save succeeded: quit the application
+		// Save succeeded: quit the application.
+		_ = msg
 		f.state = stateDoneExit
 		return tea.Quit
 
