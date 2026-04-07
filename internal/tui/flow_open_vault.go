@@ -9,6 +9,13 @@ import (
 	"github.com/useful-toys/abditum/internal/vault"
 )
 
+// openVaultSaveBeforeMsg is emitted by the "S Salvar" action in the dirty-check
+// Decision dialog when opening a vault. The flow saves the current vault and
+// then continues to the file picker.
+type openVaultSaveBeforeMsg struct{}
+
+func (openVaultSaveBeforeMsg) isModalResult() {}
+
 // openVaultFlow implements the state machine for opening an existing vault.
 // States: stateCheckDirty -> statePickFile -> statePwdEntry -> statePreload -> done.
 // If cliPath is set (CLI fast-path), skip file picker and go directly to password entry.
@@ -46,17 +53,27 @@ func newOpenVaultFlow(mgr *vault.Manager, messages *MessageManager, actions *Act
 	}
 }
 
-// Init starts the flow. If there are unsaved changes, prompt the user.
-// If CLI path is set (fast-path), skip file selection and go directly to password entry.
-// Otherwise, proceed directly to file selection.
+// Init starts the flow. If there are unsaved changes, prompt the user with a
+// Decision dialog (SeverityAlert) offering to save, discard, or cancel (spec:
+// Desvio 3 — Abrir cofre dirty-check). If CLI path is set (fast-path), skip
+// file selection and go directly to password entry. Otherwise, proceed to file
+// selection.
 func (f *openVaultFlow) Init() tea.Cmd {
 	if f.mgr != nil && f.mgr.IsModified() {
 		f.state = stateCheckDirty
-		// Push confirmation dialog for unsaved changes
-		return func() tea.Msg {
-			return Acknowledge(SeverityNeutral, "Alterações não salvas",
-				"Existem alterações não salvas. Abrir outro cofre descartará as mudanças.", nil)
-		}
+		// Push Decision dialog for unsaved changes (spec: Desvio 3)
+		return Decision(SeverityAlert, "Abrir cofre",
+			"Cofre modificado. Salvar ou descartar?",
+			DecisionAction{Key: "S", Label: "Salvar", Default: true,
+				Cmd: func() tea.Msg { return openVaultSaveBeforeMsg{} }},
+			[]DecisionAction{
+				{Key: "D", Label: "Descartar",
+					Cmd: func() tea.Msg {
+						// Discard changes and proceed to file picker
+						return pushModalMsg{modal: &filePickerModal{}}
+					}},
+			},
+			DecisionAction{Key: "Esc", Label: "Voltar"})
 	}
 
 	// CLI fast-path: skip file picker if cliPath is set
@@ -92,6 +109,19 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 			return pushModalMsg{modal: &passwordEntryModal{}}
 		}
 
+	case openVaultSaveBeforeMsg:
+		// Save current vault, then proceed to file picker.
+		// Capture pointers into locals to avoid closure aliasing.
+		mgr := f.mgr
+		messages := f.messages
+		return func() tea.Msg {
+			if err := mgr.Salvar(); err != nil {
+				messages.Show(MsgError, "Não foi possível salvar o cofre.", 5, false)
+				return endFlowMsg{}
+			}
+			return pushModalMsg{modal: &filePickerModal{}}
+		}
+
 	case pwdEnteredMsg:
 		f.state = statePreload
 		password := msg.Password
@@ -108,25 +138,26 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 					f.passwordAttempt++
 					if f.passwordAttempt >= 5 {
 						f.messages.Show(MsgError, "Limite de tentativas excedido", 5, false)
-						return endFlow()
+						return endFlowMsg{}
 					}
-					// Return to password entry with retry
+					// Wrong password (attempt < 5): show Acknowledge dialog (spec: Desvio 4)
 					f.state = statePwdEntry
-					f.messages.Show(MsgWarn, "Senha incorreta. Tente novamente", 3, false)
-					return pushModalMsg{modal: &passwordEntryModal{}}
+					return Acknowledge(SeverityError, "Abrir cofre",
+						"Senha incorreta. Necessário tentar novamente.",
+						func() tea.Msg { return pushModalMsg{modal: &passwordEntryModal{}} })()
 				}
-				// Other errors: show error and return to file picker (spec: Fluxo 1 error recovery)
-				errMsg := "Não foi possível abrir o cofre. Arquivo corrompido ou inacessível."
-				if errors.Is(err, storage.ErrInvalidMagic) {
-					errMsg = "Arquivo não é um cofre válido."
-				} else if errors.Is(err, storage.ErrVersionTooNew) {
-					errMsg = "Versão do cofre não é suportada por esta versão do Abditum."
-				} else if errors.Is(err, storage.ErrCorrupted) {
-					errMsg = "Cofre corrompido e não pode ser recuperado."
-				}
-				f.messages.Show(MsgError, errMsg, 5, false)
+				// File errors: show Acknowledge dialog (spec: Desvio 5).
+				// Two cases: invalid format/version vs corrupted/generic.
 				f.state = statePickFile
-				return pushModalMsg{modal: &filePickerModal{}}
+				if errors.Is(err, storage.ErrInvalidMagic) || errors.Is(err, storage.ErrVersionTooNew) {
+					return Acknowledge(SeverityError, "Abrir cofre",
+						"Arquivo inválido ou versão não suportada. Necessário corrigir.",
+						func() tea.Msg { return pushModalMsg{modal: &filePickerModal{}} })()
+				}
+				// ErrCorrupted and generic errors
+				return Acknowledge(SeverityError, "Abrir cofre",
+					"Arquivo corrompido ou inválido. Necessário fechar.",
+					func() tea.Msg { return pushModalMsg{modal: &filePickerModal{}} })()
 			}
 			// Success: store metadata and notify rootModel
 			f.vaultMetadata = metadata
