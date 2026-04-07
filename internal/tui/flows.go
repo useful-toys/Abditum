@@ -94,3 +94,17 @@ func (overwriteConfirmedMsg) isModalResult() {}
 type overwriteCancelledMsg struct{}
 
 func (overwriteCancelledMsg) isModalResult() {}
+
+// weakPwdProceedMsg - emitted by the weak password Decision dialog when the user
+// chooses "Prosseguir" (proceed despite weak password). Carries the password.
+type weakPwdProceedMsg struct {
+	Password []byte
+}
+
+func (weakPwdProceedMsg) isModalResult() {}
+
+// weakPwdReviseMsg - emitted by the weak password Decision dialog when the user
+// chooses "Revisar" (return to password creation modal).
+type weakPwdReviseMsg struct{}
+
+func (weakPwdReviseMsg) isModalResult() {}

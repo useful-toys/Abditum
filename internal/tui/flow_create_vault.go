@@ -27,6 +27,7 @@ const (
 	stateCheckOverwrite = iota + 10 // offset to avoid collision with openVaultFlow states
 	statePwdCreate
 	stateSaveNew
+	stateStrengthCheck // intermediate: weak password decision pending
 )
 
 // newCreateVaultFlow creates and initializes a createVaultFlow.
@@ -87,25 +88,35 @@ func (f *createVaultFlow) Update(msg tea.Msg) tea.Cmd {
 		}
 
 	case pwdCreatedMsg:
-		f.state = stateSaveNew
 		password := msg.Password
-		path := f.targetPath
-		// Create and save the vault in a background command
-		return func() tea.Msg {
-			// Create a new empty vault
-			newVault := vault.NovoCofre()
-			newVault.InicializarConteudoPadrao()
-
-			// Attempt to save the vault
-			err := storage.SaveNew(path, newVault, password)
-			crypto.Wipe(password)
-
-			if err != nil {
-				f.messages.Show(MsgError, "Não foi possível salvar o cofre.", 5, false)
-				return endFlow()
+		// Spec Gap 2.1: Gate on password strength before proceeding to save
+		if crypto.EvaluatePasswordStrength(password) < crypto.StrengthStrong {
+			f.state = stateStrengthCheck
+			return func() tea.Msg {
+				return Decision(SeverityAlert, "Senha fraca",
+					"A senha não atende aos critérios de segurança recomendados.\n\nDeseja prosseguir mesmo assim ou revisar a senha?",
+					DecisionAction{Key: "R", Label: "Revisar", Default: true,
+						Cmd: func() tea.Msg {
+							crypto.Wipe(password) // discard weak password on revise
+							return weakPwdReviseMsg{}
+						}},
+					nil,
+					DecisionAction{Key: "Esc", Label: "Prosseguir",
+						Cmd: func() tea.Msg { return weakPwdProceedMsg{Password: password} }})
 			}
-			// Success
-			return vaultOpenedMsg{Path: path}
+		}
+		// Strong password: proceed directly to save
+		return f.saveVault(password)
+
+	case weakPwdProceedMsg:
+		// User chose to proceed despite weak password
+		return f.saveVault(msg.Password)
+
+	case weakPwdReviseMsg:
+		// User chose to revise - return to password creation modal
+		f.state = statePwdCreate
+		return func() tea.Msg {
+			return pushModalMsg{modal: &passwordCreateModal{}}
 		}
 
 	case overwriteConfirmedMsg:
@@ -133,4 +144,22 @@ func (f *createVaultFlow) Update(msg tea.Msg) tea.Cmd {
 // View is not used in flow-driven interface; modals handle visualization.
 func (f *createVaultFlow) View(width, height int) string {
 	return ""
+}
+
+// saveVault creates and persists a new vault at f.targetPath using the provided
+// password. It transitions to stateSaveNew and runs the I/O in a background Cmd.
+func (f *createVaultFlow) saveVault(password []byte) tea.Cmd {
+	f.state = stateSaveNew
+	path := f.targetPath
+	return func() tea.Msg {
+		newVault := vault.NovoCofre()
+		newVault.InicializarConteudoPadrao()
+		err := storage.SaveNew(path, newVault, password)
+		crypto.Wipe(password)
+		if err != nil {
+			f.messages.Show(MsgError, "Não foi possível salvar o cofre.", 5, false)
+			return endFlow()
+		}
+		return vaultOpenedMsg{Path: path}
+	}
 }
