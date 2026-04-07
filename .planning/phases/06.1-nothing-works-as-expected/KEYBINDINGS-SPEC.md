@@ -22,7 +22,7 @@
 | Spec `@tui-spec:46-79` | Current Code | Status | Notes |
 |---|---|---|---|
 | **F1** | `root.go:135-140` | ✅ SPEC-COMPLIANT | Help modal (Group 1, Priority 0, HideFromBar false) |
-| **F12** | `root.go:131-134` | ⚠ **NOT IN SPEC** | Theme toggle (Group 0, Priority 100, HideFromBar true) — POC feature |
+| **F12** | `root.go:131-134` | ✅ **KEEP — DECISION MADE** | Theme toggle (Group 0, Priority 100, HideFromBar true) — formalized as feature |
 | **Ctrl+Q** | `root.go:111-114` + root.go:243-257 | ⚠ **PARTIAL** | Base action registered; special logic in Update() pre-dispatch |
 | **Ctrl+Alt+Shift+Q** | *Not implemented* | ❌ NOT IMPLEMENTED | Lock vault (Fluxo 6) — Phase 7+ |
 
@@ -276,28 +276,24 @@ func (a *ActionManager) Dispatch(key string, inFlowOrModal bool) tea.Cmd {
 
 ### Gap K.2: F12 (Toggle Theme) is not in specification
 
-**Specification Location:** `tui-specification-novo.md` lines 46-79 (Atalhos da Aplicação section)
+**Specification Location:** `tui-specification-novo.md` line 55 — **F12 IS in spec** (Global Actions table)
 
-**Current Implementation:** `root.go:131-134` (hardcoded dispatch) + `root.go:260-268` (pre-dispatch)
+```
+| `F12` | Alternar Tema | Global | |
+```
+
+**Current Implementation:** `root.go:131-134` (action registration) + `root.go:260-268` (pre-dispatch hardcoded)
 
 - Registered as Group 0, Scope ScopeGlobal, Priority 100, HideFromBar true
 - Bypasses ActionManager dispatch (handled directly in root.go Update())
 
-**Issue:** F12 is a POC (proof-of-concept) feature not aligned with spec; appears in Help modal but not mentioned in spec.
+**Issue:** F12 was originally flagged as "not in spec" during analysis, but upon re-verification, F12 IS in the spec at line 55. The implementation is spec-compliant.
 
-**Impact:** 
-- Theme selection is useful for accessibility/preference, but not part of current spec scope
-- If kept, should be documented in spec update
-- If removed, delete ~40 lines of theme-toggle code
+**DECISION (2026-04-06): KEEP — Already spec-compliant. No changes needed.**
 
-**Decision Required:**
-- **Option A (KEEP):** Add F12 to spec's "Global" section; formalize it as feature
-- **Option B (REMOVE):** Delete theme toggle; users use config file instead
-- **Option C (DEFER):** Keep code, mark as "POC experimental", plan for Phase 8+ refinement
+**Architecture Note:** F12 currently bypasses ActionManager dispatch (hardcoded in root.go:260-268) even though it's also registered as an Action. This dual handling is redundant but harmless. A future cleanup could remove the pre-dispatch hardcoding and let ActionManager handle F12 dispatch.
 
-**Current recommendation (pending decision):** Option A — keep it, add to spec's global actions
-
-**Remediation:** If removing: delete lines 131-134, 260-268, toggleThemeMsg type, m.applyTheme() method; adjust RenderCommandBar tests
+**Remediation:** None required — already spec-compliant. Optional cleanup: remove pre-dispatch hardcoding in root.go:260-268.
 
 ---
 

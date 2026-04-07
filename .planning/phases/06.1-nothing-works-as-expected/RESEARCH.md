@@ -527,7 +527,7 @@ As part of Phase 06.1 specification compliance review, keybindings have been ana
 | ID | Gap | Severity | Impact | Remediation |
 |:--:|-----|----------|--------|-------------|
 | K.1 | O/N should be F5/F6 | MEDIUM | Users can't find expected F-keys | Change Keys arrays in root.go |
-| K.2 | F12 (Toggle) not in spec | LOW | Feature exists but not documented | Decision: keep/remove/defer |
+| K.2 | F12 (Toggle) not in spec | LOW | **DECISION: KEEP** — formalize in spec | Add F12 to spec Global Actions table |
 | K.3-K.6 | F2-F4, F7-F9, variants not implemented | LOW | No blocker; depends on future phases | Document in PLAN.md |
 
 ### Remediation for Phase 06.1

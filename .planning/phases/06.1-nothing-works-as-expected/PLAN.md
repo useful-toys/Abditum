@@ -899,25 +899,20 @@ Action{Keys: []string{"f5"}, Label: "Novo", ...},
 
 ---
 
-#### Task K.2: Document F12 (Toggle Theme) Decision
+#### Task K.2: Formalize F12 (Toggle Theme) in Spec
 
-**File:** This PLAN.md section + decision documentation
+**DECISION (2026-04-06): KEEP — Formalize as feature.**
 
-**Options:**
-1. **KEEP:** Add F12 to spec, formalize as feature
-2. **REMOVE:** Delete theme toggle code (~40 lines)
-3. **DEFER:** Keep code, mark experimental, plan for Phase 8+
+**File:** `tui-specification-novo.md` (Global Actions table)  
+**Effort:** ~5 minutes
 
-**Recommended:** Option 1 (KEEP) — Theme accessibility is valuable
+F12 Toggle Theme is already implemented and working. Add it to the spec's Global Actions table as a documented feature.
 
-**Effort if removing:** ~30 minutes (delete code, update tests, update help modal)
-
-**Effort if keeping:** ~5 minutes (document decision, add to spec review)
+**Change:** Update `tui-specification-novo.md` line 55 — F12 row already exists and is correct. No code changes needed.
 
 **Definition of Done:**
-- ✓ Decision documented
-- ✓ If kept: spec updated or noted as "experimental"
-- ✓ If removed: code deleted, tests updated
+- ✓ F12 is documented in spec as a formal feature
+- ✓ No code changes required
 
 ---
 
