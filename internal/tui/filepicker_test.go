@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	testdatapkg "github.com/useful-toys/abditum/internal/tui/testdata"
 )
@@ -768,4 +769,210 @@ func TestFilePickerModal_Golden(t *testing.T) {
 	}
 	jsonPath := goldenPath("filepicker", "initial", 80, "json")
 	checkOrUpdateGolden(t, jsonPath, string(jsonBytes))
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// D-07 Matrix Golden Tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+// fpkGoldenPath returns the golden file path for a filepicker test case.
+// variant already includes the terminal size, e.g. "open-withfiles-60x24".
+func fpkGoldenPath(variant, ext string) string {
+	name := fmt.Sprintf("filepicker-%s.%s.golden", variant, ext)
+	return filepath.Join("testdata", "golden", name)
+}
+
+// makeFilePickerFixture creates a temp dir with 3 .abditum files of known sizes/mtimes.
+// Returns the dir path. Files (sorted alpha): alpha, beta, gamma.
+func makeFilePickerFixture(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	type entry struct {
+		name string
+		size int64
+		mt   time.Time
+	}
+	entries := []entry{
+		{"alpha.abditum", 26214400, time.Date(2025, 3, 15, 14, 32, 0, 0, time.UTC)},
+		{"beta.abditum", 1258291, time.Date(2025, 2, 1, 9, 15, 0, 0, time.UTC)},
+		{"gamma.abditum", 512, time.Date(2025, 1, 20, 16, 0, 0, 0, time.UTC)},
+	}
+	for _, e := range entries {
+		p := filepath.Join(dir, e.name)
+		if err := os.WriteFile(p, make([]byte, e.size), 0644); err != nil {
+			t.Fatalf("create fixture %s: %v", e.name, err)
+		}
+		if err := os.Chtimes(p, e.mt, e.mt); err != nil {
+			t.Fatalf("chtimes fixture %s: %v", e.name, err)
+		}
+	}
+	return dir
+}
+
+// makeScrollTreeFixture creates a temp dir with 8 subdirectories (no .abditum files).
+func makeScrollTreeFixture(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	for i := 0; i < 8; i++ {
+		subdir := filepath.Join(dir, fmt.Sprintf("pasta%02d", i))
+		if err := os.Mkdir(subdir, 0755); err != nil {
+			t.Fatalf("mkdir %s: %v", subdir, err)
+		}
+	}
+	return dir
+}
+
+// makeScrollFilesFixture creates a temp dir with 10 .abditum files of varying sizes.
+func makeScrollFilesFixture(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	mt := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	for i := 0; i < 10; i++ {
+		p := filepath.Join(dir, fmt.Sprintf("vault%02d.abditum", i))
+		size := int64((i + 1) * 102400) // 100KB, 200KB, ..., 1MB
+		if err := os.WriteFile(p, make([]byte, size), 0644); err != nil {
+			t.Fatalf("create %s: %v", p, err)
+		}
+		if err := os.Chtimes(p, mt, mt); err != nil {
+			t.Fatalf("chtimes %s: %v", p, err)
+		}
+	}
+	return dir
+}
+
+// newGoldenFPK constructs a filePickerModal for golden tests.
+// Does NOT call Init() — sets state directly to avoid CWD dependency.
+// root is a minimal stub node pointing to dir.
+func newGoldenFPK(mode FilePickerMode, title, dir string, w, h int) *filePickerModal {
+	root := &treeNode{
+		path:     dir,
+		name:     filepath.Base(dir),
+		depth:    0,
+		expanded: true,
+		loaded:   true,
+	}
+	ni := textinput.New()
+	ni.Placeholder = ""
+	ni.Blur()
+	fpk := &filePickerModal{
+		ext:        ".abditum",
+		mode:       mode,
+		title:      title,
+		theme:      ThemeTokyoNight,
+		timeFmt:    func(t time.Time) string { return t.UTC().Format("02/01/06 15:04") },
+		root:       root,
+		focusPanel: 0,
+		nameField:  ni,
+	}
+	fpk.visibleNodes = []visibleNode{{node: root}}
+	fpk.treeCursor = 0
+	fpk.currentPath = dir
+	fpk.loadFilesForCursor()
+	// Replace currentPath with a fixed stub so golden files don't contain
+	// the randomly-named temp directory path.
+	fpk.currentPath = "/golden/stub/path"
+	fpk.SetSize(w, h)
+	return fpk
+}
+
+// runFPKGolden renders fpk.View() and checks/updates txt and json golden files.
+func runFPKGolden(t *testing.T, fpk *filePickerModal, variant string) {
+	t.Helper()
+	out := fpk.View()
+	if out == "" {
+		t.Fatalf("View() returned empty string for variant %s", variant)
+	}
+	// txt: strip ANSI
+	checkOrUpdateGolden(t, fpkGoldenPath(variant, "txt"), stripANSI(out))
+	// json: style transitions
+	transitions := testdatapkg.ParseANSIStyle(out)
+	jsonBytes, err := testdatapkg.MarshalStyleTransitions(transitions)
+	if err != nil {
+		t.Fatalf("MarshalStyleTransitions: %v", err)
+	}
+	checkOrUpdateGolden(t, fpkGoldenPath(variant, "json"), string(jsonBytes))
+}
+
+// TestGoldenFilePickerOpenWithFiles60x24: Open mode, dir with 3 files, first selected.
+func TestGoldenFilePickerOpenWithFiles60x24(t *testing.T) {
+	dir := makeFilePickerFixture(t)
+	fpk := newGoldenFPK(FilePickerOpen, "Abrir cofre", dir, 60, 24)
+	fpk.focusPanel = 0
+	runFPKGolden(t, fpk, "open-withfiles-60x24")
+}
+
+// TestGoldenFilePickerOpenNoFiles60x24: Open mode, empty dir, action disabled.
+func TestGoldenFilePickerOpenNoFiles60x24(t *testing.T) {
+	dir := t.TempDir() // no .abditum files
+	fpk := newGoldenFPK(FilePickerOpen, "Abrir cofre", dir, 60, 24)
+	runFPKGolden(t, fpk, "open-nofiles-60x24")
+}
+
+// TestGoldenFilePickerSaveFieldEmpty60x24: Save mode, empty field, focus on campo nome.
+func TestGoldenFilePickerSaveFieldEmpty60x24(t *testing.T) {
+	dir := t.TempDir()
+	fpk := newGoldenFPK(FilePickerSave, "Salvar cofre", dir, 60, 24)
+	fpk.focusPanel = 2
+	fpk.nameField.Focus()
+	runFPKGolden(t, fpk, "save-fieldempty-60x24")
+}
+
+// TestGoldenFilePickerSaveFieldFilled60x24: Save mode, "meu-cofre" in field, action active.
+func TestGoldenFilePickerSaveFieldFilled60x24(t *testing.T) {
+	dir := makeFilePickerFixture(t)
+	fpk := newGoldenFPK(FilePickerSave, "Salvar cofre", dir, 60, 24)
+	fpk.focusPanel = 2
+	fpk.nameField.Focus()
+	fpk.nameField.SetValue("meu-cofre")
+	runFPKGolden(t, fpk, "save-fieldfilled-60x24")
+}
+
+// TestGoldenFilePickerOpenTreeScroll60x24: Open mode, 8 subdirs expanded, mid-scroll.
+func TestGoldenFilePickerOpenTreeScroll60x24(t *testing.T) {
+	dir := makeScrollTreeFixture(t)
+	fpk := newGoldenFPK(FilePickerOpen, "Abrir cofre", dir, 60, 24)
+	// Expand root so its 8 children are visible
+	if fpk.root != nil {
+		if err := fpk.expandNode(fpk.root); err == nil {
+			fpk.visibleNodes = nil
+			fpk.buildVisibleNodes(fpk.root, &fpk.visibleNodes)
+		}
+	}
+	// Set mid-scroll: put treeScroll at 2 and cursor at 4 (both ↑ and ↓ visible)
+	if len(fpk.visibleNodes) > 5 {
+		fpk.treeScroll = 2
+		fpk.treeCursor = 4
+	}
+	runFPKGolden(t, fpk, "open-treescroll-60x24")
+}
+
+// TestGoldenFilePickerOpenFileScroll60x24: Open mode, 10 files mid-scroll.
+func TestGoldenFilePickerOpenFileScroll60x24(t *testing.T) {
+	dir := makeScrollFilesFixture(t)
+	fpk := newGoldenFPK(FilePickerOpen, "Abrir cofre", dir, 60, 24)
+	fpk.focusPanel = 1
+	// Set mid-scroll for files panel
+	if len(fpk.files) >= 6 {
+		fpk.fileScroll = 2
+		fpk.fileCursor = 5
+	}
+	runFPKGolden(t, fpk, "open-filescroll-60x24")
+}
+
+// TestGoldenFilePickerOpenWithFiles80x24: Open mode, same fixture, wider terminal.
+func TestGoldenFilePickerOpenWithFiles80x24(t *testing.T) {
+	dir := makeFilePickerFixture(t)
+	fpk := newGoldenFPK(FilePickerOpen, "Abrir cofre", dir, 80, 24)
+	fpk.focusPanel = 0
+	runFPKGolden(t, fpk, "open-withfiles-80x24")
+}
+
+// TestGoldenFilePickerSaveFieldFilled80x24: Save mode, field filled, 80-col terminal.
+func TestGoldenFilePickerSaveFieldFilled80x24(t *testing.T) {
+	dir := makeFilePickerFixture(t)
+	fpk := newGoldenFPK(FilePickerSave, "Salvar cofre", dir, 80, 24)
+	fpk.focusPanel = 2
+	fpk.nameField.Focus()
+	fpk.nameField.SetValue("meu-cofre")
+	runFPKGolden(t, fpk, "save-fieldfilled-80x24")
 }
