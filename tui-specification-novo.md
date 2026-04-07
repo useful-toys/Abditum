@@ -1256,7 +1256,33 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 ---
 
+## Ações na Árvore de Segredos
+
+Esta seção detalha as ações disponíveis ao interagir com a árvore de segredos (painel esquerdo do Modo Cofre) e seus respectivos atalhos de teclado. As regras gerais de navegação e atribuição de teclas são definidas no [Design System — Mapa de Teclas](tui-design-system-novo.md#mapa-de-teclas).
+
+### Navegação na Árvore e Seleção
+
+| Tecla           | Ação                                     | Notas                                                                      |
+|-----------------|------------------------------------------|----------------------------------------------------------------------------|
+| `↑` / `↓`       | Mover cursor na lista / árvore           |                                                                            |
+| `→` / `Enter`   | Expandir pasta ou selecionar segredo     | `Enter` também ativa a ação padrão de um item selecionado.                 |
+| `←`             | Recolher pasta ou subir para pasta pai   |                                                                            |
+| `Home` / `End`  | Mover para o primeiro / último item visível |                                                                            |
+| `PgUp` / `PgDn` | Rolar uma página para cima / baixo       |                                                                            |
+| `Tab`           | Alternar foco entre painéis              | Move o foco para o painel direito (Detalhe) e vice-versa.                  |
+
+### Ações em Segredos (Contextuais ao item focado)
+
+| Tecla    | Ação                                     | Notas                                                                      |
+|----------|------------------------------------------|----------------------------------------------------------------------------|
+| `Insert` | Novo segredo                             | Cria um novo segredo na pasta atualmente focada.                           |
+| `^E`     | Editar segredo                           | Entra no modo de edição para o segredo selecionado.                        |
+| `Delete` | Excluir segredo                          | Marca o segredo selecionado para exclusão (reversível até o salvamento).   |
+| `Ctrl+R` | Revelar / ocultar campo sensível         | Aplica-se ao campo sensível em foco no painel de detalhes.                 |
+| `Ctrl+C` | Copiar valor para área de transferência  | Copia o valor do campo em foco no painel de detalhes.                      |
+
 ### Painel Direito: Detalhe do Segredo — Modo Leitura
+
 
 **Contexto:** Área de trabalho — Modo Cofre.
 **Largura:** ~65% da área de trabalho.
