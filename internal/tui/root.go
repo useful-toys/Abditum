@@ -116,14 +116,14 @@ func newRootModel(initialPath string) *rootModel {
 			Handler: func() tea.Cmd { return tea.Quit }},
 		// Vault actions (pre-vault scope)
 		Action{Keys: []string{"f6"}, Label: "Abrir", Description: "Abrir cofre existente",
-			Group: 4, Scope: ScopeLocal, Priority: 95, HideFromBar: false,
+			Group: 4, Scope: ScopeLocal, Priority: 94, HideFromBar: false,
 			Enabled: func() bool { return m.area == workAreaWelcome },
 			Handler: func() tea.Cmd {
 				flow := newOpenVaultFlow(m.mgr, m.messages, actions, m.theme)
 				return func() tea.Msg { return startFlowMsg{flow: flow} }
 			}},
 		Action{Keys: []string{"f5"}, Label: "Novo", Description: "Criar novo cofre",
-			Group: 4, Scope: ScopeLocal, Priority: 94, HideFromBar: false,
+			Group: 4, Scope: ScopeLocal, Priority: 95, HideFromBar: false,
 			Enabled: func() bool { return m.area == workAreaWelcome },
 			Handler: func() tea.Cmd {
 				flow := newCreateVaultFlow(m.mgr, m.messages, actions, m.theme)
