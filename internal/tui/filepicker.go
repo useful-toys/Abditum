@@ -689,18 +689,18 @@ func (m *filePickerModal) renderTopBorder(modalW int, theme *Theme) string {
 		borderSt.Render(suffixPrefix+dashes+"╮")
 }
 
-// renderCaminhoHeader draws the "Caminho: /path/to/dir" row (D-20).
+// renderCaminhoHeader draws the "/path/to/dir" row with 1-space lateral padding (D-20).
 func (m *filePickerModal) renderCaminhoHeader(innerW int, theme *Theme) string {
 	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
-	labelSt := lipgloss.NewStyle().Foreground(theme.TextSecondary)
 	valueSt := lipgloss.NewStyle().Foreground(theme.TextPrimary)
 
-	label := "Caminho: "
-	path := m.currentPath
-	avail := innerW - lipgloss.Width(label)
+	// 1 space of padding on each side; path uses the remaining space
+	padding := 1
+	avail := innerW - padding*2
 	if avail < 3 {
 		avail = 3
 	}
+	path := m.currentPath
 	// Truncate path from left with … if too wide
 	runes := []rune(path)
 	for len(runes) > avail {
@@ -709,7 +709,7 @@ func (m *filePickerModal) renderCaminhoHeader(innerW int, theme *Theme) string {
 	if string(runes) != path {
 		path = "…" + string(runes)
 	}
-	content := labelSt.Render(label) + valueSt.Render(path)
+	content := strings.Repeat(" ", padding) + valueSt.Render(path)
 	content = padRight(content, innerW)
 	return borderSt.Render("│") + content + borderSt.Render("│")
 }
@@ -939,8 +939,10 @@ func (m *filePickerModal) renderFieldSeparator(innerW, treeW int) string {
 	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderDefault))
 
 	leftDashes := strings.Repeat("─", treeW)
-	junctionCol := treeW + 1
-	rightLen := innerW - junctionCol - 1
+	// rightLen: innerW total = treeW(─) + 1(┴) + rightLen(─)
+	// so rightLen = innerW - treeW - 1
+	// full row: 1(├) + treeW + 1(┴) + rightLen + 1(┤) = innerW + 2 = modalW ✓
+	rightLen := innerW - treeW - 1
 	if rightLen < 0 {
 		rightLen = 0
 	}
@@ -962,9 +964,10 @@ func (m *filePickerModal) renderFieldRow(innerW int, theme *Theme) string {
 		labelSt = lipgloss.NewStyle().Foreground(theme.TextSecondary)
 	}
 
-	label := labelSt.Render("Nome do arquivo") + " "
-	labelW := lipgloss.Width("Nome do arquivo ")
-	fieldW := innerW - labelW - 2
+	prefix := " " // 1 space padding at left edge
+	label := labelSt.Render("Arquivo:") + " "
+	labelW := lipgloss.Width("Arquivo: ")
+	fieldW := innerW - len(prefix) - labelW
 	if fieldW < 4 {
 		fieldW = 4
 	}
@@ -985,9 +988,9 @@ func (m *filePickerModal) renderFieldRow(innerW int, theme *Theme) string {
 		}
 		fieldContent = "…" + string(runes)
 	}
-	fieldRendered := fieldBgSt.Render(padRight(" "+fieldContent+" ", fieldW+2))
+	fieldRendered := fieldBgSt.Render(padRight(fieldContent, fieldW))
 
-	content := label + fieldRendered
+	content := prefix + label + fieldRendered
 	content = padRight(content, innerW)
 	return borderSt.Render("│") + content + borderSt.Render("│")
 }
