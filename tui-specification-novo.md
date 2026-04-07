@@ -24,6 +24,7 @@
   - [Painel Esquerdo: Árvore](#painel-esquerdo-árvore)
   - [Busca de Segredos](#busca-de-segredos)
   - [Painel Direito: Detalhe do Segredo — Modo Leitura](#painel-direito-detalhe-do-segredo--modo-leitura)
+  - [Painel Direito: Detalhe do Segredo — Modo Edição de Valores](#painel-direito-detalhe-do-segredo--modo-edição-de-valores)
 - [Ações na Árvore de Segredos](#ações-na-árvore-de-segredos)
   - [⌃D — Duplicar segredo](#d--duplicar-segredo)
   - [⌃M — Mover para outra pasta](#m--mover-para-outra-pasta)
@@ -2062,6 +2063,268 @@ A tabela abaixo consolida todas as variações da barra de comandos para segredo
 - **`<╡` e trilha de scroll são independentes** — `<╡` aparece no separador vertical esquerdo e indica qual item da árvore está sendo detalhado; a trilha de scroll aparece na margem direita e reflete o scroll do conteúdo do painel. Um não afeta o outro
 - **Posição do cursor ao retornar o foco** — ao receber foco via `Tab` novamente, o cursor vai ao campo que estava ativo antes de o foco sair; se nunca focado, vai ao primeiro campo
 - **Breadcrumb — truncamento** — o breadcrumb é truncado à esquerda com `…` se o caminho completo não couber; o nome do segredo e o `★` nunca são truncados
+
+---
+
+### Painel Direito: Detalhe do Segredo — Modo Edição de Valores
+
+**Contexto:** Área de trabalho — Modo Cofre. Ativado quando o usuário pressiona `Enter` sobre um campo no painel de detalhe em Modo Leitura.
+**Largura:** ~65% da área de trabalho (igual ao Modo Leitura).
+**Responsabilidade:** Permitir editar o valor de cada campo do segredo individualmente, com persistência imediata por campo, sem estado global pendente.
+
+> O modo edição de estrutura (renomear campos, adicionar/remover campos, reordenar) é especificado separadamente (Fluxo 21).
+
+---
+
+#### Anatomia do modo
+
+O Modo Edição de Valores é uma camada sobre o Modo Leitura. O layout do painel (cabeçalho, separador, campos, observação, scroll) permanece o mesmo — o que muda são:
+
+1. **Indicador de modo** — `[editando]` em `accent.primary` **bold** aparece no cabeçalho, após o nome do segredo e antes do `★`/breadcrumb
+2. **Cursor de campo** — continua sendo `special.highlight` no bloco, como no Modo Leitura; o input se abre sobre o campo em foco
+3. **Input inline** — quando um campo está em edição, o valor é substituído por um campo de texto editável na mesma posição; o input ocupa a largura total do painel (exceto a coluna de scroll)
+4. **Barra de comandos** — muda conforme o estado: cursor de campo sem input aberto, ou input aberto
+
+---
+
+#### Anatomia do cabeçalho em edição
+
+```
+  Gmail [editando] ★                     Geral › Sites e Apps
+  ──────────────────────────────────────────────────────────
+```
+
+- Nome do segredo: `text.primary` **bold** (igual ao Modo Leitura)
+- `[editando]`: `accent.primary` **bold**, separado do nome por um espaço
+- `★` e breadcrumb: inalterados
+
+---
+
+#### Wireframes
+
+**Cursor no campo, sem input aberto (campo comum):**
+
+```
+  Gmail [editando] ★               Geral › Sites e Apps
+  ──────────────────────────────────────────────────────
+  URL
+
+  Usuário                                                ← special.highlight no bloco
+  fulano@gmail.com
+
+  Senha
+  ••••••••••
+
+  ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  Conta pessoal principal.
+```
+
+> Barra: `Enter Editar campo · ⌃N Renomear · ⌃S Favoritar · Tab Árvore · Esc Sair da edição · F1 Ajuda`
+
+**Input aberto — campo comum:**
+
+```
+  Gmail [editando] ★               Geral › Sites e Apps
+  ──────────────────────────────────────────────────────
+  URL
+
+  Usuário                                                ← special.highlight no bloco
+  ░fulano@gmail.com▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+  Senha
+  ••••••••••
+
+  ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  Conta pessoal principal.
+```
+
+> `░` marca o fundo do input (`input.background`); `▌` é o cursor de texto. O input substitui visualmente a linha do valor; o rótulo permanece acima. Barra: `Enter Confirmar · Esc Cancelar campo · F1 Ajuda`
+
+**Input aberto — campo sensível (revelado automaticamente):**
+
+```
+  Gmail [editando] ★               Geral › Sites e Apps
+  ──────────────────────────────────────────────────────
+  URL
+
+  Usuário
+  fulano@gmail.com
+
+  Senha                                                  ← special.highlight no bloco
+  ░minha-senha-secreta-123▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+  ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  Conta pessoal principal.
+```
+
+> Ao abrir o input de campo sensível, o valor é revelado automaticamente em texto claro dentro do input. Ao fechar o input (`Enter` ou `Esc`), o campo é re-mascarado imediatamente. Barra: `Enter Confirmar · Esc Cancelar campo · F1 Ajuda`
+
+**Renomear segredo — input no cabeçalho (`⌃N`):**
+
+```
+  ░Gmail▌░░░░░░░░░░  [editando] ★        Geral › Sites e Apps
+  ──────────────────────────────────────────────────────────
+  URL
+  https://accounts.google.com/login
+
+  Usuário
+  fulano@gmail.com
+
+  Senha
+  ••••••••••
+```
+
+> O input do nome abre inline no cabeçalho, substituindo o nome do segredo; `[editando]`, `★` e breadcrumb permanecem à direita. Nenhum campo da lista está em foco enquanto o input do nome está aberto. Barra: `Enter Confirmar nome · Esc Cancelar · F1 Ajuda`
+
+**Validação — nome duplicado:**
+
+```
+  ░Gmail▌░░░░░░░░░░  [editando] ★        Geral › Sites e Apps
+  ──────────────────────────────────────────────────────────
+```
+
+> Barra de mensagens (erro): `✗ Já existe um segredo com esse nome nesta pasta` — input permanece aberto; o valor não é persistido.
+
+**Cursor no campo, sem input — campo sensível:**
+
+```
+  Gmail [editando] ★               Geral › Sites e Apps
+  ──────────────────────────────────────────────────────
+  URL
+
+  Usuário
+  fulano@gmail.com
+
+  Senha                                                  ← special.highlight no bloco
+  ••••••••••
+
+  ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  Conta pessoal principal.
+```
+
+> Campo sensível permanece mascarado enquanto não há input aberto. Barra: `Enter Editar campo · ⌃N Renomear · ⌃S Favoritar · Tab Árvore · Esc Sair da edição · F1 Ajuda`
+
+---
+
+#### Mapa de teclas
+
+**Com cursor de campo, sem input aberto:**
+
+| Tecla | Efeito | Condição |
+|---|---|---|
+| `↑` / `↓` | Move cursor para o campo anterior / próximo (sem abrir input) | — |
+| `Home` / `End` | Cursor vai ao primeiro / último campo | — |
+| `Enter` | Abre input inline no campo em foco | — |
+| `⌃N` | Abre input inline no cabeçalho (renomear segredo) | — |
+| `⌃S` | Favoritar / Desfavoritar segredo | — |
+| `Tab` | Foco → árvore; sai do modo edição | — |
+| `Esc` | Sai do modo edição; retorna ao Modo Leitura | — |
+
+**Com input de campo aberto:**
+
+| Tecla | Efeito |
+|---|---|
+| Texto / Backspace / Delete | Edita o valor no input |
+| `Enter` | Persiste o valor; fecha o input; cursor permanece no campo |
+| `↑` | Persiste o valor implicitamente; fecha o input; move cursor para o campo anterior |
+| `↓` | Persiste o valor implicitamente; fecha o input; move cursor para o próximo campo |
+| `Esc` | Cancela; restaura o valor anterior; fecha o input; cursor permanece no campo |
+
+**Com input do nome aberto (`⌃N`):**
+
+| Tecla | Efeito |
+|---|---|
+| Texto / Backspace / Delete | Edita o nome no input |
+| `Enter` | Valida e persiste o nome; fecha o input; retorna ao cursor de campo |
+| `Esc` | Cancela; restaura o nome anterior; fecha o input |
+
+> `Tab` com input de campo aberto: persiste o valor implicitamente, fecha o input, foco vai para a árvore e sai do modo edição.
+> `Tab` com input do nome aberto: cancela o nome (sem persistir), foco vai para a árvore e sai do modo edição.
+
+---
+
+#### Tokens
+
+| Elemento | Token | Atributo |
+|---|---|---|
+| Nome do segredo (cabeçalho) | `text.primary` | **bold** |
+| `[editando]` | `accent.primary` | **bold** |
+| `★` favorito | `accent.secondary` | — |
+| Breadcrumb de pasta | `text.secondary` | — |
+| Fundo do campo em foco (sem input) | `special.highlight` | — |
+| Fundo do input aberto | `input.background` | — |
+| Texto dentro do input | `text.primary` | — |
+| Cursor de texto no input | terminal padrão | — |
+| Rótulo de campo | `text.secondary` | **bold** |
+| Valor de campo comum (sem input) | `text.primary` | — |
+| Valor de campo sensível mascarado (sem input) | `text.secondary` | — |
+| Separador `───` cabeçalho | `border.default` | — |
+| Separador `╌╌╌` da Observação | `border.default` | — |
+
+---
+
+#### Estados dos componentes
+
+| Componente | Estado | Condição |
+|---|---|---|
+| Indicador `[editando]` | visível no cabeçalho | Modo edição de valores ativo |
+| Cursor de campo | `special.highlight` no bloco | Sempre (modo edição tem foco implícito) |
+| Input de campo | ausente | Cursor de campo sem edição ativa |
+| Input de campo | aberto sobre a linha do valor | `Enter` pressionado sobre o campo |
+| Campo sensível | mascarado `••••••••` | Input fechado |
+| Campo sensível | revelado (texto claro no input) | Input aberto |
+| Campo sensível | re-mascarado | Input fechado após `Enter` ou `Esc` |
+| Input do nome | ausente | `⌃N` não pressionado |
+| Input do nome | aberto no cabeçalho | `⌃N` pressionado |
+| Cursor de campo da lista | ausente | Input do nome aberto |
+
+---
+
+#### Mensagens
+
+| Contexto | Tipo | Texto |
+|---|---|---|
+| Modo edição ativado | Dica | `• Enter para editar um campo · Esc para sair` |
+| Campo confirmado (`Enter` ou `↑`/`↓` implícito) | Sucesso (3s) | `✓ [Rótulo do campo] salvo` |
+| Nome duplicado ao confirmar | Erro | `✗ Já existe um segredo com esse nome nesta pasta` |
+| Campo confirmado — campo sensível | Sucesso (3s) | `✓ [Rótulo do campo] salvo` |
+
+---
+
+#### Eventos
+
+| Evento | Efeito |
+|---|---|
+| `Enter` no Modo Leitura sobre um campo | Modo edição de valores ativado; indicador `[editando]` aparece; input abre no campo em foco |
+| `↑` / `↓` sem input aberto | Cursor de campo move; sem efeito colateral |
+| `↑` / `↓` com input aberto | Valor persistido implicitamente; input fechado; cursor move para o campo anterior/próximo |
+| `Enter` com input aberto | Valor persistido; input fechado; cursor permanece no campo; mensagem de sucesso exibida |
+| `Esc` com input aberto | Valor descartado; valor anterior restaurado; input fechado; cursor permanece no campo |
+| `Tab` com input aberto | Valor persistido implicitamente; input fechado; foco vai para a árvore; modo edição encerrado |
+| `Tab` sem input aberto | Foco vai para a árvore; modo edição encerrado |
+| `Esc` sem input aberto | Modo edição encerrado; retorna ao Modo Leitura; indicador `[editando]` removido |
+| `⌃N` | Input do nome abre no cabeçalho; cursor de campo da lista some |
+| `Enter` com input do nome aberto | Nome validado; se válido: persistido, input fechado, cursor de campo da lista retorna; se inválido: mensagem de erro, input permanece |
+| `Esc` com input do nome aberto | Nome descartado; nome anterior restaurado; input fechado; cursor de campo da lista retorna |
+| `Tab` com input do nome aberto | Nome descartado (sem persistir); foco vai para a árvore; modo edição encerrado |
+| Campo sensível: input abre | Valor revelado automaticamente em texto claro no input |
+| Campo sensível: input fecha | Campo re-mascarado imediatamente |
+| `⌃Q` (sair da aplicação) | Modo edição encerrado sem diálogo de confirmação (persistência imediata por campo elimina estado pendente) |
+
+---
+
+#### Comportamento
+
+- **Persistência imediata por campo** — cada campo é salvo ao confirmar (`Enter` ou movimento implícito com `↑`/`↓`/`Tab`); não há estado de "edição pendente" global. `⌃Q` pode sair sem diálogo de confirmação relacionado ao modo edição
+- **Input inline** — o input abre na mesma posição da linha do valor, substituindo-a visualmente; o rótulo permanece acima; a estrutura do painel não se desloca
+- **Campo sensível revelado no input** — ao abrir o input de um campo sensível, o valor real é exibido em texto claro para permitir edição; ao fechar o input (por qualquer tecla), o campo é re-mascarado imediatamente, independentemente do resultado (confirmado ou cancelado)
+- **`⌃R` indisponível no modo edição** — o ciclo de reveal do Modo Leitura não se aplica; o reveal ocorre automaticamente ao abrir o input
+- **`⌃C` indisponível no modo edição** — cópia de campo não está disponível enquanto o modo edição está ativo
+- **Navegação sem abrir input** — `↑`/`↓`/`Home`/`End` movem o cursor entre campos sem abrir o input, igual ao Modo Leitura; o input só abre com `Enter` explícito
+- **Input do nome (`⌃N`) é independente do cursor de campo da lista** — enquanto o input do nome está aberto, nenhum campo da lista está em foco; ao fechar o input do nome, o cursor retorna ao campo que estava em foco antes de `⌃N`
+- **Validação do nome** — o nome não pode ser vazio; não pode duplicar o nome de outro segredo na mesma pasta; a validação ocorre ao pressionar `Enter` no input do nome; erros mantêm o input aberto
+- **Sair do modo edição** — `Esc` sem input aberto ou `Tab` encerram o modo edição; o indicador `[editando]` é removido; o painel retorna ao Modo Leitura com o mesmo campo em foco
+- **Scroll** — o comportamento de scroll é idêntico ao Modo Leitura; a coluna da trilha é sempre reservada
 
 ---
 
