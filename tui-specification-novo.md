@@ -79,9 +79,29 @@ Esta seção lista todas as instâncias de diálogos de decisão da aplicação,
 | Ação | Situação | Tipo | Título | Mensagem no Corpo | Ações na Borda |
 |---|---|---|---|---|---|
 | **Sair** | Sem alterações | Confirmação × Neutro | `Sair do Abditum` | `Sair do Abditum?` | `Enter Sair`, `Esc Voltar` |
-| **Sair** | Com alterações | Confirmação × Alerta | `⚠ Sair do Abditum` | `Cofre modificado. Salvar ou descartar?` | `S Salvar`, `D Descartar`, `Esc Voltar` |
-| **Salvar** | Conflito externo | Confirmação × Informativo | `ℹ Salvar cofre` | `Arquivo modificado externamente. Sobrescrever?` | `Enter Sobrescrever`, `Esc Voltar` |
-| **Abrir cofre** | Falha (arquivo inválido) | Reconhecimento × Erro | `✕ Falha ao abrir cofre` | `Arquivo corrompido ou inválido. Fechar?` | `Enter OK` |
+| **Sair** | Com alterações | Confirmação × Alerta | `Sair do Abditum` | `Cofre modificado. Salvar ou descartar?` | `S Salvar`, `D Descartar`, `Esc Voltar` |
+| **Salvar** | Conflito externo | Confirmação × Destrutivo | `Salvar cofre` | `Arquivo modificado externamente. Sobrescrever?` | `S Sobrescrever`, `Esc Voltar` |
+| **Abrir cofre** | Falha (arquivo inválido) | Reconhecimento × Erro | `Abrir cofre` | `Arquivo corrompido ou inválido. Necessário fechar.` | `Enter OK` |
+| **Abrir cofre** | Modificações não salvas | Confirmação × Alerta | `Abrir cofre` | `Cofre modificado. Salvar ou descartar?` | `S Salvar`, `D Descartar`, `Esc Voltar` |
+| **Abrir cofre** | Caminho/Formato inválido | Reconhecimento × Erro | `Abrir cofre` | `Arquivo inválido ou versão não suportada. Necessário corrigir.` | `Enter OK` |
+| **Abrir cofre** | Senha incorreta | Reconhecimento × Erro | `Abrir cofre` | `Senha incorreta. Necessário tentar novamente.` | `Enter OK` |
+| **Criar novo cofre** | Modificações não salvas | Confirmação × Alerta | `Criar novo cofre` | `Cofre modificado. Salvar ou descartar?` | `S Salvar`, `D Descartar`, `Esc Voltar` |
+| **Criar novo cofre** | Arquivo de destino existente | Confirmação × Alerta | `Criar novo cofre` | `Arquivo '[Nome]' já existe. Sobrescrever?` | `S Sobrescrever`, `I Outro caminho`, `Esc Voltar` |
+| **Criar novo cofre** | Senhas não coincidem | Reconhecimento × Erro | `Criar novo cofre` | `Senhas não conferem. Necessário digitar novamente.` | `Enter OK` |
+| **Criar novo cofre** | Senha fraca | Confirmação × Alerta | `Criar novo cofre` | `Senha é fraca. Prosseguir ou revisar?` | `P Prosseguir`, `R Revisar`, `Esc Voltar` |
+| **Salvar cofre** | Conflito externo | Confirmação × Destrutivo | `Salvar cofre` | `Arquivo modificado externamente. Sobrescrever ou salvar como novo?` | `S Sobrescrever`, `N Salvar como novo`, `Esc Voltar` |
+| **Salvar cofre como** | Destino é arquivo atual | Reconhecimento × Alerta | `Salvar cofre como` | `Destino não pode ser o arquivo atual. Necessário escolher outro.` | `Enter OK` |
+| **Salvar cofre como** | Arquivo de destino existente | Confirmação × Alerta | `Salvar cofre como` | `Arquivo '[Nome]' já existe. Sobrescrever?` | `S Sobrescrever`, `I Outro caminho`, `Esc Voltar` |
+| **Descartar e recarregar** | Arquivo modificado externamente | Confirmação × Destrutivo | `Descartar e recarregar` | `Cofre modificado externamente. Prosseguir com recarregamento?` | `P Prosseguir`, `Esc Voltar` |
+| **Descartar e recarregar** | Confirmação de descarte | Confirmação × Destrutivo | `⚠ Descartar e recarregar` | `Todas as alterações serão descartadas. Continuar?` | `C Continuar`, `Esc Voltar` |
+| **Alterar senha mestra** | Senhas não coincidem | Reconhecimento × Erro | `Alterar senha mestra` | `Senhas não conferem. Necessário digitar novamente.` | `Enter OK` |
+| **Alterar senha mestra** | Senha fraca | Confirmação × Alerta | `Alterar senha mestra` | `Senha é fraca. Prosseguir ou revisar?` | `P Prosseguir`, `R Revisar`, `Esc Voltar` |
+| **Alterar senha mestra** | Conflito externo | Confirmação × Destrutivo | `Alterar senha mestra` | `Arquivo modificado externamente. Sobrescrever?` | `S Sobrescrever`, `Esc Voltar` |
+| **Exportar cofre** | Senha incorreta (reautenticação) | Reconhecimento × Erro | `Exportar cofre` | `Senha incorreta. Necessário tentar novamente.` | `Enter OK` |
+| **Exportar cofre** | Riscos de segurança (não criptografado) | Confirmação × Alerta | `Exportar cofre` | `Arquivo não criptografado. Expor dados sensíveis?` | `E Exportar`, `Esc Voltar` |
+| **Exportar cofre** | Arquivo de destino existente | Confirmação × Alerta | `Exportar cofre` | `Arquivo '[Nome]' já existe. Sobrescrever?` | `S Sobrescrever`, `I Outro caminho`, `Esc Voltar` |
+| **Importar cofre** | Arquivo de intercâmbio inválido | Reconhecimento × Erro | `Importar cofre` | `Arquivo inválido ou sem Pasta Geral. Necessário corrigir.` | `Enter OK` |
+| **Importar cofre** | Confirmação da política de mesclagem | Confirmação × Informativo | `Importar cofre` | `Pastas mescladas. Conflitos substituídos. Confirmar?` | `C Confirmar`, `Esc Voltar` |
 
 ---
 
