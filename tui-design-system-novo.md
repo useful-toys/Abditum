@@ -424,7 +424,7 @@ Todo diálogo de decisão exibe suas ações na borda inferior. O número de aç
 |---|---|---|
 | **1 ação** | Alinhada à **direita** | Reconhecimento — o usuário apenas toma ciência (ex: "OK") |
 | **2 ações** | Default à **esquerda**, Cancelar à **direita** | Confirmação binária (ex: "Excluir / Cancelar") |
-| **3 ações** | Default à **esquerda**, alternativa no meio, Cancelar à **direita** | Confirmação com alternativa (ex: "Salvar / Salvar como… / Cancelar") |
+| **3 ações** | Default à **esquerda**, alternativa no meio, Cancelar à **direita** | Confirmação com alternativa. Preferência: teclas explícitas para as duas primeiras opções; `Enter` fica implícito na primeira. |
 
 > **Limite prático:** 3 ações é o máximo tolerável. Diálogos com 4 ou mais ações na borda indicam falha de design — o usuário não deve ler um menu de opções na moldura. Se o fluxo exige mais escolhas, divida em etapas ou use um seletor interno.
 
@@ -583,9 +583,71 @@ O ciclo de vida de cada mensagem é controlado pelo orquestrador que a emite. A 
 
 > O ciclo de vida da barra em diálogos funcionais (mensagem de contexto ao abrir, dica por campo, limpeza ao fechar) é contrato do orquestrador — documentado em [Barra de mensagens em diálogos](#sobreposição).
 
+
+### Convenções de Redação de Mensagens
+
+Este guia estabelece o estilo e a gramática para todas as comunicações textuais na interface, garantindo clareza, concisão e consistência.
+
+#### Princípios Gerais
+
+-   **Direta e Objetiva:** Vá direto ao ponto. Evite rodeios, jargões desnecessários e linguagem floreada.
+-   **Clara e Unívoca:** A mensagem deve ser compreendida de imediato, sem ambiguidade.
+-   **Acionável (quando aplicável):** Em caso de erro ou alerta, sugira um próximo passo ou aponte a causa.
+-   **Contextual:** Adapte a mensagem ao estado da interface e ao conhecimento do usuário naquele ponto do fluxo.
+-   **Minimalista:** Respeite o espaço limitado do terminal.
+
+#### Tom de Voz
+
+-   **Formal-neutro:** Use uma voz técnica, mas acessível. Evite personificação, gírias ou excesso de exclamações.
+-   **Foco no Usuário:** Use a segunda pessoa ("você" implícito ou explícito quando necessário) para direcionar dicas e ações. Ex: "Digite a senha para desbloquear."
+-   **Afirmativo:** Prefira frases afirmativas.
+
+#### Gramática e Estilo
+
+-   **Capitalização:**
+    -   **Início de frase:** Sempre maiúscula.
+    -   **Nomes de itens:** Conforme o nome original (sem capitalização artificial).
+    -   **Labels de campo/ação:** Conforme a UI (ex: "Salvar", "Nova senha").
+-   **Pontuação:**
+    -   **Mensagens curtas (barra):** Sem pontuação final (ponto, exclamação). Ex: `✓ Cofre salvo`
+    -   **Mensagens longas (diálogos):** Use ponto final para encerrar frases completas.
+    -   **Perguntas (diálogos):** Use ponto de interrogação.
+-   **Nomes de itens em mensagens:** Se referenciar um item específico (ex: "Gmail"), use aspas simples `'Gmail'` para distingui-lo do texto da mensagem, ou `**bold**` se o contexto for de realce crítico no diálogo.
+
+#### Estrutura por Tipo de Mensagem
+
+##### 1. Títulos de Diálogo (ex: na borda superior)
+
+-   **Padrão:** O título deve ser o nome do fluxo ou da ação principal.
+-   **Formato:** `[Nome do Fluxo/Ação Principal]` (capitalizado conforme o nome, ex: "Sair do Abditum", "Definir senha mestra", "Abrir cofre").
+
+##### 2. Mensagens no Corpo do Diálogo
+
+-   **Padrão:** Afirmação de um fato (opcional), seguida de uma pergunta concisa que apresenta as opções de decisão. A pergunta não menciona a opção `Voltar` (Esc).
+-   **Formato:** Fato termina com ponto; pergunta com interrogação.
+-   **Exemplos (ATUALIZADOS PARA CONCISÃO MÁXIMA):**
+    -   `Sair do Abditum?`
+    -   `Cofre modificado. Salvar ou descartar?`
+    -   `Arquivo modificado externamente. Sobrescrever?`
+    -   `'Gmail' será excluído permanentemente. Continuar?`
+    -   `Arquivo corrompido ou inválido. Fechar?`
+
+##### 3. Mensagens na Barra de Mensagens (inferior)
+
+-   **Padrão:** Curto e reativo, `<símbolo> [texto]`.
+-   **Formato:** Começa com maiúscula (após o símbolo), sem pontuação final.
+-   **Exemplos:**
+    -   `✓ Cofre salvo`
+    -   `ℹ Arquivo já existe`
+    -   `⚠ Senha fraca`
+    -   `✕ Senha incorreta`
+    -   `◐ Salvando cofre`
+    -   `• Digite a senha para desbloquear`
+
 ---
 
 ### Foco e Navegação
+
 
 O modelo de foco define como o usuário percebe e alterna entre áreas interativas da interface.
 
