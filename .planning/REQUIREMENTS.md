@@ -3,6 +3,8 @@
 **Defined:** 2026-03-27
 **Core Value:** O usuário tem controle total e exclusivo sobre seus segredos — dados existem apenas no arquivo `.abditum` e na memória da sessão ativa.
 
+> **Ground truth:** `requisitos.md` (workspace root) is the authoritative source for all requirements. This file mirrors the requirement IDs and tracks completion status. When in conflict, `requisitos.md` wins.
+
 ## v1 Requirements
 
 ### Criptografia e Segurança

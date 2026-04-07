@@ -143,6 +143,21 @@ internal/tui/         -- interface TUI (modelos Bubble Tea, telas, componentes, 
 | Exclusão soft (marcar para excluir) | Dá ao usuário oportunidade de reverter antes de salvar; remoção permanente só ocorre ao persistir | — Pending |
 | Observação automática em todo segredo | Campo de notas livre sempre acessível, sem ser parte do modelo de template | — Pending |
 
+## Canonical References
+
+**Every agent (researcher, planner, executor) MUST read these files before working on any TUI-related phase.**
+
+| File | Scope | What it defines |
+|------|-------|-----------------|
+| `tui-design-system-novo.md` | TUI — visual foundations | Color palette (exact hex tokens for Tokyo Night + Cyberpunk), typography, borders, sizing/layout rules, dialog sizing, scroll indicators, icons/symbols, visual states, overlay patterns, message types (Hint/Warn/Error/Success with symbols + TTLs), focus/navigation rules, global keymap |
+| `tui-specification-novo.md` | TUI — component/screen specs | Wireframes, token tables, state tables, message tables, and behavior rules for every screen and component: Header, Welcome, FilePicker (Open + Save modes), PasswordEntry, PasswordCreate, DecisionDialog, HelpModal, vault tree, secret detail, settings |
+| `fluxos.md` | Behavior — user flows | All user flows with full state machines: Fluxo 1 (Abrir cofre), Fluxo 2 (Criar cofre), Fluxo 3–5 (Sair), Fluxo 6 (Bloquear), Fluxo 7 (Bloqueio por inatividade), CLI fast-path, dirty-check branches, error branches |
+| `requisitos.md` | Requirements — full spec | All functional and non-functional requirements: VAULT-*, CRYPTO-*, SEC-*, QUERY-*, FOLDER-*, TPL-*, COMPAT-*, ATOMIC-*, PORT-*, MEM-*, CI-* |
+
+> These are the ground truth for the project. When anything in a CONTEXT.md, PLAN.md, or implementation appears to conflict with these files, these files win. Raise a deviation note rather than silently diverging.
+
+---
+
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
