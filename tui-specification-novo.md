@@ -24,6 +24,7 @@
   - [Painel Esquerdo: Árvore](#painel-esquerdo-árvore)
   - [Busca de Segredos](#busca-de-segredos)
   - [Painel Direito: Detalhe do Segredo — Modo Leitura](#painel-direito-detalhe-do-segredo--modo-leitura)
+- [Ações na Árvore de Segredos](#ações-na-árvore-de-segredos)
 - [Telas](#telas)
   - [Boas-vindas](#boas-vindas)
 
@@ -1595,163 +1596,351 @@ Esta seção detalha as ações disponíveis ao interagir com a árvore de segre
 | `Insert` | Novo segredo                             | Cria um novo segredo na pasta atualmente focada.                           |
 | `Ctrl+I` | Novo segredo                             | Atalho alternativo para criar um novo segredo.                             |
 | `^E`     | Editar segredo                           | Entra no modo de edição para o segredo selecionado.                        |
+| `⌃S`     | Favoritar / Desfavoritar segredo         | Toggle — alterna entre favoritado e não favoritado.                        |
 | `Delete` | Excluir segredo                          | Marca o segredo selecionado para exclusão (reversível até o salvamento).   |
-| `Ctrl+R` | Revelar / ocultar campo sensível         | Aplica-se ao campo sensível em foco no painel de detalhes.                 |
-| `Ctrl+C` | Copiar valor para área de transferência  | Copia o valor do campo em foco no painel de detalhes.                      |
 
 
 ### Painel Direito: Detalhe do Segredo — Modo Leitura
 
-
 **Contexto:** Área de trabalho — Modo Cofre.
 **Largura:** ~65% da área de trabalho.
-**Responsabilidade:** Exibir os campos do segredo selecionado na árvore; permitir navegação por campos, cópia de valores e reveal de campos sensíveis.
+**Responsabilidade:** Exibir o nome, o caminho de pastas, os campos e a observação do segredo selecionado na árvore; permitir navegação entre campos, cópia de valores e reveal de campos sensíveis.
 
-> Este documento especifica apenas o **modo leitura**. O modo edição é especificado separadamente.
+> Este documento especifica apenas o **modo leitura**. O modo edição de valores e o modo edição de estrutura são especificados separadamente.
 
-**Wireframe (placeholder — nenhum segredo selecionado):**
+---
 
-```
-                                                                  
-                                                                  
-          Selecione um segredo para ver os detalhes               
-                                                                  
-```
-
-**Wireframe (placeholder — cofre vazio):**
+#### Anatomia do painel
 
 ```
-                                                                  
-                       Cofre vazio                                
-                                                                  
+  Nome do Segredo                          Geral › Sites › Gmail ↑
+  ──────────────────────────────────────────────────────────────  │
+  Rótulo do campo 1                                               ■
+  Valor do campo 1                                                │
+                                                                  │
+  Rótulo do campo 2                                               │
+  Valor do campo 2                                                │
+                                                                  │
+  ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌  ↓
+  Texto da observação...
 ```
 
-**Wireframe (segredo exibido, painel sem foco):**
+**Linha 1 — cabeçalho do segredo:**
+- Esquerda: nome do segredo em `text.primary` **bold**
+- Direita: breadcrumb com caminho completo de pastas em `text.secondary` — formato `Pasta › Subpasta › ...`; truncado à esquerda com `…` se não couber na linha. `★` aparece entre o nome e o breadcrumb quando o segredo é favoritado, em `accent.secondary`
+- O breadcrumb mostra o caminho até o segredo, excluindo o nome do segredo
+
+**Linha 2 — separador:**
+- `─` em `border.default` por toda a largura do painel (exceto a coluna reservada ao scroll)
+
+**Área de campos:**
+- Cada campo ocupa dois segmentos: **rótulo** (linha própria, `text.secondary`) e **valor** (linha(s) seguinte(s), `text.primary`)
+- Uma linha em branco separa campos consecutivos
+- Campos sensíveis exibem o valor mascarado com `••••••••` em `text.secondary`; ao serem revelados, o valor real aparece em `text.primary`
+- Campos com valor vazio: o rótulo é exibido normalmente, a linha do valor fica em branco
+
+**Separador da Observação:**
+- `╌` (U+254C) em `border.default`, ocupando toda a largura — omitido quando a Observação está vazia
+- A Observação não tem rótulo; o separador e a posição final comunicam o que é
+
+**Trilha de scroll:**
+- Última coluna do painel reservada para `↑`/`↓`/`■` em `text.secondary`
+- Reservada mesmo quando não há scroll (evita deslocamento de conteúdo ao ativar)
+
+---
+
+#### Wireframes
+
+**Painel sem foco — segredo com campos variados:**
 
 ```
-  Gmail                                                               ★
-  ──────────────────────────────────────────────────────────────────
-  URL            https://mail.google.com
-  Usuário        fulano@gmail.com
-  Senha          ••••••••
-  Token 2FA      ••••••••
+  Gmail ★                              Geral › Sites e Apps
+  ──────────────────────────────────────────────────────────
+  URL
+  https://accounts.google.com/login
 
-  Observação     Conta pessoal principal — criada em 2018
+  Usuário
+  fulano@gmail.com
+
+  Senha
+  ••••••••••
+
+  Token 2FA
+  ••••••••
+
+  ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  Conta pessoal principal — criada em 2018.
 ```
 
-**Wireframe (painel com foco — cursor em campo sensível):**
+> Sem foco: nenhum campo destacado. O `★` aparece entre o nome e o breadcrumb quando o segredo é favoritado.
+
+**Painel com foco — cursor em campo comum:**
 
 ```
-  Gmail                                                               ★
-  ──────────────────────────────────────────────────────────────────
-  URL            https://mail.google.com
-  Usuário        fulano@gmail.com
-  Senha          ••••••••        ← special.highlight + bold (campo selecionado)
-  Token 2FA      ••••••••
+  Gmail ★                              Geral › Sites e Apps
+  ──────────────────────────────────────────────────────────
+  URL
+  https://accounts.google.com/login
 
-  Observação     Conta pessoal principal — criada em 2018
+  Usuário                                                     ← special.highlight no bloco
+  fulano@gmail.com
+
+  Senha
+  ••••••••••
+
+  ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  Conta pessoal principal.
 ```
 
-Barra de comandos: `⌃R Revelar · ⌃C Copiar · ⌃E Editar · Del Excluir · F1 Ajuda`
+> O bloco inteiro do campo em foco (rótulo + valor + linha em branco) recebe `special.highlight`. Barra de comandos (campo comum): `Enter Editar · ⌃S Favoritar · ⌃C Copiar · Tab Árvore · F1 Ajuda`
 
-**Wireframe (campo sensível revelado):**
-
-```
-  Gmail                                                               ★
-  ──────────────────────────────────────────────────────────────────
-  URL            https://mail.google.com
-  Usuário        fulano@gmail.com
-  Senha          minha-senha-secreta-123    ← special.highlight + bold
-  Token 2FA      ••••••••
-
-  Observação     Conta pessoal principal — criada em 2018
-```
-
-Barra de comandos: `⌃R Ocultar · ⌃C Copiar · ⌃E Editar · Del Excluir · F1 Ajuda`
-
-**Wireframe (scroll ativo — coluna 1 char reservada à direita):**
+**Painel com foco — cursor em campo sensível:**
 
 ```
-  Gmail                                                               ★↑
-  ──────────────────────────────────────────────────────────────────  │
-  URL            https://mail.google.com                              ■
-  Usuário        fulano@gmail.com                                     │
-  Senha          ••••••••        ← special.highlight                  │
-  Token 2FA      ••••••••                                             │
-  Observação     Texto muito longo que ocupa várias linhas por        ↓
+  Gmail ★                              Geral › Sites e Apps
+  ──────────────────────────────────────────────────────────
+  URL
+  https://accounts.google.com/login
+
+  Usuário
+  fulano@gmail.com
+
+  Senha                                                       ← special.highlight no bloco
+  ••••••••••
+
+  ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  Conta pessoal principal.
 ```
 
-> A última coluna do painel é a trilha de scroll: `↑` na primeira linha visível quando há conteúdo acima, `↓` na última quando há conteúdo abaixo, `■` na posição proporcional.
+> Barra de comandos (campo sensível mascarado): `Enter Editar · ⌃S Favoritar · ⌃C Copiar · ⌃R Revelar · Tab Árvore · F1 Ajuda`
+
+**Campo sensível — estado de dica (1º `⌃R`):**
+
+```
+  Gmail ★                              Geral › Sites e Apps
+  ──────────────────────────────────────────────────────────
+  URL
+  https://accounts.google.com/login
+
+  Usuário
+  fulano@gmail.com
+
+  Senha                                                       ← special.highlight
+  min•••••••••••••                                            ← 3 chars revelados + •• mascarados
+
+  ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  Conta pessoal principal.
+```
+
+> Barra de comandos (dica ativa): `Enter Editar · ⌃S Favoritar · ⌃C Copiar · ⌃R Mostrar tudo · Tab Árvore · F1 Ajuda`
+
+**Campo sensível — revelado completamente (2º `⌃R`):**
+
+```
+  Gmail ★                              Geral › Sites e Apps
+  ──────────────────────────────────────────────────────────
+  URL
+  https://accounts.google.com/login
+
+  Usuário
+  fulano@gmail.com
+
+  Senha                                                       ← special.highlight
+  minha-senha-secreta-123
+
+  ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  Conta pessoal principal.
+```
+
+> Barra de comandos (revelado): `Enter Editar · ⌃S Favoritar · ⌃C Copiar · ⌃R Ocultar · Tab Árvore · F1 Ajuda`
+
+**Scroll ativo:**
+
+```
+  Gmail ★                              Geral › Sites e Apps ↑
+  ──────────────────────────────────────────────────────────  │
+  URL                                                         ■
+  https://accounts.google.com/login/v2/identifier?hl=pt-BR   │
+                                                              │
+  Usuário                                                     │
+  fulano@gmail.com                                            │
+                                                              ↓
+```
+
+> Trilha de scroll: `↑` quando há conteúdo acima, `↓` quando há abaixo, `■` na posição proporcional do thumb. A coluna da trilha é sempre reservada — o conteúdo não se desloca ao ativar o scroll.
+
+**Valor longo com quebra de linha:**
+
+```
+  Passos de acesso
+  1. Acesse https://accounts.google.com
+  2. Clique em "Fazer login com o Google"
+  3. Confirme o dispositivo no app
+
+```
+
+> Valores multilinha recebem word-wrap; cada linha do valor ocupa a largura disponível (exceto a coluna do scroll). O campo continua sendo tratado como uma unidade de foco — o bloco inteiro recebe highlight.
+
+**Placeholders:**
+
+```
+  (sem segredo selecionado)
+  ─────────────────────────────────────────────────────────────────
+
+
+               Selecione um segredo para ver os detalhes
+
+
+```
+
+```
+  (cofre vazio)
+  ─────────────────────────────────────────────────────────────────
+
+
+                           Cofre vazio
+
+
+```
+
+> Textos em `text.secondary` *italic*, centralizados na área de conteúdo.
+
+**Segredo sem Observação (separador omitido):**
+
+```
+  API Key — Stripe                            Geral › Financeiro
+  ──────────────────────────────────────────────────────────────
+  Serviço
+  Stripe
+
+  Chave
+  ••••••••••
+
+```
+
+> Quando a Observação está vazia, o separador `╌╌╌` é omitido. Não há linha em branco extra no final.
+
+**Breadcrumb truncado (caminho longo):**
+
+```
+  Gmail ★          … › Projetos › Cliente ABC › Acessos › Gmail
+  ──────────────────────────────────────────────────────────────
+```
+
+> O breadcrumb é truncado à esquerda com `…` quando o caminho completo não cabe. O nome do segredo e o `★` nunca são truncados.
+
+---
+
+#### Mapa de teclas
+
+| Tecla | Efeito | Condição |
+|---|---|---|
+| `↑` / `↓` | Move cursor para o campo anterior / próximo | Painel com foco |
+| `Home` | Vai ao primeiro campo | Painel com foco |
+| `End` | Vai ao último campo (Observação, se não vazia) | Painel com foco |
+| `PgUp` / `PgDn` | Scroll por página (viewport − 1 linhas) | Painel com foco |
+| `Enter` | Entra no modo edição do campo em foco | Painel com foco |
+| `⌃S` | Favoritar / Desfavoritar segredo | Painel com foco |
+| `⌃R` | 1º toque: revela dica (3 primeiros chars); 2º toque: revela valor completo; 3º toque: re-mascara | Painel com foco; campo sensível em foco |
+| `⌃C` | Copiar valor do campo para clipboard; agenda limpeza da clipboard se campo sensível | Painel com foco; qualquer campo |
+| `Tab` | Foco → painel esquerdo (árvore) | Painel com foco |
+
+> `⌃R` não tem efeito quando o campo em foco é comum — a barra de comandos omite a ação `Revelar` nesses casos.
+
+---
 
 #### Tokens
 
 | Elemento | Token | Atributo |
 |---|---|---|
-| Título do segredo | `text.primary` | **bold** |
-| `★` favorito no título | `accent.secondary` | — |
-| Separador `───` | `border.default` | — |
-| Labels de campos | `text.secondary` | — |
-| Valores de texto | `text.primary` | — |
-| Valores de URL | `text.link` | — |
-| Máscaras `••••••••` | `text.secondary` | — |
-| Fundo de campo selecionado | `special.highlight` | — |
-| Label de campo selecionado | `text.secondary` | — |
-| Valor de campo selecionado | `text.primary` | **bold** |
-| Placeholders ("Selecione…" / "Cofre vazio") | `text.secondary` | *italic* |
-| `│` separador — painel com foco | `border.focused` | — |
-| `│` separador — painel sem foco | `border.default` | — |
-| `↑`/`↓`/`■` trilha de scroll à direita | `text.secondary` | — |
+| Nome do segredo | `text.primary` | **bold** |
+| `★` favorito | `accent.secondary` | — |
+| Breadcrumb de pasta | `text.secondary` | — |
+| Separador `───` cabeçalho | `border.default` | — |
+| Rótulo de campo | `text.secondary` | **bold** |
+| Valor de campo comum | `text.primary` | — |
+| Valor de campo — URL | `text.link` | — |
+| Valor de campo sensível — mascarado `••••••••` | `text.secondary` | — |
+| Valor de campo sensível — dica (`min••••`) | `text.secondary` | — |
+| Fundo do campo em foco | `special.highlight` | — |
+| Separador `╌╌╌` da Observação | `border.default` | — |
+| Texto da Observação | `text.primary` | — |
+| Placeholders | `text.secondary` | *italic* |
+| `│` separador vertical — painel com foco | `border.focused` | — |
+| `│` separador vertical — painel sem foco | `border.default` | — |
+| `↑`/`↓`/`■` trilha de scroll | `text.secondary` | — |
+
+---
 
 #### Estados dos componentes
 
 | Componente | Estado | Condição |
 |---|---|---|
-| Conteúdo | placeholder "Selecione…" | Cofre com itens, nenhum segredo selecionado |
-| Conteúdo | placeholder "Cofre vazio" | Cofre sem nenhum segredo |
-| Conteúdo | segredo exibido | Segredo selecionado na árvore |
+| Painel | placeholder "Selecione…" | Cofre tem segredos; nenhum segredo foi selecionado ainda na sessão |
+| Painel | placeholder "Cofre vazio" | Cofre sem nenhum segredo |
+| Painel | segredo exibido (último selecionado) | Cursor da árvore em pasta — painel mantém o último segredo exibido |
+| Painel | segredo exibido (atual) | Cursor da árvore em segredo |
 | Cursor de campo | ausente | Painel sem foco |
-| Cursor de campo | `special.highlight` na linha do campo | Painel com foco |
-| Campo sensível | mascarado `••••••••` | Padrão ao abrir qualquer segredo |
-| Campo sensível | valor real exibido | `F16` acionado; timeout não expirou |
-| Campo sensível revelado | re-mascarado | Timeout de reveal expirou ou segredo trocado |
-| `★` no título | visível | Segredo favoritado |
-| `★` no título | ausente | Segredo não favoritado |
-| Scroll | `↑`/`↓`/`■` na margem direita | Conteúdo excede a área visível |
+| Cursor de campo | `special.highlight` no bloco do campo | Painel com foco |
+| `★` | visível no cabeçalho, entre nome e breadcrumb | Segredo favoritado |
+| `★` | ausente | Segredo não favoritado |
+| Campo sensível | mascarado `••••••••` | Estado inicial ao exibir qualquer segredo |
+| Campo sensível | dica (3 primeiros chars + `••`) | 1º `⌃R`; campo ainda em foco; timeout não expirou |
+| Campo sensível | revelado (valor completo) | 2º `⌃R`; campo ainda em foco; timeout não expirou |
+| Campo sensível revelado | re-mascarado | Timeout expirou; segredo diferente selecionado; foco saiu do campo |
+| Separador `╌╌╌` | visível | Observação não vazia |
+| Separador `╌╌╌` | omitido | Observação vazia |
+| Trilha de scroll | `↑`/`↓`/`■` ativos | Conteúdo excede a área visível |
+| Trilha de scroll | coluna reservada, vazia | Conteúdo cabe na área visível |
+
+---
 
 #### Mensagens
 
 | Contexto | Tipo | Texto |
 |---|---|---|
-| Painel recebe foco | Dica de campo | `• Navegue entre campos e copie o valor` |
-| Campo sensível selecionado | Dica de campo | `• Revele ou copie o valor do campo` |
-| `F17` copia valor | Sucesso (5s) | `✓ [Label do campo] copiado para a área de transferência` |
+| Painel recebe foco | Dica | `• Navegue com ↑↓ e copie com ⌃C` |
+| Campo sensível selecionado | Dica | `• ⌃R Revelar · ⌃C Copiar` |
+| `⌃C` copia valor | Sucesso (5s) | `✓ [Rótulo do campo] copiado para a área de transferência` |
+
+---
 
 #### Eventos
 
 | Evento | Efeito |
 |---|---|
-| Segredo selecionado na árvore | Conteúdo atualizado; campos revelados re-mascarados; `<╡` aparece no separador |
-| Painel recebe foco | Cursor de campo aparece no campo anteriormente ativo (ou no primeiro) |
-| Navegar entre campos | Cursor de campo move para o campo anterior/próximo |
-| Ir ao primeiro / último campo | Cursor vai ao primeiro / último campo |
-| Scroll por página | Scroll por página (viewport − 1 linhas) |
-| Revelar/ocultar campo sensível | Alterna mascarado ↔ revelado; label da ação na barra muda (`Revelar` ↔ `Ocultar`) |
-| Copiar campo | Copia valor para clipboard → MsgSuccess |
-| Alternar foco | Foco → árvore (ciclo) |
-| Timeout de reveal expira | Campo volta a ser mascarado silenciosamente (sem mensagem) |
-| Segredo diferente selecionado na árvore | Todos os campos revelados são re-mascarados |
+| Segredo selecionado na árvore | Conteúdo atualizado; campos revelados re-mascarados; cursor vai ao primeiro campo; `<╡` aparece no separador |
+| Painel recebe foco (`Tab`) | Cursor de campo aparece no campo anteriormente ativo, ou no primeiro campo se nunca focado |
+| `↑` / `↓` | Cursor move para o campo anterior / próximo; scroll automático se necessário |
+| `Home` / `End` | Cursor vai ao primeiro / último campo; scroll automático |
+| `PgUp` / `PgDn` | Scroll por página |
+| `Enter` | Entra no modo edição do campo em foco |
+| `⌃S` | Segredo favoritado → desfavoritado (ou vice-versa); `★` no cabeçalho do painel atualiza imediatamente; árvore atualiza em segundo plano |
+| `⌃R` em campo sensível mascarado | Campo entra em estado de dica (3 primeiros chars); barra muda para `⌃R Mostrar tudo · ⌃R Ocultar` |
+| `⌃R` em campo sensível com dica | Campo revelado completamente; barra muda para `⌃R Ocultar` |
+| `⌃R` em campo sensível revelado | Campo re-mascarado; barra volta para `⌃R Revelar` |
+| `↑` / `↓` saindo de campo sensível revelado | Campo re-mascarado silenciosamente antes de mover o cursor |
+| `Tab` com campo sensível revelado | Campo re-mascarado silenciosamente; foco transferido para a árvore |
+| Timeout de reveal expira | Campo re-mascarado silenciosamente; sem mensagem |
+| Segredo diferente selecionado | Todos os campos revelados re-mascarados; cursor vai ao primeiro campo |
+
+---
 
 #### Comportamento
 
-- **Cursor de campo somente com foco** — o cursor de campo (highlight na linha) só aparece quando o painel recebe foco via `Tab`; sem foco, o conteúdo é exibido sem destaque de campo
-- **`F16` contextual** — disponível (`Enabled`) apenas quando o campo em foco é sensível; quando o campo já está revelado, o label na barra muda para `Ocultar`
-- **Campos sensíveis iniciam mascarados** ao abrir qualquer segredo, incluindo segredos já visitados anteriormente
-- **Reveal timeout** — configurável nas Configurações do cofre; ao expirar, campo é re-mascarado silenciosamente. Ao navegar para outro segredo, todos os revelas são imediatamente cancelados
-- **URLs** — valores identificados como URL usam `text.link`, diferenciados visualmente de texto puro
-- **Campo Observação** — texto livre com word-wrap; pode ocupar múltiplas linhas e contribui para o scroll do painel
-- **Scroll** — última coluna do painel reservada para a trilha de scroll (`↑`/`↓`/`■`) mesmo quando não há scroll ativo (evita deslocamento de conteúdo ao ativar); mesma semântica do DS (ver [DS — Scroll em diálogos](tui-design-system-novo.md#scroll-em-diálogos))
-- **`<╡` e scroll são independentes** — `<╡` aparece na margem esquerda do painel (separador com a árvore) e indica qual item da árvore está sendo detalhado; `↑`/`↓`/`■` aparece na margem direita e indica scroll dentro do conteúdo do detalhe. Um não afeta o outro — `<╡` só muda quando a seleção na árvore muda; `↑`/`↓`/`■` só muda quando o conteúdo do detalhe é rolado
-- **Posição do cursor ao retornar** — ao retornar o foco via `Tab`, o cursor vai ao campo que estava ativo antes, não ao primeiro campo
+- **Cursor somente com foco** — o cursor de campo (highlight no bloco) aparece apenas quando o painel tem foco; sem foco, o conteúdo é exibido sem destaque
+- **Bloco de campo** — o campo em foco compreende: linha do rótulo + linha(s) do valor + linha em branco de separação; todo o bloco recebe `special.highlight`
+- **`Enter` entra no modo edição** — disponível em qualquer campo com foco; aciona o modo edição de valores (especificado separadamente)
+- **`⌃R` contextual** — disponível apenas com campo sensível em foco; cicla entre três estados: mascarado → dica (3 primeiros chars) → completo → mascarado. Não aparece na barra quando o campo em foco é comum
+- **Re-mascaramento ao sair do campo** — ao mover o cursor para outro campo (`↑`/`↓`/`Home`/`End`) ou ao transferir o foco para a árvore (`Tab`), qualquer campo sensível que estiver em estado de dica ou revelado é re-mascarado silenciosamente antes da movimentação
+- **Campos sensíveis sempre iniciam mascarados** — incluindo segredos já visitados anteriormente na sessão
+- **Reveal timeout** — configurável nas Configurações; ao expirar, o campo é re-mascarado silenciosamente (sem mensagem na barra). Ao trocar de segredo, todos os reveals são cancelados imediatamente
+- **URLs** — valores identificados como URL recebem `text.link`, diferenciados visualmente de texto puro
+- **Observação — word-wrap** — o texto da Observação quebra na largura disponível (exceto a coluna do scroll); pode ocupar múltiplas linhas; o painel inteiro é scrollável
+- **Scroll** — a última coluna do painel é sempre reservada para a trilha de scroll, mesmo quando não há overflow — o conteúdo não se desloca ao ativar o scroll (ver [DS — Scroll em diálogos](tui-design-system-novo.md#scroll-em-diálogos))
+- **`<╡` e trilha de scroll são independentes** — `<╡` aparece no separador vertical esquerdo e indica qual item da árvore está sendo detalhado; a trilha de scroll aparece na margem direita e reflete o scroll do conteúdo do painel. Um não afeta o outro
+- **Posição do cursor ao retornar o foco** — ao receber foco via `Tab` novamente, o cursor vai ao campo que estava ativo antes de o foco sair; se nunca focado, vai ao primeiro campo
+- **Breadcrumb — truncamento** — o breadcrumb é truncado à esquerda com `…` se o caminho completo não couber; o nome do segredo e o `★` nunca são truncados
 
 ---
 
