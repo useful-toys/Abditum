@@ -336,8 +336,9 @@ Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobr
 **Contexto de uso:** abrir ou salvar arquivo do cofre.
 **Token de borda:** `border.focused`
 **Dimensionamento:** largura máxima do DS (70 colunas ou 80% do terminal, o menor); altura 80% do terminal. Proporção árvore/arquivos ~40/60.
-**Diretório inicial:** CWD do processo. Se o CWD não existe ou não tem permissão de leitura, fallback para home do usuário (`~`).
-**Filtro fixo:** apenas arquivos `*.abditum` são exibidos no painel de arquivos. Não há campo de filtro editável. Arquivos ocultos (nome iniciado com `.`) não são exibidos. A extensão `.abditum` é omitida na exibição dos nomes de arquivo (redundante — o filtro já restringe ao formato).
+**Diretório inicial:** determinado pelo fluxo orquestrador. Se não informado, CWD do processo. Se o CWD não existe ou não tem permissão de leitura, fallback para home do usuário (`~`).
+**Nome sugerido (modo Save):** determinado pelo fluxo orquestrador. Se não informado, campo inicia vazio. O campo não possui placeholder.
+**Filtro fixo:** apenas arquivos `*.abditum` são exibidos no painel de arquivos. Não há campo de filtro editável. Arquivos e diretórios ocultos (nome iniciado com `.`) não são exibidos. A extensão `.abditum` é omitida na exibição dos nomes de arquivo (redundante — o filtro já restringe ao formato).
 **Padding:** 2 colunas horizontal; **0 vertical** — exceção ao DS [Dimensionamento de diálogos](tui-design-system-novo.md#dimensionamento-de-diálogos). Justificativa: princípio "O Terminal como Meio" — espaço vertical é recurso escasso; o FilePicker é o diálogo mais denso da aplicação (header de caminho + 2 painéis + campo de nome no modo Save). As bordas `╭╮╰╯` e os headers internos (`Caminho:`, `Estrutura`, `Arquivos`, `Nome do arquivo`) criam contenção e separação suficientes sem padding vertical.
 
 O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e condições distintos. Ambos compartilham a mesma anatomia de painéis.
@@ -345,6 +346,36 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 > Nos wireframes abaixo, `░` representa áreas com fundo `surface.input` (campos de entrada).
 
 > **Decisão de layout:** o FilePicker usa separadores internos com junctions em T (`├┬┴┤`) e painéis lado a lado — estrutura que não se encaixa no modelo padrão de diálogos do DS. Esta configuração foi documentada como **exceção justificada** (ver [DS — Exceções ao dimensionamento](tui-design-system-novo.md#dimensionamento-de-diálogos)) e não promoveu uma subseção no DS porque: (1) o FilePicker é o único diálogo com essa complexidade; (2) é um padrão de SO consolidado, não um padrão reutilizável interno; (3) o mecanismo de exceção do DS cobre o caso. Se um segundo diálogo com painéis internos surgir, a exceção será promovida a subseção.
+
+**Barra de comandos durante FilePicker:** enquanto o FilePicker está ativo, a barra de comandos exibe apenas as ações internas do diálogo (conforme regra geral de [Barra de Comandos durante diálogo ativo](#anatomia)). Ações de confirmação/cancelamento (`Enter`/`Esc`) já estão na borda do diálogo — não são duplicadas na barra.
+
+```
+  Tab Painel                                                                  F1 Ajuda
+```
+
+| Ação | Tecla | Descrição |
+|---|---|---|
+| Alternar painel | `Tab` | Cicla foco entre os painéis (Árvore → Arquivos no modo Open; Árvore → Arquivos → Campo Nome no modo Save) |
+| Ajuda | `F1` | Abre o Help — âncora fixa |
+
+---
+
+#### Contrato de entrada e saída
+
+**Entrada (parâmetros do orquestrador):**
+
+| Parâmetro | Tipo | Obrigatório | Uso |
+|---|---|---|---|
+| `modo` | `Open \| Save` | Sim | Define título, ações e presença do campo de nome |
+| `diretorio_inicial` | `PathBuf` | Não | Diretório onde o FilePicker abre. Default: CWD → fallback `~` |
+| `nome_sugerido` | `String` | Não (modo Save) | Valor inicial do campo `Nome do arquivo`. Default: vazio |
+
+**Saída (retorno ao orquestrador):**
+
+| Resultado | Valor | Significado |
+|---|---|---|
+| Confirmado | `Some(PathBuf)` | Caminho completo do arquivo selecionado (modo Open) ou caminho de salvamento com extensão `.abditum` garantida (modo Save) |
+| Cancelado | `None` | Usuário abandonou o diálogo via `Esc` |
 
 ---
 
@@ -360,15 +391,15 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 │  Caminho: /home/usuario/projetos/abditum                           │
 ├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
 │  ▶ /                         ↑  ● database   25.8 MB 15/03/25 14:32↑
-│    ▼ usuario/                │  ● config       1.2 KB 02/01/25 09:15│
-│      ▶ documentos/           │  ● backup      18.4 MB 04/04/25 18:47│
-│      ▼ projetos/             │                                     │
-│        ▶ site/               │                                     │
-│        ▼ abditum/            ■                                     ■
-│          ▶ docs/             │                                     │
-│          ▶ src/              │                                     │
-│        ▶ outros/             │                                     │
-│      ▶ downloads/            ↓                                     ↓
+│    ▼ usuario                 │  ● config       1.2 KB 02/01/25 09:15│
+│      ▶ documentos            │  ● backup      18.4 MB 04/04/25 18:47│
+│      ▼ projetos              │                                     │
+│        ▶ site                │                                     │
+│        ▼ abditum             ■                                     ■
+│          ▶ docs              │                                     │
+│          ▶ src               │                                     │
+│        ▶ outros              │                                     │
+│      ▶ downloads             ↓                                     ↓
 ╰── Enter Abrir ───────────────┴────────────────────── Esc Cancelar ──╯
        ↑ accent.primary + bold (desbloqueado)
 ```
@@ -382,10 +413,10 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 │  Caminho: /home/usuario/documentos                                 │
 ├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
 │  ▶ /                         │                                     │
-│    ▼ usuario/                │  Nenhum cofre neste diretório       │
-│      ▼ documentos/           │                                     │
-│        ▶ fotos/              │                                     │
-│        ▶ textos/             │                                     │
+│    ▼ usuario                 │  Nenhum cofre neste diretório       │
+│      ▼ documentos            │                                     │
+│        ▶ fotos               │                                     │
+│        ▶ textos              │                                     │
 │                              │                                     │
 ╰── Enter Abrir ───────────────┴────────────────────── Esc Cancelar ──╯
        ↑ text.disabled (bloqueado)
@@ -399,7 +430,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 | Separadores internos (`├`, `┬`, `┴`, `─`, `│`) | `border.default` | — |
 | Pasta selecionada na árvore | `accent.primary` | **bold** |
 | Pasta não selecionada | `text.primary` | — |
-| Indicador de pasta (`▶` recolhida, `▼` expandida) | `accent.secondary` | — |
+| Indicador de pasta (`▶` recolhida, `▼` expandida, `▷` vazia) | `accent.secondary` | — |
 | Arquivo selecionado no painel de arquivos | `special.highlight` (fundo) + `text.primary` | **bold** |
 | Arquivo não selecionado | `text.primary` | — |
 | Indicador de arquivo `●` | `text.secondary` | — |
@@ -420,8 +451,8 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 | Painel `Arquivos` (lista) | texto vazio | Pasta selecionada **não** contém arquivos `.abditum` |
 | Rótulo `Caminho` | sempre visível, somente leitura | Atualiza ao navegar na árvore |
 | Arquivo pré-selecionado no painel | selecionado | Primeiro `.abditum` da pasta, automaticamente ao entrar na pasta |
-| Ação `Enter Abrir` | bloqueada (`text.disabled`) | Nenhum arquivo `.abditum` selecionado (pasta sem arquivos ou foco na árvore sem seleção à direita) |
-| Ação `Enter Abrir` | ativa (`accent.primary` **bold**) | Um arquivo `.abditum` está selecionado no painel de arquivos |
+| Ação `Enter Abrir` | bloqueada (`text.disabled`) | Pasta sob cursor não contém arquivos `.abditum` |
+| Ação `Enter Abrir` | ativa (`accent.primary` **bold**) | Pasta sob cursor contém `.abditum` (pré-seleção automática habilita a ação, mesmo com foco na árvore) |
 | Ação `Esc Cancelar` | sempre ativa | — |
 
 **Mensagens:**
@@ -435,29 +466,59 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 
 **Comportamento:**
 
+- **Carregamento lazy:** a árvore não carrega todo o filesystem na abertura. Apenas o caminho até o diretório inicial é expandido. O conteúdo de cada pasta é lido sob demanda ao expandir — evita lentidão em filesystems grandes
 - **Foco inicial:** árvore de diretórios (painel esquerdo)
 - **Ordem do Tab:** Árvore → Arquivos → volta (2 stops)
 - **Scroll:** cada painel tem scroll independente com indicadores `↑`/`↓`/`■` na borda direita do respectivo painel
-- **Navegação por teclado na árvore:** `↑↓` navega entre pastas; `→` ou `Enter` expande pasta recolhida; `←` ou `Enter` recolhe pasta expandida; `Home`/`End` vai ao primeiro/último item visível; `PgUp`/`PgDn` scroll por página
+- **Painel de arquivos reflete o cursor da árvore:** ao mover o cursor (`↑↓`) entre pastas na árvore, o painel de arquivos atualiza imediatamente para mostrar os `.abditum` da pasta sob o cursor — não apenas ao expandir. O rótulo `Caminho` e o painel de arquivos acompanham a pasta com cursor, independente de ela estar expandida ou recolhida
+- **Navegação por teclado na árvore:** `↑↓` navega entre pastas visíveis; `→` expande pasta recolhida; `←` recolhe pasta expandida; `Enter` avança foco para o primeiro arquivo no painel de arquivos (se a pasta sob o cursor contém `.abditum`; sem efeito se não contém); `Home`/`End` vai ao primeiro/último item visível; `PgUp`/`PgDn` scroll por página
 - **Navegação por teclado nos arquivos:** `↑↓` navega entre arquivos; `Enter` confirma seleção (equivale à ação default); `Home`/`End` vai ao primeiro/último arquivo visível; `PgUp`/`PgDn` scroll por página
-- Ao expandir pasta na árvore, o painel de arquivos atualiza para mostrar os `.abditum` daquela pasta; primeiro arquivo pré-selecionado automaticamente
-- Rótulo `Caminho` atualiza ao navegar na árvore
-- **Duplo-clique em pasta:** expande/recolhe (mesmo que `Enter`)
+- Ao navegar para uma pasta na árvore, se ela contém arquivos `.abditum`, o primeiro é pré-selecionado automaticamente no painel de arquivos
+- **Indicador de pasta vazia:** pastas sem subdiretórios visíveis usam `▷` conforme o DS — não são expansíveis. `→` não tem efeito sobre elas (nada a expandir). `Enter` segue a regra padrão — avança foco para o painel de arquivos se a pasta contém `.abditum`. `▷` indica ausência de subdiretórios expansíveis — não impede que a pasta contenha arquivos `.abditum` exibidos no painel de arquivos
+- **Clique simples em pasta:** move cursor para a pasta (atualiza painel de arquivos e `Caminho`)
+- **Clique simples em arquivo:** seleciona o arquivo (highlight)
+- **Duplo-clique em pasta:** expande/recolhe (mesmo que `→`/`←`)
 - **Duplo-clique em arquivo:** confirma seleção (mesmo que ação default)
 - **Scroll do mouse:** afeta o painel com foco
-- **Arquivos ocultos** (nome iniciado com `.`) não são exibidos
+- **Arquivos e diretórios ocultos** (nome iniciado com `.`) não são exibidos
 - **Caminho longo:** truncado no início com `…` (ex: `…/projetos/abditum`)
 - **Diretórios sem permissão:** exibidos normalmente na árvore; ao tentar expandir, erro na barra (`✕ Sem permissão para acessar <pasta>`) e pasta permanece recolhida
 - **Fallback de CWD:** se o CWD é inacessível, o FilePicker navega para home do usuário (`~`) e exibe mensagem informativa (`⚠ Diretório atual inacessível — navegando para home`)
+
+**Ordenação:**
+
+| Painel | Critério | Detalhes |
+|---|---|---|
+| Árvore (pastas) | Alfabético, case-insensitive | Ordem lexicográfica (`a` = `A`) |
+| Arquivos | Alfabético, case-insensitive | Ordem lexicográfica pelo nome sem extensão |
+
+**Indentação da árvore:** 2 espaços por nível de profundidade.
+
+**Formato dos metadados:**
+
+| Campo | Formato | Exemplo |
+|---|---|---|
+| Tamanho | `{valor} {unidade}` — base 1024, unidades KB/MB/GB, 1 casa decimal | `25.8 MB`, `1.2 KB`, `18.4 MB` |
+| Data/hora | `dd/mm/aa HH:MM` — dígitos numéricos, locale local | `15/03/25 14:32` |
+
+**Alinhamento dos metadados:** no painel de arquivos, os metadados são alinhados em colunas — tamanho alinhado à direita, data/hora em posição fixa. O nome do arquivo ocupa o espaço restante à esquerda. Isso facilita a leitura por scanning vertical.
+
+**Comportamento na raiz:** `←` na pasta raiz (`/`) não tem efeito — a seleção permanece na raiz.
+
+**Truncamento de metadados:** em terminais estreitos, os metadados são os primeiros a truncar (direita → esquerda). O nome do arquivo tem prioridade e só trunca se não houver espaço mesmo para ele.
 
 **Transições especiais:**
 
 | Evento | Efeito |
 |---|---|
-| Navegar para pasta sem `.abditum` | Painel de arquivos mostra texto vazio; ação default muda para `text.disabled` |
-| Navegar para pasta com `.abditum` | Primeiro arquivo pré-selecionado; ação default muda para `accent.primary` **bold** |
+| Cursor move para pasta sem `.abditum` | Painel de arquivos mostra texto vazio; ação default muda para `text.disabled` |
+| Cursor move para pasta com `.abditum` | Primeiro arquivo pré-selecionado; ação default muda para `accent.primary` **bold** |
 | `Enter` no painel de arquivos | Diálogo fecha com o arquivo selecionado |
-| `Enter` em pasta expandida | Pasta recolhida; foco permanece na pasta |
+| `Enter` na árvore (pasta com `.abditum`) | Foco avança para o primeiro arquivo no painel de arquivos |
+| `Enter` na árvore (pasta sem `.abditum`) | Sem efeito |
+| `→` em pasta recolhida | Pasta expandida; cursor permanece na pasta |
+| `←` em pasta expandida | Pasta recolhida; cursor permanece na pasta |
+| `→` em pasta `▷` (vazia) | Sem efeito (nada a expandir) |
 | Tentar expandir pasta sem permissão | Erro na barra (`✕ Sem permissão para acessar <pasta>`); pasta permanece recolhida |
 
 ---
@@ -474,10 +535,10 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 │  Caminho: /home/usuario/projetos/abditum                           │
 ├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
 │  ▶ /                         │  ● database   25.8 MB 15/03/25 14:32│
-│    ▼ usuario/                │  ● config       1.2 KB 02/01/25 09:15│
-│      ▼ projetos/             │                                     │
-│        ▼ abditum/            │                                     │
-│          ▶ docs/             │                                     │
+│    ▼ usuario                 │  ● config       1.2 KB 02/01/25 09:15│
+│      ▼ projetos              │                                     │
+│        ▼ abditum             │                                     │
+│          ▶ docs              │                                     │
 │                              │                                     │
 ├──────────────────────────────┴─────────────────────────────────────┤
 │  Nome do arquivo                                                   │
@@ -493,8 +554,8 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 │  Caminho: /home/usuario/projetos                                   │
 ├─ Estrutura ──────────────────┬─ Arquivos ──────────────────────────┤
 │  ▶ /                         │  ● database   25.8 MB 15/03/25 14:32│
-│    ▼ usuario/                │                                     │
-│      ▼ projetos/             │                                     │
+│    ▼ usuario                 │                                     │
+│      ▼ projetos              │                                     │
 │                              │                                     │
 ├──────────────────────────────┴─────────────────────────────────────┤
 │  Nome do arquivo                                                   │
@@ -510,7 +571,6 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 | Label `Nome do arquivo` (campo ativo) | `accent.primary` | **bold** |
 | Label `Nome do arquivo` (campo inativo) | `text.secondary` | — |
 | Área do campo `░` | `surface.input` | — |
-| Placeholder | `text.secondary` | *italic* |
 | Cursor `▌` | `text.primary` | — |
 
 **Estados dos componentes:**
@@ -522,6 +582,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 | Painel `Arquivos` (lista) | texto vazio | Pasta selecionada **não** contém arquivos `.abditum` |
 | Rótulo `Caminho` | sempre visível, somente leitura | Atualiza ao navegar na árvore |
 | Campo `Nome do arquivo` | sempre visível | — |
+| Caracteres inválidos para filesystem (`/ \ : * ? " < > \|`) | bloqueados silenciosamente | Tecla não produz efeito — sem mensagem de erro |
 | Extensão `.abditum` | adicionada automaticamente | Se o nome digitado não termina em `.abditum` |
 | Ação `Enter Salvar` | bloqueada (`text.disabled`) | Campo `Nome do arquivo` vazio |
 | Ação `Enter Salvar` | ativa (`accent.primary` **bold**) | Campo `Nome do arquivo` não vazio |
@@ -544,22 +605,26 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 - **Foco inicial:** árvore de diretórios (painel esquerdo)
 - **Ordem do Tab:** Árvore → Arquivos → Campo `Nome do arquivo` → volta (3 stops)
 - **Scroll:** cada painel tem scroll independente com indicadores `↑`/`↓`/`■` na borda direita do respectivo painel
-- Navegação na árvore e painel de arquivos idêntica ao modo Open
-- No painel de arquivos: selecionar um arquivo existente **copia o nome (sem extensão)** para o campo `Nome do arquivo` (facilita sobrescrever)
+- Navegação na árvore e painel de arquivos idêntica ao modo Open, com uma exceção: **`Enter` no painel de arquivos copia o nome (sem extensão) para o campo `Nome do arquivo` e move foco para o campo** — não confirma o diálogo. A confirmação requer `Enter` novamente (no campo ou em qualquer contexto com ação default ativa)
+- No painel de arquivos: `↑↓` apenas destaca o arquivo (highlight) — **não** copia o nome para o campo. Somente `Enter` ou clique simples no arquivo copiam o nome (sem extensão) para o campo `Nome do arquivo`
 - Ao navegar na árvore, o campo `Nome do arquivo` **não é limpo** — preserva o nome digitado
 - Extensão `.abditum` é adicionada silenciosamente ao caminho de retorno, sem alterar o texto exibido no campo
-- **Duplo-clique em pasta:** expande/recolhe (mesmo que `Enter`)
+- **Duplo-clique em pasta:** expande/recolhe (mesmo que `→`/`←`)
 - **Duplo-clique em arquivo existente:** copia o nome para o campo `Nome do arquivo`
-- Scroll do mouse, arquivos ocultos, caminho longo, permissões e fallback CWD: idêntico ao [Modo Open](#filepicker--modo-open)
+- Scroll do mouse, arquivos ocultos, caminho longo, permissões, fallback CWD, ordenação, indentação, formato de metadados e truncamento: idêntico ao [Modo Open](#filepicker--modo-open)
 
 **Transições especiais:**
 
 | Evento | Efeito |
 |---|---|
-| Selecionar arquivo existente no painel | Nome copiado para campo `Nome do arquivo`; ação default muda para `accent.primary` **bold** |
+| Clique simples em arquivo existente no painel | Nome copiado para campo `Nome do arquivo`; ação default muda para `accent.primary` **bold** |
+| `Enter` no painel de arquivos | Nome copiado para campo `Nome do arquivo`; foco move para o campo. **Não** confirma o diálogo |
+| `Enter` na árvore (pasta com `.abditum`) | Foco avança para o primeiro arquivo no painel de arquivos |
+| `Enter` na árvore (pasta sem `.abditum`) | Sem efeito |
+| `→` em pasta recolhida | Pasta expandida; cursor permanece na pasta |
+| `←` em pasta expandida | Pasta recolhida; cursor permanece na pasta |
 | Limpar campo `Nome do arquivo` | Ação default volta para `text.disabled` |
 | `Enter` com campo preenchido | Diálogo fecha com caminho completo (diretório + nome + `.abditum`) |
-| `Enter` em pasta expandida | Pasta recolhida; foco permanece na pasta |
 | Tentar expandir pasta sem permissão | Erro na barra (`✕ Sem permissão para acessar <pasta>`); pasta permanece recolhida |
 
 ---
