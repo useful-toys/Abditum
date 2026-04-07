@@ -38,27 +38,6 @@ A interação com o modelo de domínio é controlada por uma camada de serviço 
 
 3.  **Consistência em Memória e Persistência Explícita**: O `Manager` garante a integridade do agregado `Cofre` em memória após cada operação. No entanto, a persistência no disco **não é automática** para a maioria das operações (exceto casos específicos como a alteração da Senha Mestra). O usuário decide quando consolidar as alterações da sessão através de um comando explícito de "Salvar". Isso permite operações de "Descartar Alterações" e evita acessos desnecessários ao disco e riscos de corrupção frequente.
 
-
-### Fluxo de uma Operação de Mutação (Ex: Renomear um Segredo)
-
-1.  A **TUI** captura a intenção do usuário e chama o método no `Manager`, ex: `manager.RenomearSegredo(segredo, "novo nome")`.
-2.  O **Manager** invoca o método correspondente no agregado **Cofre** que está em memória.
-3.  O agregado **Cofre** e suas entidades executam a lógica de negócio e validação de invariantes.
-4.  Se válido, o estado interno é alterado em memória, e o segredo/cofre são marcados como modificados (`estadoSessao` e flag `modificado`).
-5.  O controle retorna para a TUI, que reflete a mudança visualmente (incluindo indicadores de modificação). **O arquivo em disco não é tocado.**
-
-### Fluxo de Persistência (Operação Salvar)
-
-1.  A **TUI** invoca `manager.Salvar()`.
-2.  O **Manager** chama o Repositório (`storage`): `repositorio.Salvar(cofre)`.
-3.  A camada de **storage** realiza a serialização (filtrando segredos marcados para exclusão), criptografia e escrita atômica.
-4.  Se a persistência for bem-sucedida, o **Manager** comanda o `Cofre` a efetivar as mutações:
-    *   Remoção definitiva dos ponteiros de segredos excluídos da árvore.
-    *   Reset dos estados de sessão (`modificado` → `original`).
-    *   Limpeza da flag `cofre.modificado`.
-5.  Se a persistência falhar, o estado em memória permanece intacto (permitindo nova tentativa ou correção).
-
-
 ### Benefícios Deste Padrão
 
 *   **Proteção do Domínio**: As regras de negócio são encapsuladas e não podem ser contornadas. Isso previne que o cofre entre em um estado inválido (ex: dois segredos com o mesmo nome na mesma pasta).
@@ -174,6 +153,6 @@ Não é usado arquivo de lock. Modificações externas ao arquivo do cofre são 
 | Serviço de criptografia  | Casos de sucesso e falha de criptografia e descriptografia: Argon2id + AES-256-GCM                       |
 | Serviço de armazenamento | Casos de sucesso e falha de salvamento e carregamento do arquivo `.abditum`                               |
 | Unitários white-box      | Navegação e transições de estado do domínio                                                               |
-| Golden files             | Snapshot visual de cada tela em terminal 80×24; detectam regressões visuais automaticamente               |
+| Golden files             | Snapshot visual de cada tela; detectam regressões visuais automaticamente                                 |
 | Testes de comandos       | Cada tela e fluxo de usuário, via teatest/v2                                                              |
 | Integração               | Fluxo completo de ponta a ponta: criar cofre, criar segredo, editar segredo e demais operações principais |
