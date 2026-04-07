@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 7
 status: planning
-last_updated: "2026-04-07T05:01:22.773Z"
+last_updated: "2026-04-07T05:04:02.897Z"
 progress:
   total_phases: 18
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 50
-  completed_plans: 48
+  completed_plans: 49
 ---
 
 # Project State — Abditum
@@ -247,6 +247,8 @@ See `.planning/phases/03-vault-domain-manager/03-CONTEXT.md` for complete list o
 - [Phase 06.2]: formatKeyForHelp: simple ctrl uses ⌃ symbol; complex multi-modifier uses Title Case — applied at both buildContentLines() render sites in help.go
 - [Phase 06.2]: Fluxo 6 emergency lock uses ctrl+alt+shift+q (lowercase) per bubbletea v2 Keystroke() ordering
 - [Phase 06.2-adequacao-design-system]: createVaultSaveBeforeMsg type added for save-before-new-vault dirty-check; stateSaveAsNew guards filePickerResult in saveAndExitFlow; Desvio 8 default inverted to P Prosseguir; Esc cancels entire flow
+- [Phase 06.2]: Erros de senha e arquivo em openVaultFlow usam Acknowledge(SeverityError) em vez de MessageManager.Show() — conformidade com Catálogo de Diálogos
+- [Phase 06.2]: dirty-check em openVaultFlow: Decision(SeverityAlert, 'Abrir cofre') com 3 ações S Salvar / D Descartar / Esc Voltar; openVaultSaveBeforeMsg implementa isModalResult() para routing pelo rootModel
 
 ### Phase 02 Decisions
 

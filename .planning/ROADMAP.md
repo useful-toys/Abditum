@@ -286,11 +286,11 @@ Plans:
 **Requirements:** VAULT-01, VAULT-03, VAULT-04
 
 **Plans:** 5/5 plans complete
-- [ ] 06-01-PLAN.md — Theme System, Header, Welcome Screen + Theme Toggle
-- [ ] 06-02-PLAN.md — File Picker Modal (two-panel navigation, filtering, metadata)
-- [ ] 06-03-PLAN.md — Password Entry/Creation Modals (masked input, strength meter, attempt counter)
-- [ ] 06-04-PLAN.md — Vault Lifecycle Flows (Open, Create, CLI fast-path, exit flow, error handling)
-- [ ] 06-05-PLAN.md — Dialog Factories & Golden Tests (error dialogs, comprehensive UI tests)
+- [x] 06-01-PLAN.md — Theme System, Header, Welcome Screen + Theme Toggle
+- [x] 06-02-PLAN.md — File Picker Modal (two-panel navigation, filtering, metadata)
+- [x] 06-03-PLAN.md — Password Entry/Creation Modals (masked input, strength meter, attempt counter)
+- [x] 06-04-PLAN.md — Vault Lifecycle Flows (Open, Create, CLI fast-path, exit flow, error handling)
+- [x] 06-05-PLAN.md — Dialog Factories & Golden Tests (error dialogs, comprehensive UI tests)
 
 **UAT:**
 - [ ] User enters path + matching passwords ? vault file created on disk; TUI transitions to vault tree screen
