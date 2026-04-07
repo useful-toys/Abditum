@@ -110,16 +110,16 @@ A paleta é organizada por **papel funcional** — cada papel define *para que* 
 | | `text.secondary` | Texto de apoio — descrições de segredos, texto dentro de campos vazios, atalhos na barra inferior | `#565f89` <span style="color:#565f89">██</span> | `#8888aa` <span style="color:#8888aa">██</span> |
 | | `text.disabled` | Texto de opções que não podem ser usadas no momento | `#3b4261` <span style="color:#3b4261">██</span> | `#444466` <span style="color:#444466">██</span> |
 | | `text.link` | URLs e referências externas (tela Sobre) | `#7aa2f7` <span style="color:#7aa2f7">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
-| **Bordas** | `border.default` | Linhas que dividem painéis, bordas de janelas informativas (ajuda, seleção de itens, navegação de arquivos) | `#414868` <span style="color:#414868">██</span> | `#3a3a5c` <span style="color:#3a3a5c">██</span> |
-| | `border.focused` | Borda do painel ativo, de janelas de entrada (senhas, textos) e de diálogos com severidade neutra. Diálogos com severidade não-neutra usam `semantic.*` — ver [Sobreposição](#sobreposição) | `#7aa2f7` <span style="color:#7aa2f7">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
-| **Interação** | `accent.primary` | Barra de seleção na lista, cursor de navegação, botão principal de ação | `#7aa2f7` <span style="color:#7aa2f7">██</span> | `#ff2975` <span style="color:#ff2975">██</span> |
-| | `accent.secondary` | Ícone de favorito (★), nomes de pastas na navegação de arquivos | `#bb9af7` <span style="color:#bb9af7">██</span> | `#00fff5` <span style="color:#00fff5">██</span> |
-| **Semânticas** | `semantic.success` | Operação concluída com sucesso, configuração ligada (ON) | `#9ece6a` <span style="color:#9ece6a">██</span> | `#05ffa1` <span style="color:#05ffa1">██</span> |
-| | `semantic.warning` | Alerta antes de ação permanente, aviso de bloqueio por tentativas erradas, prefixos de estado dirty (`✦ ✎ ✗`) | `#e0af68` <span style="color:#e0af68">██</span> | `#ffe900` <span style="color:#ffe900">██</span> |
-| | `semantic.error` | Erro de operação, senha incorreta, borda de diálogos destrutivos | `#f7768e` <span style="color:#f7768e">██</span> | `#ff3860` <span style="color:#ff3860">██</span> |
-| | `semantic.info` | Informação contextual | `#7dcfff` <span style="color:#7dcfff">██</span> | `#00b4d8` <span style="color:#00b4d8">██</span> |
-| | `semantic.off` | Configuração desligada (OFF) | `#737aa2` <span style="color:#737aa2">██</span> | `#9999cc` <span style="color:#9999cc">██</span> |
-| **Especiais** | `special.muted` | Texto esmaecido — uso pontual em contextos que precisam de cor apagada sem conotação semântica | `#8690b5` <span style="color:#8690b5">██</span> | `#666688` <span style="color:#666688">██</span> |
+| **Bordas** | `border.default` | Linhas que dividem painéis, bordas de janelas informativas (ajuda, seleção de itens, navegação de arquivos) | `#414868` <span style="color:#414868\">██</span> | `#3a3a5c` <span style="color:#3a3a5c\">██</span> |
+| | `border.focused` | Borda do painel ativo, de janelas de entrada (senhas, textos) e de diálogos com severidade neutra. Diálogos com severidade não-neutra usam `semantic.*` — ver [Sobreposição](#sobreposição) | `#7aa2f7` <span style="color:#7aa2f7\">██</span> | `#ff2975` <span style="color:#ff2975\">██</span> |
+| **Interação** | `accent.primary` | Barra de seleção na lista, cursor de navegação, botão principal de ação | `#7aa2f7` <span style="color:#7aa2f7\">██</span> | `#ff2975` <span style="color:#ff2975\">██</span> |
+| | `accent.secondary` | Ícone de favorito (★), nomes de pastas na navegação de arquivos | `#bb9af7` <span style="color:#bb9af7\">██</span> | `#00fff5` <span style="color:#00fff5\">██</span> |
+| **Semânticas** | `semantic.success` | Operação concluída com sucesso, configuração ligada (ON) | `#9ece6a` <span style="color:#9ece6a\">██</span> | `#05ffa1` <span style="color:#05ffa1\">██</span> |
+| | `semantic.warning` | Alerta antes de ação permanente, aviso de bloqueio por tentativas erradas, prefixos de estado dirty (`✦ ✎ ✗`) | `#e0af68` <span style="color:#e0af68\">██</span> | `#ffe900` <span style="color:#ffe900\">██</span> |
+| | `semantic.error` | Erro de operação, senha incorreta, borda de diálogos destrutivos | `#f7768e` <span style="color:#f7768e\">██</span> | `#ff3860` <span style="color:#ff3860\">██</span> |
+| | `semantic.info` | Informação contextual | `#7dcfff` <span style="color:#7dcfff\">██</span> | `#00b4d8` <span style="color:#00b4d8\">██</span> |
+| | `semantic.off` | Configuração desligada (OFF) | `#737aa2` <span style="color:#737aa2\">██</span> | `#9999cc` <span style="color:#9999cc\">██</span> |
+| **Especiais** | `special.muted` | Texto esmaecido — uso pontual em contextos que precisam de cor apagada sem conotação semântica | `#8690b5` <span style="color:#8690b5\">██</span> | `#666688` <span style="color:#666688\">██</span> |
 | | `special.highlight` | Fundo colorido atrás do item selecionado na lista | `#283457` <span style="background:#283457;color:#a9b1d6">██</span> | `#2a1533` <span style="background:#2a1533;color:#e0e0ff">██</span> |
 | | `special.match` | Trecho de texto que corresponde ao termo digitado na busca | `#f7c67a` <span style="color:#f7c67a">██</span> | `#ffc107` <span style="color:#ffc107">██</span> |
 
@@ -695,32 +695,48 @@ O ciclo entre painéis é circular. Painéis vazios ou sem conteúdo interativo 
 
 Esta seção define a **política de atribuição de teclas** — como atalhos são organizados, quais regras regem conflitos e quais teclas têm significado global. O mapeamento completo por tela está na [especificação de telas](tui-specification-novo.md).
 
-**Política de escopos e Ergonomia:**
+### Representação Visual de Teclas e Modificadores
+
+Para garantir consistência e clareza na documentação de atalhos, são adotadas as seguintes representações visuais compactas para teclas e modificadores:
+
+| Tecla / Modificador | Representação Visual | Unicode | Notas |
+|---|---|---|---|
+| `Ctrl` | `⌃` | U+2303 (UP ARROWHEAD) | Usado para atalhos de controle. |
+| `Shift` | `⇧` | U+21E7 (UPWARDS WHITE ARROW) | Usado para atalhos de modificação ou navegação. |
+| `Alt` | `!` | (Caracter comum) | Usado para atalhos alternativos. |
+| `Del` | `Del` | (Texto simples) | Tecla Delete. |
+| `Ins` | `Ins` | (Texto simples) | Tecla Insert. |
+| `PgUp` | `PgUp` | (Texto simples) | Page Up. |
+| `PgDn` | `PgDn` | (Texto simples) | Page Down. |
+| `Home` | `Home` | (Texto simples) | Início da linha/conteúdo. |
+| `End` | `End` | (Texto simples) | Fim da linha/conteúdo. |
+| `Esc` | `Esc` | (Texto simples) | Abandona ou retrocede. |
+| `Enter` | `Enter` | (Texto simples) | Confirma ou avança. |
+| `Tab` | `Tab` | (Texto simples) | Alterna foco ou campos. |
+
+### Política de escopos e Ergonomia:
 
 As teclas são atribuídas seguindo uma hierarquia de escopos e agrupamentos físicos no teclado, visando otimizar a memória muscular e evitar acionamentos acidentais para ações críticas. Escopos mais específicos sobrepõem os mais gerais quando ambos estão ativos.
 
 | Escopo | Descrição | Exemplo |
 |---|---|---|
-| **Global** | Funciona em qualquer contexto da aplicação | `F1`, `F12`, `Ctrl+Q`, `Ctrl+Alt+Shift+Q` |
-| **Área de trabalho** | Funciona quando a área de trabalho tem foco (sem diálogo aberto) | `F2-F11` (ações do cofre e modos), `Shift+F6`, `Shift+F7`, `Ctrl+F7` |
+| **Global** | Funciona em qualquer contexto da aplicação | `F1`, `F12`, `⌃Q`, `⌃!⇧Q` |
+| **Área de trabalho** | Funciona quando a área de trabalho tem foco (sem diálogo aberto) | `F2-F11` (ações do cofre e modos), `⇧F6`, `⇧F7`, `⌃F7` |
 | **Diálogo** | Funciona apenas enquanto um diálogo está no topo da pilha | `Enter`, `Esc`, `Tab` |
-| **Contextual/Foco** | Ações específicas do item ou campo com foco | `Insert`, `Del`, `Ctrl+<letra>` (para ações locais) |
+| **Contextual/Foco** | Ações específicas do item ou campo com foco | `Ins`, `Del`, `⌃<letra>` (para ações locais) |
 
-**Regras de Consistência e Semântica de Modificadores:**
+### Regras de Consistência e Semântica de Modificadores
+
+As representações visuais de teclas e modificadores seguem as definições da seção [Representação Visual de Teclas e Modificadores](#representação-visual-de-teclas-e-modificadores). As regras semânticas de uso são:
 
 -   `Enter` sempre avança ou aprofunda: confirma em diálogos, seleciona/expande na árvore, ativa/confirma edição de campo.
 -   `Esc` sempre retrocede ou abandona: fecha modal, cancela edição, sai de modo (busca, edição).
--   `Tab` / `Shift+Tab` navegam entre painéis (modo leitura) ou campos (modo edição).
+-   `Tab` / `⇧Tab` navegam entre painéis (modo leitura) ou campos (modo edição).
 -   `↑↓←→` são para navegação direcional em listas, árvores e campos.
 -   `Home` / `End` navegam ao primeiro / último item visível ou início/fim de linha em campos.
 -   `PgUp` / `PgDn` realizam scroll por página (viewport − 1) em conteúdo com scroll.
--   **`Ctrl`**: Representado por `^` (ex: `^C` para `Ctrl+C`). Preferencialmente para ações **locais** no contexto da área de trabalho ou componente ativo.
--   **`Shift`**: Representado por `⇧` (ex: `⇧Insert` para `Shift+Insert`). Usado para ações secundárias ou modificadores de navegação.
--   **`Shift`**: Representado por `⇧` (ex: `⇧Insert` para `Shift+Insert`). Usado para ações secundárias ou modificadores de navegação.
--   **`Shift`**: Representado por `+` (ex: `+Insert` para `Shift+Insert`). Usado para ações secundárias ou modificadores de navegação.
--   **`Alt`**: Representado por `!` (ex: `!S` para `Alt+S`). Para ações alternativas ou modificadores, se `Ctrl` estiver esgotado ou for ambíguo.
--   **`Insert`**: Sugerido para ações de inserção/criação (no contexto do foco).
--   **`Del`**: Sugerido para ações de exclusão (no contexto do foco).
+-   `Ins`: Sugerido para ações de inserção/criação (no contexto do foco).
+-   `Del`: Sugerido para ações de exclusão (no contexto do foco).
 -   Se uma tecla precisa ter significado diferente em dois contextos, isso deve ser documentado e justificado na especificação.
 -   Teclas de navegação universais (`↑↓←→`, `Tab`, `Home`, `End`, `PgUp`, `PgDn`) não aparecem na barra de comandos — são senso comum em TUI. Exceção: diálogos podem exibir opções explicitamente.
 
@@ -730,8 +746,8 @@ As teclas são atribuídas seguindo uma hierarquia de escopos e agrupamentos fí
 |---|---|---|
 | `F1` | Abrir / fechar modal de Ajuda | |
 | `F12` | Alternar Tema | Ação pontual, sem necessidade de visibilidade permanente na barra de comandos |
-| `Ctrl+Q` | Sair da Aplicação | Gerencia todas as saídas com as devidas confirmações |
-| `Ctrl+Alt+Shift+Q` | Bloquear Cofre | Bloqueio emergencial, descarta alterações, sem confirmação. Atalho "complicado" para evitar acidentes. |
+| `⌃Q` | Sair da Aplicação | Gerencia todas as saídas com as devidas confirmações |
+| `⌃!⇧Q` | Bloquear Cofre | Bloqueio emergencial, descarta alterações, sem confirmação. Atalho "complicado" para evitar acidentes. |
 
 **Teclas de Área de Trabalho (Ativas quando a área de trabalho tem foco, sem diálogos):**
 
