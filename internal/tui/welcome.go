@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"strings"
-
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
@@ -37,21 +35,18 @@ func (m *welcomeModel) Update(msg tea.Msg) tea.Cmd {
 }
 
 // View renders the ASCII art logo centered on screen.
+// Per spec (tui-specification-novo.md § Boas-vindas), the logo and version
+// are centered horizontally and vertically via lipgloss.Place().
+// Logo width is hardcoded to 43 columns matching the ASCII art width.
 func (m *welcomeModel) View() string {
+	// 43 = width of AsciiArt (const in ascii.go) — each line is exactly 43 characters
 	logoBlock := lipgloss.NewStyle().Width(43).Render(RenderLogo(m.theme))
 
-	// Action hints
-	hintText := "n Novo cofre    o Abrir cofre"
-	hintStyle := lipgloss.NewStyle().Foreground(m.theme.TextSecondary)
-	renderedHints := hintStyle.Render(hintText)
-
-	// Combine logo and hints
-	content := lipgloss.JoinVertical(lipgloss.Center,
-		logoBlock,
-		renderedHints,
-	)
+	content := lipgloss.JoinVertical(lipgloss.Center, logoBlock)
 
 	if m.width == 0 || m.height == 0 {
+		// Terminal dimensions not yet set (edge case during init)
+		// Return uncentered content as fallback
 		return content
 	}
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
@@ -61,14 +56,4 @@ func (m *welcomeModel) View() string {
 func (m *welcomeModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
-}
-
-// renderHints renders a list of hint lines using the muted style.
-func renderHints(items []string, t *Theme) string {
-	var b strings.Builder
-	style := lipgloss.NewStyle().Foreground(t.SemanticInfo)
-	for _, item := range items {
-		b.WriteString(style.Render(item) + "\n")
-	}
-	return b.String()
 }

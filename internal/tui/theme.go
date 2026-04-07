@@ -44,23 +44,37 @@ var ThemeTokyoNight = &Theme{
 	SemanticError:   lipgloss.Color("#f7768e"),
 	SemanticInfo:    lipgloss.Color("#7dcfff"),
 	SemanticOff:     lipgloss.Color("#737aa2"),
-	LogoGradient:    []color.Color{lipgloss.Color("#bb9af7"), lipgloss.Color("#7aa2f7")},
+	// LogoGradient: 5-color violet→cyan progression per Design System § Gradiente do logo
+	LogoGradient: []color.Color{
+		lipgloss.Color("#9d7cd8"), // Line 1: Violet
+		lipgloss.Color("#89ddff"), // Line 2: Cyan
+		lipgloss.Color("#7aa2f7"), // Line 3: Blue
+		lipgloss.Color("#7dcfff"), // Line 4: Light cyan
+		lipgloss.Color("#bb9af7"), // Line 5: Purple
+	},
 }
 
-// ThemeCyberpunk defines the Cyberpunk theme colors (placeholder values for now).
+// ThemeCyberpunk defines the Cyberpunk theme colors.
 var ThemeCyberpunk = &Theme{
-	SurfaceBase:     lipgloss.Color("#0d0d0d"),
-	SurfaceRaised:   lipgloss.Color("#1a1a1a"),
-	AccentPrimary:   lipgloss.Color("#00ffff"),
-	AccentSecondary: lipgloss.Color("#ff00ff"),
-	TextPrimary:     lipgloss.Color("#ffffff"),
-	TextSecondary:   lipgloss.Color("#cccccc"),
-	SemanticSuccess: lipgloss.Color("#00ff00"),
-	SemanticWarning: lipgloss.Color("#ffff00"),
-	SemanticError:   lipgloss.Color("#ff0000"),
-	SemanticInfo:    lipgloss.Color("#00aaff"),
-	SemanticOff:     lipgloss.Color("#888888"),
-	LogoGradient:    []color.Color{lipgloss.Color("#ff00ff"), lipgloss.Color("#00ffff")},
+	SurfaceBase:     lipgloss.Color("#0a0a1a"),
+	SurfaceRaised:   lipgloss.Color("#1a1a2e"),
+	AccentPrimary:   lipgloss.Color("#ff2975"),
+	AccentSecondary: lipgloss.Color("#00fff5"),
+	TextPrimary:     lipgloss.Color("#e0e0ff"),
+	TextSecondary:   lipgloss.Color("#8888aa"),
+	SemanticSuccess: lipgloss.Color("#05ffa1"),
+	SemanticWarning: lipgloss.Color("#ffe900"),
+	SemanticError:   lipgloss.Color("#ff3860"),
+	SemanticInfo:    lipgloss.Color("#00b4d8"),
+	SemanticOff:     lipgloss.Color("#9999cc"),
+	// LogoGradient: 5-color magenta→cyan→green progression per Design System § Gradiente do logo
+	LogoGradient: []color.Color{
+		lipgloss.Color("#ff2975"), // Line 1: Magenta/Pink
+		lipgloss.Color("#b026ff"), // Line 2: Purple
+		lipgloss.Color("#00fff5"), // Line 3: Cyan
+		lipgloss.Color("#05ffa1"), // Line 4: Green
+		lipgloss.Color("#ff2975"), // Line 5: Magenta/Pink
+	},
 }
 
 // ApplyTheme is a placeholder for propagating theme to a child model.
