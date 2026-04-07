@@ -623,14 +623,18 @@ Este guia estabelece o estilo e a gramática para todas as comunicações textua
 
 ##### 2. Mensagens no Corpo do Diálogo
 
--   **Padrão:** Afirmação de um fato (opcional), seguida de uma pergunta concisa que apresenta as opções de decisão. A pergunta não menciona a opção `Voltar` (Esc).
--   **Formato:** Fato termina com ponto; pergunta com interrogação.
+-   **Padrão:**
+    -   **Diálogos de Decisão (Confirmação):** Afirmação de um fato (opcional), seguida de uma pergunta concisa que apresenta as opções de decisão. A pergunta não menciona a opção `Voltar` (Esc).
+    -   **Diálogos de Decisão (Reconhecimento):** Apenas uma afirmação. Não há pergunta.
+-   **Formato:**
+    -   **Confirmação:** Fato termina com ponto; pergunta com interrogação.
+    -   **Reconhecimento:** Afirmação termina com ponto final.
 -   **Exemplos (ATUALIZADOS PARA CONCISÃO MÁXIMA):**
     -   `Sair do Abditum?`
     -   `Cofre modificado. Salvar ou descartar?`
     -   `Arquivo modificado externamente. Sobrescrever?`
     -   `'Gmail' será excluído permanentemente. Continuar?`
-    -   `Arquivo corrompido ou inválido. Fechar?`
+    -   `Arquivo corrompido ou inválido. Necessário fechar.`
 
 ##### 3. Mensagens na Barra de Mensagens (inferior)
 

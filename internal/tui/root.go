@@ -398,6 +398,7 @@ func (m *rootModel) View() tea.View {
 
 	v := tea.NewView(content)
 	v.AltScreen = true
+	v.BackgroundColor = m.theme.SurfaceBase
 	return v
 }
 
