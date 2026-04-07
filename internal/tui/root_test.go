@@ -378,25 +378,33 @@ func TestRootModel_Golden(t *testing.T) {
 	}
 }
 
-// TestRootModel_CtrlQQuit verifies that Ctrl+Q triggers quit behavior
-// (actionQuit returns Quit cmd) and root model responds appropriately.
+// TestRootModel_CtrlQQuit verifies that Ctrl+Q (with no vault open) shows an
+// exit confirmation dialog (Fluxo 3/4 spec: "Sair do Abditum?" / Sim·Não),
+// rather than quitting immediately. Immediate quit without confirmation was
+// the pre-06.1 behaviour; spec compliance requires the dialog.
 func TestRootModel_CtrlQQuit(t *testing.T) {
 	m := NewRootModel()
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 
-	// Send Ctrl+Q
+	// Send Ctrl+Q — no vault open (Fluxo 3/4 path)
 	_, cmd := m.Update(makeKeyPress("ctrl+q"))
 
-	// actionQuit should return tea.Quit(), which produces a Quit tea.Msg
-	if cmd != nil {
-		msg := cmd()
-		// The cmd returned should be tea.Quit() or a function that produces tea.QuitMsg
-		switch msg.(type) {
-		case tea.QuitMsg:
-			// Success - quit message was generated
-		default:
-			t.Errorf("expected tea.QuitMsg from Ctrl+Q, got %T", msg)
-		}
+	if cmd == nil {
+		t.Fatal("expected a cmd from Ctrl+Q, got nil")
+	}
+	// The outer cmd returns the Decision() cmd (a tea.Cmd, not a tea.Msg).
+	// Calling it once unwraps the decision factory; calling the result gives pushModalMsg.
+	inner := cmd()
+	innerCmd, ok := inner.(tea.Cmd)
+	if !ok {
+		t.Fatalf("expected inner value to be tea.Cmd (Decision factory), got %T", inner)
+	}
+	msg := innerCmd()
+	switch msg.(type) {
+	case pushModalMsg:
+		// Correct: confirmation dialog pushed to modal stack
+	default:
+		t.Errorf("expected pushModalMsg (confirmation dialog) from Ctrl+Q, got %T", msg)
 	}
 }
 

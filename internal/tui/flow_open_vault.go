@@ -135,7 +135,7 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 				// Store the cofre in the manager (this will be done by rootModel actually)
 				_ = cofre // just to acknowledge we received it
 			}
-			return vaultOpenedMsg{Path: path}
+			return vaultOpenedMsg{Path: path, Metadata: metadata}
 		}
 
 	case flowCancelledMsg:

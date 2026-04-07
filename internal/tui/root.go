@@ -6,6 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/useful-toys/abditum/internal/storage"
 	"github.com/useful-toys/abditum/internal/vault"
 )
 
@@ -16,16 +17,17 @@ import (
 // Never store children as childModel interface values (typed nil trap).
 type rootModel struct {
 	// State machine
-	area        workArea
-	mgr         *vault.Manager
-	vaultPath   string
-	initialPath string // Path passed via CLI, for fast-path
-	isDirty     bool
-	width       int
-	height      int
-	theme       *Theme
-	header      headerModel
-	version     string // Application version, injected at build time
+	area          workArea
+	mgr           *vault.Manager
+	vaultPath     string
+	vaultMetadata storage.FileMetadata // snapshot for external change detection
+	initialPath   string               // Path passed via CLI, for fast-path
+	isDirty       bool
+	width         int
+	height        int
+	theme         *Theme
+	header        headerModel
+	version       string // Application version, injected at build time
 
 	// Child models - nil = inactive. NEVER store as childModel interface.
 	welcome        *welcomeModel
@@ -210,6 +212,7 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// For now, just transition to vault area
 		m.area = workAreaVault
 		m.vaultPath = msg.Path
+		m.vaultMetadata = msg.Metadata
 		m.isDirty = false
 		return m, nil
 
@@ -233,6 +236,13 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		vaultSavedMsg, vaultReloadedMsg, vaultClosedMsg, vaultChangedMsg:
 		return m, tea.Batch(m.broadcast(msg)...)
 
+	// --- Save-and-exit flow internal messages: route to activeFlow ---
+	case saveAndExitReadyMsg, saveAndExitOKMsg:
+		if m.activeFlow != nil {
+			return m, m.activeFlow.Update(msg)
+		}
+		return m, nil
+
 	// --- Keyboard input: D-09 dispatch order ---
 	case tea.KeyPressMsg:
 		m.messages.HandleInput()
@@ -242,18 +252,28 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Check for Ctrl+Q (exit flow) before any other key handling
 		if key == "ctrl+q" {
-			// If there are unsaved changes, prompt the user
+			// Fluxo 5: vault is open AND has unsaved changes
 			if m.mgr != nil && m.mgr.IsModified() {
 				return m, func() tea.Msg {
 					return Decision(SeverityNeutral, "Alterações não salvas",
 						"Deseja salvar as alterações antes de sair?",
-						DecisionAction{Key: "Enter", Label: "Salvar", Default: true},
-						[]DecisionAction{{Key: "D", Label: "Descartar"}},
+						DecisionAction{Key: "Enter", Label: "Salvar", Default: true,
+							Cmd: func() tea.Msg {
+								flow := newSaveAndExitFlow(m.mgr, m.vaultPath, m.vaultMetadata, m.messages, m.theme)
+								return startFlowMsg{flow: flow}
+							}},
+						[]DecisionAction{{Key: "D", Label: "Descartar", Cmd: tea.Quit}},
 						DecisionAction{Key: "Esc", Label: "Voltar"})
 				}
 			}
-			// No unsaved changes, exit immediately
-			return m, tea.Quit
+			// Fluxos 3 & 4: no vault open (or vault open but clean) — confirm exit
+			return m, func() tea.Msg {
+				return Decision(SeverityNeutral, "Sair do Abditum",
+					"Tem certeza que deseja sair?",
+					DecisionAction{Key: "Enter", Label: "Sim", Default: true, Cmd: tea.Quit},
+					nil,
+					DecisionAction{Key: "Esc", Label: "Não"})
+			}
 		}
 
 		// Check for F12 theme toggle before any other key handling

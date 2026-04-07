@@ -1,6 +1,9 @@
 package tui
 
-import tea "charm.land/bubbletea/v2"
+import (
+	tea "charm.land/bubbletea/v2"
+	"github.com/useful-toys/abditum/internal/storage"
+)
 
 // childModel - D-01: 3 methods only.
 // closures that capture child state directly.
@@ -78,9 +81,10 @@ type pushModalMsg struct{ modal modalView }
 type popModalMsg struct{}
 
 // vaultOpenedMsg - emitted by flows when a vault is successfully opened/created.
-// Used to notify rootModel that a vault has been loaded.
+// Carries the path and file metadata needed for external change detection.
 type vaultOpenedMsg struct {
-	Path string // path to the opened vault file
+	Path     string               // path to the opened vault file
+	Metadata storage.FileMetadata // file metadata snapshot taken after load/create
 }
 
 // overwriteConfirmedMsg - emitted by the overwrite Decision dialog in the create

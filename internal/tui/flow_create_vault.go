@@ -160,6 +160,12 @@ func (f *createVaultFlow) saveVault(password []byte) tea.Cmd {
 			f.messages.Show(MsgError, "Não foi possível salvar o cofre.", 5, false)
 			return endFlow()
 		}
-		return vaultOpenedMsg{Path: path}
+		// Compute file metadata for external change detection baseline
+		metadata, err := storage.ComputeFileMetadata(path)
+		if err != nil {
+			// Metadata failure is non-fatal: vault was saved successfully
+			metadata = storage.FileMetadata{}
+		}
+		return vaultOpenedMsg{Path: path, Metadata: metadata}
 	}
 }
