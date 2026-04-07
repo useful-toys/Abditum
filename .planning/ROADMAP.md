@@ -309,13 +309,13 @@ Plans:
 **Goal:** Deliver a spec-compliant two-panel file picker modal (`filePickerModal`) in `internal/tui/filepicker.go`, replacing the broken stub in `dialogs.go` with lazy tree navigation, Open/Save modes, correct metadata format, MessageManager wiring, and golden test coverage.
 **Requirements**: TBD
 **Depends on:** Phase 06
-**Plans:** 1/5 plans executed
+**Plans:** 4/5 plans executed
 
 Plans:
 - [x] 06.3-01-PLAN.md — Foundation: filepicker.go skeleton + dialogs.go cleanup + token constants
-- [ ] 06.3-02-PLAN.md — Core Logic: Init(), tree building, Update() full keyboard handling
-- [ ] 06.3-03-PLAN.md — View Rendering: borders, panels, scroll indicators, Save mode section
-- [ ] 06.3-04-PLAN.md — Integration: 3 flow call sites + existing test fixes + 18 behavioral tests
+- [x] 06.3-02-PLAN.md — Core Logic: Init(), tree building, Update() full keyboard handling
+- [x] 06.3-03-PLAN.md — View Rendering: borders, panels, scroll indicators, Save mode section
+- [x] 06.3-04-PLAN.md — Integration: 3 flow call sites + existing test fixes + 18 behavioral tests
 - [ ] 06.3-05-PLAN.md — Golden Tests: 8 golden pairs (timeFmt injection, deterministic fixtures)
 
 ### Phase 06.2: adequacao-design-system (INSERTED)
