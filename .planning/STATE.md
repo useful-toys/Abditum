@@ -14,7 +14,7 @@ progress:
 
 # Project State — Abditum
 
-**Last updated:** 2026-04-06 (Phase 06 context gathered)
+**Last updated:** 2026-04-07 (Phase 06.2 planned — 4 plans ready)
 **Current phase:** 7
 **Milestone:** v1.0
 
@@ -34,13 +34,15 @@ progress:
 
 ## Current Phase
 
-**Phase 06: Welcome Screen + Vault Create/Open** — Context Gathered ✓
+**Phase 06.2: adequacao-design-system** — Planned ✓ (4 plans ready for execution)
 
-**Next:** Plan Phase 06
+**Next:** Execute Phase 06.2 (start with Plan 01)
 
 ## Accumulated Context
 
 ### Roadmap Evolution
+
+- Phase 06.2 inserted after Phase 06: adequacao-design-system (URGENT)
 
 - Phase 05.7 inserted after Phase 05: golden-test-architecture-for-tui-modals (INSERTED URGENT)
   - **Purpose:** Golden test architecture for TUI modals — detect visual regressions (spacing, colors, fonts) that conventional tests miss
