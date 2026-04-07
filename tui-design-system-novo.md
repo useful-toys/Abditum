@@ -834,6 +834,7 @@ Anti-padrões documentam o que **não deve ser feito** na interface do Abditum. 
 | **Enter Polissêmico** *(Médio)* | `Enter` expande ou edita sem distinção visual clara | Edição acidental ao tentar visualizar |
 | **Cursor ao Topo Após Operação** *(Médio)* | Exclusão/reordenação retorna cursor ao topo da lista | Re-navegação obrigatória; experiência frustrante |
 | **Setas com Semântica Dupla Invisível** *(Baixo)* | `←`/`→` expandem pastas E navegam diálogos sem indicador | Expansão/fechamento/navegação acidental |
+| **Atalho de Tecla Simples em Painel de Lista** *(Alto)* | Atalho sem modificador (letra ou dígito isolado) registrado em painel de árvore ou lista — ex: `n` para novo, `e` para editar | Impede type-to-search e qualquer modo de entrada futura no painel; usuário aciona ação involuntária ao tentar digitar uma query |
 
 ---
 
