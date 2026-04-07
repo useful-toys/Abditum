@@ -5,7 +5,9 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/useful-toys/abditum/internal/storage"
 	testdatapkg "github.com/useful-toys/abditum/internal/tui/testdata"
+	"github.com/useful-toys/abditum/internal/vault"
 )
 
 // --- Test stubs ---
@@ -451,5 +453,142 @@ func TestRootModel_FlowOrchestration_Golden(t *testing.T) {
 	m.Update(endFlowMsg{})
 	if m.activeFlow != nil {
 		t.Error("flow should be cleared after endFlowMsg")
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fluxo 6: Ctrl+Alt+Shift+Q — emergency vault lock
+//
+// Spec: pressing ctrl+alt+shift+q IMMEDIATELY clears mgr, vaultPath,
+// vaultMetadata, isDirty, activeFlow and modals, and returns to workAreaWelcome.
+// No confirmation dialog is shown. The shortcut is global: it fires even when a
+// flow or modal is active (it is handled BEFORE ActionManager dispatch).
+// ─────────────────────────────────────────────────────────────────────────────
+
+// makeEmergencyLockKey creates the tea.KeyPressMsg for ctrl+alt+shift+q.
+func makeEmergencyLockKey() tea.KeyPressMsg {
+	return tea.KeyPressMsg{Code: 'q', Mod: tea.ModCtrl | tea.ModAlt | tea.ModShift}
+}
+
+// TestCtrlAltShiftQ_NoVault verifies that pressing ctrl+alt+shift+q with no
+// vault open is a safe no-op: rootModel stays at workAreaWelcome.
+func TestCtrlAltShiftQ_NoVault(t *testing.T) {
+	m := NewRootModel()
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+
+	if m.area != workAreaWelcome {
+		t.Fatal("precondition: model must start in workAreaWelcome")
+	}
+
+	_, cmd := m.Update(makeEmergencyLockKey())
+
+	if m.area != workAreaWelcome {
+		t.Errorf("expected workAreaWelcome after emergency lock, got %d", m.area)
+	}
+	if cmd != nil {
+		t.Error("expected nil cmd for emergency lock with no vault open")
+	}
+}
+
+// TestCtrlAltShiftQ_WithVault verifies that pressing ctrl+alt+shift+q with a
+// vault open clears all vault-related state: mgr→nil, vaultPath→"",
+// isDirty→false, activeFlow→nil, modals→[].
+func TestCtrlAltShiftQ_WithVault(t *testing.T) {
+	m := NewRootModel()
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+
+	// Set up vault state via a real vault.Manager.
+	cofre := vault.NovoCofre()
+	repo := &mockVaultRepo{}
+	mgr := vault.NewManager(cofre, repo)
+	// Mark modified so IsModified() == true (exercises dirty path too).
+	if _, err := mgr.CriarModelo("test", []vault.CampoModelo{}); err != nil {
+		t.Fatalf("CriarModelo: %v", err)
+	}
+
+	m.mgr = mgr
+	m.vaultPath = "/some/vault.abditum"
+	m.vaultMetadata = storage.FileMetadata{Size: 42}
+	m.isDirty = true
+	m.area = workAreaVault
+
+	_, cmd := m.Update(makeEmergencyLockKey())
+
+	if m.mgr != nil {
+		t.Error("expected m.mgr == nil after emergency lock")
+	}
+	if m.vaultPath != "" {
+		t.Errorf("expected m.vaultPath == \"\", got %q", m.vaultPath)
+	}
+	if m.isDirty {
+		t.Error("expected m.isDirty == false after emergency lock")
+	}
+	if m.activeFlow != nil {
+		t.Error("expected m.activeFlow == nil after emergency lock")
+	}
+	if m.area != workAreaWelcome {
+		t.Errorf("expected workAreaWelcome after emergency lock, got %d", m.area)
+	}
+	if cmd != nil {
+		t.Error("expected nil cmd (no tea.Quit, no modal push)")
+	}
+}
+
+// TestCtrlAltShiftQ_ClearsModals verifies that pressing ctrl+alt+shift+q with
+// dialogs stacked on the modal stack empties the modal slice.
+func TestCtrlAltShiftQ_ClearsModals(t *testing.T) {
+	m := NewRootModel()
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+
+	// Push two modals onto the stack.
+	m.Update(pushModalMsg{modal: &stubModal{}})
+	m.Update(pushModalMsg{modal: &stubModal{}})
+	if len(m.modals) != 2 {
+		t.Fatal("precondition: expected 2 modals on stack")
+	}
+
+	m.Update(makeEmergencyLockKey())
+
+	if len(m.modals) != 0 {
+		t.Errorf("expected modal stack empty after emergency lock, got %d modal(s)", len(m.modals))
+	}
+}
+
+// TestCtrlAltShiftQ_GlobalScope verifies that ctrl+alt+shift+q fires even when
+// a flow is active (inFlowOrModal == true). The emergency lock must bypass the
+// ActionManager dispatch and work regardless of modal/flow state.
+func TestCtrlAltShiftQ_GlobalScope(t *testing.T) {
+	m := NewRootModel()
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+
+	// Set vault state.
+	cofre := vault.NovoCofre()
+	repo := &mockVaultRepo{}
+	mgr := vault.NewManager(cofre, repo)
+	m.mgr = mgr
+	m.vaultPath = "/vault.abditum"
+	m.area = workAreaVault
+
+	// Start a flow to ensure inFlowOrModal == true.
+	flow := &stubFlow{}
+	m.Update(startFlowMsg{flow: flow})
+	if m.activeFlow == nil {
+		t.Fatal("precondition: activeFlow should be set")
+	}
+
+	// Send emergency lock key while flow is active.
+	_, cmd := m.Update(makeEmergencyLockKey())
+
+	if m.mgr != nil {
+		t.Error("emergency lock must clear mgr even when flow is active")
+	}
+	if m.activeFlow != nil {
+		t.Error("emergency lock must clear activeFlow")
+	}
+	if m.area != workAreaWelcome {
+		t.Errorf("expected workAreaWelcome, got %d", m.area)
+	}
+	if cmd != nil {
+		t.Error("expected nil cmd from emergency lock")
 	}
 }
