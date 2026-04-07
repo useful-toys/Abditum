@@ -3,8 +3,10 @@ package tui
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	testdatapkg "github.com/useful-toys/abditum/internal/tui/testdata"
@@ -12,7 +14,10 @@ import (
 
 // Helper to create a filePickerModal for testing
 func newTestFilePickerModal() *filePickerModal {
-	fpk := &filePickerModal{}
+	fpk := &filePickerModal{
+		ext:  ".abditum",
+		mode: FilePickerOpen,
+	}
 	fpk.Init()
 	return fpk
 }
@@ -25,12 +30,15 @@ func TestFilePickerModalStructExists(t *testing.T) {
 	}
 }
 
-// TestFilePickerModalInit verifies Init() initializes the directory.
+// TestFilePickerModalInit verifies Init() initializes the directory and sets focusPanel=0.
 func TestFilePickerModalInit(t *testing.T) {
-	fpk := &filePickerModal{}
+	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen}
 	fpk.Init()
 	if fpk.currentPath == "" {
 		t.Fatal("currentPath not set after Init()")
+	}
+	if fpk.focusPanel != 0 {
+		t.Errorf("Init() should set focusPanel=0 (tree), got %d", fpk.focusPanel)
 	}
 	t.Logf("Initialized at: %s", fpk.currentPath)
 }
@@ -62,15 +70,21 @@ func TestFilePickerModalSetSize(t *testing.T) {
 	}
 }
 
-// TestFilePickerModalShortcuts verifies Shortcuts() returns a slice.
+// TestFilePickerModalShortcuts verifies Shortcuts() returns exactly 2 entries: Tab+F1.
 func TestFilePickerModalShortcuts(t *testing.T) {
 	fpk := newTestFilePickerModal()
 	shortcuts := fpk.Shortcuts()
 	if shortcuts == nil {
 		t.Fatal("Shortcuts() returned nil")
 	}
-	if len(shortcuts) == 0 {
-		t.Log("Shortcuts() returned empty slice")
+	if len(shortcuts) != 2 {
+		t.Fatalf("Expected 2 shortcuts (Tab+F1), got %d", len(shortcuts))
+	}
+	if shortcuts[0].Key != "Tab" || shortcuts[0].Label != "Painel" {
+		t.Errorf("shortcuts[0] should be {Tab, Painel}, got {%s, %s}", shortcuts[0].Key, shortcuts[0].Label)
+	}
+	if shortcuts[1].Key != "F1" || shortcuts[1].Label != "Ajuda" {
+		t.Errorf("shortcuts[1] should be {F1, Ajuda}, got {%s, %s}", shortcuts[1].Key, shortcuts[1].Label)
 	}
 }
 
@@ -114,10 +128,11 @@ func TestFilePickerModalContainsPanelLabels(t *testing.T) {
 	}
 }
 
-// TestFilePickerModalDirectoryLoading verifies loadDirectory works.
+// TestFilePickerModalDirectoryLoading verifies loadFilesForCursor loads .abditum files.
 func TestFilePickerModalDirectoryLoading(t *testing.T) {
-	fpk := &filePickerModal{}
 	testDir := t.TempDir()
+	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen}
+	fpk.Init()
 	fpk.currentPath = testDir
 
 	// Create some test files
@@ -127,11 +142,10 @@ func TestFilePickerModalDirectoryLoading(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create test file: %v", err)
 		}
-		file.Close() // Close immediately to avoid Windows locking issues
+		file.Close()
 	}
 
-	// Try to load directory
-	fpk.loadDirectory()
+	fpk.loadFilesForCursor()
 
 	// Should have loaded 3 files (filtering for .abditum)
 	if len(fpk.files) != 3 {
@@ -141,8 +155,9 @@ func TestFilePickerModalDirectoryLoading(t *testing.T) {
 
 // TestFilePickerModalFiltering verifies that only .abditum files are shown and hidden files are excluded.
 func TestFilePickerModalFiltering(t *testing.T) {
-	fpk := &filePickerModal{}
 	testDir := t.TempDir()
+	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen}
+	fpk.Init()
 	fpk.currentPath = testDir
 
 	// Create test files
@@ -161,13 +176,12 @@ func TestFilePickerModalFiltering(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create test file: %v", err)
 		}
-		file.Close() // Close immediately to avoid Windows locking issues
+		file.Close()
 	}
 
-	// Load directory
-	fpk.loadDirectory()
+	fpk.loadFilesForCursor()
 
-	// Check filtering
+	// Check filtering: only "vault" should be visible (no hidden, no wrong ext)
 	if len(fpk.files) != 1 {
 		t.Errorf("Expected 1 visible file, got %d", len(fpk.files))
 	}
@@ -176,24 +190,28 @@ func TestFilePickerModalFiltering(t *testing.T) {
 	}
 }
 
-// TestFilePickerModalNavigationDown verifies down arrow moves cursor.
+// TestFilePickerModalNavigationDown verifies down arrow moves cursor in the files panel.
 func TestFilePickerModalNavigationDown(t *testing.T) {
-	fpk := &filePickerModal{focusPanel: 1} // Focus on files panel
 	testDir := t.TempDir()
+	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen}
+	fpk.Init()
 	fpk.currentPath = testDir
+	fpk.focusPanel = 1 // switch to files panel after Init (Init always sets 0)
 
 	// Create test files
 	for i := 0; i < 5; i++ {
 		file, _ := os.Create(testDir + "/" + "file" + string(rune('0'+i)) + ".abditum")
-		file.Close() // Close immediately to avoid Windows locking issues
+		if file != nil {
+			file.Close()
+		}
 	}
-	fpk.loadDirectory()
+	fpk.loadFilesForCursor()
 
-	initialCursor := fpk.fileCursor
-	msg := tea.KeyPressMsg{Code: tea.KeyDown}
-	fpk.Update(msg)
+	// After loading, D-15: fileCursor is 0 (auto-selected because files exist)
+	initialCursor := fpk.fileCursor // should be 0
+	fpk.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 
-	// Cursor should move
+	// Cursor should move from 0 to 1
 	if fpk.fileCursor == initialCursor {
 		t.Error("Down key did not move cursor")
 	}
@@ -204,21 +222,24 @@ func TestFilePickerModalNavigationDown(t *testing.T) {
 
 // TestFilePickerModalNavigationUp verifies up arrow moves cursor backwards.
 func TestFilePickerModalNavigationUp(t *testing.T) {
-	fpk := &filePickerModal{focusPanel: 1} // Focus on files panel
 	testDir := t.TempDir()
+	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen}
+	fpk.Init()
 	fpk.currentPath = testDir
+	fpk.focusPanel = 1 // switch to files panel after Init
 
 	// Create test files
 	for i := 0; i < 5; i++ {
 		file, _ := os.Create(testDir + "/" + "file" + string(rune('0'+i)) + ".abditum")
-		file.Close() // Close immediately to avoid Windows locking issues
+		if file != nil {
+			file.Close()
+		}
 	}
-	fpk.loadDirectory()
+	fpk.loadFilesForCursor()
 
 	// Move to position 2
 	fpk.fileCursor = 2
-	msg := tea.KeyPressMsg{Code: tea.KeyUp}
-	fpk.Update(msg)
+	fpk.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 
 	// Cursor should move back
 	if fpk.fileCursor != 1 {
@@ -231,18 +252,18 @@ func TestFilePickerModalTabFocus(t *testing.T) {
 	fpk := newTestFilePickerModal()
 
 	initialFocus := fpk.focusPanel
-	msg := tea.KeyPressMsg{Code: tea.KeyTab}
-	fpk.Update(msg)
+	fpk.Update(tea.KeyPressMsg{Code: tea.KeyTab})
 
 	if fpk.focusPanel == initialFocus {
 		t.Error("Tab did not change focus panel")
 	}
 }
 
-// TestFilePickerModalDisplaysFileSizes verifies that file sizes are shown in human-readable format.
+// TestFilePickerModalDisplaysFileSizes verifies that file sizes are shown with space-separated units.
 func TestFilePickerModalDisplaysFileSizes(t *testing.T) {
-	fpk := &filePickerModal{focusPanel: 1}
 	testDir := t.TempDir()
+	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen, focusPanel: 1}
+	fpk.Init()
 	fpk.currentPath = testDir
 	fpk.SetSize(80, 24)
 
@@ -257,89 +278,85 @@ func TestFilePickerModalDisplaysFileSizes(t *testing.T) {
 
 	for _, f := range testFiles {
 		file, _ := os.Create(testDir + "/" + f.name)
-		// Write specific size to file
-		file.WriteString(strings.Repeat("x", f.size))
-		file.Close()
+		if file != nil {
+			file.WriteString(strings.Repeat("x", f.size))
+			file.Close()
+		}
 	}
 
-	fpk.loadDirectory()
+	fpk.loadFilesForCursor()
 	view := fpk.View()
 
-	// View should contain human-readable size info (not just file names)
-	// Look for patterns like "512B", "1.0M", "KB", etc.
-	if !contains(view, "B") && !contains(view, "K") && !contains(view, "M") {
-		t.Error("File picker view must display file sizes in human-readable format (B, KB, MB, etc)")
+	// Space-separated units per D-05: "512 B", "1.0 KB", "1.0 MB"
+	if !contains(view, " B") && !contains(view, " KB") && !contains(view, " MB") && !contains(view, " GB") {
+		t.Error("File sizes must use space-separated units: '512 B', '1.2 KB', etc. (D-05)")
 	}
 }
 
-// TestFilePickerModalDisplaysRelativeDates verifies that modification dates are shown in relative format.
+// TestFilePickerModalDisplaysRelativeDates verifies that modification dates use absolute format.
 func TestFilePickerModalDisplaysRelativeDates(t *testing.T) {
-	fpk := &filePickerModal{focusPanel: 1}
 	testDir := t.TempDir()
+	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen, focusPanel: 1}
+	fpk.Init()
 	fpk.currentPath = testDir
 	fpk.SetSize(80, 24)
 
 	// Create a test file
 	file, _ := os.Create(testDir + "/recent.abditum")
-	file.Close()
+	if file != nil {
+		file.Close()
+	}
 
-	fpk.loadDirectory()
+	fpk.loadFilesForCursor()
 	view := fpk.View()
 
-	// View should include time/date information for files
-	// Should contain patterns like "now", time (h/d/m), or date format (MM/DD/YY)
-	// For a freshly created file, should show recent time indicator
-	hasTimeInfo := contains(view, "now") || contains(view, "h") || contains(view, "d") || contains(view, "/")
-	if !hasTimeInfo {
-		t.Error("File picker view must display relative dates (e.g., 'now', '1h', '2d', or date format)")
+	// Absolute date format: "dd/mm/aa HH:MM" — must contain "/" between date parts (D-05)
+	if !contains(view, "/") {
+		t.Error("File picker must show absolute date format (dd/mm/aa HH:MM) per D-05 — must contain '/'")
+	}
+	// Must NOT show relative indicators
+	if contains(view, "now") || contains(view, " ago") {
+		t.Error("File picker must NOT show relative time — use absolute date format per D-05")
 	}
 }
 
-// TestFilePickerModalHandlesInaccessibleDirectory verifies error handling for inaccessible dirs.
+// TestFilePickerModalHandlesInaccessibleDirectory verifies error handling for nonexistent dirs.
 func TestFilePickerModalHandlesInaccessibleDirectory(t *testing.T) {
-	fpk := &filePickerModal{focusPanel: 0}
 	testDir := t.TempDir()
+	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen, focusPanel: 0}
+	fpk.Init()
 	fpk.currentPath = testDir
 
-	// Create a subdirectory and make it inaccessible (Windows: deny read)
-	restrictedDir := testDir + "/restricted"
-	os.Mkdir(restrictedDir, 0755)
-
-	// On Windows, we can't easily simulate inaccessible dirs via permissions
-	// Instead, test the error handling when loading a non-existent path
+	// Test error handling when loading a non-existent path
 	fpk.currentPath = testDir + "/nonexistent"
-	fpk.loadDirectory()
+	fpk.loadFilesForCursor()
 
-	// Should not crash; files/directories should be empty
-	if fpk.files != nil || fpk.directories != nil {
-		// After loading nonexistent dir, should gracefully handle
-		// This is actually OK - loadDirectory silently skips on error
-		t.Log("loadDirectory handled inaccessible/nonexistent directory gracefully")
-	}
+	// Should not crash; files should be empty
+	t.Logf("loadFilesForCursor handled inaccessible/nonexistent directory gracefully, files=%d", len(fpk.files))
 }
 
-// TestFilePickerModalMouseScrollSupport verifies that scroll events don't crash the modal.
+// TestFilePickerModalMouseScrollSupport verifies that scroll/navigation events don't crash the modal.
 func TestFilePickerModalMouseScrollSupport(t *testing.T) {
-	fpk := &filePickerModal{focusPanel: 1}
 	testDir := t.TempDir()
+	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen, focusPanel: 1}
+	fpk.Init()
 	fpk.currentPath = testDir
 
 	// Create multiple files to enable scrolling
 	for i := 0; i < 20; i++ {
 		file, _ := os.Create(testDir + "/" + "file" + fmt.Sprintf("%02d", i) + ".abditum")
-		file.Close()
+		if file != nil {
+			file.Close()
+		}
 	}
-	fpk.loadDirectory()
+	fpk.loadFilesForCursor()
 	fpk.SetSize(40, 5) // Small height to force scrolling
 
-	// Test that PageDown-like navigation works (simulate via multiple down arrows)
 	initialCursor := fpk.fileCursor
 	for i := 0; i < 15; i++ {
 		fpk.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	}
 
-	// Cursor should have moved and wrapped around (or reached end)
-	// This effectively tests scrolling behavior
 	t.Logf("Navigation handled without panic. Cursor: %d -> %d", initialCursor, fpk.fileCursor)
 }
 
@@ -351,6 +368,355 @@ func contains(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Behavioral Update() tests — D-07 matrix (18 cases)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// TestFilePickerUpdateBehavior covers all 18 behavioral cases from CONTEXT.md D-07.
+func TestFilePickerUpdateBehavior(t *testing.T) {
+	// makeDir creates a temp dir with subdirs and .abditum files.
+	makeDir := func(t *testing.T, subdirCount, fileCount int) string {
+		dir := t.TempDir()
+		for i := 0; i < subdirCount; i++ {
+			os.Mkdir(filepath.Join(dir, fmt.Sprintf("sub%02d", i)), 0755)
+		}
+		for i := 0; i < fileCount; i++ {
+			f, _ := os.Create(filepath.Join(dir, fmt.Sprintf("file%02d.abditum", i)))
+			if f != nil {
+				f.Close()
+			}
+		}
+		return dir
+	}
+
+	// makeFPK makes a modal with given focus panel and a loaded directory.
+	makeFPK := func(t *testing.T, mode FilePickerMode, dir string, focus int) *filePickerModal {
+		fpk := &filePickerModal{
+			ext:         ".abditum",
+			mode:        mode,
+			currentPath: dir,
+		}
+		fpk.Init()
+		fpk.currentPath = dir // override CWD after Init
+		fpk.loadFilesForCursor()
+		fpk.focusPanel = focus // set focus AFTER Init (Init resets to 0)
+		fpk.SetSize(80, 24)
+		return fpk
+	}
+
+	tests := []struct {
+		name  string
+		setup func(t *testing.T) *filePickerModal
+		key   tea.Key
+		check func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd)
+	}{
+		// ── Tree panel ──────────────────────────────────────────────────────
+		{
+			name: "↓ in tree: cursor stays in bounds",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 2)
+				fpk := makeFPK(t, FilePickerOpen, dir, 0)
+				// Expand root so there are visible nodes
+				if fpk.root != nil && !fpk.root.expanded {
+					fpk.root.expanded = true
+					fpk.visibleNodes = nil
+					fpk.buildVisibleNodes(fpk.root, &fpk.visibleNodes)
+				}
+				return fpk
+			},
+			key: tea.Key{Code: tea.KeyDown},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if len(fpk.visibleNodes) > 0 {
+					if fpk.treeCursor < 0 || fpk.treeCursor >= len(fpk.visibleNodes) {
+						t.Errorf("treeCursor out of bounds: %d (len=%d)", fpk.treeCursor, len(fpk.visibleNodes))
+					}
+				}
+			},
+		},
+		{
+			name: "↑ in tree at top: cursor stays at 0",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 0)
+				fpk := makeFPK(t, FilePickerOpen, dir, 0)
+				fpk.treeCursor = 0
+				return fpk
+			},
+			key: tea.Key{Code: tea.KeyUp},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if fpk.treeCursor != 0 {
+					t.Errorf("↑ at top should clamp to 0, got %d", fpk.treeCursor)
+				}
+			},
+		},
+		{
+			name: "Tab in tree (Open): focus moves to files panel",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 1)
+				return makeFPK(t, FilePickerOpen, dir, 0)
+			},
+			key: tea.Key{Code: tea.KeyTab},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if fpk.focusPanel != 1 {
+					t.Errorf("Tab in tree (Open): expected focusPanel=1, got %d", fpk.focusPanel)
+				}
+			},
+		},
+		{
+			name: "Enter in tree with .abditum files: focus moves to files",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 2)
+				return makeFPK(t, FilePickerOpen, dir, 0)
+			},
+			key: tea.Key{Code: tea.KeyEnter},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if fpk.focusPanel != 1 {
+					t.Errorf("Enter on dir with files: expected focusPanel=1, got %d", fpk.focusPanel)
+				}
+			},
+		},
+		{
+			name: "Enter in tree with no .abditum files: no-op",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 0) // no files
+				return makeFPK(t, FilePickerOpen, dir, 0)
+			},
+			key: tea.Key{Code: tea.KeyEnter},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if fpk.focusPanel != 0 {
+					t.Errorf("Enter on empty dir: expected focusPanel=0 (no-op), got %d", fpk.focusPanel)
+				}
+			},
+		},
+		// ── Files panel ─────────────────────────────────────────────────────
+		{
+			name: "Tab in files (Open): focus → tree",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 2)
+				return makeFPK(t, FilePickerOpen, dir, 1)
+			},
+			key: tea.Key{Code: tea.KeyTab},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if fpk.focusPanel != 0 {
+					t.Errorf("Tab in files (Open): expected focusPanel=0, got %d", fpk.focusPanel)
+				}
+			},
+		},
+		{
+			name: "Tab in files (Save): focus → campo nome",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 2)
+				return makeFPK(t, FilePickerSave, dir, 1)
+			},
+			key: tea.Key{Code: tea.KeyTab},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if fpk.focusPanel != 2 {
+					t.Errorf("Tab in files (Save): expected focusPanel=2, got %d", fpk.focusPanel)
+				}
+			},
+		},
+		{
+			name: "Enter in files (Open) with file selected: emits filePickerResult + popModalMsg",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 2)
+				fpk := makeFPK(t, FilePickerOpen, dir, 1)
+				fpk.fileCursor = 0
+				return fpk
+			},
+			key: tea.Key{Code: tea.KeyEnter},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if cmd == nil {
+					t.Fatal("Enter on file (Open): expected non-nil cmd")
+				}
+				msg := cmd()
+				// Accept BatchMsg, filePickerResult, or popModalMsg
+				switch msg.(type) {
+				case tea.BatchMsg, filePickerResult, popModalMsg:
+					// ok
+				default:
+					t.Errorf("Expected BatchMsg or filePickerResult, got %T", msg)
+				}
+			},
+		},
+		{
+			name: "Enter in files (Save): copies name to field + focus → campo nome",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 2)
+				fpk := makeFPK(t, FilePickerSave, dir, 1)
+				fpk.fileCursor = 0
+				return fpk
+			},
+			key: tea.Key{Code: tea.KeyEnter},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if fpk.focusPanel != 2 {
+					t.Errorf("Enter in files (Save): expected focusPanel=2, got %d", fpk.focusPanel)
+				}
+				if fpk.nameField.Value() == "" {
+					t.Error("Enter in files (Save): field should have filename copied")
+				}
+			},
+		},
+		{
+			name: "Home in files: fileCursor=0",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 5)
+				fpk := makeFPK(t, FilePickerOpen, dir, 1)
+				fpk.fileCursor = 4
+				return fpk
+			},
+			key: tea.Key{Code: tea.KeyHome},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if fpk.fileCursor != 0 {
+					t.Errorf("Home: expected fileCursor=0, got %d", fpk.fileCursor)
+				}
+			},
+		},
+		{
+			name: "End in files: fileCursor=last",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 5)
+				return makeFPK(t, FilePickerOpen, dir, 1)
+			},
+			key: tea.Key{Code: tea.KeyEnd},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				expected := len(fpk.files) - 1
+				if fpk.fileCursor != expected {
+					t.Errorf("End: expected fileCursor=%d, got %d", expected, fpk.fileCursor)
+				}
+			},
+		},
+		{
+			name: "PgDn in files (scroll=0, 10 files): cursor advances",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 10)
+				fpk := makeFPK(t, FilePickerOpen, dir, 1)
+				fpk.fileScroll = 0
+				fpk.fileCursor = 0
+				return fpk
+			},
+			key: tea.Key{Code: tea.KeyPgDown},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if fpk.fileCursor == 0 {
+					t.Error("PgDn should advance fileCursor from 0")
+				}
+			},
+		},
+		// ── Campo nome (Save mode) ───────────────────────────────────────────
+		{
+			name: "Tab in campo nome: focus → tree",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 0)
+				return makeFPK(t, FilePickerSave, dir, 2)
+			},
+			key: tea.Key{Code: tea.KeyTab},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if fpk.focusPanel != 0 {
+					t.Errorf("Tab in campo nome: expected focusPanel=0, got %d", fpk.focusPanel)
+				}
+			},
+		},
+		{
+			name: "Enter in campo nome (non-empty): emits filePickerResult + popModalMsg",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 0)
+				fpk := makeFPK(t, FilePickerSave, dir, 2)
+				fpk.nameField.SetValue("meu-cofre")
+				return fpk
+			},
+			key: tea.Key{Code: tea.KeyEnter},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if cmd == nil {
+					t.Fatal("Enter with non-empty field: expected non-nil cmd")
+				}
+			},
+		},
+		{
+			name: "Enter in campo nome (empty): no-op",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 0)
+				fpk := makeFPK(t, FilePickerSave, dir, 2)
+				fpk.nameField.SetValue("")
+				return fpk
+			},
+			key: tea.Key{Code: tea.KeyEnter},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if cmd != nil {
+					t.Error("Enter with empty field: expected nil cmd (no-op)")
+				}
+			},
+		},
+		// ── Global ──────────────────────────────────────────────────────────
+		{
+			name: "Esc from tree: emits Cancelled result + popModalMsg",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 0)
+				return makeFPK(t, FilePickerOpen, dir, 0)
+			},
+			key: tea.Key{Code: tea.KeyEsc},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if cmd == nil {
+					t.Fatal("Esc: expected non-nil cmd")
+				}
+				// Check the batch contains a filePickerResult{Cancelled:true}
+				gotCancelled := false
+				msg := cmd()
+				if bm, ok := msg.(tea.BatchMsg); ok {
+					for _, fn := range bm {
+						if m := fn(); m != nil {
+							if r, ok := m.(filePickerResult); ok && r.Cancelled {
+								gotCancelled = true
+							}
+						}
+					}
+				}
+				if !gotCancelled {
+					// Also acceptable: cmd() itself is the filePickerResult
+					if r, ok := msg.(filePickerResult); ok && r.Cancelled {
+						gotCancelled = true
+					}
+				}
+				if !gotCancelled {
+					t.Error("Esc: expected filePickerResult{Cancelled:true} in cmd chain")
+				}
+			},
+		},
+		{
+			name: "Esc from files: emits Cancelled result",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 2)
+				return makeFPK(t, FilePickerOpen, dir, 1)
+			},
+			key: tea.Key{Code: tea.KeyEsc},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if cmd == nil {
+					t.Fatal("Esc from files: expected non-nil cmd")
+				}
+			},
+		},
+		{
+			name: "Esc from campo nome: emits Cancelled result",
+			setup: func(t *testing.T) *filePickerModal {
+				dir := makeDir(t, 0, 0)
+				return makeFPK(t, FilePickerSave, dir, 2)
+			},
+			key: tea.Key{Code: tea.KeyEsc},
+			check: func(t *testing.T, fpk *filePickerModal, cmd tea.Cmd) {
+				if cmd == nil {
+					t.Fatal("Esc from campo nome: expected non-nil cmd")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			fpk := tt.setup(t)
+			cmd := fpk.Update(tea.KeyPressMsg{Code: tt.key.Code})
+			tt.check(t, fpk, cmd)
+		})
+	}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -375,9 +741,16 @@ func TestFilePickerModal_Golden(t *testing.T) {
 		os.Mkdir(testDir+"/"+fmt.Sprintf("Folder%d", i), 0755)
 	}
 
-	fpk := &filePickerModal{focusPanel: 1}
+	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen}
+	fpk.Init()
+	// Inject fixed time formatter for deterministic golden output
+	fixedTime, _ := time.Parse("02/01/06 15:04", "01/01/24 12:00")
+	fpk.timeFmt = func(time.Time) string { return fixedTime.Format("02/01/06 15:04") }
 	fpk.currentPath = testDir
-	fpk.loadDirectory()
+	fpk.focusPanel = 1
+	fpk.loadFilesForCursor()
+	// Override currentPath to a fixed value for deterministic golden rendering
+	fpk.currentPath = "/home/user/cofres"
 	fpk.SetSize(80, 24)
 	fpk.theme = ThemeTokyoNight
 

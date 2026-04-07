@@ -1,24 +1,19 @@
-  Estrutura                            │ Arquivos
-  Folder0                              │→ vault0                     0B  now
-  Folder1                              │  vault1                     0B  now
-  Folder2                              │  vault2                     0B  now
-                                       │  vault3                     0B  now
-                                       │  vault4                     0B  now
-                                       │
-                                       │
-                                       │
-                                       │
-                                       │
-                                       │
-                                       │
-                                       │
-                                       │
-                                       │
-                                       │
-                                       │
-                                       │
-                                       │
-                                       │
-                                       │
-                                       │
-                                       │
+╭──    ────────────────────────────────────────────────────╮
+│Caminho: /home/user/cofres                                    │
+├────── Estrutura ───────┬───────────── Arquivos ──────────────┤
+│  /                     │● vault0          0 B  01/01/24 12:00│
+│▼   g                   │● vault1          0 B  01/01/24 12:00│
+│▼     Abditum           │● vault2          0 B  01/01/24 12:00│
+│▼       internal        │● vault3          0 B  01/01/24 12:00│
+│▷         tui           │● vault4          0 B  01/01/24 12:00│
+│                        │                                     │
+│                        │                                     │
+│                        │                                     │
+│                        │                                     │
+│                        │                                     │
+│                        │                                     │
+│                        │                                     │
+│                        │                                     │
+│                        │                                     │
+│                        │                                     │
+╰──  Enter Abrir ──────────────────────┴──────── Esc Cancelar  ──╯

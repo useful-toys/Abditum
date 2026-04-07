@@ -702,14 +702,12 @@ func (m *filePickerModal) renderCaminhoHeader(innerW int, theme *Theme) string {
 		avail = 3
 	}
 	// Truncate path from left with … if too wide
-	for lipgloss.Width(path) > avail && len(path) > 1 {
-		// drop first rune
-		for i := 1; i <= len(path); i++ {
-			if path[i-1] < 0x80 || path[i-1] >= 0xC0 {
-				path = "…" + path[i:]
-				break
-			}
-		}
+	runes := []rune(path)
+	for len(runes) > avail {
+		runes = runes[1:]
+	}
+	if string(runes) != path {
+		path = "…" + string(runes)
 	}
 	content := labelSt.Render(label) + valueSt.Render(path)
 	content = padRight(content, innerW)
