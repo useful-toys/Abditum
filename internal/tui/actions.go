@@ -172,10 +172,10 @@ func (a *ActionManager) All() []Action {
 // F1 action is right-anchored; all other actions are left-padded with 2 spaces.
 // Actions are sorted by Priority descending before rendering — callers may pass unsorted slices.
 // Callers should pass am.Visible() to obtain the visible action slice.
-func RenderCommandBar(actions []Action, width int) string {
-	keyStyle := StyleCommandKey()
-	labelStyle := StyleCommandLabel()
-	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorSeparator))
+func RenderCommandBar(actions []Action, width int, theme *Theme) string {
+	keyStyle := lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
+	labelStyle := lipgloss.NewStyle().Foreground(theme.TextPrimary)
+	sepStyle := lipgloss.NewStyle().Foreground(theme.TextSecondary)
 
 	// renderPart builds a single "KEY Label" token pair.
 	renderPart := func(key, label string) string {

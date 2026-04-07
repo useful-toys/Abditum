@@ -41,8 +41,10 @@ func (m *welcomeModel) Update(msg tea.Msg) tea.Cmd {
 // Logo width is hardcoded to 43 columns matching the ASCII art width.
 // Version is displayed below the logo in text.secondary color.
 func (m *welcomeModel) View() string {
-	// 43 = width of AsciiArt (const in ascii.go) — each line is exactly 43 characters
-	logoBlock := lipgloss.NewStyle().Width(43).Render(RenderLogo(m.theme))
+	// 43 = width of AsciiArt (const in ascii.go) — each line is exactly 43 characters.
+	// Background must match SurfaceBase to prevent default-terminal bg bleed from
+	// the Width() padding fill characters leaking through the work area style.
+	logoBlock := lipgloss.NewStyle().Width(43).Background(m.theme.SurfaceBase).Render(RenderLogo(m.theme))
 
 	// Format version with semantic.secondary color (from theme)
 	// Per spec: version token = text.secondary
@@ -56,7 +58,12 @@ func (m *welcomeModel) View() string {
 		// Return uncentered content as fallback
 		return content
 	}
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
+	// WithWhitespaceStyle ensures the padding space around the centered content
+	// uses SurfaceBase background instead of the terminal default, preventing
+	// a spurious #000000 background on the first character of the welcome area.
+	bgStyle := lipgloss.NewStyle().Background(m.theme.SurfaceBase)
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content,
+		lipgloss.WithWhitespaceStyle(bgStyle))
 }
 
 // SetSize stores the allocated terminal dimensions for layout.

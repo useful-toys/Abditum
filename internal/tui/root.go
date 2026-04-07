@@ -405,13 +405,13 @@ func (m *rootModel) View() tea.View {
 // The frame remains visible behind/around the modal — only the modal region is replaced.
 // Deprecated: kept for reference; replaced by lipgloss.Place inside renderFrame.
 // renderShortcuts renders a command bar from modal shortcuts.
-func renderShortcuts(shortcuts []Shortcut, width int) string {
+func renderShortcuts(shortcuts []Shortcut, width int, theme *Theme) string {
 	if len(shortcuts) == 0 {
 		return ""
 	}
-	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("11")).Bold(true)
-	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	keyStyle := lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
+	labelStyle := lipgloss.NewStyle().Foreground(theme.TextPrimary)
+	sepStyle := lipgloss.NewStyle().Foreground(theme.TextSecondary)
 	var parts []string
 	for _, s := range shortcuts {
 		parts = append(parts, keyStyle.Render(s.Key)+" "+labelStyle.Render(s.Label))
@@ -475,9 +475,9 @@ func (m *rootModel) renderFrame(modal modalView) string {
 	// When no shortcuts, render a blank background line.
 	var cmdBarContent string
 	if modal != nil {
-		cmdBarContent = renderShortcuts(modal.Shortcuts(), m.width)
+		cmdBarContent = renderShortcuts(modal.Shortcuts(), m.width, m.theme)
 	} else {
-		cmdBarContent = RenderCommandBar(m.actions.Visible(), m.width)
+		cmdBarContent = RenderCommandBar(m.actions.Visible(), m.width, m.theme)
 	}
 	if cmdBarContent == "" {
 		cmdBarContent = strings.Repeat(" ", m.width)

@@ -26,15 +26,15 @@ func RenderLogo(t *Theme) string {
 	}
 
 	lines := strings.Split(AsciiArt, "\n")
-	var renderedLogo strings.Builder
+	rendered := make([]string, 0, len(lines))
 
 	for i, line := range lines {
 		if i >= len(colors) {
 			break // Should never happen due to validation above
 		}
 		style := lipgloss.NewStyle().Foreground(colors[i])
-		renderedLogo.WriteString(style.Render(line) + "\n")
+		rendered = append(rendered, style.Render(line))
 	}
 
-	return renderedLogo.String()
+	return strings.Join(rendered, "\n")
 }
