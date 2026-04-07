@@ -1,5 +1,5 @@
 ╭──  Salvar cofre  ────────────────────────╮
-│Caminho: /golden/stub/path                    │
+│ /golden/stub/path                            │
 ├─── Estrutura ────┬──────── Arquivos ─────────┤
 │  001             │                           │
 │                  │                           │
@@ -13,6 +13,6 @@
 │                  │                           │
 │                  │                           │
 │                  │                           │
-├──────────────────┴──────────────────────────┤
-│Nome do arquivo  ▌                            │
+├──────────────────┴───────────────────────────┤
+│ Arquivo: ▌                                   │
 ╰──  Enter Salvar ────────────── Esc Cancelar  ──╯
