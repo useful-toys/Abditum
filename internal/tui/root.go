@@ -247,7 +247,7 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		m.messages.HandleInput()
 		m.lastActionAt = time.Now()
-		key := msg.String()
+		key := msg.Keystroke()
 		inFlowOrModal := m.activeFlow != nil || len(m.modals) > 0
 
 		// Check for Ctrl+Q (exit flow) before any other key handling
