@@ -1265,7 +1265,8 @@ Esta seção detalha as ações disponíveis ao interagir com a árvore de segre
 | Tecla           | Ação                                     | Notas                                                                      |
 |-----------------|------------------------------------------|----------------------------------------------------------------------------|
 | `↑` / `↓`       | Mover cursor na lista / árvore           |                                                                            |
-| `→` / `Enter`   | Expandir pasta ou selecionar segredo     | Quando o foco está em uma pasta, `Enter` expande/contrai. Quando em um segredo, `Enter` foca no painel de detalhes (comportamento similar ao `Tab`). |
+| `→`             | Expandir pasta ou selecionar segredo     |                                                                            |
+| `Enter`         | Ativar item selecionado                  | Quando o foco está em uma pasta, expande/contrai. Quando em um segredo, foca no painel de detalhes (comportamento similar ao `Tab`). |
 | `←`             | Recolher pasta ou subir para pasta pai   |                                                                            |
 | `Home` / `End`  | Mover para o primeiro / último item visível |                                                                            |
 | `PgUp` / `PgDn` | Rolar uma página para cima / baixo       |                                                                            |
