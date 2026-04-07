@@ -27,19 +27,14 @@ import (
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-// unwrapDecisionCmd calls a Ctrl+Q cmd chain twice to reach the pushModalMsg:
-// outer cmd → Decision() factory (tea.Cmd) → pushModalMsg.
+// unwrapDecisionPush calls a Ctrl+Q cmd once to reach the pushModalMsg:
+// cmd → pushModalMsg (Decision() returns the cmd directly now).
 func unwrapDecisionPush(t *testing.T, cmd tea.Cmd) pushModalMsg {
 	t.Helper()
 	if cmd == nil {
 		t.Fatal("expected cmd, got nil")
 	}
-	inner := cmd()
-	innerCmd, ok := inner.(tea.Cmd)
-	if !ok {
-		t.Fatalf("expected Decision() factory (tea.Cmd), got %T", inner)
-	}
-	msg := innerCmd()
+	msg := cmd()
 	push, ok := msg.(pushModalMsg)
 	if !ok {
 		t.Fatalf("expected pushModalMsg, got %T", msg)

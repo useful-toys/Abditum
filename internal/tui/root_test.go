@@ -392,14 +392,8 @@ func TestRootModel_CtrlQQuit(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("expected a cmd from Ctrl+Q, got nil")
 	}
-	// The outer cmd returns the Decision() cmd (a tea.Cmd, not a tea.Msg).
-	// Calling it once unwraps the decision factory; calling the result gives pushModalMsg.
-	inner := cmd()
-	innerCmd, ok := inner.(tea.Cmd)
-	if !ok {
-		t.Fatalf("expected inner value to be tea.Cmd (Decision factory), got %T", inner)
-	}
-	msg := innerCmd()
+	// Decision() returns a tea.Cmd directly; calling it once gives pushModalMsg.
+	msg := cmd()
 	switch msg.(type) {
 	case pushModalMsg:
 		// Correct: confirmation dialog pushed to modal stack

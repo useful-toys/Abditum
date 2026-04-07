@@ -247,33 +247,29 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		m.messages.HandleInput()
 		m.lastActionAt = time.Now()
-		key := msg.Keystroke()
+		key := msg.String()
 		inFlowOrModal := m.activeFlow != nil || len(m.modals) > 0
 
 		// Check for Ctrl+Q (exit flow) before any other key handling
 		if key == "ctrl+q" {
 			// Fluxo 5: vault is open AND has unsaved changes
 			if m.mgr != nil && m.mgr.IsModified() {
-				return m, func() tea.Msg {
-					return Decision(SeverityNeutral, "Alterações não salvas",
-						"Deseja salvar as alterações antes de sair?",
-						DecisionAction{Key: "Enter", Label: "Salvar", Default: true,
-							Cmd: func() tea.Msg {
-								flow := newSaveAndExitFlow(m.mgr, m.vaultPath, m.vaultMetadata, m.messages, m.theme)
-								return startFlowMsg{flow: flow}
-							}},
-						[]DecisionAction{{Key: "D", Label: "Descartar", Cmd: tea.Quit}},
-						DecisionAction{Key: "Esc", Label: "Voltar"})
-				}
+				return m, Decision(SeverityNeutral, "Alterações não salvas",
+					"Deseja salvar as alterações antes de sair?",
+					DecisionAction{Key: "Enter", Label: "Salvar", Default: true,
+						Cmd: func() tea.Msg {
+							flow := newSaveAndExitFlow(m.mgr, m.vaultPath, m.vaultMetadata, m.messages, m.theme)
+							return startFlowMsg{flow: flow}
+						}},
+					[]DecisionAction{{Key: "D", Label: "Descartar", Cmd: tea.Quit}},
+					DecisionAction{Key: "Esc", Label: "Voltar"})
 			}
 			// Fluxos 3 & 4: no vault open (or vault open but clean) — confirm exit
-			return m, func() tea.Msg {
-				return Decision(SeverityNeutral, "Sair do Abditum",
-					"Tem certeza que deseja sair?",
-					DecisionAction{Key: "Enter", Label: "Sim", Default: true, Cmd: tea.Quit},
-					nil,
-					DecisionAction{Key: "Esc", Label: "Não"})
-			}
+			return m, Decision(SeverityNeutral, "Sair do Abditum",
+				"Tem certeza que deseja sair?",
+				DecisionAction{Key: "Enter", Label: "Sim", Default: true, Cmd: tea.Quit},
+				nil,
+				DecisionAction{Key: "Esc", Label: "Não"})
 		}
 
 		// Check for F12 theme toggle before any other key handling
