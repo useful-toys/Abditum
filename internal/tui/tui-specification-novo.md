@@ -1,1 +1,0 @@
-Placeholder for TUI Specification. Details interaction patterns.
