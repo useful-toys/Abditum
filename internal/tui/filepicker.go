@@ -1026,8 +1026,10 @@ func (m *filePickerModal) renderBottomBorder(innerW, treeW int, theme *Theme) st
 
 	actionW := lipgloss.Width(actionRendered)
 	cancelW := lipgloss.Width(cancelRendered)
-	// innerW used for fill: subtract action, cancel, and the two "── " side pads (2 each)
-	fillW := innerW - actionW - cancelW - 4
+	// innerW used for fill: subtract action, cancel, and the two "── " side pads (3 each = 6 total)
+	// Note: ╰ and ╯ are outside innerW, so full bottom width = 1 + 3 + actionW + fillW + cancelW + 3 + 1 = modalW
+	// => fillW = innerW + 2 - actionW - cancelW - 8 = innerW - actionW - cancelW - 6
+	fillW := innerW - actionW - cancelW - 6
 	if fillW < 0 {
 		fillW = 0
 	}

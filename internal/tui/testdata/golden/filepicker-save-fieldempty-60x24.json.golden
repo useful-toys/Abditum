@@ -114,10 +114,10 @@
   [17,5,"#000000",null,["faint"]],
   [17,17,null,null,[]],
   [17,18,null,"#0000ff",["faint"]],
-  [17,32,null,null,[]],
-  [17,33,null,null,["faint"]],
-  [17,45,null,null,[]],
-  [17,46,null,"#0000ff",["faint"]],
-  [17,49,null,null,["faint"]],
-  [17,50,null,null,[]]
+  [17,30,null,null,[]],
+  [17,31,null,null,["faint"]],
+  [17,43,null,null,[]],
+  [17,44,null,"#0000ff",["faint"]],
+  [17,47,null,null,["faint"]],
+  [17,48,null,null,[]]
 ]

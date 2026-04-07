@@ -125,10 +125,10 @@
   [18,5,null,null,["bold","faint"]],
   [18,16,null,null,[]],
   [18,17,null,"#0000ff",["faint"]],
-  [18,48,null,null,[]],
-  [18,49,null,null,["faint"]],
-  [18,61,null,null,[]],
-  [18,62,null,"#0000ff",["faint"]],
-  [18,65,null,null,["faint"]],
-  [18,66,null,null,[]]
+  [18,46,null,null,[]],
+  [18,47,null,null,["faint"]],
+  [18,59,null,null,[]],
+  [18,60,null,"#0000ff",["faint"]],
+  [18,63,null,null,["faint"]],
+  [18,64,null,null,[]]
 ]
