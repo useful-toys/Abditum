@@ -1131,7 +1131,7 @@ flowchart TD
 **Passos:**
 
 1. O usuário seleciona a pasta virtual "Favoritos", posicionada como nó irmão da Pasta Geral na árvore (acima dela).
-2. O sistema exibe todos os segredos com favorito = verdadeiro, percorridos em profundidade seguindo a ordem do cofre. A pasta virtual é somente leitura — não é possível criar, mover ou excluir segredos diretamente a partir dela.
+2. O sistema exibe todos os segredos com favorito = verdadeiro, percorridos em profundidade seguindo a ordem do cofre. A pasta virtual é somente leitura — não é possível criar, duplicar, mover ou excluir segredos diretamente a partir dela. Editar o conteúdo do segredo e desfavoritá-lo são as únicas operações de escrita permitidas a partir da Favoritos.
 3. O usuário pode selecionar um segredo favorito para abri-lo (inicia Fluxo 38).
 
 **Contexto resultante:**

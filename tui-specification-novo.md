@@ -1591,24 +1591,26 @@ Esta seção detalha as ações disponíveis ao interagir com a árvore de segre
 
 ### Ações em segredos
 
-| Tecla    | Ação                                     | Notas                                                                      |
-|----------|------------------------------------------|----------------------------------------------------------------------------|
-| `Enter`  | Focar no painel de detalhes do segredo   | Comporta-se de forma similar ao `Tab` quando o foco está em um segredo.    |
-| `Insert` | Novo segredo                             | Cria um novo segredo na pasta atualmente focada.                           |
-| `⌃I`     | Novo segredo                             | Atalho alternativo para criar um novo segredo.                             |
-| `⌃E`     | Editar segredo                           | Entra no modo de edição para o segredo selecionado.                        |
-| `⌃D`     | Duplicar segredo                         | Cria uma cópia do segredo imediatamente após o original na mesma pasta.    |
-| `⌃M`     | Mover para outra pasta                   | Entra no modo de seleção de destino inline na árvore.                      |
-| `!↑`     | Mover para cima na lista                 | Desloca o segredo uma posição acima dentro da mesma pasta. Desabilitado na pasta Favoritos e quando o segredo já é o primeiro. |
-| `!↓`     | Mover para baixo na lista                | Desloca o segredo uma posição abaixo dentro da mesma pasta. Desabilitado na pasta Favoritos e quando o segredo já é o último. |
-| `⌃S`     | Favoritar / Desfavoritar segredo         | Toggle — alterna entre favoritado e não favoritado.                        |
-| `⌃R`     | Revelar primeiro campo sensível          | Visível apenas se o segredo tiver pelo menos um campo sensível. Abre/atualiza o painel direito. |
-| `⌃C`     | Copiar primeiro campo sensível           | Visível apenas se o segredo tiver pelo menos um campo sensível. Agenda limpeza da clipboard. |
-| `Delete` | Excluir segredo                          | Marca o segredo selecionado para exclusão (reversível até o salvamento).   |
+A coluna **Favoritos** indica se a ação está disponível quando o cursor está na pasta virtual Favoritos. Ações indisponíveis ficam ocultas na barra de comandos — não aparecem desabilitadas.
+
+| Tecla    | Ação                          | Favoritos | Notas                                                                      |
+|----------|-------------------------------|-----------|----------------------------------------------------------------------------|
+| `Enter`  | Focar no painel de detalhes   | ✓         | Comporta-se de forma similar ao `Tab` quando o foco está em um segredo.    |
+| `Insert` | Novo segredo                  | —         | Indisponível: Favoritos é somente leitura, sem pasta real associada.       |
+| `⌃I`     | Novo segredo                  | —         | Atalho alternativo — mesma restrição.                                      |
+| `⌃E`     | Editar segredo                | ✓         | Opera no segredo real, independente da visão atual.                        |
+| `⌃D`     | Duplicar segredo              | —         | Indisponível: destino ambíguo. Navegar até a pasta real para duplicar.     |
+| `⌃M`     | Mover para outra pasta        | —         | Indisponível: mover a partir de pasta somente leitura não é permitido.     |
+| `!↑`     | Mover para cima na lista      | —         | Indisponível: a ordem na Favoritos reflete a árvore real.                  |
+| `!↓`     | Mover para baixo na lista     | —         | Indisponível: idem.                                                        |
+| `⌃S`     | Desfavoritar segredo          | ✓ (só ⊖)  | Na Favoritos, o toggle só remove o favorito — o segredo some da lista imediatamente. Em pasta real, alterna entre favoritar e desfavoritar normalmente. |
+| `⌃R`     | Revelar primeiro campo sensível | ✓       | Visível apenas se o segredo tiver pelo menos um campo sensível.            |
+| `⌃C`     | Copiar primeiro campo sensível  | ✓       | Visível apenas se o segredo tiver pelo menos um campo sensível.            |
+| `Delete` | Excluir segredo               | —         | Indisponível: exclusão direta a partir de pasta somente leitura não é permitida. |
 
 #### ⌃D — Duplicar segredo
 
-**Contexto:** foco na árvore com cursor em um segredo. Elegível em qualquer pasta (inclusive Favoritos, onde opera sobre a pasta real do segredo).
+**Contexto:** foco na árvore com cursor em um segredo, em pasta real. Indisponível na pasta virtual Favoritos — o destino do duplicado seria ambíguo para o usuário; a operação deve ser realizada navegando até a pasta real do segredo.
 
 **Comportamento:**
 - Cria uma cópia do segredo com todos os campos, valores e histórico de modelo idênticos ao original.
@@ -1677,8 +1679,10 @@ A tabela abaixo consolida todas as variações da barra de comandos para segredo
 | Pasta real — segredo com campo sensível — reveal mascarado | `Enter Detalhes · ⌃E Editar · ⌃D Duplicar · ⌃M Mover · !↑ !↓ Reordenar · ⌃S Favoritar · ⌃R Revelar · ⌃C Copiar · Del Excluir · F1 Ajuda` |
 | Pasta real — segredo com campo sensível — reveal com dica | `Enter Detalhes · ⌃E Editar · ⌃D Duplicar · ⌃M Mover · !↑ !↓ Reordenar · ⌃S Favoritar · ⌃R Mostrar tudo · ⌃C Copiar · Del Excluir · F1 Ajuda` |
 | Pasta real — segredo com campo sensível — reveal completo | `Enter Detalhes · ⌃E Editar · ⌃D Duplicar · ⌃M Mover · !↑ !↓ Reordenar · ⌃S Favoritar · ⌃R Ocultar · ⌃C Copiar · Del Excluir · F1 Ajuda` |
-| Pasta Favoritos — segredo sem campo sensível | `Enter Detalhes · ⌃E Editar · ⌃D Duplicar · ⌃S Desfavoritar · Del Excluir · F1 Ajuda` |
-| Pasta Favoritos — segredo com campo sensível | `Enter Detalhes · ⌃E Editar · ⌃D Duplicar · ⌃S Desfavoritar · ⌃R Revelar · ⌃C Copiar · Del Excluir · F1 Ajuda` |
+| Pasta Favoritos — segredo sem campo sensível | `Enter Detalhes · ⌃E Editar · ⌃S Desfavoritar · F1 Ajuda` |
+| Pasta Favoritos — segredo com campo sensível — reveal mascarado | `Enter Detalhes · ⌃E Editar · ⌃S Desfavoritar · ⌃R Revelar · ⌃C Copiar · F1 Ajuda` |
+| Pasta Favoritos — segredo com campo sensível — reveal com dica | `Enter Detalhes · ⌃E Editar · ⌃S Desfavoritar · ⌃R Mostrar tudo · ⌃C Copiar · F1 Ajuda` |
+| Pasta Favoritos — segredo com campo sensível — reveal completo | `Enter Detalhes · ⌃E Editar · ⌃S Desfavoritar · ⌃R Ocultar · ⌃C Copiar · F1 Ajuda` |
 | Modo mover ativo (⌃M pressionado) | `Enter Mover aqui · Esc Cancelar` |
 
 > **Nota sobre tamanho da barra:** as entradas acima são o conjunto completo de ações disponíveis. Em terminais estreitos, a barra de comandos trunca à direita — as ações mais prioritárias devem aparecer primeiro. A ordem na barra segue a frequência de uso esperada.
