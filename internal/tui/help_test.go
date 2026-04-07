@@ -263,3 +263,56 @@ func TestHelpModal_Update_F1Dismisses(t *testing.T) {
 		t.Error("f1 key must return non-nil cmd (pop modal)")
 	}
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TestFormatKeyForHelp — unit tests for the key display formatter
+// ─────────────────────────────────────────────────────────────────────────────
+
+func TestFormatKeyForHelp(t *testing.T) {
+	cases := []struct {
+		raw  string
+		want string
+	}{
+		// Simple ctrl (ctrl + single letter) → ⌃ + uppercase letter
+		{raw: "ctrl+q", want: "⌃Q"},
+		{raw: "ctrl+s", want: "⌃S"},
+		// Complex multi-modifier (not simple ctrl) → Title Case each segment
+		{raw: "ctrl+alt+shift+q", want: "Ctrl+Alt+Shift+Q"},
+		{raw: "ctrl+alt+q", want: "Ctrl+Alt+Q"},
+		// Function keys
+		{raw: "f1", want: "F1"},
+		{raw: "f12", want: "F12"},
+		// shift + function key
+		{raw: "shift+f6", want: "Shift+F6"},
+		// Named special keys
+		{raw: "del", want: "Delete"},
+		{raw: "insert", want: "Insert"},
+		{raw: "esc", want: "Esc"},
+		{raw: "enter", want: "Enter"},
+		{raw: "space", want: "Space"},
+		{raw: "backspace", want: "Backspace"},
+		{raw: "tab", want: "Tab"},
+		// Arrow keys
+		{raw: "up", want: "↑"},
+		{raw: "down", want: "↓"},
+		{raw: "left", want: "←"},
+		{raw: "right", want: "→"},
+		// Page/navigation keys
+		{raw: "pgup", want: "PgUp"},
+		{raw: "pgdown", want: "PgDn"},
+		{raw: "home", want: "Home"},
+		{raw: "end", want: "End"},
+		// Fallback: ToUpper
+		{raw: "xyz", want: "XYZ"},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.raw, func(t *testing.T) {
+			got := formatKeyForHelp(tc.raw)
+			if got != tc.want {
+				t.Errorf("formatKeyForHelp(%q) = %q, want %q", tc.raw, got, tc.want)
+			}
+		})
+	}
+}
