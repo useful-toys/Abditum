@@ -255,10 +255,10 @@ func TestRenderCommandBar_MultiKeyShowsFirst(t *testing.T) {
 	})
 
 	result := RenderCommandBar(am.Visible(), 80, ThemeTokyoNight)
-	if !containsKey(result, "f10") {
+	if !containsKey(result, "F10") {
 		t.Error("RenderCommandBar must show Keys[0] (f10)")
 	}
-	if containsKey(result, "f11") {
+	if containsKey(result, "F11") {
 		t.Error("RenderCommandBar must NOT show Keys[1] (f11) — only Keys[0] is displayed")
 	}
 }
@@ -279,13 +279,13 @@ func TestRenderCommandBar_TruncatesLowestPriority(t *testing.T) {
 	// Truncation removes lowest priority first: f2 goes, f9 stays.
 	result := RenderCommandBar(am.Visible(), 30, ThemeTokyoNight)
 
-	if !containsKey(result, "f10") {
+	if !containsKey(result, "F10") {
 		t.Error("highest priority action (f10) must be kept")
 	}
-	if containsKey(result, "f2") {
+	if containsKey(result, "F2") {
 		t.Error("lowest priority action (f2) must be truncated first")
 	}
-	if !containsKey(result, "f1") {
+	if !containsKey(result, "F1") {
 		t.Error("F1 anchor must always be preserved")
 	}
 }
@@ -304,7 +304,7 @@ func TestRenderCommandBar_NarrowTerminal_F1Only(t *testing.T) {
 	// 10 cols: body doesn't fit at all, only anchor survives.
 	result := RenderCommandBar(am.Visible(), 10, ThemeTokyoNight)
 
-	if !containsKey(result, "f1") {
+	if !containsKey(result, "F1") {
 		t.Error("at 10 cols, F1 anchor must still be visible")
 	}
 	if containsKey(result, "f10") || containsKey(result, "f9") || containsKey(result, "f2") {

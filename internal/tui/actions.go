@@ -212,7 +212,7 @@ func RenderCommandBar(actions []Action, width int, theme *Theme) string {
 		if len(act.Keys) == 0 {
 			continue
 		}
-		r := renderPart(act.Keys[0], act.Label)
+		r := renderPart(formatKeyForHelp(act.Keys[0]), act.Label)
 		bodyParts = append(bodyParts, part{rendered: r, visW: lipgloss.Width(r)})
 	}
 
@@ -245,7 +245,7 @@ func RenderCommandBar(actions []Action, width int, theme *Theme) string {
 	}
 
 	// Build anchor string.
-	anchor := renderPart(anchorAction.Keys[0], anchorAction.Label)
+	anchor := renderPart(formatKeyForHelp(anchorAction.Keys[0]), anchorAction.Label)
 	anchorW := lipgloss.Width(anchor)
 	minGap := 1
 
