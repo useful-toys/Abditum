@@ -9,7 +9,6 @@
 ## Sumário
 
 - [Atalhos da Aplicação](#atalhos-da-aplicação)
-- [Busca de Segredos](#busca-de-segredos)
 - [Diálogos de Decisão](#diálogos-de-decisão)
 - [Diálogos Funcionais](#diálogos-funcionais)
   - [PasswordEntry](#passwordentry)
@@ -60,207 +59,14 @@ Os seguintes atalhos disparam os fluxos principais da aplicação quando a área
 | `F8` | (Livre) | Reservado para futuras ações de persistência |
 | `F9` | Exportar Cofre (Fluxo 12) | |
 | `Shift+F9` | Importar Cofre (Fluxo 13) | |
-| `F10` | Busca de Segredos — abrir/fechar campo (Fluxo Busca) | Só com cofre aberto e foco na árvore; toggle |
+| `F10` | (Livre) | |
 | `F11` | (Livre) | |
 
 > **Fluxo 7 — Aviso de Bloqueio Iminente por Inatividade:** É um fluxo iniciado pelo sistema, não requer um atalho manual do usuário.
 
 ---
 
-## Busca de Segredos
-
-**Contexto de uso:** filtrar a árvore de segredos por texto livre no Modo Cofre.
-**Escopo:** disponível apenas no **Modo Cofre**, com cofre aberto e foco no painel esquerdo (árvore). Nos modos Modelos e Configurações, `⌃F` e `F10` não têm efeito de busca. O campo de busca na linha separadora do cabeçalho **só aparece no Modo Cofre e apenas enquanto a busca estiver ativa** — nunca em outros modos, nunca na tela de boas-vindas.
-**Modelo:** type-to-search — o campo na linha separadora do cabeçalho é display-only; o foco permanece na árvore durante toda a interação.
-
----
-
-### Ativação e saída
-
-| Mecanismo | Efeito |
-|---|---|
-| `⌃F` ou `F10` com campo **fechado** | Campo abre na linha separadora; barra de mensagens exibe dica; barra de comandos muda para ações de busca |
-| `⌃F` ou `F10` com campo **aberto** | Toggle: campo fecha; query descartada; árvore restaurada; barra restaurada ao estado anterior |
-| `Esc` com campo aberto | Idêntico ao toggle com campo aberto; cursor retorna ao item que estava selecionado antes da busca |
-
-> A busca **não pode ser ativada** com foco no painel direito (detalhe). O foco deve estar na árvore.
-
----
-
-### Mapa de teclas durante busca ativa
-
-| Tecla | Efeito |
-|---|---|
-| Alfanumérica / símbolo imprimível | Acrescenta caractere à query; árvore filtra em tempo real |
-| `Backspace` | Remove o último caractere da query |
-| `Del` | Limpa toda a query de uma vez; campo permanece aberto e vazio; árvore restaurada completa |
-| `↑` / `↓` | Navega entre os resultados visíveis na árvore filtrada |
-| `Home` / `End` | Primeiro / último resultado visível |
-| `PgUp` / `PgDn` | Scroll por página nos resultados |
-| `Enter` com segredo selecionado | Abre detalhe no painel direito; campo permanece aberto |
-| `Enter` com pasta selecionada | Expande / recolhe pasta; campo permanece aberto |
-| `Tab` | Foco → painel direito (detalhe do item selecionado); campo permanece aberto e visível |
-| `⌃F` / `F10` | Toggle: fecha o campo, descarta a query, restaura a árvore |
-| `Esc` | Fecha o campo, descarta a query, restaura a árvore; cursor retorna ao item anterior |
-| `F-keys` / `⌃Letra` | Ações normais da árvore (ActionManager) — **não alimentam a query** |
-
-> **Regra de roteamento:** apenas teclas que produzem caracteres imprimíveis (Unicode printable) e `Backspace` são interceptadas pela busca enquanto o campo estiver aberto. Modificadores, F-keys e teclas de controle passam normalmente ao ActionManager.
-
----
-
-### Comportamento do filtro
-
-- **Correspondência:** substring, case-insensitive, ignorando acentuação — conforme requisito funcional
-- **Escopo da busca:** nome do segredo, nome de campo, valor de campo **comum**, observação
-- **Excluído da busca:** valores de campos sensíveis (nomes de campos sensíveis participam normalmente)
-- **Excluídos dos resultados:** segredos marcados para exclusão (`✗`)
-- **Árvore compacta:** apenas pastas que contêm ≥ 1 resultado são exibidas; pastas sem resultados desaparecem completamente
-- **Contadores de pasta durante filtro ativo:** formato `(N/Total)` — `N` = segredos que atendem à busca nessa pasta e subpastas; `Total` = total de segredos ativos nessa pasta e subpastas. Exemplo: `(2/6)` significa que 2 dos 6 segredos atendem à query. Quando `N = Total` (todos os segredos batem), o contador volta ao formato simples `(N)` — sem barra — para não poluir a leitura. O formato `(N/Total)` só aparece durante busca ativa com query não vazia
-- **Indicador visual de filtro ativo na árvore:** além do campo na linha separadora, o painel esquerdo exibe um indicador textual na primeira linha da área de trabalho quando há filtro ativo com query não vazia: `Filtro ativo` em `semantic.warning` + *italic*, alinhado à direita acima do separador vertical. Garante que o usuário perceba o filtro mesmo que o cabeçalho não esteja na viewport (ex: terminais muito pequenos) ou após mover o foco para o painel direito
-- **Match highlight:** o trecho de texto correspondente à query é exibido em `special.match` + **bold**
-- **Query vazia:** campo aberto sem texto — árvore exibe tudo (sem filtro aplicado); contadores voltam ao formato simples `(N)`; indicador `Filtro ativo` não aparece
-- **Persistência:** ao fechar o campo, a query é descartada e a árvore restaurada completa; o campo sempre abre vazio
-
----
-
-### Wireframes
-
-**Campo aberto, sem query (recém-ativado):**
-
-```
-  Abditum · cofre •                      ╭───────╮  ╭ Modelos ╮  ╭ Config ╮
- ─ Busca: ────────────────────────────────╯ Cofre ╰──────────────────────────
-  ▼ Favoritos          (2)  │
-    ★ Bradesco         <╡
-    ★ Gmail                 │
-  ▼ Geral              (8)  │
-    ▼ Sites            (5)  │
-      ● Gmail               │
-      ● YouTube             │
- ─ • Digite para filtrar os segredos ────────────────────────────────────────
-  ⌃F Fechar · Del Limpar                                              F1 Ajuda
-```
-
-> Query vazia: árvore completa, contadores no formato normal `(N)`, sem indicador `Filtro ativo`.
-
-**Campo aberto, com query — resultados encontrados:**
-
-```
-  Abditum · cofre •                      ╭───────╮  ╭ Modelos ╮  ╭ Config ╮
- ─ Busca: gmail ──────────────────────────╯ Cofre ╰──────────────────────────
-  ▼ Favoritos        (1/2)  │              ← Filtro ativo
-    ★ Gmail            <╡       ← match em special.match + bold
-  ▼ Geral            (2/8)  │
-    ▼ Sites          (2/5)  │
-      ● Gmail               │
-      ● Gmail Pro           │
- ─ ℹ 3 resultado(s) ─────────────────────────────────────────────────────────
-  ⌃F Fechar · Del Limpar                                              F1 Ajuda
-```
-
-> `Filtro ativo` aparece em `semantic.warning` + *italic* alinhado à direita na primeira linha da área de trabalho. Contadores no formato `(N/Total)` — ex: `(1/2)` significa 1 resultado dos 2 segredos em Favoritos. Quando `N = Total`, o formato volta a `(N)` simples.
-
-**Campo aberto, sem resultados:**
-
-```
-  Abditum · cofre •                      ╭───────╮  ╭ Modelos ╮  ╭ Config ╮
- ─ Busca: xyzxyz ─────────────────────────╯ Cofre ╰──────────────────────────
-  ▷ Geral              (0)  │              ← Filtro ativo
-                             │
-                             │
- ─ ℹ Nenhum resultado ───────────────────────────────────────────────────────
-  ⌃F Fechar · Del Limpar                                              F1 Ajuda
-```
-
-> Pasta raiz sempre visível, mesmo sem resultados. Indicador `Filtro ativo` permanece visível.
-
-**Campo aberto, query longa (truncada à esquerda):**
-
-```
-  Abditum · cofre •                      ╭───────╮  ╭ Modelos ╮  ╭ Config ╮
- ─ Busca: …ail.google.com/conta ──────────╯ Cofre ╰──────────────────────────
-```
-
-> A parte mais recente da query (direita) fica sempre visível. `…` substitui os caracteres iniciais quando a query excede o espaço disponível.
-
----
-
-### Tokens
-
-| Elemento | Token | Atributo |
-|---|---|---|
-| `─ Busca: ` rótulo na linha separadora | `border.default` | — |
-| Texto da query | `accent.primary` | **bold** |
-| `─` preenchimento na linha separadora | `border.default` | — |
-| Trecho de match na árvore | `special.match` | **bold** |
-| Contador `(N/Total)` durante filtro ativo | `text.secondary` | — |
-| Indicador `Filtro ativo` | `semantic.warning` | *italic* |
-
----
-
-### Estados dos componentes
-
-| Componente | Estado | Condição |
-|---|---|---|
-| Campo de busca na linha separadora | oculto | Campo fechado — linha separadora normal |
-| Campo de busca na linha separadora | visível, vazio | Campo aberto, query vazia |
-| Campo de busca na linha separadora | visível, com texto | Query ativa (≥ 1 caractere) |
-| Campo de busca na linha separadora | **nunca visível** fora do Modo Cofre | Modos Modelos, Configurações, Boas-vindas |
-| Árvore | completa | Campo fechado **ou** campo aberto com query vazia |
-| Árvore | filtrada (compacta) | Campo aberto com query ≥ 1 caractere |
-| Pasta | visível | Contém ≥ 1 resultado direto ou indireto |
-| Pasta | oculta | Não contém nenhum resultado |
-| Pasta raiz | sempre visível | Mesmo sem resultados — exibe `(0)` e `▷` |
-| Contador de pasta | formato `(N)` | Campo fechado **ou** query vazia **ou** `N = Total` |
-| Contador de pasta | formato `(N/Total)` | Query ativa com ≥ 1 caractere e `N < Total` |
-| Indicador `Filtro ativo` | visível, 1ª linha da área de trabalho, alinhado à direita | Query ativa com ≥ 1 caractere |
-| Indicador `Filtro ativo` | oculto | Campo fechado ou query vazia |
-| Trecho de match | `special.match` + **bold** | Substring correspondente à query |
-| Barra de comandos | ações de busca (`⌃F Fechar · Del Limpar`) | Campo aberto |
-| Barra de comandos | ações normais da árvore | Campo fechado |
-
----
-
-### Mensagens
-
-| Contexto | Tipo | Texto |
-|---|---|---|
-| Campo abre (query vazia) | Dica de uso | `• Digite para filtrar os segredos` |
-| Query ativa, com resultados | Informação | `ℹ N resultado(s)` |
-| Query ativa, sem resultados | Informação | `ℹ Nenhum resultado` |
-| `Backspace` apaga último caractere — query fica vazia | Dica de uso | `• Digite para filtrar os segredos` |
-| `Del` limpa a query | Dica de uso | `• Digite para filtrar os segredos` |
-| Campo fecha (`Esc`, `⌃F`, `F10`) | — | Barra restaurada ao estado anterior à busca |
-
----
-
-### Barra de comandos durante busca ativa
-
-```
-  ⌃F Fechar · Del Limpar                                              F1 Ajuda
-```
-
-As ações normais da árvore (ActionManager) ficam ocultas na barra enquanto o campo estiver aberto — o ActionManager continua processando suas teclas (`⌃Letra`, `F-keys`), mas a barra reflete apenas o contexto de busca.
-
----
-
-### Transições especiais
-
-| Evento | Efeito |
-|---|---|
-| `⌃F` / `F10` — campo fechado | Campo abre; separadora substituída; barra muda; dica exibida |
-| `⌃F` / `F10` — campo aberto | Campo fecha; query descartada; separadora restaurada; cursor volta ao item anterior; barra restaurada |
-| `Esc` — campo aberto | Idêntico ao toggle com campo aberto |
-| Digitação — query não vazia | Árvore filtra em tempo real; `ℹ N resultado(s)` atualiza a cada caractere |
-| `Backspace` — query vazia após apagar | Árvore restaurada completa; campo permanece aberto; dica exibida |
-| `Del` | Query limpa instantaneamente; campo permanece aberto; árvore restaurada; dica exibida |
-| `Enter` — segredo selecionado | Detalhe atualizado no painel direito; campo permanece aberto |
-| `Enter` — pasta selecionada | Pasta expande / recolhe; campo permanece aberto |
-| `Tab` — foco na árvore | Foco vai para painel direito; campo permanece aberto e visível; type-to-search suspende até foco retornar à árvore |
-| Foco retorna à árvore (`Tab` / clique) | Type-to-search retoma — teclas alfanuméricas voltam a alimentar a query |
-| Terminal redimensionado | Largura disponível da query recalculada; truncamento com `…` reaplicado se necessário |
-
----
+## Diálogos de Decisão
 
 Todos os diálogos de decisão seguem a anatomia comum e os padrões de interação definidos no [design system — Sobreposição](tui-design-system-novo.md#sobreposição), incluindo a [Referência Visual por Severidade](tui-design-system-novo.md#severidade) e as [Regras de Ações na Borda Inferior](tui-design-system-novo.md#ações-na-borda-inferior).
 
@@ -937,7 +743,6 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 |---|---|---|---|
 | Sem cofre (boas-vindas) | Apenas nome da app | Separador simples, sem conectores | Ocultas |
 | Cofre aberto | Nome da app `·` cofre `•` + abas | Separador com aba ativa suspensa | Visíveis (3) |
-| Busca ativa | Nome da app `·` cofre `•` + abas | Campo de busca à esquerda + aba ativa suspensa à direita | Visíveis (3) |
 
 ---
 
@@ -1006,50 +811,6 @@ A aba ativa na linha 1 substitui o texto por `─` (`╭───────╮
 A aba mais à direita pode encostar na borda do terminal — `╰` ocupa a última coluna, sem `─` posterior.
 
 > **Nota:** a aba Configurações é referida como "Config" nos wireframes por economia de espaço. O texto completo na implementação é `Config`.
-
----
-
-#### Modo busca ativo
-
-Ativo enquanto o campo de busca estiver aberto (ver [Busca de Segredos](#busca-de-segredos)). Disponível apenas no Modo Cofre com cofre aberto.
-
-A linha separadora (linha 2) é substituída pelo campo de busca. A aba ativa permanece suspensa à direita na mesma linha, sem alteração de posição ou estilo.
-
-**Campo aberto, sem query (recém-ativado):**
-
-```
-  Abditum · cofre •                      ╭───────╮  ╭ Modelos ╮  ╭ Config ╮
- ─ Busca: ────────────────────────────────╯ Cofre ╰──────────────────────────
-```
-
-**Campo aberto, com query:**
-
-```
-  Abditum · cofre •                      ╭───────╮  ╭ Modelos ╮  ╭ Config ╮
- ─ Busca: gmail ──────────────────────────╯ Cofre ╰──────────────────────────
-```
-
-**Regras de layout do campo na linha separadora:**
-
-| Elemento | Largura | Notas |
-|---|---|---|
-| `─ Busca: ` (prefixo fixo) | 9 colunas | `─` + espaço + `Busca:` + espaço |
-| Texto da query | variável | Em `accent.primary` **bold** |
-| `─` preenchimento | restante − largura da aba ativa − 2 (margem direita mínima) | Preenche até a aba |
-| Aba ativa (`╯ Texto ╰`) | igual ao estado normal | Posição e estilo inalterados |
-
-- **Query longa:** truncada à **esquerda** com `…` — a parte mais recente da query fica sempre visível
-- A largura disponível para a query é calculada em tempo real e recalculada a cada resize do terminal
-
-**Tokens exclusivos do modo busca na linha separadora:**
-
-| Elemento | Token | Atributo |
-|---|---|---|
-| `─ Busca: ` rótulo | `border.default` | — |
-| Texto da query | `accent.primary` | **bold** |
-| `─` preenchimento | `border.default` | — |
-
-> **Exceção de layout documentada:** a linha separadora do cabeçalho tem papel estrutural fixo no DS (divisa cabeçalho ↔ área de trabalho). Durante o modo busca, essa linha assume papel adicional de display do campo de busca. Exceção justificada pelo princípio **Hierarquia da Informação** — o campo imediatamente acima da árvore cria relação visual direta entre query e resultado — e pelo princípio **O Terminal como Meio** — espaço vertical é recurso escasso. Escopo-limitada ao Modo Cofre com busca ativa. Ver [DS — Exceções ao dimensionamento](tui-design-system-novo.md#dimensionamento-e-layout).
 
 ---
 
