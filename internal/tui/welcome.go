@@ -5,12 +5,13 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// welcomeModel renders the welcome background (ASCII art logo + action hints).
+// welcomeModel renders the welcome background (ASCII art logo + version + action hints).
 // It is active during workAreaWelcome and has no sub-states.
 // Open/create vault flows are orchestrated via the modal stack, not this model.
 type welcomeModel struct {
 	actions *ActionManager
 	theme   *Theme
+	version string // Application version to display below logo
 	width   int
 	height  int
 }
@@ -24,8 +25,8 @@ func (m *welcomeModel) ApplyTheme(t *Theme) {
 var _ childModel = &welcomeModel{}
 
 // newWelcomeModel creates a new welcome screen model.
-func newWelcomeModel(actions *ActionManager, theme *Theme) *welcomeModel {
-	return &welcomeModel{actions: actions, theme: theme}
+func newWelcomeModel(actions *ActionManager, theme *Theme, version string) *welcomeModel {
+	return &welcomeModel{actions: actions, theme: theme, version: version}
 }
 
 // Update processes messages for the welcome screen.
@@ -38,11 +39,17 @@ func (m *welcomeModel) Update(msg tea.Msg) tea.Cmd {
 // Per spec (tui-specification-novo.md § Boas-vindas), the logo and version
 // are centered horizontally and vertically via lipgloss.Place().
 // Logo width is hardcoded to 43 columns matching the ASCII art width.
+// Version is displayed below the logo in text.secondary color.
 func (m *welcomeModel) View() string {
 	// 43 = width of AsciiArt (const in ascii.go) — each line is exactly 43 characters
 	logoBlock := lipgloss.NewStyle().Width(43).Render(RenderLogo(m.theme))
 
-	content := lipgloss.JoinVertical(lipgloss.Center, logoBlock)
+	// Format version with semantic.secondary color (from theme)
+	// Per spec: version token = text.secondary
+	versionStyle := lipgloss.NewStyle().Foreground(m.theme.TextSecondary)
+	versionLine := versionStyle.Render(m.version)
+
+	content := lipgloss.JoinVertical(lipgloss.Center, logoBlock, "", versionLine)
 
 	if m.width == 0 || m.height == 0 {
 		// Terminal dimensions not yet set (edge case during init)

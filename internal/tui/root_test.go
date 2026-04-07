@@ -118,7 +118,7 @@ func TestLiveWorkChildren_NilSafety(t *testing.T) {
 	}
 
 	// Restore welcome.
-	m.welcome = newWelcomeModel(m.actions, ThemeTokyoNight)
+	m.welcome = newWelcomeModel(m.actions, ThemeTokyoNight, "dev")
 	live = m.liveWorkChildren()
 	if len(live) != 1 {
 		t.Errorf("expected 1 live child after restoring welcome, got %d", len(live))

@@ -8,18 +8,21 @@ import (
 
 // TestWelcomeModel_Structure verifies the welcomeModel struct has required fields.
 func TestWelcomeModel_Structure(t *testing.T) {
-	wm := newWelcomeModel(nil, ThemeTokyoNight)
+	wm := newWelcomeModel(nil, ThemeTokyoNight, "v0.1.0")
 	if wm == nil {
 		t.Fatal("newWelcomeModel returned nil")
 	}
 	if wm.theme != ThemeTokyoNight {
 		t.Errorf("expected theme to be set, got nil")
 	}
+	if wm.version != "v0.1.0" {
+		t.Errorf("expected version to be set, got %q", wm.version)
+	}
 }
 
 // TestWelcomeModel_View verifies View() returns a non-empty string.
 func TestWelcomeModel_View(t *testing.T) {
-	wm := newWelcomeModel(nil, ThemeTokyoNight)
+	wm := newWelcomeModel(nil, ThemeTokyoNight, "v0.1.0")
 	wm.SetSize(80, 24)
 
 	view := wm.View()
@@ -27,13 +30,13 @@ func TestWelcomeModel_View(t *testing.T) {
 		t.Error("View() returned empty string")
 	}
 	if len(view) == 0 {
-		t.Error("View() should contain logo and hints")
+		t.Error("View() should contain logo and version")
 	}
 }
 
 // TestWelcomeModel_SetSize stores terminal dimensions.
 func TestWelcomeModel_SetSize(t *testing.T) {
-	wm := newWelcomeModel(nil, ThemeTokyoNight)
+	wm := newWelcomeModel(nil, ThemeTokyoNight, "v0.1.0")
 	wm.SetSize(80, 24)
 
 	if wm.width != 80 || wm.height != 24 {
@@ -43,7 +46,7 @@ func TestWelcomeModel_SetSize(t *testing.T) {
 
 // TestWelcomeModel_Update returns nil (display-only for now).
 func TestWelcomeModel_Update(t *testing.T) {
-	wm := newWelcomeModel(nil, ThemeTokyoNight)
+	wm := newWelcomeModel(nil, ThemeTokyoNight, "v0.1.0")
 	cmd := wm.Update(nil)
 	if cmd != nil {
 		t.Error("Update() should return nil (display-only)")
@@ -52,7 +55,7 @@ func TestWelcomeModel_Update(t *testing.T) {
 
 // TestWelcomeModel_ApplyTheme applies a new theme.
 func TestWelcomeModel_ApplyTheme(t *testing.T) {
-	wm := newWelcomeModel(nil, ThemeTokyoNight)
+	wm := newWelcomeModel(nil, ThemeTokyoNight, "v0.1.0")
 	wm.ApplyTheme(ThemeCyberpunk)
 
 	if wm.theme != ThemeCyberpunk {
@@ -62,7 +65,7 @@ func TestWelcomeModel_ApplyTheme(t *testing.T) {
 
 // TestWelcomeModel_ViewContainsLogo verifies View includes the logo text.
 func TestWelcomeModel_ViewContainsLogo(t *testing.T) {
-	wm := newWelcomeModel(nil, ThemeTokyoNight)
+	wm := newWelcomeModel(nil, ThemeTokyoNight, "v0.1.0")
 	wm.SetSize(80, 24)
 
 	view := wm.View()
@@ -74,11 +77,11 @@ func TestWelcomeModel_ViewContainsLogo(t *testing.T) {
 
 // TestWelcomeModel_ViewContainsHints verifies View includes action hints.
 func TestWelcomeModel_ViewContainsHints(t *testing.T) {
-	wm := newWelcomeModel(nil, ThemeTokyoNight)
+	wm := newWelcomeModel(nil, ThemeTokyoNight, "v0.1.0")
 	wm.SetSize(80, 24)
 
 	view := wm.View()
-	// Should contain hint text about 'n' and 'o' actions
+	// Should contain hint text about version
 	if len(view) == 0 {
 		t.Fatal("View should not be empty")
 	}
@@ -103,7 +106,7 @@ func TestWelcomeModel_Golden(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			wm := newWelcomeModel(nil, tc.theme)
+			wm := newWelcomeModel(nil, tc.theme, "v0.1.0")
 			wm.SetSize(80, 24)
 
 			out := wm.View()

@@ -25,6 +25,7 @@ type rootModel struct {
 	height      int
 	theme       *Theme
 	header      headerModel
+	version     string // Application version, injected at build time
 
 	// Child models - nil = inactive. NEVER store as childModel interface.
 	welcome        *welcomeModel
@@ -53,19 +54,37 @@ type rootModel struct {
 // Compile-time assertion: rootModel satisfies tea.Model.
 var _ tea.Model = &rootModel{}
 
-// NewRootModel is the exported constructor for main.go (PoC mode, D-04).
-// Optional initialPath parameter enables CLI fast-path for vault opening.
-func NewRootModel(initialPath ...string) *rootModel {
-	path := ""
-	if len(initialPath) > 0 {
-		path = initialPath[0]
+// RootModelOption is a functional option for configuring rootModel
+type RootModelOption func(*rootModel)
+
+// WithVersion sets the application version for display in the welcome screen
+func WithVersion(version string) RootModelOption {
+	return func(m *rootModel) {
+		m.version = version
 	}
-	return newRootModel(path)
+}
+
+// WithInitialPath sets the initial vault path for CLI fast-path
+func WithInitialPath(path string) RootModelOption {
+	return func(m *rootModel) {
+		m.initialPath = path
+	}
+}
+
+// NewRootModel is the exported constructor for main.go (PoC mode, D-04).
+// Accepts functional options for configuration.
+func NewRootModel(opts ...RootModelOption) *rootModel {
+	m := newRootModel("")
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
 }
 
 // newRootModel constructs a fully initialized rootModel in PoC mode.
 // mgr is nil, vaultPath is "", area is workAreaWelcome (D-02, D-03, D-05).
 // If initialPath is non-empty, the CLI fast-path will be initiated in Init().
+// version defaults to "dev" if not set via WithVersion option.
 func newRootModel(initialPath string) *rootModel {
 	actions := NewActionManager()
 	messages := NewMessageManager()
@@ -81,9 +100,10 @@ func newRootModel(initialPath string) *rootModel {
 		lastActionAt: time.Now(),
 		theme:        ThemeTokyoNight,
 		header:       headerModel{},
+		version:      "dev",
 	}
 
-	m.welcome = newWelcomeModel(actions, m.theme)
+	m.welcome = newWelcomeModel(actions, m.theme, m.version)
 
 	// Register production actions: global F1 Help, F12 theme toggle, and vault open/create flows.
 	actions.Register(m,
