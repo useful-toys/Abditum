@@ -141,21 +141,87 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| VAULT-01 – VAULT-16 | TBD | Pending |
-| FILE-01 – FILE-09 | TBD | Pending |
-| SEC-01 – SEC-06 | TBD | Pending |
-| NAV-01 – NAV-06 | TBD | Pending |
-| FIELD-01 – FIELD-02 | TBD | Pending |
-| SECRET-01 – SECRET-11 | TBD | Pending |
-| FOLDER-01 – FOLDER-07 | TBD | Pending |
-| TMPL-01 – TMPL-07 | TBD | Pending |
-| TUI-01 – TUI-10 | TBD | Pending |
-| DIST-01 – DIST-02 | TBD | Pending |
+| DIST-01 | Phase 1: Foundation & Distribution | Pending |
+| DIST-02 | Phase 1: Foundation & Distribution | Pending |
+| TUI-01 | Phase 2: TUI Design System | Pending |
+| TUI-02 | Phase 2: TUI Design System | Pending |
+| TUI-03 | Phase 2: TUI Design System | Pending |
+| TUI-04 | Phase 2: TUI Design System | Pending |
+| TUI-05 | Phase 2: TUI Design System | Pending |
+| TUI-06 | Phase 2: TUI Design System | Pending |
+| TUI-07 | Phase 2: TUI Design System | Pending |
+| TUI-08 | Phase 2: TUI Design System | Pending |
+| TUI-09 | Phase 2: TUI Design System | Pending |
+| TUI-10 | Phase 2: TUI Design System | Pending |
+| FILE-01 | Phase 3: Cryptography & File Format | Pending |
+| FILE-02 | Phase 3: Cryptography & File Format | Pending |
+| FILE-03 | Phase 3: Cryptography & File Format | Pending |
+| FILE-04 | Phase 3: Cryptography & File Format | Pending |
+| FILE-05 | Phase 3: Cryptography & File Format | Pending |
+| FILE-06 | Phase 3: Cryptography & File Format | Pending |
+| FILE-07 | Phase 3: Cryptography & File Format | Pending |
+| FILE-08 | Phase 3: Cryptography & File Format | Pending |
+| FILE-09 | Phase 3: Cryptography & File Format | Pending |
+| VAULT-01 | Phase 4: Vault Lifecycle | Pending |
+| VAULT-02 | Phase 4: Vault Lifecycle | Pending |
+| VAULT-03 | Phase 4: Vault Lifecycle | Pending |
+| VAULT-04 | Phase 4: Vault Lifecycle | Pending |
+| VAULT-05 | Phase 4: Vault Lifecycle | Pending |
+| VAULT-06 | Phase 4: Vault Lifecycle | Pending |
+| VAULT-07 | Phase 4: Vault Lifecycle | Pending |
+| VAULT-08 | Phase 4: Vault Lifecycle | Pending |
+| VAULT-12 | Phase 4: Vault Lifecycle | Pending |
+| VAULT-15 | Phase 4: Vault Lifecycle | Pending |
+| VAULT-16 | Phase 4: Vault Lifecycle | Pending |
+| SEC-01 | Phase 4: Vault Lifecycle | Pending |
+| VAULT-09 | Phase 5: Session Security & Locking | Pending |
+| VAULT-10 | Phase 5: Session Security & Locking | Pending |
+| VAULT-11 | Phase 5: Session Security & Locking | Pending |
+| SEC-02 | Phase 5: Session Security & Locking | Pending |
+| SEC-03 | Phase 5: Session Security & Locking | Pending |
+| SEC-04 | Phase 5: Session Security & Locking | Pending |
+| SEC-05 | Phase 5: Session Security & Locking | Pending |
+| SEC-06 | Phase 5: Session Security & Locking | Pending |
+| NAV-01 | Phase 6: Vault Navigation & Search | Pending |
+| NAV-02 | Phase 6: Vault Navigation & Search | Pending |
+| NAV-03 | Phase 6: Vault Navigation & Search | Pending |
+| NAV-04 | Phase 6: Vault Navigation & Search | Pending |
+| NAV-05 | Phase 6: Vault Navigation & Search | Pending |
+| NAV-06 | Phase 6: Vault Navigation & Search | Pending |
+| SECRET-01 | Phase 7: Secret Management | Pending |
+| SECRET-02 | Phase 7: Secret Management | Pending |
+| SECRET-03 | Phase 7: Secret Management | Pending |
+| SECRET-04 | Phase 7: Secret Management | Pending |
+| SECRET-05 | Phase 7: Secret Management | Pending |
+| SECRET-06 | Phase 7: Secret Management | Pending |
+| SECRET-07 | Phase 7: Secret Management | Pending |
+| SECRET-08 | Phase 7: Secret Management | Pending |
+| SECRET-09 | Phase 7: Secret Management | Pending |
+| SECRET-10 | Phase 7: Secret Management | Pending |
+| SECRET-11 | Phase 7: Secret Management | Pending |
+| FIELD-01 | Phase 7: Secret Management | Pending |
+| FIELD-02 | Phase 7: Secret Management | Pending |
+| FOLDER-01 | Phase 8: Folder Management | Pending |
+| FOLDER-02 | Phase 8: Folder Management | Pending |
+| FOLDER-03 | Phase 8: Folder Management | Pending |
+| FOLDER-04 | Phase 8: Folder Management | Pending |
+| FOLDER-05 | Phase 8: Folder Management | Pending |
+| FOLDER-06 | Phase 8: Folder Management | Pending |
+| FOLDER-07 | Phase 8: Folder Management | Pending |
+| TMPL-01 | Phase 9: Template Management | Pending |
+| TMPL-02 | Phase 9: Template Management | Pending |
+| TMPL-03 | Phase 9: Template Management | Pending |
+| TMPL-04 | Phase 9: Template Management | Pending |
+| TMPL-05 | Phase 9: Template Management | Pending |
+| TMPL-06 | Phase 9: Template Management | Pending |
+| TMPL-07 | Phase 9: Template Management | Pending |
+| VAULT-13 | Phase 10: Export & Import | Pending |
+| VAULT-14 | Phase 10: Export & Import | Pending |
 
 **Coverage:**
-- v1 requirements: 63 total
-- Mapped to phases: 0 (pendente — mapeamento pelo roadmapper)
-- Unmapped: 63 ⚠️
+- v1 requirements: 76 total *(initial document count of "63" was an error; corrected to 76)*
+- Mapped to phases: 76 / 76 ✓
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: April 9, 2026*
