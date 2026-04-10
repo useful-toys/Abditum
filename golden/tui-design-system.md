@@ -301,24 +301,26 @@ Estados visuais definem como o mesmo elemento muda de aparência conforme o cont
 
 Diálogos são janelas sobrepostas modais que capturam o foco para uma interação isolada. A área de trabalho permanece visível porém inativa — sem escurecimento de overlay. Os diálogos operam em pilha: apenas o topo recebe input; ao fechar, o foco retorna ao elemento anterior.
 
-A aplicação utiliza quatro tipos — Notificação, Confirmação, Ajuda e Funcional. A anatomia comum (borda superior com título, corpo, borda de ações com até 3 ações), o dimensionamento, o sistema de scroll, a identidade visual, a severidade e as convenções de teclado de diálogos são especificados em [Especificação Visual — Diálogos](tui-specification.md#diálogos). O contrato de cada tipo e as instâncias concretas também residem na especificação:
+A aplicação utiliza quatro tipos — Notificação, Confirmação, Ajuda e Funcional. A anatomia comum (borda superior com título, corpo, borda de ações com até 3 ações), o dimensionamento, o sistema de scroll, a identidade visual, a severidade e as convenções de teclado de diálogos são especificados em [Especificação Visual — Diálogos](tui-spec-dialogos.md#diálogos). O contrato de cada tipo e as instâncias concretas também residem na especificação:
 
-- [Anatomia, dimensionamento e identidade visual](tui-specification.md#diálogos) — estrutura comum a todos os tipos
-- [Notificação, Confirmação, Ajuda, Funcional](tui-specification.md#notificação) — contrato de cada tipo
-- [Catálogo de Diálogos de Decisão](tui-specification.md#catálogo-de-diálogos-de-decisão) — instâncias concretas
-- [Diálogos Funcionais](tui-specification.md#diálogos-funcionais) — PasswordEntry, PasswordCreate, FilePicker, Help
+- [Anatomia, dimensionamento e identidade visual](tui-spec-dialogos.md#diálogos) — estrutura comum a todos os tipos
+- [Notificação, Confirmação, Ajuda, Funcional](tui-spec-dialogos.md#notificação) — contrato de cada tipo
+- [Catálogo de Diálogos de Decisão](tui-spec-dialogos.md#catálogo-de-diálogos-de-decisão) — instâncias concretas
+- [Diálogos de Senha](tui-spec-dialog-senha.md) — PasswordEntry, PasswordCreate
+- [FilePicker](tui-spec-dialog-filepicker.md) — seleção de arquivo (Open, Save)
+- [Ajuda](tui-spec-dialog-help.md) — referência de atalhos
 
 ## Barra de Mensagens
 
 A barra de mensagens é a zona fixa entre a área de trabalho e a barra de comandos (conforme [Dimensionamento e Layout](#dimensionamento-e-layout)). Exibe uma mensagem por vez — nova mensagem substitui a anterior imediatamente. Não há fila nem pilha. A borda `─` é permanente; quando há mensagem, símbolo e texto são embutidos na borda.
 
-Anatomia, dimensionamento, identidade visual, eventos e ciclo de vida especificados na [Especificação Visual — Barra de Mensagens](tui-specification.md#barra-de-mensagens-1).
+Anatomia, dimensionamento, identidade visual, eventos e ciclo de vida especificados na [Especificação Visual — Barra de Mensagens](tui-spec-barras.md#barra-de-mensagens).
 
 ## Barra de Comandos
 
 A barra de comandos é a última linha da tela (conforme [Dimensionamento e Layout](#dimensionamento-e-layout)). Exibe as ações acionáveis por teclado no contexto atual — o usuário nunca precisa adivinhar o que pode fazer. A âncora `F1 Ajuda` é fixa na extrema direita; ações de menor prioridade são removidas quando falta espaço.
 
-Anatomia, dimensionamento, identidade visual, sistema de ações e eventos especificados na [Especificação Visual — Barra de Comandos](tui-specification.md#barra-de-comandos-1).
+Anatomia, dimensionamento, identidade visual, sistema de ações e eventos especificados na [Especificação Visual — Barra de Comandos](tui-spec-barras.md#barra-de-comandos).
 
 ## Foco e Navegação
 
@@ -383,7 +385,7 @@ A navegação é nativamente por teclado, mas o mouse deve ser suportado para at
 
 ## Teclado
 
-A aplicação é operada inteiramente por teclado. Esta seção define a notação para representar teclas na documentação e na interface, as convenções semânticas que governam o significado de cada tecla, e a política de escopos e reservas. O mapeamento completo por tela está na [especificação de telas](tui-specification-novo.md).
+A aplicação é operada inteiramente por teclado. Esta seção define a notação para representar teclas na documentação e na interface, as convenções semânticas que governam o significado de cada tecla, e a política de escopos e reservas. O mapeamento completo por tela está na [Especificação Visual](tui-specification.md).
 
 ### Notação
 
