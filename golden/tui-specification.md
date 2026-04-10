@@ -9,6 +9,18 @@
 ## Sumário
 
 - [Atalhos da Aplicação](#atalhos-da-aplicação)
+- [Diálogos](#diálogos)
+  - [Anatomia Comum](#anatomia-comum)
+  - [Apresentação e Pilha](#apresentação-e-pilha)
+  - [Dimensionamento](#dimensionamento)
+  - [Scroll](#scroll)
+  - [Identidade Visual](#identidade-visual)
+    - [Severidade](#severidade)
+  - [Teclado](#teclado)
+  - [Notificação](#notificação)
+  - [Confirmação](#confirmação)
+  - [Ajuda](#ajuda)
+  - [Funcional](#funcional)
 - [Diálogos de Decisão](#diálogos-de-decisão)
 - [Diálogos Funcionais](#diálogos-funcionais)
   - [PasswordEntry](#passwordentry)
@@ -74,11 +86,382 @@ Os seguintes atalhos disparam os fluxos principais da aplicação quando a área
 
 ---
 
+## Diálogos
+
+Diálogos são janelas sobrepostas que capturam o foco da aplicação para uma interação isolada — uma decisão, um reconhecimento, uma entrada de dados ou uma consulta de referência. Enquanto um diálogo estiver aberto, a área de trabalho permanece visível porém inativa.
+
+A aplicação utiliza quatro tipos de diálogo, cada um com propósito, anatomia e regras de comportamento distintos:
+
+| Tipo | Propósito | Seção |
+|---|---|---|
+| [Notificação](#notificação) | Informar um fato que exige reconhecimento | [▸](#notificação) |
+| [Confirmação](#confirmação) | Solicitar uma escolha explícita do usuário | [▸](#confirmação) |
+| [Ajuda](#ajuda) | Exibir referência de atalhos (somente leitura) | [▸](#ajuda) |
+| [Funcional](#funcional) | Capturar entrada de dados com campos interativos | [▸](#funcional) |
+
+### Anatomia Comum
+
+Todo diálogo é composto por três regiões estruturais, desenhadas com bordas arredondadas (`╭╮╰╯│─`):
+
+```text
+╭── <símbolo>  <título> ─────────────────────╮  ← Borda Superior
+│                                            │
+│  <conteúdo do corpo>                       │  ← Corpo
+│                                            │
+╰── <Tecla Label> ──── <Tecla Label> ────────╯  ← Borda de Ações
+```
+
+**Borda Superior (título):**
+- Estrutura char a char:
+  - **Sem símbolo:** `╭──` (canto + 2× borda) + ` ` (1 espaço) + título + ` ` (1 espaço) + preenchimento `─`×N + `╮` (canto).
+  - **Com símbolo:** `╭──` (canto + 2× borda) + ` ` (1 espaço) + símbolo + `  ` (2 espaços) + título + ` ` (1 espaço) + preenchimento `─`×N + `╮` (canto).
+- O título ocupa a borda superior a partir da 5ª coluna (após `╭── `), preservando os caracteres de canto de ambos os lados. O preenchimento `─` garante pelo menos 1 caractere de borda antes do `╮`.
+- Quando a severidade é Neutro ou o tipo de diálogo não usa severidade (Ajuda, Funcional), o símbolo é omitido.
+- **Truncamento:** se o título excede o espaço disponível na borda (largura máxima do diálogo − cantos − espaçamento), ele é truncado com `…`.
+- O título descreve o fluxo ou ação principal (ex: `Salvar cofre`, `Senha mestra`, `Ajuda`). Capitalizado conforme o nome, sem artigos desnecessários.
+
+**Corpo:**
+- Bordas laterais `│` delimitam o conteúdo.
+- Padding interno: 2 colunas horizontais (entre `│` e o texto). Padding vertical de 1 linha (acima e abaixo do conteúdo) aplica-se a Notificação, Confirmação e Ajuda; diálogos Funcionais usam **0 linhas** de padding vertical — o conteúdo denso e interativo ocupa todo o espaço disponível.
+- O conteúdo varia por tipo de diálogo: texto estático (Notificação, Confirmação), tabela de atalhos (Ajuda) ou campos interativos (Funcional).
+- Diálogos Funcionais podem conter **divisores internos** que segmentam o corpo em regiões. A separação pode ser horizontal, vertical ou ambas:
+  - **Horizontal:** `─` conectado às bordas laterais por T junctions (`├` à esquerda, `┤` à direita).
+  - **Vertical:** `│` conectado às bordas horizontais por T junctions (`┬` no topo, `┴` na base).
+  - **Cruzamento:** `┼` onde um divisor horizontal e um vertical se cruzam.
+
+**Borda de Ações (rodapé):**
+- Estrutura char a char: `╰` (canto) + `─` (1× borda) + ações + preenchimento `─`×N (pelo menos 1) + `╯` (canto).
+- Cada ação é representada como: ` ` (espaço) + tecla + ` ` (espaço) + label + ` ` (espaço). Exemplo: ` Enter Salvar `.
+- Ações são separadas entre si por segmentos de preenchimento `─`.
+- Layout varia conforme a quantidade de ações:
+  - **1 ação:** alinhada à direita. Preenchimento `─` ocupa todo o espaço à esquerda.
+    ```text
+    ╰──────────────────────────── Enter OK ─╯
+    ```
+  - **2 ações:** principal à esquerda, cancelamento à direita. Preenchimento `─` entre elas.
+    ```text
+    ╰─ Enter Confirmar ──────── Esc Cancelar ─╯
+    ```
+  - **3 ações:** principal à esquerda, secundária ao centro, cancelamento à direita. Preenchimento `─` distribuído entre elas.
+    ```text
+    ╰─ S Sobrescrever ── N Como novo ── Esc Voltar ─╯
+    ```
+- Limite máximo: 3 ações. Diálogos com 4+ ações na borda são um [anti-padrão](tui-design-system-anti-patterns.md#diálogos-e-confirmações) ("Borda como Menu").
+
+### Apresentação e Pilha
+
+- O diálogo centraliza-se horizontal e verticalmente sobre a tela inteira.
+- O conteúdo abaixo permanece visível, mas inativo (sem escurecimento de overlay).
+- Apenas o elemento do topo da pilha recebe input; os inferiores permanecem montados, porém congelados.
+- Ao fechar o elemento do topo, o foco retorna ao elemento imediatamente anterior na pilha.
+
+### Dimensionamento
+
+- **Largura mínima:** suficiente para acomodar o título e as ações da borda inferior, ou no mínimo 20 colunas.
+- **Largura máxima:** até 95% da largura do terminal.
+- **Largura fixa:** diálogos funcionais específicos podem definir largura fixa (ex: PasswordEntry = 50 colunas). A largura fixa é documentada na especificação de cada subtipo.
+- **Altura:** determinada pelo contorno do conteúdo, sem espaços vazios exagerados.
+- **Padding interno:** 2 colunas laterais. Padding vertical de 1 linha para Notificação, Confirmação e Ajuda; **0 linhas** para Funcional.
+
+### Scroll
+
+Quando o conteúdo do corpo excede o espaço disponível:
+
+- **Largura excedida:** word-wrap quebra linhas mantendo integridade de palavras.
+- **Altura excedida:** ativa-se scroll vertical com indicadores visuais na borda lateral direita.
+- A borda superior e a borda de ações nunca participam do scroll — permanecem sempre fixas.
+- **Pré-condição:** o scroll só é renderizável se o diálogo possuir pelo menos 5 linhas internas (excluindo borda superior e borda de ações). Abaixo desse mínimo, o conteúdo é truncado sem indicadores de scroll.
+- **Navegação por teclado:** teclas direcionais (`↑`/`↓`), `PgUp`/`PgDn`, `Home`/`End`.
+
+**Composição da borda lateral direita com scroll:**
+
+A borda lateral direita do corpo é composta por 3 elementos, cada um ocupando posições fixas:
+
+| Elemento | Posição | Caractere | Descrição |
+|---|---|---|---|
+| Seta superior | 1ª linha do corpo | `↑` | Indica conteúdo acima do viewport. Substitui o `│` da borda |
+| Thumb | Entre a 2ª e a penúltima linha do corpo | `■` | Posição relativa do viewport no conteúdo total. Nunca sobrepõe as setas |
+| Seta inferior | Última linha do corpo | `↓` | Indica conteúdo abaixo do viewport. Substitui o `│` da borda |
+
+- As setas `↑` e `↓` ocupam sempre a primeira e a última linha do corpo, respectivamente.
+- O thumb `■` é posicionado proporcionalmente entre a 2ª linha e a penúltima linha do corpo — ele **nunca** é desenhado sobre a posição de uma seta.
+- Nas linhas onde nenhum indicador está presente, a borda permanece `│`.
+
+Wireframe ilustrando o scroll ativo (5 linhas internas, com padding vertical):
+
+```text
+╭── ⚠  Título do Diálogo ────────────────────╮
+│                                            ↑
+│  Primeira linha do conteúdo longo.         ■
+│  Segunda linha mostrando limite excedido.  │
+│  Terceira linha com mais informações.      │
+│                                            ↓
+╰── Enter Salvar ── A Alt ──── Esc Cancelar ─╯
+```
+
+### Identidade Visual
+
+Regras visuais padrão aplicadas a **todos** os diálogos. Cada tipo documenta apenas as variações.
+
+> Caracteres estruturais: ver [Anatomia Comum](#anatomia-comum).
+
+| Elemento | Token | Atributo | Observação |
+|---|---|---|---|
+| Bordas e cantos | Determinado pela severidade ou pelo tipo | — | Notificação/Confirmação: token da [Severidade](#severidade). Ajuda: `border.default`. Funcional: `border.focused` |
+| Símbolo na borda superior | Determinado pela severidade | — | `⚠`, `✕` ou `ℹ` conforme severidade. Omitido em Neutro, Ajuda e Funcional |
+| Título | `text.primary` | **bold** | Descreve o fluxo ou ação principal |
+| Texto do corpo | `text.primary` | — | — |
+| Tecla da ação default (`Enter`) | Token da tecla default da severidade | **bold** | Notificação/Confirmação: ver [Severidade](#severidade). Ajuda/Funcional: `accent.primary` |
+| Teclas de ações secundárias e cancelamento | Segue o token de borda | — | — |
+
+#### Severidade
+
+Severidade governa o tratamento visual — borda, símbolo e cor da tecla default — aplicado exclusivamente aos diálogos de **Notificação** e **Confirmação**. Diálogos de Ajuda e Funcional não utilizam severidade.
+
+| Severidade | Símbolo | Token de borda | Token da tecla default | Quando usar |
+|---|---|---|---|---|
+| Destrutivo | `⚠` | `semantic.warning` | `semantic.error` | Ação irreversível ou com perda de dados |
+| Erro | `✕` | `semantic.error` | `accent.primary` | Falha ocorrida, condição irrecuperável |
+| Alerta | `⚠` | `semantic.warning` | `accent.primary` | Situação importante mas recuperável |
+| Informativo | `ℹ` | `semantic.info` | `accent.primary` | Informação que requer atenção |
+| Neutro | — | `border.focused` | `accent.primary` | Operação rotineira, sem urgência |
+
+> **Nota:** severidades Destrutivo e Alerta compartilham o símbolo `⚠` e o token de borda `semantic.warning`. A distinção visual está na tecla default: `semantic.error` (vermelho) para destrutivo, `accent.primary` para alerta. Isso reforça que o perigo está na *ação*, não apenas na *situação*.
+
+### Teclado
+
+Convenções de teclado aplicadas a todos os diálogos. Cada tipo documenta apenas as variações.
+
+**Teclas implícitas — `Enter` e `Esc`:**
+
+Todo diálogo possui duas teclas implícitas que não precisam ser declaradas pelas ações:
+
+| Tecla | Papel implícito |
+|---|---|
+| `Enter` | Executa a ação **principal** (a da extrema esquerda, ou a única ação) |
+| `Esc` | Executa a ação de **cancelamento** (a da extrema direita, ou a única ação) |
+
+Comportamento conforme a quantidade de ações:
+
+| Ações | `Enter` | `Esc` |
+|---|---|---|
+| 1 ação | Executa a ação única | Mesmo efeito que `Enter` — executa a ação única |
+| 2 ações | Executa a ação da esquerda (principal) | Executa a ação da direita (cancelamento) |
+| 3 ações | Executa a ação da esquerda (principal) | Executa a ação da direita (cancelamento) |
+
+**Teclas explícitas — letras de atalho:**
+
+Além das teclas implícitas, cada ação pode declarar uma tecla de atalho (tipicamente a primeira letra da label). A tecla declarada é exibida na borda de ações antes da label (ex: `S Sobrescrever`). As teclas implícitas `Enter` e `Esc` continuam funcionando mesmo quando a ação possui tecla explícita. Exemplo:
+
+```text
+╰─ S Sobrescrever ── N Como novo ── Esc Voltar ─╯
+```
+
+- `S` → Sobrescrever (tecla explícita)
+- `Enter` → Sobrescrever (tecla implícita — ação principal)
+- `N` → Como novo (tecla explícita)
+- `Esc` → Voltar (tecla implícita — cancelamento)
+
+A ação secundária (centro, quando presente) **sempre** precisa declarar sua tecla explícita — não possui tecla implícita.
+
+**Diálogos Funcionais — exceção do `Enter`:**
+
+Em diálogos funcionais, `Enter` pode ter comportamento contextual dependendo do campo em foco (ex: submeter um campo, selecionar um item em lista). Entretanto, em algum estado do diálogo o `Enter` **deve** acionar a confirmação do diálogo. `Esc` sempre cancela e fecha o diálogo, sem exceção.
+
+### Notificação
+
+**Quando usar:** o usuário precisa tomar ciência de um fato — uma falha, um alerta ou uma informação relevante. Não há decisão a tomar; apenas reconhecimento.
+
+**Anatomia:**
+
+| Região | Presença | Conteúdo |
+|---|---|---|
+| Borda Superior | Obrigatória | Símbolo de severidade + título |
+| Corpo | Obrigatório | Apenas afirmação. Sem pergunta. Frases terminam com ponto final |
+| Borda de Ações | Obrigatória | Exatamente 1 ação, alinhada à direita |
+
+**Redação do corpo:** afirmação concisa e direta. Referências a itens específicos em aspas simples. Exemplos:
+- `Arquivo corrompido ou inválido. Necessário fechar.`
+- `Senhas não conferem. Necessário digitar novamente.`
+- `Arquivo inválido ou versão não suportada. Necessário corrigir.`
+
+**Variações Visuais:** sem variações — segue integralmente a [Identidade Visual](#identidade-visual) geral com severidade.
+
+**Ações:**
+- Borda de Ações: exclusivamente `Enter OK`, alinhada à direita.
+- Nenhuma ação secundária. Nenhuma ação de cancelamento.
+
+**Teclado:** sem variações — segue integralmente as convenções de [Teclado](#teclado) geral (1 ação: `Enter` e `Esc` ambos fecham).
+
+**Barra de Comandos:** vazia. Ações do diálogo não se repetem na barra.
+
+**Barra de Mensagens:** limpa durante toda a exibição do diálogo.
+
+**Exemplo Visual:**
+
+```text
+╭── ✕  Arquivo corrompido ───────────────╮
+│                                        │
+│  Arquivo corrompido ou inválido.       │
+│  Necessário fechar.                    │
+│                                        │
+╰────────────────────────────── Enter OK ╯
+```
+
+### Confirmação
+
+**Quando usar:** o usuário precisa fazer uma escolha explícita que confirma, bifurca ou cancela um fluxo — salvar, descartar, sobrescrever, excluir.
+
+**Anatomia:**
+
+| Região | Presença | Conteúdo |
+|---|---|---|
+| Borda Superior | Obrigatória | Símbolo de severidade (quando não Neutro) + título |
+| Corpo | Obrigatório | Afirmação de contexto (opcional, terminada em ponto) + pergunta objetiva (terminada em `?`) |
+| Borda de Ações | Obrigatória | 2 ou 3 ações |
+
+**Redação do corpo:** fato opcional seguido de pergunta concisa que apresenta as opções de decisão. A pergunta não menciona a opção `Voltar` (Esc). Referências a itens específicos em aspas simples. Exemplos:
+- `Sair do Abditum?`
+- `Cofre modificado. Salvar ou descartar?`
+- `Arquivo modificado externamente. Sobrescrever?`
+- `'Gmail' será excluído permanentemente. Continuar?`
+
+**Variações Visuais:** sem variações — segue integralmente a [Identidade Visual](#identidade-visual) geral com severidade.
+
+**Ações:**
+- Borda de Ações: 2 a 3 ações.
+  - Ação principal à esquerda (ex: `Enter Salvar`, `S Sobrescrever`).
+  - Ação secundária ao centro, quando presente (ex: `N Salvar como novo`).
+  - `Esc Cancelar` (ou `Esc Voltar`) sempre na extrema direita.
+- Todas as ações ficam ativas simultaneamente — não há validação condicional.
+
+**Teclado:** sem variações — segue integralmente as convenções de [Teclado](#teclado) geral (2–3 ações com teclas explícitas).
+
+**Barra de Comandos:** vazia. Decisões ficam exclusivamente na borda de ações.
+
+**Barra de Mensagens:** limpa durante toda a exibição do diálogo.
+
+**Exemplo Visual:**
+
+```text
+╭── ⚠  Salvar cofre ─────────────────────────────╮
+│                                                │
+│  Arquivo modificado externamente.              │
+│  Sobrescrever ou salvar como novo?             │
+│                                                │
+╰── S Sobrescrever ── N Como novo ─ Esc Voltar ──╯
+```
+
+### Ajuda
+
+**Quando usar:** o usuário precisa consultar os atalhos de teclado disponíveis no contexto atual. Acionado por `F1`. Diálogo somente leitura, sem impacto no estado da aplicação.
+
+**Anatomia:**
+
+| Região | Presença | Conteúdo |
+|---|---|---|
+| Borda Superior | Obrigatória | Título `Ajuda` em **bold**, sem símbolo |
+| Corpo | Obrigatório | Tabela de atalhos organizada por contexto (seções com cabeçalho). Scroll ativado quando o conteúdo excede a altura |
+| Borda de Ações | Obrigatória | Exatamente 1 ação: `Esc Fechar`, alinhada à direita |
+
+**Variações Visuais:**
+- Não usa severidade. Borda em `border.default`.
+- Nomes das teclas de atalho no corpo em `text.primary`; descrições em `text.secondary`.
+
+**Ações:**
+- Borda de Ações: exclusivamente `Esc Fechar`, alinhada à direita.
+
+**Teclado:** sem variações — segue integralmente as convenções de [Teclado](#teclado) geral (1 ação: `Esc` fecha). Teclas de scroll (`↑`/`↓`, `PgUp`/`PgDn`, `Home`/`End`) ativas quando há conteúdo excedente.
+
+**Barra de Comandos:** pode exibir ações auxiliares do contexto (ex: `F12` para troca de tema), sem repetir a ação da borda.
+
+**Barra de Mensagens:** limpa durante toda a exibição do diálogo.
+
+**Exemplo Visual:**
+
+```text
+╭── Ajuda ──────────────────────────────╮
+│ Árvore                                ↑
+│ F2       Renomear arquivo atual       ■
+│ Ctrl+N   Novo arquivo no diretório    │
+│ Ctrl+D   Marcar para exclusão         ↓
+╰──────────────────────────── Esc Fechar ╯
+```
+
+### Funcional
+
+**Quando usar:** o usuário precisa fornecer dados por meio de campos interativos — entrada de senha, seleção de arquivo, criação de senha com confirmação. Diferente dos diálogos de decisão, o Funcional captura input estruturado.
+
+**Anatomia:**
+
+| Região | Presença | Conteúdo |
+|---|---|---|
+| Borda Superior | Obrigatória | Título em **bold**, sem símbolo de severidade |
+| Corpo | Obrigatório | Campos de entrada (`input`), labels, contadores e outros componentes interativos. Conteúdo varia por subtipo. Sem padding vertical (0 linhas acima e abaixo) |
+| Divisores internos | Opcional | Separadores horizontais (`─` com `├` / `┤`), verticais (`│` com `┬` / `┴`) ou ambos (`┼` no cruzamento), segmentando o corpo em regiões distintas |
+| Borda de Ações | Obrigatória | Ação de confirmação + ação de cancelamento (2 ações) |
+
+**Variações Visuais:**
+- Não usa severidade. Borda em `border.focused`.
+- Labels de campo: `accent.primary` + **bold** quando o campo está ativo; `text.secondary` quando inativo.
+- Área de campo de entrada: fundo `surface.input`.
+- Máscara de senha: caracteres `●` em `text.secondary`, com comprimento fixo (não revela o tamanho real da senha).
+- Cursor no campo ativo: `▌` em `text.primary`.
+- Ação default (`Enter`): estado condicional — `text.disabled` / dim enquanto houver validações pendentes; `accent.primary` + **bold** ao satisfazer condições.
+
+**Ações:**
+- Borda de Ações: 2 ações.
+  - Ação de confirmação à esquerda (ex: `Enter Confirmar`).
+  - `Esc Cancelar` à direita.
+- Estado condicional do `Enter` descrito em Variações Visuais acima.
+
+**Teclado:**
+- `Enter` e `Esc` conforme [Teclado](#teclado) geral, com a exceção de que `Enter` pode ter comportamento contextual por campo.
+- `Tab` / `Shift+Tab`: navega entre campos (quando há múltiplos campos).
+- Teclas de edição: digitação, `Backspace`, `Del` — comportamento padrão de campo de texto.
+
+**Barra de Comandos:** exibe ações auxiliares específicas do diálogo (ex: `Tab Campo seguinte`, `Del Limpar linha`). Ações da borda de ações **nunca se repetem** na barra de comandos.
+
+**Barra de Mensagens:** território de uso exclusivo do diálogo funcional.
+- Ao abrir o diálogo: dica de campo (`•`) orientando a ação esperada.
+- Durante a interação: dica atualizada conforme o campo em foco.
+- Após erro de validação: mensagem de erro (`✕`) exibida até correção ou troca de campo.
+- Ao fechar o diálogo: barra limpa (responsabilidade do orquestrador).
+
+**Exemplo Visual:**
+
+```text
+╭── Alterar senha mestra ───────────────╮
+│  Senha atual:   ••••••••              │
+│  Nova senha:    ▌                     │
+╰── Enter Confirmar ────── Esc Cancelar ╯
+```
+
+Exemplo com divisores internos (FilePicker simplificado):
+
+```text
+╭── Abrir cofre ──────────┬─────────────╮
+│  📁 Documentos          │ cofre.abdt  │
+│  📁 Projetos            │ notas.abdt  │
+│    📄 cofre.abdt        │             │
+├─────────────────────────┴─────────────┤
+│  Arquivo: cofre.abdt                  │
+╰── Enter Abrir ──────── Esc Cancelar ──╯
+```
+
+**Subtipos conhecidos:**
+
+| Subtipo | Propósito | Campos | Referência |
+|---|---|---|---|
+| PasswordEntry | Entrada de senha para abrir cofre | 1 campo (senha) | [spec](#passwordentry) |
+| PasswordCreate | Criação ou alteração de senha mestra | 2–3 campos (atual, nova, confirmação) | [spec](#passwordcreate) |
+| FilePicker | Seleção de arquivo (abrir ou salvar) | Árvore de diretórios + campo de nome | [spec](#filepicker) |
+
+Cada subtipo tem anatomia interna, estados e validações específicas documentadas nas seções abaixo.
+
 ## Diálogos de Decisão
 
-Todos os diálogos de decisão seguem a anatomia comum e os padrões de interação definidos no [design system — Sobreposição](tui-design-system.md#sobreposição), incluindo a [Referência Visual por Severidade](tui-design-system.md#severidade) e as [Regras de Ações na Borda Inferior](tui-design-system.md#ações-na-borda-inferior).
-
----
+Todos os diálogos de decisão seguem a [Anatomia Comum](#anatomia-comum), a [Severidade](#severidade) e as convenções de [Teclado de diálogos](#teclado).
 
 ## Catálogo de Diálogos de Decisão
 
@@ -115,7 +498,7 @@ Esta seção lista todas as instâncias de diálogos de decisão da aplicação,
 
 ## Diálogos Funcionais
 
-Todos os diálogos funcionais seguem a anatomia comum do [design system — Sobreposição](tui-design-system.md#sobreposição), sem símbolo semântico no título. Esta seção especifica a anatomia interna de cada um.
+Todos os diálogos funcionais seguem a [Anatomia Comum](#anatomia-comum), sem símbolo semântico no título. Esta seção especifica a anatomia interna de cada subtipo.
 
 ---
 
@@ -965,27 +1348,222 @@ O radical `meu-cofre-pessoal` foi truncado para `meu-cofre-pessoa…`.
 
 ### Barra de Comandos
 
-Anatomia, dimensionamento, identidade visual, ações e eventos definidos no [DS — Barra de Comandos](tui-design-system.md#barra-de-comandos).
+A barra de comandos é a última linha da tela (conforme [DS — Dimensionamento e Layout](tui-design-system.md#dimensionamento-e-layout)). Exibe as ações acionáveis por teclado no contexto atual — o usuário nunca precisa adivinhar o que pode fazer.
 
 **Princípio de conteúdo:** a barra exibe apenas ações de caso de uso (F-keys, atalhos de domínio, `⌃S`). Teclas de navegação universais — `↑↓`, `←→`, `Tab`, `Enter`, `Esc` — são senso comum em TUI e não são exibidas. Exceção: diálogos exibem ações internas específicas do contexto.
 
-**Wireframes contextuais:**
+#### Anatomia
 
-Estado normal (Modo Cofre, segredo selecionado):
+A barra é uma linha de texto na largura total do terminal. Ações são distribuídas à esquerda; a âncora `F1 Ajuda` é fixa à direita. O espaço restante é preenchido com espaços.
+
+**Estrutura char a char:**
+
+` ` (2 espaços) + ação₁ + ` · ` (separador) + ação₂ + ` · ` + … + ` `×N (preenchimento, pelo menos 1) + `F1 Ajuda`
+
+Cada ação é composta por: TECLA + ` ` (1 espaço) + Label. Exemplo: `^S Salvar`, `Del Excluir`.
+
+- **Prefixo:** 2 espaços fixos. A primeira ação começa na 3ª coluna.
+- **Separador:** ` · ` (espaço + middle dot + espaço = 3 colunas) entre ações adjacentes.
+- **Preenchimento:** espaços entre a última ação e a âncora. Mínimo 1 espaço.
+- **Âncora:** `F1 Ajuda` (8 colunas) — sempre na extrema direita, nunca removida.
+
+**Truncamento por prioridade:** quando não há espaço para todas as ações, as de menor prioridade são removidas primeiro (ver [Ações](#ações)). A âncora `F1 Ajuda` nunca é sacrificada.
+
+**Wireframe — estado normal:**
 
 ```
-  ^I Novo · ^E Editar · Del Excluir · ^S Salvar                              F1 Ajuda
+␣␣^I␣Novo␣·␣^E␣Editar␣·␣Del␣Excluir␣·␣^S␣Salvar␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣F1␣Ajuda
 ```
 
-Durante diálogo funcional ativo (apenas ações internas):
+**Wireframe — espaço restrito (ações truncadas por prioridade):**
 
 ```
-  Tab Campos · F5 Revelar                                                    F1 Ajuda
+␣␣^I␣Novo␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣F1␣Ajuda
 ```
+
+**Wireframe — diálogo de decisão ativo (vazia):**
+
+```
+␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣F1␣Ajuda
+```
+
+> Legenda: `␣` = espaço; `·` = separador (caractere real da barra).
+
+#### Dimensionamento
+
+| Parâmetro | Valor |
+|---|---|
+| Altura | 1 linha fixa |
+| Largura | 100% da largura do terminal |
+| Prefixo | 2 espaços |
+| Formato de ação | TECLA + 1 espaço + Label |
+| Separador entre ações | ` · ` (3 colunas) |
+| Preenchimento | espaços (mínimo 1 coluna) |
+| Âncora | `F1 Ajuda` (8 colunas, extrema direita) |
+| Espaço disponível para ações | largura do terminal − 2 (prefixo) − 8 (âncora) − 1 (preenchimento mínimo) |
+
+#### Identidade Visual
+
+| Elemento | Token | Atributo |
+|---|---|---|
+| Tecla da ação (ex: `^S`) | `accent.primary` | **bold** |
+| Label da ação (ex: `Salvar`) | `text.primary` | — |
+| Separador ` · ` | `text.secondary` | — |
+| Âncora `F1 Ajuda` — tecla | `accent.primary` | **bold** |
+| Âncora `F1 Ajuda` — label | `text.primary` | — |
+
+#### Ações
+
+Cada ação registrada no contexto ativo possui atributos que controlam sua apresentação:
+
+| Atributo | Efeito na barra | Efeito no Help |
+|---|---|---|
+| `Enabled = true` | Exibida com estilo normal | Listada |
+| `Enabled = false` | Oculta | Listada |
+| `HideFromBar = true` | Oculta | Listada |
+| `HideFromBar = false` | Exibida (se `Enabled`) | Listada |
+
+Além destes:
+
+- **Prioridade** — valor numérico. Maior prioridade → mais à esquerda. Quando o espaço é insuficiente, ações de menor prioridade são removidas primeiro.
+- **Grupo** — valor numérico. Usado exclusivamente no modal de Ajuda para organizar ações. Grupos renderizados em ordem numérica crescente. Dentro de cada grupo, ações ordenadas por `Prioridade`. Não afeta a barra de comandos.
+- **Label do grupo** — string registrada por grupo (ex: grupo 1 → "Navegação"). Exibido como título de seção no Help em `text.secondary` **bold**.
+
+Regras de layout:
+
+- **`F1 Ajuda` sempre visível** — âncora fixa na extrema direita; o cálculo de espaço desconta `F1 Ajuda` antes de distribuir as demais ações.
+- **Ações desabilitadas desaparecem** — `Enabled = false` remove da barra (não fica dim). A ação continua listada no Help.
+- **Ações de confirmação/cancelamento** (`Enter`/`Esc`) já estão na borda inferior do diálogo — não são duplicadas na barra.
+
+#### Teclado
+
+A barra funciona como guia de descoberta — o usuário vê quais teclas estão disponíveis no contexto atual. As teclas são atribuídas conforme as [Convenções Semânticas](tui-design-system.md#convenções-semânticas) e os [Escopos](tui-design-system.md#escopos) definidos no DS.
+
+#### Eventos
+
+| Evento | Reação da barra |
+|---|---|
+| Área de trabalho com foco | Exibe ações do painel ativo (árvore ou detalhe) |
+| Troca de foco entre painéis | Atualiza para ações do painel que recebe foco |
+| Diálogo de decisão aberto | Vazia (apenas `F1 Ajuda`) |
+| Diálogo funcional aberto | Exibe ações internas do diálogo |
+| Diálogo fecha (pop da pilha) | Volta para ações do contexto anterior |
+| Terminal redimensionado | Recalcula ações visíveis (prioridade governa corte) |
 
 ### Barra de Mensagens
 
-Anatomia, dimensionamento, identidade visual, severidade, eventos e ciclo de vida definidos no [DS — Barra de Mensagens](tui-design-system.md#barra-de-mensagens).
+A barra de mensagens é a zona fixa entre a área de trabalho e a barra de comandos (conforme [DS — Dimensionamento e Layout](tui-design-system.md#dimensionamento-e-layout)). Exibe uma mensagem por vez — nova mensagem substitui a anterior imediatamente. Não há fila nem pilha.
+
+#### Anatomia
+
+A barra é uma linha de borda `─` na largura total do terminal. Quando há mensagem ativa, símbolo e texto são embutidos na borda, seguindo a mesma regra de composição da [Borda Superior de diálogos](#anatomia-comum).
+
+**Estrutura char a char:**
+
+- **Com símbolo:** `───` (3× borda) + ` ` (1 espaço) + símbolo + `  ` (2 espaços) + texto + ` ` (1 espaço) + preenchimento `─`×N (pelo menos 1).
+- **Sem símbolo:** `───` (3× borda) + ` ` (1 espaço) + texto + ` ` (1 espaço) + preenchimento `─`×N (pelo menos 1).
+- **Sem mensagem:** `─` repetido na largura total do terminal.
+
+Símbolos possíveis: `✓` sucesso · `ℹ` informação · `⚠` alerta · `✕` erro · `◐◓◑◒` spinner · `•` dica. Cada símbolo ocupa 1 coluna. Todos os tipos atuais possuem símbolo — o caso sem símbolo é previsto para extensibilidade.
+
+**Truncamento:** se o texto excede o espaço disponível, é truncado com `…`. Largura máxima do texto: largura do terminal − 9 (com símbolo) ou largura do terminal − 6 (sem símbolo).
+
+**Wireframe — com símbolo:**
+
+```
+───␣✓␣␣Cofre salvo␣───────────────────────────────────────────────────────────
+```
+
+**Wireframe — sem símbolo:**
+
+```
+───␣Cofre salvo␣──────────────────────────────────────────────────────────────
+```
+
+**Wireframe — sem mensagem (idle):**
+
+```
+──────────────────────────────────────────────────────────────────────────────
+```
+
+> Legenda: `␣` = espaço.
+
+#### Dimensionamento
+
+| Parâmetro | Valor |
+|---|---|
+| Altura | 1 linha fixa |
+| Largura | 100% da largura do terminal |
+| Prefixo | 3 colunas de borda `───` + 1 espaço |
+| Símbolo | 1 coluna |
+| Espaçamento símbolo → texto | 2 espaços |
+| Espaço após texto | 1 espaço |
+| Sufixo mínimo | 1 coluna de borda `─` |
+| Largura máxima do texto | largura do terminal − 9 (com símbolo) · largura do terminal − 6 (sem símbolo) |
+
+#### Identidade Visual
+
+**Severidade:**
+
+A barra de mensagens utiliza o mesmo sistema de [severidade dos diálogos](#severidade). Cada tipo de mensagem herda o token semântico correspondente — a mesma paleta que governa bordas e símbolos de diálogos governa a cor da mensagem inteira.
+
+| Severidade | Tipo de mensagem | Símbolo | Token | Atributo |
+|---|---|---|---|---|
+| Erro | Erro | `✕` | `semantic.error` | **bold** |
+| Alerta | Alerta | `⚠` | `semantic.warning` | — |
+| Informativo | Informação | `ℹ` | `semantic.info` | — |
+| Neutro | Sucesso | `✓` | `semantic.success` | — |
+
+> Não existe tipo de mensagem "Destrutivo" na barra — ações destrutivas são sempre comunicadas por diálogos.
+
+**Tipos não-semânticos:**
+
+Além das severidades, a barra suporta tipos utilitários sem correspondência com severidade de diálogos:
+
+| Tipo | Símbolo | Token | Atributo |
+|---|---|---|---|
+| Ocupado (spinner) | `◐ ◓ ◑ ◒` | `accent.primary` | — |
+| Dica de campo | `•` | `text.secondary` | *italic* |
+| Dica de uso | `•` | `text.secondary` | *italic* |
+
+**Regras de cor:**
+
+- Token se aplica à mensagem inteira — símbolo e texto usam o mesmo token de cor. Não há distinção de cor entre o símbolo e o conteúdo textual dentro de uma mesma mensagem.
+- Borda `─` sempre em `border.default`, independente do tipo de mensagem.
+
+#### Teclado
+
+A barra de mensagens é passiva — não aceita interação por teclado.
+
+#### Eventos
+
+| Evento | Reação da barra |
+|---|---|
+| Nenhuma mensagem ativa | Borda `─` contínua |
+| Orquestrador emite mensagem | Símbolo + texto embutidos na borda |
+| Nova mensagem emitida | Substitui imediatamente a mensagem anterior |
+| TTL expira | Mensagem desaparece → borda `─` |
+| Diálogo funcional abre | Dica de campo (`•`) orientando a ação esperada |
+| Campo recebe foco (diálogo funcional) | Dica atualizada conforme o campo |
+| Erro de validação (diálogo funcional) | Mensagem de erro (`✕`) até correção ou troca de campo |
+| Diálogo fecha | Barra limpa → borda `─` |
+
+#### Ciclo de Vida
+
+| Tipo | TTL padrão | Dismissal padrão |
+|---|---|---|
+| Sucesso | 5 s | Expiração |
+| Informação | 5 s | Expiração |
+| Alerta | 5 s | Expiração |
+| Erro | 5 s | Expiração |
+| Ocupado (spinner) | Sem TTL | Substituição explícita por Sucesso, Erro ou Alerta ao término da operação |
+| Dica de campo | Permanente | Troca de campo ou substituição por outro tipo |
+| Dica de uso | Permanente | Substituição por qualquer outro tipo |
+
+- O caller pode sobrescrever TTL e trigger de dismissal conforme o contexto.
+- Spinner avança 1 frame/segundo sincronizado com tick global.
+
+> O ciclo de vida da barra em diálogos funcionais (mensagem de contexto ao abrir, dica por campo, limpeza ao fechar) é contrato do orquestrador — documentado em [Diálogos — Funcional](#funcional).
 
 ### Painel Esquerdo: Árvore
 
