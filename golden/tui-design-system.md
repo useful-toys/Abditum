@@ -36,11 +36,30 @@ A composição dessas peças em telas, wireframes e fluxos concretos pertence ao
   - [Confirmação](#confirmação)
   - [Ajuda](#ajuda)
   - [Funcional](#funcional)
-- [Padrões](#padrões)
-  - [Mensagens](#mensagens)
-  - [Foco e Navegação](#foco-e-navegação)
-  - [Mapa de Teclas](#mapa-de-teclas)
-  - [Acessibilidade](#acessibilidade)
+- [Barra de Mensagens](#barra-de-mensagens)
+  - [Anatomia](#anatomia-1)
+  - [Dimensionamento](#dimensionamento-1)
+  - [Identidade Visual](#identidade-visual-1)
+  - [Teclado](#teclado-1)
+  - [Eventos](#eventos)
+  - [Ciclo de Vida](#ciclo-de-vida)
+  - [Referência](#referência)
+- [Barra de Comandos](#barra-de-comandos)
+  - [Anatomia](#anatomia-2)
+  - [Dimensionamento](#dimensionamento-2)
+  - [Identidade Visual](#identidade-visual-2)
+  - [Ações](#ações)
+  - [Teclado](#teclado-2)
+  - [Eventos](#eventos-1)
+  - [Referência](#referência-1)
+- [Foco e Navegação](#foco-e-navegação)
+- [Teclado](#teclado-3)
+  - [Notação](#notação)
+  - [Convenções Semânticas](#convenções-semânticas)
+  - [Escopos](#escopos)
+  - [Atalhos Globais](#atalhos-globais)
+  - [Regiões de Teclas de Função](#regiões-de-teclas-de-função)
+- [Acessibilidade](#acessibilidade)
 
 
 ---
@@ -229,18 +248,7 @@ Para modos com dois painéis (Cofre, Modelos):
 
 A proporção é aproximada — a implementação pode ajustar em ±5% para alinhamento estético ou para acomodar terminais muito largos.
 
-### Barra de mensagens
-
-| Parâmetro | Valor |
-|---|---|
-| Altura | 1 linha fixa entre área de trabalho e barra de comandos |
-| Anatomia | Borda `─` contínua; mensagem embutida após 2 espaços de padding esquerdo |
-| Largura da borda | 100% da largura do terminal |
-| Largura do texto | Largura do terminal − 2 (padding) − 2 (`─` direita mínima) |
-| Truncamento | Com `…` quando o texto exceder o espaço disponível |
-| Sem mensagem | Borda `─` contínua (separador visual permanente) |
-
----
+> **Dimensionamento de componentes:** as barras de mensagens e comandos possuem anatomia e dimensionamento detalhados nas seções dedicadas [Barra de Mensagens](#barra-de-mensagens) e [Barra de Comandos](#barra-de-comandos). Os diálogos têm dimensionamento próprio em [Diálogos — Dimensionamento](#dimensionamento).
 
 ## Ícones e Símbolos
 
@@ -310,7 +318,7 @@ Estados visuais definem como o mesmo elemento muda de aparência conforme o cont
 
 ### Regras de transição
 
-- Foco de painel é indicado pelo separador vertical (ver [Foco e Navegação](#foco-e-navegação)) e pela barra de comandos — não por borda ao redor do painel.
+- Foco da área ativa é indicado pelo separador vertical e pela barra de comandos (ver [Foco e Navegação](#foco-e-navegação)) — não por borda ao redor do painel.
 - TUI não tem estado "pressionado"; confirmação vem por mudança de contexto ou mensagem.
 - Transições são instantâneas. A única animação prevista é o spinner `MsgBusy`.
 
@@ -348,7 +356,7 @@ Todo diálogo é composto por três regiões estruturais, desenhadas com bordas 
 - O título ocupa a borda superior a partir da 5ª coluna (após `╭── `), preservando os caracteres de canto de ambos os lados. O preenchimento `─` garante pelo menos 1 caractere de borda antes do `╮`.
 - Quando a severidade é Neutro ou o tipo de diálogo não usa severidade (Ajuda, Funcional), o símbolo é omitido.
 - **Truncamento:** se o título excede o espaço disponível na borda (largura máxima do diálogo − cantos − espaçamento), ele é truncado com `…`.
-- O título descreve o fluxo ou ação principal (ex: `Salvar cofre`, `Senha mestra`, `Ajuda`).
+- O título descreve o fluxo ou ação principal (ex: `Salvar cofre`, `Senha mestra`, `Ajuda`). Capitalizado conforme o nome, sem artigos desnecessários.
 
 **Corpo:**
 - Bordas laterais `│` delimitam o conteúdo.
@@ -509,8 +517,13 @@ Em diálogos funcionais, `Enter` pode ter comportamento contextual dependendo do
 | Região | Presença | Conteúdo |
 |---|---|---|
 | Borda Superior | Obrigatória | Símbolo de severidade + título |
-| Corpo | Obrigatório | Afirmação concisa e direta, finalizada em ponto. Sem pergunta |
+| Corpo | Obrigatório | Apenas afirmação. Sem pergunta. Frases terminam com ponto final |
 | Borda de Ações | Obrigatória | Exatamente 1 ação, alinhada à direita |
+
+**Redação do corpo:** afirmação concisa e direta. Referências a itens específicos em aspas simples. Exemplos:
+- `Arquivo corrompido ou inválido. Necessário fechar.`
+- `Senhas não conferem. Necessário digitar novamente.`
+- `Arquivo inválido ou versão não suportada. Necessário corrigir.`
 
 **Variações Visuais:** sem variações — segue integralmente a [Identidade Visual](#identidade-visual) geral com severidade.
 
@@ -548,6 +561,12 @@ Em diálogos funcionais, `Enter` pode ter comportamento contextual dependendo do
 | Borda Superior | Obrigatória | Símbolo de severidade (quando não Neutro) + título |
 | Corpo | Obrigatório | Afirmação de contexto (opcional, terminada em ponto) + pergunta objetiva (terminada em `?`) |
 | Borda de Ações | Obrigatória | 2 ou 3 ações |
+
+**Redação do corpo:** fato opcional seguido de pergunta concisa que apresenta as opções de decisão. A pergunta não menciona a opção `Voltar` (Esc). Referências a itens específicos em aspas simples. Exemplos:
+- `Sair do Abditum?`
+- `Cofre modificado. Salvar ou descartar?`
+- `Arquivo modificado externamente. Sobrescrever?`
+- `'Gmail' será excluído permanentemente. Continuar?`
 
 **Variações Visuais:** sem variações — segue integralmente a [Identidade Visual](#identidade-visual) geral com severidade.
 
@@ -686,37 +705,105 @@ Exemplo com divisores internos (FilePicker simplificado):
 
 Cada subtipo tem anatomia interna, estados e validações específicas documentadas na especificação visual.
 
-## Padrões
+## Barra de Mensagens
 
-Padrões são regras de comportamento transversais — aplicam-se a múltiplas telas e componentes. Os documentos de especificação consomem estes padrões ao definir componentes e fluxos concretos.
+A barra de mensagens é a linha entre a área de trabalho e a barra de comandos (conforme [Dimensionamento e Layout](#dimensionamento-e-layout)). Exibe uma mensagem por vez — nova mensagem substitui a anterior imediatamente. Não há fila nem pilha.
 
-### Mensagens
+### Anatomia
 
-A aplicação comunica feedback ao usuário por meio de uma mensagem exibida na barra de mensagens. Uma mensagem por vez — nova mensagem substitui a anterior imediatamente. Não há fila nem pilha.
+A barra é uma linha de borda `─` na largura total do terminal. Quando há mensagem ativa, símbolo e texto são embutidos na borda, seguindo a mesma regra de composição da [Borda Superior de diálogos](#anatomia-comum).
 
-**Posição:** sobreposta à última linha da área de trabalho — não reserva linha própria.
+**Estrutura char a char:**
 
-**Largura:** ~95% da largura do terminal. Trunca com `…` se necessário.
+- **Com símbolo:** `───` (3× borda) + ` ` (1 espaço) + símbolo + `  ` (2 espaços) + texto + ` ` (1 espaço) + preenchimento `─`×N (pelo menos 1).
+- **Sem símbolo:** `───` (3× borda) + ` ` (1 espaço) + texto + ` ` (1 espaço) + preenchimento `─`×N (pelo menos 1).
+- **Sem mensagem:** `─` repetido na largura total do terminal.
 
-**Formato:** `<símbolo> <texto>` — exatamente 1 espaço entre o símbolo e o início do texto. O símbolo ocupa sempre 1 coluna; o espaço seguinte é fixo e não varia por tipo de mensagem.
+Símbolos possíveis: `✓` sucesso · `ℹ` informação · `⚠` alerta · `✕` erro · `◐◓◑◒` spinner · `•` dica. Cada símbolo ocupa 1 coluna. Todos os tipos atuais possuem símbolo — o caso sem símbolo é previsto para extensibilidade.
 
-**Tipos de mensagem:**
+**Truncamento:** se o texto excede o espaço disponível, é truncado com `…`. Largura máxima do texto: largura do terminal − 9 (com símbolo) ou largura do terminal − 6 (sem símbolo).
+
+**Wireframe — com símbolo:**
+
+```
+───␣✓␣␣Cofre salvo␣───────────────────────────────────────────────────────────
+```
+
+**Wireframe — sem símbolo:**
+
+```
+───␣Cofre salvo␣──────────────────────────────────────────────────────────────
+```
+
+**Wireframe — sem mensagem (idle):**
+
+```
+──────────────────────────────────────────────────────────────────────────────
+```
+
+> Legenda: `␣` = espaço.
+
+### Dimensionamento
+
+| Parâmetro | Valor |
+|---|---|
+| Altura | 1 linha fixa |
+| Largura | 100% da largura do terminal |
+| Prefixo | 3 colunas de borda `───` + 1 espaço |
+| Símbolo | 1 coluna |
+| Espaçamento símbolo → texto | 2 espaços |
+| Espaço após texto | 1 espaço |
+| Sufixo mínimo | 1 coluna de borda `─` |
+| Largura máxima do texto | largura do terminal − 9 (com símbolo) · largura do terminal − 6 (sem símbolo) |
+
+### Identidade Visual
+
+#### Severidade
+
+A barra de mensagens utiliza o mesmo sistema de severidade dos [diálogos](#severidade). Cada tipo de mensagem herda o token semântico correspondente — a mesma paleta que governa bordas e símbolos de diálogos governa a cor da mensagem inteira.
+
+| Severidade | Tipo de mensagem | Símbolo | Token | Atributo |
+|---|---|---|---|---|
+| Erro | Erro | `✕` | `semantic.error` | **bold** |
+| Alerta | Alerta | `⚠` | `semantic.warning` | — |
+| Informativo | Informação | `ℹ` | `semantic.info` | — |
+| Neutro | Sucesso | `✓` | `semantic.success` | — |
+
+> Não existe tipo de mensagem "Destrutivo" na barra — ações destrutivas são sempre comunicadas por diálogos.
+
+#### Tipos não-semânticos
+
+Além das severidades, a barra suporta tipos utilitários sem correspondência com severidade de diálogos:
 
 | Tipo | Símbolo | Token | Atributo |
 |---|---|---|---|
-| Sucesso | `✓` | `semantic.success` | — |
-| Informação | `ℹ` | `semantic.info` | — |
-| Alerta | `⚠` | `semantic.warning` | — |
-| Erro | `✕` | `semantic.error` | **bold** |
 | Ocupado (spinner) | `◐ ◓ ◑ ◒` | `accent.primary` | — |
 | Dica de campo | `•` | `text.secondary` | *italic* |
 | Dica de uso | `•` | `text.secondary` | *italic* |
 
-> **Token se aplica à mensagem inteira** — símbolo e texto usam o mesmo token de cor. Não há distinção de cor entre o símbolo e o conteúdo textual dentro de uma mesma mensagem.
+#### Regras de cor
 
-**Ciclo de vida:**
+- Token se aplica à mensagem inteira — símbolo e texto usam o mesmo token de cor. Não há distinção de cor entre o símbolo e o conteúdo textual dentro de uma mesma mensagem.
+- Borda `─` sempre em `border.default`, independente do tipo de mensagem.
 
-O ciclo de vida de cada mensagem é controlado pelo orquestrador que a emite. A tabela abaixo define os **defaults recomendados** — o caller pode sobrescrever TTL e trigger de dismissal conforme o contexto.
+### Teclado
+
+A barra de mensagens é passiva — não aceita interação por teclado.
+
+### Eventos
+
+| Evento | Reação da barra |
+|---|---|
+| Nenhuma mensagem ativa | Borda `─` contínua |
+| Orquestrador emite mensagem | Símbolo + texto embutidos na borda |
+| Nova mensagem emitida | Substitui imediatamente a mensagem anterior |
+| TTL expira | Mensagem desaparece → borda `─` |
+| Diálogo funcional abre | Dica de campo (`•`) orientando a ação esperada |
+| Campo recebe foco (diálogo funcional) | Dica atualizada conforme o campo |
+| Erro de validação (diálogo funcional) | Mensagem de erro (`✕`) até correção ou troca de campo |
+| Diálogo fecha | Barra limpa → borda `─` |
+
+### Ciclo de Vida
 
 | Tipo | TTL padrão | Dismissal padrão |
 |---|---|---|
@@ -728,194 +815,253 @@ O ciclo de vida de cada mensagem é controlado pelo orquestrador que a emite. A 
 | Dica de campo | Permanente | Troca de campo ou substituição por outro tipo |
 | Dica de uso | Permanente | Substituição por qualquer outro tipo |
 
-**Regras de comportamento:**
-
-- **Ocupado** spinner avança 1 frame/segundo sincronizado com tick global.
+- O caller pode sobrescrever TTL e trigger de dismissal conforme o contexto.
+- Spinner avança 1 frame/segundo sincronizado com tick global.
 
 > O ciclo de vida da barra em diálogos funcionais (mensagem de contexto ao abrir, dica por campo, limpeza ao fechar) é contrato do orquestrador — documentado em [Diálogos — Funcional](#funcional).
 
+### Referência
 
-### Convenções de Redação de Mensagens
+Instâncias concretas e wireframes expandidos na [especificação de telas](tui-specification.md):
 
-Este guia estabelece o estilo e a gramática para todas as comunicações textuais na interface, garantindo clareza, concisão e consistência.
+- [Barra de Mensagens](tui-specification.md#barra-de-mensagens) — tokens, estados, eventos, comportamento
 
-#### Princípios Gerais
+## Barra de Comandos
 
--   **Direta e Objetiva:** Vá direto ao ponto. Evite rodeios, jargões desnecessários e linguagem floreada.
--   **Clara e Unívoca:** A mensagem deve ser compreendida de imediato, sem ambiguidade.
--   **Acionável (quando aplicável):** Em caso de erro ou alerta, sugira um próximo passo ou aponte a causa.
--   **Contextual:** Adapte a mensagem ao estado da interface e ao conhecimento do usuário naquele ponto do fluxo.
--   **Minimalista:** Respeite o espaço limitado do terminal.
+A barra de comandos é a última linha da tela (conforme [Dimensionamento e Layout](#dimensionamento-e-layout)). Exibe as ações acionáveis por teclado no contexto atual — o usuário nunca precisa adivinhar o que pode fazer.
 
-#### Tom de Voz
+### Anatomia
 
--   **Formal-neutro:** Use uma voz técnica, mas acessível. Evite personificação, gírias ou excesso de exclamações.
--   **Foco no Usuário:** Use a segunda pessoa ("você" implícito ou explícito quando necessário) para direcionar dicas e ações. Ex: "Digite a senha para desbloquear."
--   **Afirmativo:** Prefira frases afirmativas.
+A barra é uma linha de texto na largura total do terminal. Ações são distribuídas à esquerda; a âncora `F1 Ajuda` é fixa à direita. O espaço restante é preenchido com espaços.
 
-#### Gramática e Estilo
+**Estrutura char a char:**
 
--   **Capitalização:**
-    -   **Início de frase:** Sempre maiúscula.
-    -   **Nomes de itens:** Conforme o nome original (sem capitalização artificial).
-    -   **Labels de campo/ação:** Conforme a UI (ex: "Salvar", "Nova senha").
--   **Pontuação:**
-    -   **Mensagens curtas (barra):** Sem pontuação final (ponto, exclamação). Ex: `✓ Cofre salvo`
-    -   **Mensagens longas (diálogos):** Use ponto final para encerrar frases completas.
-    -   **Perguntas (diálogos):** Use ponto de interrogação.
--   **Nomes de itens em mensagens:** Se referenciar um item específico (ex: "Gmail"), use aspas simples `'Gmail'` para distingui-lo do texto da mensagem, ou `**bold**` se o contexto for de realce crítico no diálogo.
+` ` (2 espaços) + ação₁ + ` · ` (separador) + ação₂ + ` · ` + … + ` `×N (preenchimento, pelo menos 1) + `F1 Ajuda`
 
-#### Estrutura por Tipo de Mensagem
+Cada ação é composta por: TECLA + ` ` (1 espaço) + Label. Exemplo: `^S Salvar`, `Del Excluir`.
 
-##### 1. Títulos de Diálogo (ex: na borda superior)
+- **Prefixo:** 2 espaços fixos. A primeira ação começa na 3ª coluna.
+- **Separador:** ` · ` (espaço + middle dot + espaço = 3 colunas) entre ações adjacentes.
+- **Preenchimento:** espaços entre a última ação e a âncora. Mínimo 1 espaço.
+- **Âncora:** `F1 Ajuda` (8 colunas) — sempre na extrema direita, nunca removida.
 
--   **Padrão:** O título deve ser o nome do fluxo ou da ação principal.
--   **Formato:** `[Nome do Fluxo/Ação Principal]` (capitalizado conforme o nome, ex: "Sair do Abditum", "Definir senha mestra", "Abrir cofre").
+**Truncamento por prioridade:** quando não há espaço para todas as ações, as de menor prioridade são removidas primeiro (ver [Ações](#ações)). A âncora `F1 Ajuda` nunca é sacrificada.
 
-##### 2. Mensagens no Corpo do Diálogo
+**Wireframe — estado normal:**
 
--   **Padrão:**
-    -   **Diálogos de Decisão (Confirmação):** Afirmação de um fato (opcional), seguida de uma pergunta concisa que apresenta as opções de decisão. A pergunta não menciona a opção `Voltar` (Esc).
-    -   **Diálogos de Decisão (Notificação):** Apenas uma afirmação. Não há pergunta.
--   **Formato:**
-    -   **Confirmação:** Fato termina com ponto; pergunta com interrogação.
-    -   **Notificação:** Afirmação termina com ponto final.
--   **Exemplos (ATUALIZADOS PARA CONCISÃO MÁXIMA):**
-    -   `Sair do Abditum?`
-    -   `Cofre modificado. Salvar ou descartar?`
-    -   `Arquivo modificado externamente. Sobrescrever?`
-    -   `'Gmail' será excluído permanentemente. Continuar?`
-    -   `Arquivo corrompido ou inválido. Necessário fechar.`
+```
+␣␣^I␣Novo␣·␣^E␣Editar␣·␣Del␣Excluir␣·␣^S␣Salvar␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣F1␣Ajuda
+```
 
-##### 3. Mensagens na Barra de Mensagens (inferior)
+**Wireframe — espaço restrito (ações truncadas por prioridade):**
 
--   **Padrão:** Curto e reativo, `<símbolo> [texto]`.
--   **Formato:** Começa com maiúscula (após o símbolo), sem pontuação final.
--   **Exemplos:**
-    -   `✓ Cofre salvo`
-    -   `ℹ Arquivo já existe`
-    -   `⚠ Senha fraca`
-    -   `✕ Senha incorreta`
-    -   `◐ Salvando cofre`
-    -   `• Digite a senha para desbloquear`
+```
+␣␣^I␣Novo␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣F1␣Ajuda
+```
 
----
+**Wireframe — diálogo de decisão ativo (vazia):**
 
-### Foco e Navegação
+```
+␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣␣F1␣Ajuda
+```
 
+> Legenda: `␣` = espaço; `·` = separador (caractere real da barra).
 
-O modelo de foco define como o usuário percebe e alterna entre áreas interativas da interface.
+### Dimensionamento
 
-**Alternância com Tab:**
+| Parâmetro | Valor |
+|---|---|
+| Altura | 1 linha fixa |
+| Largura | 100% da largura do terminal |
+| Prefixo | 2 espaços |
+| Formato de ação | TECLA + 1 espaço + Label |
+| Separador entre ações | ` · ` (3 colunas) |
+| Preenchimento | espaços (mínimo 1 coluna) |
+| Âncora | `F1 Ajuda` (8 colunas, extrema direita) |
+| Espaço disponível para ações | largura do terminal − 2 (prefixo) − 8 (âncora) − 1 (preenchimento mínimo) |
 
-`Tab` é contextual — o comportamento depende do estado do painel:
+### Identidade Visual
 
-| Contexto | `Tab` | `Shift+Tab` |
+| Elemento | Token | Atributo |
 |---|---|---|
-| Modo leitura | Foco → próximo painel (árvore ↔ detalhe) | Foco → painel anterior |
-| Modo edição (detalhe) | Foco → próximo campo editável | Foco → campo anterior |
-| Modo edição, último campo | Foco → painel esquerdo (árvore) | Foco → campo anterior |
-| Modo edição, primeiro campo | Foco → próximo campo | Foco → painel esquerdo (árvore) |
+| Tecla da ação (ex: `^S`) | `accent.primary` | **bold** |
+| Label da ação (ex: `Salvar`) | `text.primary` | — |
+| Separador ` · ` | `text.secondary` | — |
+| Âncora `F1 Ajuda` — tecla | `accent.primary` | **bold** |
+| Âncora `F1 Ajuda` — label | `text.primary` | — |
 
-O ciclo entre painéis é circular. Painéis vazios ou sem conteúdo interativo são pulados.
+### Ações
 
-**Indicação de foco:**
+Cada ação registrada no contexto ativo possui atributos que controlam sua apresentação:
 
-- A área de trabalho não tem painéis com borda — existe apenas um separador vertical (`│`) em `border.default` entre a árvore/lista (esquerda) e o detalhe (direita)
-- **Conector `<╡`:** na linha do item selecionado na árvore, o separador `│` é substituído por `<╡` em `accent.primary` — amarra visualmente o item ao conteúdo detalhado à direita
-- O painel ativo é identificado pela **barra de comandos**, que exibe as ações do painel com foco
+| Atributo | Efeito na barra | Efeito no Help |
+|---|---|---|
+| `Enabled = true` | Exibida com estilo normal | Listada |
+| `Enabled = false` | Oculta | Listada |
+| `HideFromBar = true` | Oculta | Listada |
 
-**Teclado primeiro, mouse sempre:**
+Regras de layout:
 
-- Teclas de navegação direcional (`↑↓←→`) são o caminho primário para listas e árvores
-- `Home` / `End` navegam ao primeiro / último item visível
-- Toda ação acionável por teclado deve ser descobrível e executável também por mouse
+- **Prioridade** governa ordenação: maior prioridade → mais à esquerda.
+- **Espaço insuficiente:** ações de menor prioridade removidas primeiro.
+- **`F1 Ajuda` sempre visível** — âncora fixa na extrema direita; o cálculo de espaço desconta `F1 Ajuda` antes de distribuir as demais ações.
+- **Ações desabilitadas desaparecem** — `Enabled = false` remove da barra (não fica dim). A ação continua listada no Help.
+- **Ações de confirmação/cancelamento** (`Enter`/`Esc`) já estão na borda inferior do diálogo — não são duplicadas na barra.
 
-**Campos de entrada de texto:**
+### Teclado
 
-- Campos não possuem borda — a área digitável é delimitada por um fundo `surface.input` (tom rebaixado em relação ao `surface.raised` do diálogo)
-- Label do campo ativo em `accent.primary` + **bold**; label dos campos inativos em `text.secondary`
-- Foco indicado pela presença do cursor `▌` em `text.primary` dentro do fundo `surface.input`
-- Placeholder em `text.secondary` + *italic* — desaparece ao digitar
-- Erro de validação: exibido na barra de mensagens (tipo Erro), não inline — os formulários são simples o suficiente para mostrar um erro por vez
-- Em **NO_COLOR**: o fundo `surface.input` pode ser perdido; o cursor + label em **bold** permanecem como indicadores de foco suficientes
+A barra funciona como guia de descoberta — o usuário vê quais teclas estão disponíveis no contexto atual. As teclas são atribuídas conforme as [Convenções Semânticas](#convenções-semânticas) e os [Escopos](#escopos) definidos em [Teclado](#teclado-3).
 
----
+### Eventos
 
-### Mapa de Teclas
+| Evento | Reação da barra |
+|---|---|
+| Área de trabalho com foco | Exibe ações do painel ativo (árvore ou detalhe) |
+| Troca de foco entre painéis | Atualiza para ações do painel que recebe foco |
+| Diálogo de decisão aberto | Vazia (apenas `F1 Ajuda`) |
+| Diálogo funcional aberto | Exibe ações internas do diálogo |
+| Diálogo fecha (pop da pilha) | Volta para ações do contexto anterior |
+| Terminal redimensionado | Recalcula ações visíveis (prioridade governa corte) |
 
-Esta seção define a **política de atribuição de teclas** — como atalhos são organizados, quais regras regem conflitos e quais teclas têm significado global. O mapeamento completo por tela está na [especificação de telas](tui-specification-novo.md).
+### Referência
 
-### Representação Visual de Teclas e Modificadores
+Instâncias concretas e wireframes expandidos na [especificação de telas](tui-specification.md):
 
-Para garantir consistência e clareza na documentação de atalhos, são adotadas as seguintes representações visuais compactas para teclas e modificadores:
+- [Barra de Comandos](tui-specification.md#barra-de-comandos) — anatomia detalhada, atributos, eventos, comportamento
 
-| Tecla / Modificador | Representação Visual | Unicode | Notas |
-|---|---|---|---|
-| `Ctrl` | `⌃` | U+2303 (UP ARROWHEAD) | Usado para atalhos de controle. |
-| `Shift` | `⇧` | U+21E7 (UPWARDS WHITE ARROW) | Usado para atalhos de modificação ou navegação. |
-| `Alt` | `!` | (Caracter comum) | Usado para atalhos alternativos. |
-| `Del` | `Del` | (Texto simples) | Tecla Delete. |
-| `Ins` | `Ins` | (Texto simples) | Tecla Insert. |
-| `PgUp` | `PgUp` | (Texto simples) | Page Up. |
-| `PgDn` | `PgDn` | (Texto simples) | Page Down. |
-| `Home` | `Home` | (Texto simples) | Início da linha/conteúdo. |
-| `End` | `End` | (Texto simples) | Fim da linha/conteúdo. |
-| `Esc` | `Esc` | (Texto simples) | Abandona ou retrocede. |
-| `Enter` | `Enter` | (Texto simples) | Confirma ou avança. |
-| `Tab` | `Tab` | (Texto simples) | Alterna foco ou campos. |
+## Foco e Navegação
 
-### Política de escopos e Ergonomia:
+A interface sempre possui exatamente um elemento com foco. Todas as ações — exibidas na barra de comandos e acionadas por teclado — são relativas ao elemento focado. O foco determina **o quê** o usuário está manipulando; as teclas determinam **como** (ver [Teclado — Convenções Semânticas](#convenções-semânticas)).
 
-As teclas são atribuídas seguindo uma hierarquia de escopos e agrupamentos físicos no teclado, visando otimizar a memória muscular e evitar acionamentos acidentais para ações críticas. Escopos mais específicos sobrepõem os mais gerais quando ambos estão ativos.
+O modelo de foco é o mesmo na interface principal e nos diálogos funcionais — as regras abaixo se aplicam uniformemente.
+
+### Conceito de foco
+
+A interface é organizada em **áreas** que contêm **elementos**:
+
+| Contexto | Áreas | Elementos |
+|---|---|---|
+| Interface principal | Painéis (árvore, detalhe) | Nós, itens de lista, campos editáveis |
+| Diálogo funcional | Regiões do diálogo | Campos de entrada, listas internas |
+
+Em ambos os contextos:
+
+- Exatamente um elemento possui foco a qualquer momento.
+- `Tab` / `⇧Tab` alternam o foco entre áreas. Setas movem entre elementos dentro da área.
+- O ciclo entre áreas é circular. Áreas vazias ou sem conteúdo interativo são puladas.
+
+O foco governa dois reflexos imediatos na interface:
+
+- **Ações disponíveis:** a [Barra de Comandos](#barra-de-comandos) exibe as ações do elemento ou área focada. Trocar o foco atualiza as ações visíveis.
+- **Dica contextual:** a [Barra de Mensagens](#barra-de-mensagens) pode exibir uma dica (`•`) associada ao elemento focado — orientando a ação esperada ou descrevendo o campo.
+
+### Indicação visual
+
+A distinção visual do foco é **consistente** — o elemento focado sempre recebe destaque, independente do contexto:
+
+| Contexto | Elemento focado | Tratamento visual |
+|---|---|---|
+| Árvore / lista | Nó ou item selecionado | `special.highlight` + **bold** |
+| Árvore → separador | Linha do item selecionado | `│` substituído por `<╡` em `accent.primary` |
+| Campo de entrada (ativo) | Campo com cursor | Fundo `surface.input` + cursor `▌` em `text.primary` + label em `accent.primary` **bold** |
+| Campo de entrada (inativo) | Campo sem foco | Fundo `surface.input` + label em `text.secondary` |
+| Área ativa | Área com foco | Identificada pela **barra de comandos** (exibe ações da área focada) |
+
+- A interface principal não usa bordas ao redor de painéis — existe apenas um separador vertical `│` em `border.default` entre árvore e detalhe.
+- Campos não possuem borda — a área digitável é delimitada pelo fundo `surface.input` (tom rebaixado em relação ao `surface.raised` do diálogo).
+- Placeholder em `text.secondary` + *italic* — desaparece ao digitar.
+- Em **NO_COLOR**: o fundo `surface.input` pode ser perdido; cursor + label em **bold** permanecem como indicadores de foco suficientes.
+
+### Navegação
+
+A navegação é nativamente por teclado, mas o mouse deve ser suportado para ativar foco em qualquer elemento válido.
+
+**Teclado:**
+- `Tab` / `⇧Tab` movem o foco entre áreas (painéis ou regiões do diálogo).
+- Setas `↑↓←→` movem o foco entre elementos dentro da área ativa.
+- `Home` / `End` movem ao primeiro / último elemento visível.
+- As convenções semânticas completas estão em [Teclado](#teclado-3).
+
+**Mouse:**
+- Clique em um elemento válido transfere o foco imediatamente para ele.
+- Toda ação acionável por teclado deve ser executável também por mouse.
+
+### Validação de campos
+
+- Erro de validação: exibido na barra de mensagens (tipo Erro), não inline — os formulários são simples o suficiente para mostrar um erro por vez.
+
+## Teclado
+
+A aplicação é operada inteiramente por teclado. Esta seção define a notação para representar teclas na documentação e na interface, as convenções semânticas que governam o significado de cada tecla, e a política de escopos e reservas. O mapeamento completo por tela está na [especificação de telas](tui-specification-novo.md).
+
+### Notação
+
+Convenção de representação textual de teclas e modificadores — usada neste documento, na barra de comandos e no diálogo de Ajuda:
+
+| Modificador | Notação | Unicode |
+|---|---|---|
+| `Ctrl` | `⌃` | U+2303 |
+| `Shift` | `⇧` | U+21E7 |
+| `Alt` | `!` | — |
+
+Teclas especiais são escritas por extenso: `Enter`, `Esc`, `Tab`, `Del`, `Ins`, `Home`, `End`, `PgUp`, `PgDn`. Combinações são concatenadas sem espaço: `⌃Q`, `⌃!⇧Q`, `⇧F6`.
+
+### Convenções Semânticas
+
+Significado fixo das teclas estruturais — válido em toda a aplicação. Componentes específicos (diálogos, barras) documentam apenas variações.
+
+| Tecla | Significado |
+|---|---|
+| `Enter` | Confirma, avança ou aprofunda — confirma em diálogos, seleciona/expande na árvore, inicia/termina edição de campo |
+| `Esc` | Interrompe, retrocede ou abandona — fecha diálogo, cancela edição, sai de modo |
+| `Tab` | Avança foco para o próximo bloco — próximo painel (modo leitura) ou próximo campo (modo edição) |
+| `⇧Tab` | Retorna foco para o bloco anterior |
+| `↑` `↓` `←` `→` | Navegação direcional em listas, árvores e campos |
+| `Home` / `End` | Primeiro / último item visível, ou início / fim de linha em campos |
+| `PgUp` / `PgDn` | Scroll por página (viewport − 1) |
+| `Ins` | Inserção / criação no contexto do foco |
+| `Del` | Exclusão no contexto do foco |
+
+- Se uma tecla precisa ter significado diferente em dois contextos, a especificação deve documentar e justificar a exceção.
+- Teclas de navegação universais (`↑↓←→`, `Tab`, `Home`, `End`, `PgUp`, `PgDn`) não aparecem na barra de comandos — são senso comum em TUI. Exceção: diálogos podem exibir opções explicitamente.
+
+### Escopos
+
+Escopos mais específicos sobrepõem os mais gerais quando ambos estão ativos:
 
 | Escopo | Descrição | Exemplo |
 |---|---|---|
-| **Global** | Funciona em qualquer contexto da aplicação | `F1`, `F12`, `⌃Q`, `⌃!⇧Q` |
-| **Área de trabalho** | Funciona quando a área de trabalho tem foco (sem diálogo aberto) | `F2-F11` (ações do cofre e modos), `⇧F6`, `⇧F7`, `⌃F7` |
-| **Diálogo** | Funciona apenas enquanto um diálogo está no topo da pilha | `Enter`, `Esc`, `Tab` |
-| **Contextual/Foco** | Ações específicas do item ou campo com foco | `Ins`, `Del`, `⌃<letra>` (para ações locais) |
+| **Global** | Funciona em qualquer contexto | `F1`, `F12`, `⌃Q`, `⌃!⇧Q` |
+| **Área de trabalho** | Quando a área de trabalho tem foco (sem diálogo) | `F2`–`F11`, `⇧F6`, `⇧F7`, `⌃F7` |
+| **Diálogo** | Enquanto um diálogo está no topo da pilha | `Enter`, `Esc`, `Tab` |
+| **Contextual** | Ações específicas do item ou campo com foco | `Ins`, `Del`, `⌃<letra>` |
 
-### Regras de Consistência e Semântica de Modificadores
+### Atalhos Globais
 
-As representações visuais de teclas e modificadores seguem as definições da seção [Representação Visual de Teclas e Modificadores](#representação-visual-de-teclas-e-modificadores). As regras semânticas de uso são:
+As 4 teclas que funcionam em qualquer contexto da aplicação:
 
--   `Enter` sempre avança ou aprofunda: confirma em diálogos, seleciona/expande na árvore, ativa/confirma edição de campo.
--   `Esc` sempre retrocede ou abandona: fecha modal, cancela edição, sai de modo (busca, edição).
--   `Tab` / `⇧Tab` navegam entre painéis (modo leitura) ou campos (modo edição).
--   `↑↓←→` são para navegação direcional em listas, árvores e campos.
--   `Home` / `End` navegam ao primeiro / último item visível ou início/fim de linha em campos.
--   `PgUp` / `PgDn` realizam scroll por página (viewport − 1) em conteúdo com scroll.
--   `Ins`: Sugerido para ações de inserção/criação (no contexto do foco).
--   `Del`: Sugerido para ações de exclusão (no contexto do foco).
--   Se uma tecla precisa ter significado diferente em dois contextos, isso deve ser documentado e justificado na especificação.
--   Teclas de navegação universais (`↑↓←→`, `Tab`, `Home`, `End`, `PgUp`, `PgDn`) não aparecem na barra de comandos — são senso comum em TUI. Exceção: diálogos podem exibir opções explicitamente.
-
-**Atalhos Globais (Aplicam-se em qualquer contexto):**
-
-| Tecla | Ação (Função) | Notas |
+| Tecla | Ação | Notas |
 |---|---|---|
-| `F1` | Abrir / fechar modal de Ajuda | |
-| `F12` | Alternar Tema | Ação pontual, sem necessidade de visibilidade permanente na barra de comandos |
-| `⌃Q` | Sair da Aplicação | Gerencia todas as saídas com as devidas confirmações |
-| `⌃!⇧Q` | Bloquear Cofre | Bloqueio emergencial, descarta alterações, sem confirmação. Atalho "complicado" para evitar acidentes. |
+| `F1` | Abrir / fechar Ajuda | |
+| `F12` | Alternar tema | Não exibida na barra de comandos |
+| `⌃Q` | Sair da aplicação | Com confirmação quando há alterações |
+| `⌃!⇧Q` | Bloquear cofre | Emergencial — descarta alterações sem confirmação. Atalho "complicado" para evitar acidentes |
 
-**Teclas de Área de Trabalho (Ativas quando a área de trabalho tem foco, sem diálogos):**
+### Regiões de Teclas de Função
 
-A atribuição específica de teclas a fluxos individuais é detalhada na [especificação de telas](tui-specification-novo.md), mas as teclas F são reservadas por grupos de ações, seguindo a ergonomia do teclado físico:
+As teclas de função são reservadas por grupos, seguindo a ergonomia do teclado físico:
 
--   **`F2` a `F4`**: Reservadas para **seleção das áreas de trabalho** (Modo Cofre, Modelos, Configurações).
--   **`F5` a `F8`**: Reservadas para **ações de persistência do cofre** (criar, abrir, salvar, recarregar).
--   **`F9` a `F11`**: Reservadas para **ações complementares de gerenciamento do cofre** (exportar, importar, alterar senha mestra).
+| Região | Uso |
+|---|---|
+| `F2` a `F4` | Seleção de áreas de trabalho (Cofre, Modelos, Configurações) |
+| `F5` a `F8` | Ações de persistência (criar, abrir, salvar, recarregar) |
+| `F9` a `F11` | Ações complementares (exportar, importar, alterar senha mestra) |
 
-> **Fluxo 7 — Aviso de Bloqueio Iminente por Inatividade:** É um fluxo iniciado pelo sistema, não requer um atalho manual do usuário.
+A atribuição específica de cada tecla a fluxos individuais está na [especificação de telas](tui-specification.md).
 
+## Acessibilidade
 
----
-
-### Acessibilidade
-
-#### NO_COLOR e modo monocromático
+### NO_COLOR e modo monocromático
 
 Quando `$NO_COLOR` está definido (ou o terminal informa que não suporta cores), `lipgloss` remove todas as cores. A interface deve permanecer totalmente funcional.
 
