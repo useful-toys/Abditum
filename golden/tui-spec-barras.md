@@ -208,7 +208,9 @@ A barra de mensagens é passiva — não aceita interação por teclado.
 | Erro de validação (diálogo funcional) | Mensagem de erro (`✕`) até correção ou troca de campo |
 | Diálogo fecha | Barra limpa → borda `─` |
 
-### Ciclo de Vida
+### Comportamento
+
+**Ciclo de vida das mensagens:**
 
 | Tipo | TTL padrão | Dismissal padrão |
 |---|---|---|

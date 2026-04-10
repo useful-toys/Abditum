@@ -7,7 +7,7 @@
 > - [`tui-design-system.md`](tui-design-system.md) — fundações visuais
 > - [`tui-spec-arvore.md`](tui-spec-arvore.md) — painel esquerdo (árvore de segredos)
 
-### Painel Direito: Detalhe do Segredo — Modo Leitura
+## Painel Direito: Detalhe do Segredo — Modo Leitura
 
 **Contexto:** Área de trabalho — Modo Cofre.
 **Largura:** ~65% da área de trabalho.
@@ -15,9 +15,7 @@
 
 > Este documento especifica apenas o **modo leitura**. O modo edição de valores é especificado em [Modo Edição de Valores](#painel-direito-detalhe-do-segredo--modo-edição-de-valores). O modo edição de estrutura é especificado em [Modo Edição de Estrutura](#painel-direito-detalhe-do-segredo--modo-edição-de-estrutura).
 
----
-
-#### Anatomia do painel
+### Anatomia
 
 ```
   Nome do Segredo                          Geral › Sites › Gmail ↑
@@ -53,10 +51,6 @@
 **Trilha de scroll:**
 - Última coluna do painel reservada para `↑`/`↓`/`■` em `text.secondary`
 - Reservada mesmo quando não há scroll (evita deslocamento de conteúdo ao ativar)
-
----
-
-#### Wireframes
 
 **Painel sem foco — segredo com campos variados:**
 
@@ -236,9 +230,7 @@
 
 > O breadcrumb é truncado à esquerda com `…` quando o caminho completo não cabe. O nome do segredo e o `★` nunca são truncados.
 
----
-
-#### Mapa de teclas
+### Teclado
 
 | Tecla | Efeito | Condição |
 |---|---|---|
@@ -254,9 +246,7 @@
 
 > `⌃R` não tem efeito quando o campo em foco é comum — a barra de comandos omite a ação `Revelar` nesses casos.
 
----
-
-#### Tokens
+### Identidade Visual
 
 | Elemento | Token | Atributo |
 |---|---|---|
@@ -277,9 +267,7 @@
 | `│` separador vertical — painel sem foco | `border.default` | — |
 | `↑`/`↓`/`■` trilha de scroll | `text.secondary` | — |
 
----
-
-#### Estados dos componentes
+### Estados
 
 | Componente | Estado | Condição |
 |---|---|---|
@@ -300,9 +288,7 @@
 | Trilha de scroll | `↑`/`↓`/`■` ativos | Conteúdo excede a área visível |
 | Trilha de scroll | coluna reservada, vazia | Conteúdo cabe na área visível |
 
----
-
-#### Mensagens
+### Mensagens
 
 | Contexto | Tipo | Texto |
 |---|---|---|
@@ -310,9 +296,7 @@
 | Campo sensível selecionado | Dica | `• ⌃R Revelar · ⌃C Copiar` |
 | `⌃C` copia valor | Sucesso (5s) | `✓ [Rótulo do campo] copiado para a área de transferência` |
 
----
-
-#### Eventos
+### Eventos
 
 | Evento | Efeito |
 |---|---|
@@ -331,9 +315,7 @@
 | Timeout de reveal expira | Campo re-mascarado silenciosamente; sem mensagem |
 | Segredo diferente selecionado | Todos os campos revelados re-mascarados; cursor vai ao primeiro campo |
 
----
-
-#### Comportamento
+### Comportamento
 
 - **Cursor somente com foco** — o cursor de campo (highlight no bloco) aparece apenas quando o painel tem foco; sem foco, o conteúdo é exibido sem destaque
 - **Bloco de campo** — o campo em foco compreende: linha do rótulo + linha(s) do valor + linha em branco de separação; todo o bloco recebe `special.highlight`
@@ -349,9 +331,7 @@
 - **Posição do cursor ao retornar o foco** — ao receber foco via `Tab` novamente, o cursor vai ao campo que estava ativo antes de o foco sair; se nunca focado, vai ao primeiro campo
 - **Breadcrumb — truncamento** — o breadcrumb é truncado à esquerda com `…` se o caminho completo não couber; o nome do segredo e o `★` nunca são truncados
 
----
-
-### Painel Direito: Detalhe do Segredo — Modo Edição de Valores
+## Painel Direito: Detalhe do Segredo — Modo Edição de Valores
 
 **Contexto:** Área de trabalho — Modo Cofre. Ativado quando o usuário pressiona `Enter` sobre um campo no painel de detalhe em Modo Leitura.
 **Largura:** ~65% da área de trabalho (igual ao Modo Leitura).
@@ -359,9 +339,7 @@
 
 > O modo edição de estrutura (renomear campos, adicionar/remover campos, reordenar) é especificado em [Modo Edição de Estrutura](#painel-direito-detalhe-do-segredo--modo-edição-de-estrutura).
 
----
-
-#### Anatomia do modo
+### Anatomia
 
 O Modo Edição de Valores é uma camada sobre o Modo Leitura. O layout do painel (cabeçalho, separador, campos, observação, scroll) permanece o mesmo — o que muda são:
 
@@ -370,9 +348,7 @@ O Modo Edição de Valores é uma camada sobre o Modo Leitura. O layout do paine
 3. **Input inline** — quando um campo está em edição, o valor é substituído por um campo de texto editável na mesma posição; o input ocupa a largura total do painel (exceto a coluna de scroll)
 4. **Barra de comandos** — muda conforme o estado: cursor de campo sem input aberto, ou input aberto
 
----
-
-#### Anatomia do cabeçalho em edição
+**Cabeçalho em edição:**
 
 ```
   Gmail [editando] ★                     Geral › Sites e Apps
@@ -382,10 +358,6 @@ O Modo Edição de Valores é uma camada sobre o Modo Leitura. O layout do paine
 - Nome do segredo: `text.primary` **bold** (igual ao Modo Leitura)
 - `[editando]`: `accent.primary` **bold**, separado do nome por um espaço
 - `★` e breadcrumb: inalterados
-
----
-
-#### Wireframes
 
 **Cursor no campo, sem input aberto (campo comum):**
 
@@ -489,9 +461,7 @@ O Modo Edição de Valores é uma camada sobre o Modo Leitura. O layout do paine
 
 > Campo sensível permanece mascarado enquanto não há input aberto. Barra: `Enter Editar campo · ⌃N Renomear · ⌃S Favoritar · Tab Árvore · Esc Sair da edição · F1 Ajuda`
 
----
-
-#### Mapa de teclas
+### Teclado
 
 **Com cursor de campo, sem input aberto:**
 
@@ -526,9 +496,7 @@ O Modo Edição de Valores é uma camada sobre o Modo Leitura. O layout do paine
 > `Tab` com input de campo aberto: persiste o valor implicitamente, fecha o input, foco vai para a árvore e sai do modo edição.
 > `Tab` com input do nome aberto: cancela o nome (sem persistir), foco vai para a árvore e sai do modo edição.
 
----
-
-#### Tokens
+### Identidade Visual
 
 | Elemento | Token | Atributo |
 |---|---|---|
@@ -546,9 +514,7 @@ O Modo Edição de Valores é uma camada sobre o Modo Leitura. O layout do paine
 | Separador `───` cabeçalho | `border.default` | — |
 | Separador `╌╌╌` da Observação | `border.default` | — |
 
----
-
-#### Estados dos componentes
+### Estados
 
 | Componente | Estado | Condição |
 |---|---|---|
@@ -563,9 +529,7 @@ O Modo Edição de Valores é uma camada sobre o Modo Leitura. O layout do paine
 | Input do nome | aberto no cabeçalho | `⌃N` pressionado |
 | Cursor de campo da lista | ausente | Input do nome aberto |
 
----
-
-#### Mensagens
+### Mensagens
 
 | Contexto | Tipo | Texto |
 |---|---|---|
@@ -574,9 +538,7 @@ O Modo Edição de Valores é uma camada sobre o Modo Leitura. O layout do paine
 | Nome duplicado ao confirmar | Erro | `✗ Já existe um segredo com esse nome nesta pasta` |
 | Campo confirmado — campo sensível | Sucesso (3s) | `✓ [Rótulo do campo] salvo` |
 
----
-
-#### Eventos
+### Eventos
 
 | Evento | Efeito |
 |---|---|
@@ -596,9 +558,7 @@ O Modo Edição de Valores é uma camada sobre o Modo Leitura. O layout do paine
 | Campo sensível: input fecha | Campo re-mascarado imediatamente |
 | `⌃Q` (sair da aplicação) | Modo edição encerrado sem diálogo de confirmação (persistência imediata por campo elimina estado pendente) |
 
----
-
-#### Comportamento
+### Comportamento
 
 - **Persistência imediata por campo** — cada campo é salvo ao confirmar (`Enter` ou movimento implícito com `↑`/`↓`/`Tab`); não há estado de "edição pendente" global. `⌃Q` pode sair sem diálogo de confirmação relacionado ao modo edição
 - **Input inline** — o input abre na mesma posição da linha do valor, substituindo-a visualmente; o rótulo permanece acima; a estrutura do painel não se desloca
@@ -611,9 +571,7 @@ O Modo Edição de Valores é uma camada sobre o Modo Leitura. O layout do paine
 - **Sair do modo edição** — `Esc` sem input aberto ou `Tab` encerram o modo edição; o indicador `[editando]` é removido; o painel retorna ao Modo Leitura com o mesmo campo em foco
 - **Scroll** — o comportamento de scroll é idêntico ao Modo Leitura; a coluna da trilha é sempre reservada
 
----
-
-### Painel Direito: Detalhe do Segredo — Modo Edição de Estrutura
+## Painel Direito: Detalhe do Segredo — Modo Edição de Estrutura
 
 **Contexto:** Área de trabalho — Modo Cofre. Ativado quando o usuário pressiona `⌃E` na árvore, no painel em Modo Leitura ou no painel em Modo Edição de Valores.
 **Largura:** ~65% da área de trabalho (igual ao Modo Leitura).
@@ -624,9 +582,7 @@ O Modo Edição de Valores é uma camada sobre o Modo Leitura. O layout do paine
 > - O **tipo** de um campo (`texto` / `texto_sensivel`) não pode ser alterado após criação — apenas na inserção
 > - Nomes de campo **não têm restrição de unicidade**
 
----
-
-#### Anatomia do modo
+### Anatomia
 
 O Modo Edição de Estrutura é uma camada sobre o painel de detalhe. O layout permanece o mesmo (cabeçalho, separador, campos, observação, scroll). O que muda:
 
@@ -636,9 +592,7 @@ O Modo Edição de Estrutura é uma camada sobre o painel de detalhe. O layout p
 4. **Input inline de rótulo** — quando um rótulo está em edição, o texto do rótulo é substituído por um input na mesma linha
 5. **Barra de comandos** — exibe as ações do modo estrutura
 
----
-
-#### Anatomia do cabeçalho em modo estrutura
+**Cabeçalho em modo estrutura:**
 
 ```
   Gmail [estrutura] ★                    Geral › Sites e Apps
@@ -648,10 +602,6 @@ O Modo Edição de Estrutura é uma camada sobre o painel de detalhe. O layout p
 - Nome do segredo: `text.primary` **bold**
 - `[estrutura]`: `accent.primary` **bold**, separado do nome por um espaço
 - `★` e breadcrumb: inalterados
-
----
-
-#### Wireframes
 
 **Cursor no campo, sem input aberto:**
 
@@ -752,9 +702,7 @@ O Modo Edição de Estrutura é uma camada sobre o painel de detalhe. O layout p
 
 > A reordenação é imediata e visível — o bloco do campo em foco se desloca e o cursor acompanha. O foco permanece no campo que foi movido.
 
----
-
-#### Mapa de teclas
+### Teclado
 
 **Com cursor de campo, sem input aberto:**
 
@@ -785,9 +733,7 @@ O Modo Edição de Estrutura é uma camada sobre o painel de detalhe. O layout p
 
 > **`⌃T` (toggle de tipo) só está disponível durante a inserção** (`!Ins`). Em renomeação de campo existente, o tipo é imutável — `⌃T` não tem efeito e o badge de tipo não é exibido.
 
----
-
-#### Tokens
+### Identidade Visual
 
 | Elemento | Token | Atributo |
 |---|---|---|
@@ -809,9 +755,7 @@ O Modo Edição de Estrutura é uma camada sobre o painel de detalhe. O layout p
 
 > A Observação recebe `text.secondary` *italic* no modo estrutura para sinalizar visualmente que está excluída da navegação e das ações.
 
----
-
-#### Estados dos componentes
+### Estados
 
 | Componente | Estado | Condição |
 |---|---|---|
@@ -827,9 +771,7 @@ O Modo Edição de Estrutura é uma camada sobre o painel de detalhe. O layout p
 | Campo sensível | mascarado `••••••••` | Sempre no modo estrutura (sem reveal) |
 | Campo recém-inserido | input do rótulo aberto, vazio | Imediatamente após `!Ins` |
 
----
-
-#### Mensagens
+### Mensagens
 
 | Contexto | Tipo | Texto |
 |---|---|---|
@@ -842,9 +784,7 @@ O Modo Edição de Estrutura é uma camada sobre o painel de detalhe. O layout p
 | `!↑` no primeiro campo | — | Sem mensagem — ação sem efeito silenciosa |
 | `!↓` no último campo editável | — | Sem mensagem — ação sem efeito silenciosa |
 
----
-
-#### Eventos
+### Eventos
 
 | Evento | Efeito |
 |---|---|
@@ -867,9 +807,7 @@ O Modo Edição de Estrutura é uma camada sobre o painel de detalhe. O layout p
 | `Tab` com input aberto | Rótulo persistido implicitamente; input fechado; foco vai para a árvore; modo encerrado |
 | `⌃Q` | Saída da aplicação; persiste o que já foi confirmado (imediato por operação) |
 
----
-
-#### Comportamento
+### Comportamento
 
 - **Persistência imediata por operação** — cada ação confirmada (renomear, inserir, mover, excluir) persiste em memória imediatamente; não há um "cancelar tudo" ao sair do modo. `Esc` só cancela o input atualmente aberto, não as operações já confirmadas
 - **Observação excluída da navegação** — o cursor de campo nunca vai para a Observação no modo estrutura; `↑`/`↓`/`Home`/`End` ignoram a Observação; `!↓` no último campo editável não tem efeito (não pode ultrapassar a Observação)
@@ -882,7 +820,5 @@ O Modo Edição de Estrutura é uma camada sobre o painel de detalhe. O layout p
 - **Troca de modo** — `⌃E` no Modo Edição de Valores troca para o modo estrutura sem diálogo; a persistência imediata do modo valores garante que não há dado pendente a perder
 - **Sair do modo** — `Esc` sem input aberto ou `Tab` encerram o modo estrutura; o indicador `[estrutura]` é removido; o painel retorna ao Modo Leitura
 - **Scroll** — idêntico ao Modo Leitura; a coluna da trilha é sempre reservada
-
----
 
 ## Telas

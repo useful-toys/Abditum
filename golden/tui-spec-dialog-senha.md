@@ -13,6 +13,8 @@
 **Token de borda:** `border.focused`
 **Largura fixa:** 50 colunas
 
+### Anatomia
+
 > Nos wireframes abaixo, `░` representa a área com fundo `surface.input` (campo de entrada). Na implementação real, o campo é uma área de fundo rebaixado sem hachura — conforme definido em [Campos de entrada de texto](tui-design-system.md#foco-e-navegação).
 
 **Estado inicial (campo vazio — ação default bloqueada):**
@@ -51,6 +53,8 @@
 ╰── Enter Confirmar ───────── Esc Cancelar ──╯
 ```
 
+### Identidade Visual
+
 | Elemento | Token | Atributo |
 |---|---|---|
 | Título `Senha mestra` | `text.primary` | **bold** |
@@ -63,7 +67,7 @@
 | Ação default (bloqueada) | `text.disabled` | — |
 | Ação default (desbloqueada) | `accent.primary` | **bold** |
 
-**Estados dos componentes:**
+### Estados
 
 | Componente | Estado | Condição |
 |---|---|---|
@@ -74,7 +78,7 @@
 | Ação `Enter Confirmar` | ativa (`accent.primary` **bold**) | Campo `Senha` não vazio |
 | Ação `Esc Cancelar` | sempre ativa | — |
 
-**Mensagens:**
+### Mensagens
 
 | Contexto | Tipo | Texto |
 |---|---|---|
@@ -82,24 +86,25 @@
 | `Enter` → senha incorreta | Erro (5s) | `✕ Senha incorreta` |
 | Diálogo fecha (confirmação ou cancelamento) | — | Barra limpa *(orquestrador assume)* |
 
-**Comportamento:**
-- Máscara de comprimento fixo (8 `•`) — não revela o tamanho real da senha
-- Campo único — `Tab` não faz nada dentro deste diálogo
-
-**Transições especiais:**
+### Eventos
 
 | Evento | Efeito |
 |---|---|
 | `Enter` com senha incorreta | Campo limpo; ação default volta para `text.disabled`; contador incrementado |
 | Tentativas esgotadas | Diálogo fecha automaticamente |
 
----
+### Comportamento
+
+- Máscara de comprimento fixo (8 `•`) — não revela o tamanho real da senha
+- Campo único — `Tab` não faz nada dentro deste diálogo
 
 ## PasswordCreate
 
 **Contexto de uso:** criação de senha (ao criar cofre ou alterar senha mestra).
 **Token de borda:** `border.focused`
 **Largura fixa:** 50 colunas
+
+### Anatomia
 
 **Estado inicial (foco no primeiro campo — ação default bloqueada):**
 
@@ -167,6 +172,8 @@
        ↑ text.disabled (senhas divergem)
 ```
 
+### Identidade Visual
+
 | Elemento | Token | Atributo |
 |---|---|---|
 | Título `Definir senha mestra` | `text.primary` | **bold** |
@@ -183,7 +190,7 @@
 | Ação default (bloqueada) | `text.disabled` | — |
 | Ação default (desbloqueada) | `accent.primary` | **bold** |
 
-**Estados dos componentes:**
+### Estados
 
 | Componente | Estado | Condição |
 |---|---|---|
@@ -198,7 +205,7 @@
 
 > **Nota:** a verificação de igualdade entre as senhas ocorre **em tempo real** — a cada tecla no campo `Confirmação` e ao abandonar o campo (Tab ou mudança de foco). Se as senhas divergem, a ação default fica bloqueada e a barra de mensagens exibe erro no lugar da dica de campo.
 
-**Mensagens:**
+### Mensagens
 
 | Contexto | Tipo | Texto |
 |---|---|---|
@@ -209,14 +216,15 @@
 | `Enter` → senhas divergentes | Erro (5s) | `✕ As senhas não conferem — digite novamente` |
 | Diálogo fecha (confirmação ou cancelamento) | — | Barra limpa *(orquestrador assume)* |
 
-**Comportamento:**
-- `Tab` alterna entre os campos `Nova senha` e `Confirmação`
-- Medidor de força atualizado a cada tecla no campo `Nova senha`
-- Máscara de comprimento fixo (8 `•`) — não revela o tamanho real da senha
-- Validação de igualdade em tempo real: a cada tecla no campo `Confirmação` e ao abandonar o campo (Tab)
-- Senhas divergentes: ação default bloqueada (`text.disabled`); barra de mensagens exibe erro (`✕`) no lugar da dica de campo; erro permanece até que as senhas confiram ou o campo seja limpo
+### Teclado
 
-**Transições especiais:**
+| Tecla | Efeito | Condição |
+|---|---|---|
+| `Tab` | Alterna foco entre `Nova senha` e `Confirmação` | — |
+| `Enter` | Confirma criação da senha | Ambos preenchidos e senhas conferem |
+| `Esc` | Cancela o diálogo | — |
+
+### Eventos
 
 | Evento | Efeito |
 |---|---|
@@ -225,4 +233,10 @@
 | Abandonar `Confirmação` (Tab) com senhas divergentes | Erro exibido na barra; foco move para `Nova senha`; ação default bloqueada |
 | Abandonar `Confirmação` (Tab) com senhas iguais | Dica exibida na barra; foco move para `Nova senha`; ação default ativa |
 
----
+### Comportamento
+
+- `Tab` alterna entre os campos `Nova senha` e `Confirmação`
+- Medidor de força atualizado a cada tecla no campo `Nova senha`
+- Máscara de comprimento fixo (8 `•`) — não revela o tamanho real da senha
+- Validação de igualdade em tempo real: a cada tecla no campo `Confirmação` e ao abandonar o campo (Tab)
+- Senhas divergentes: ação default bloqueada (`text.disabled`); barra de mensagens exibe erro (`✕`) no lugar da dica de campo; erro permanece até que as senhas confiram ou o campo seja limpo

@@ -7,11 +7,13 @@
 > - [`tui-design-system.md`](tui-design-system.md) — fundações visuais
 > - [`tui-spec-detalhe.md`](tui-spec-detalhe.md) — painel direito (detalhe do segredo)
 
-### Painel Esquerdo: Árvore
+## Painel Esquerdo: Árvore
 
 **Contexto:** Área de trabalho — Modo Cofre.
 **Largura:** ~35% da área de trabalho.
 **Responsabilidade:** Exibir a hierarquia de pastas e segredos; permitir navegação e seleção do item a detalhar no painel direito.
+
+### Anatomia
 
 **Wireframe (Modo Cofre — scroll ativo, segredo selecionado, painel com foco):**
 
@@ -48,7 +50,7 @@
 
 Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não tem nenhum segredo.
 
-#### Tokens
+### Identidade Visual
 
 | Elemento | Token | Atributo |
 |---|---|---|
@@ -74,7 +76,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 | `↑` / `↓` indicadores de scroll no `│` | `text.secondary` | — |
 | `■` thumb de scroll no `│` | `text.secondary` | — |
 
-#### Estados dos componentes
+### Estados
 
 | Componente | Estado | Condição |
 |---|---|---|
@@ -95,14 +97,14 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 > **`<╡` × `■`:** quando o item selecionado coincide com a posição do thumb, `<╡` tem prioridade — mesma regra do DS para sobreposição em bordas.
 
-#### Mensagens
+### Mensagens
 
 | Contexto | Tipo | Texto |
 |---|---|---|
 | Painel recebe foco | Dica de campo | `• ↑↓ para navegar` |
 | `Favoritos` (a pasta) selecionada | Dica de campo | `• Pasta virtual — segredos permanecem na localização original` |
 
-#### Eventos
+### Eventos
 
 **Navegação:**
 
@@ -235,7 +237,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 | Salvo com outra senha | Efeitos idênticos ao salvar com sucesso — a árvore não conhece a chave de cifragem |
 | Reverter alterações (recarregar do disco) | Árvore completamente reconstruída a partir do arquivo em disco: nós `✦` removidos (não existem no disco); nós `✎` voltam ao nome e prefixo originais (`●` ou `★`); nós `✗` voltam ao prefixo original (`●` ou `★`); contadores recalculados; se o item em foco ainda existe, foco permanece nele; se o item em foco era `✦` (deixou de existir), foco vai para a pasta pai; `Favoritos` reconstruída a partir dos dados do disco |
 
-#### Comportamento
+### Comportamento
 
 - **Espelho do cofre** — a árvore é uma representação visual direta e sempre atualizada do estado do cofre. Qualquer mutação no cofre — independentemente de onde ou como foi originada — deve se refletir imediatamente na árvore. Não existe estado interno da árvore que contradiga o cofre.
 - **Foco persiste sobre o mesmo elemento** — quando qualquer evento atualiza a árvore (reordenação, renomeação, movimentação, exclusão de outro item, salvar, reverter…), o foco permanece sobre o mesmo elemento, mesmo que sua posição na lista tenha mudado. O scroll se ajusta automaticamente para garantir que o elemento com foco esteja visível.
@@ -258,7 +260,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 ---
 
-### Busca de Segredos
+## Busca de Segredos
 
 **Contexto de uso:** filtrar a árvore de segredos por texto livre no Modo Cofre.
 **Escopo:** disponível apenas no **Modo Cofre**, com cofre aberto e foco no painel esquerdo (árvore). Nos modos Modelos e Configurações, `⌃F` e `F10` não têm efeito de busca. O campo de busca na linha separadora do cabeçalho **só aparece no Modo Cofre e apenas enquanto a busca estiver ativa** — nunca em outros modos, nunca na tela de boas-vindas.
@@ -266,7 +268,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 ---
 
-#### Ativação e saída
+### Teclado
 
 | Mecanismo | Efeito |
 |---|---|
@@ -278,7 +280,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 ---
 
-#### Mapa de teclas durante busca ativa
+**Mapa de teclas durante busca ativa:**
 
 | Tecla | Efeito |
 |---|---|
@@ -299,7 +301,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 ---
 
-#### Comportamento do filtro
+### Comportamento
 
 - **Correspondência:** substring, case-insensitive, ignorando acentuação — conforme requisito funcional
 - **Escopo da busca:** nome do segredo, nome de campo, valor de campo **comum**, observação
@@ -314,7 +316,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 ---
 
-#### Wireframes
+### Anatomia
 
 **Campo aberto, sem query (recém-ativado):**
 
@@ -376,7 +378,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 ---
 
-#### Tokens
+### Identidade Visual
 
 | Elemento | Token | Atributo |
 |---|---|---|
@@ -389,7 +391,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 ---
 
-#### Estados dos componentes
+### Estados
 
 | Componente | Estado | Condição |
 |---|---|---|
@@ -412,7 +414,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 ---
 
-#### Mensagens
+### Mensagens
 
 | Contexto | Tipo | Texto |
 |---|---|---|
@@ -425,7 +427,7 @@ Painel direito exibe placeholder "Cofre vazio" centralizado quando o cofre não 
 
 ---
 
-#### Barra de comandos durante busca ativa
+### Ações
 
 ```
   ⌃F Fechar · Del Limpar                                              F1 Ajuda
@@ -435,7 +437,7 @@ As ações normais da árvore (ActionManager) ficam ocultas na barra enquanto o 
 
 ---
 
-#### Transições especiais
+### Eventos
 
 | Evento | Efeito |
 |---|---|
@@ -497,7 +499,7 @@ A coluna **Favoritos** indica se a ação está disponível quando o cursor est�
 | `⌃C`     | Copiar primeiro campo sensível  | ✓       | Visível apenas se o segredo tiver pelo menos um campo sensível.            |
 | `Delete` | Excluir segredo               | —         | Indisponível: exclusão direta a partir de pasta somente leitura não é permitida. |
 
-#### ⌃D — Duplicar segredo
+### ⌃D — Duplicar segredo
 
 **Contexto:** foco na árvore com cursor em um segredo, em pasta real. Indisponível na pasta virtual Favoritos — o destino do duplicado seria ambíguo para o usuário; a operação deve ser realizada navegando até a pasta real do segredo.
 
@@ -515,7 +517,7 @@ A coluna **Favoritos** indica se a ação está disponível quando o cursor est�
 
 ---
 
-#### ⌃M — Mover para outra pasta
+### ⌃M — Mover para outra pasta
 
 **Contexto:** foco na árvore com cursor em um segredo. Não disponível na pasta virtual Favoritos (a pasta Favoritos é somente leitura — mover deve ocorrer na pasta real).
 
@@ -534,7 +536,7 @@ A árvore entra em **modo mover** — um estado visual distinto:
 
 ---
 
-#### !↑ / !↓ — Reordenar segredo na lista
+### !↑ / !↓ — Reordenar segredo na lista
 
 **Contexto:** foco na árvore com cursor em um segredo, dentro de uma pasta real (não Favoritos).
 
@@ -556,7 +558,7 @@ A árvore entra em **modo mover** — um estado visual distinto:
 
 ---
 
-#### Barra de comandos contextualizada (árvore, cursor em segredo — completa)
+### Barra de comandos contextualizada (árvore, cursor em segredo — completa)
 
 A tabela abaixo consolida todas as variações da barra de comandos para segredos na árvore, incluindo os atalhos anteriores (`⌃R`, `⌃C`) e os novos (`⌃D`, `⌃M`, `!↑`, `!↓`).
 
@@ -578,7 +580,7 @@ A tabela abaixo consolida todas as variações da barra de comandos para segredo
 
 ---
 
-#### ⌃R e ⌃C na árvore — Atalhos de campo sensível
+### ⌃R e ⌃C na árvore — Atalhos de campo sensível
 
 **Contexto:** foco na árvore com cursor em um segredo que possui pelo menos um campo sensível.
 

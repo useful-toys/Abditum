@@ -1,4 +1,4 @@
-﻿# Especificação Visual — Cabeçalho
+# Especificação Visual — Cabeçalho
 
 > Contexto global: nome da app, cofre, indicador dirty e abas de modo.
 > Parte da [Especificação Visual](tui-specification.md).
@@ -6,20 +6,20 @@
 > **Documento de fundação:**
 > - [`tui-design-system.md`](tui-design-system.md) — fundações visuais
 
-### Cabeçalho
+## Cabeçalho
 
 **Responsabilidade:** contexto global — qual aplicação, qual cofre, se há alterações pendentes e qual modo está ativo na área de trabalho.
 **Posição:** linhas 1–2 da tela (zona Cabeçalho do [DS — Dimensionamento](tui-design-system.md#dimensionamento-e-layout)).
 **Altura fixa:** 2 linhas.
 
-**Anatomia:**
+### Anatomia
 
 | Linha | Papel | Conteúdo |
 |---|---|---|
 | **1 — Título** | Contexto + navegação | Nome da app, `·` separador, nome do cofre, `•` dirty, abas de modo à direita |
 | **2 — Separadora** | Divisa cabeçalho ↔ área de trabalho | Linha `─` full-width; a aba ativa "pousa" nesta linha via `╯ Texto ╰` |
 
-**Dois estados estruturais:**
+**Três estados estruturais:**
 
 | Estado | Linha 1 | Linha 2 | Abas |
 |---|---|---|---|
@@ -27,11 +27,9 @@
 | Cofre aberto | Nome da app `·` cofre `•` + abas | Separador com aba ativa suspensa | Visíveis (3) |
 | Busca ativa | Nome da app `·` cofre `•` + abas | Campo de busca à esquerda + aba ativa suspensa à direita | Visíveis (3) |
 
----
+> Wireframes ilustrativos a 80 colunas. A largura real acompanha o terminal.
 
 #### Sem cofre (Boas-vindas)
-
-> Wireframes ilustrativos a 80 colunas. A largura real acompanha o terminal.
 
 ```
   Abditum
@@ -39,8 +37,6 @@
 ```
 
 Sem nome de cofre, sem indicador dirty, sem abas. A linha separadora é contínua.
-
----
 
 #### Cofre aberto — anatomia base
 
@@ -62,8 +58,6 @@ Sem nome de cofre, sem indicador dirty, sem abas. A linha separadora é contínu
 
 O `•` aparece imediatamente após o nome do cofre, em `semantic.warning`. Desaparece após salvamento bem-sucedido.
 
----
-
 #### Modo Cofre ativo
 
 ```
@@ -73,16 +67,12 @@ O `•` aparece imediatamente após o nome do cofre, em `semantic.warning`. Desa
 
 A aba ativa na linha 1 substitui o texto por `─` (`╭───────╮`), mantendo a mesma largura da versão inativa (`╭ Cofre ╮`). Na linha 2, o texto desce para o gap entre `╯` e `╰`, que se alinham verticalmente com `╭` e `╮` da linha 1 — conectando visualmente a aba à área de trabalho abaixo.
 
----
-
 #### Modo Modelos ativo
 
 ```
   Abditum · cofre                          ╭ Cofre ╮  ╭─────────╮  ╭ Config ╮
 ──────────────────────────────────────────────────────╯ Modelos ╰────────────────
 ```
-
----
 
 #### Modo Configurações ativo
 
@@ -94,8 +84,6 @@ A aba ativa na linha 1 substitui o texto por `─` (`╭───────╮
 A aba mais à direita pode encostar na borda do terminal — `╰` ocupa a última coluna, sem `─` posterior.
 
 > **Nota:** a aba Configurações é referida como "Config" nos wireframes por economia de espaço. O texto completo na implementação é `Config`.
-
----
 
 #### Modo busca ativo
 
@@ -117,29 +105,7 @@ A linha separadora (linha 2) é substituída pelo campo de busca. A aba ativa pe
  ─ Busca: gmail ──────────────────────────╯ Cofre ╰──────────────────────────
 ```
 
-**Regras de layout do campo na linha separadora:**
-
-| Elemento | Largura | Notas |
-|---|---|---|
-| `─ Busca: ` (prefixo fixo) | 9 colunas | `─` + espaço + `Busca:` + espaço |
-| Texto da query | variável | Em `accent.primary` **bold** |
-| `─` preenchimento | restante − largura da aba ativa − 2 (margem direita mínima) | Preenche até a aba |
-| Aba ativa (`╯ Texto ╰`) | igual ao estado normal | Posição e estilo inalterados |
-
-- **Query longa:** truncada à **esquerda** com `…` — a parte mais recente da query fica sempre visível
-- A largura disponível para a query é calculada em tempo real e recalculada a cada resize do terminal
-
-**Tokens exclusivos do modo busca na linha separadora:**
-
-| Elemento | Token | Atributo |
-|---|---|---|
-| `─ Busca: ` rótulo | `border.default` | — |
-| Texto da query | `accent.primary` | **bold** |
-| `─` preenchimento | `border.default` | — |
-
 > **Exceção de layout documentada:** a linha separadora do cabeçalho tem papel estrutural fixo no DS (divisa cabeçalho ↔ área de trabalho). Durante o modo busca, essa linha assume papel adicional de display do campo de busca. Exceção justificada pelo princípio **Hierarquia da Informação** — o campo imediatamente acima da árvore cria relação visual direta entre query e resultado — e pelo princípio **O Terminal como Meio** — espaço vertical é recurso escasso. Escopo-limitada ao Modo Cofre com busca ativa.
-
----
 
 #### Mecânica visual da aba ativa
 
@@ -158,9 +124,26 @@ Regras de alinhamento:
 - O conteúdo entre `╯` e `╰` (espaço + texto + espaço) tem fundo `special.highlight`
 - As bordas `╭╮╯╰` e o preenchimento `─` usam sempre `border.default`, independente do estado
 
----
+### Identidade Visual
 
-#### Truncamento do nome do cofre
+| Elemento | Token | Atributo |
+|---|---|---|
+| `Abditum` (nome da app) | `accent.primary` | **bold** |
+| `·` separador nome/cofre | `border.default` | — |
+| Nome do cofre (radical, sem `.abditum`) | `text.secondary` | — |
+| `•` indicador não salvo | `semantic.warning` | — |
+| Bordas das abas (`╭╮╯╰─`) — ativa e inativa | `border.default` | — |
+| Aba ativa — fundo (gap entre `╯` e `╰`) | `special.highlight` | — |
+| Aba ativa — texto | `accent.primary` | **bold** |
+| Aba inativa — texto | `text.secondary` | — |
+| Linha separadora | `border.default` | — |
+| `─ Busca: ` rótulo (modo busca) | `border.default` | — |
+| Texto da query (modo busca) | `accent.primary` | **bold** |
+| `─` preenchimento (modo busca) | `border.default` | — |
+
+### Dimensionamento
+
+**Truncamento do nome do cofre:**
 
 O espaço disponível para o nome do cofre é limitado — as abas ocupam largura fixa à direita. O componente calcula o espaço em tempo real.
 
@@ -200,25 +183,19 @@ disponível = largura_terminal − prefixo − dirty − abas − padding
 
 O radical `meu-cofre-pessoal` foi truncado para `meu-cofre-pessoa…`.
 
----
+**Campo de busca na linha separadora:**
 
-#### Tokens
-
-| Elemento | Token | Atributo |
+| Elemento | Largura | Notas |
 |---|---|---|
-| `Abditum` (nome da app) | `accent.primary` | **bold** |
-| `·` separador nome/cofre | `border.default` | — |
-| Nome do cofre (radical, sem `.abditum`) | `text.secondary` | — |
-| `•` indicador não salvo | `semantic.warning` | — |
-| Bordas das abas (`╭╮╯╰─`) — ativa e inativa | `border.default` | — |
-| Aba ativa — fundo (gap entre `╯` e `╰`) | `special.highlight` | — |
-| Aba ativa — texto | `accent.primary` | **bold** |
-| Aba inativa — texto | `text.secondary` | — |
-| Linha separadora | `border.default` | — |
+| `─ Busca: ` (prefixo fixo) | 9 colunas | `─` + espaço + `Busca:` + espaço |
+| Texto da query | variável | Em `accent.primary` **bold** |
+| `─` preenchimento | restante − largura da aba ativa − 2 (margem direita mínima) | Preenche até a aba |
+| Aba ativa (`╯ Texto ╰`) | igual ao estado normal | Posição e estilo inalterados |
 
----
+- **Query longa:** truncada à **esquerda** com `…` — a parte mais recente da query fica sempre visível
+- A largura disponível para a query é calculada em tempo real e recalculada a cada resize do terminal
 
-#### Eventos
+### Eventos
 
 | Evento | Mudança visual |
 |---|---|
@@ -229,14 +206,9 @@ O radical `meu-cofre-pessoal` foi truncado para `meu-cofre-pessoa…`.
 | Navegação entre modos (Cofre / Modelos / Config) | Aba ativa muda; nova aba suspensa na linha separadora |
 | Terminal redimensionado | Nome do cofre recalcula truncamento |
 
----
-
-#### Comportamento
+### Comportamento
 
 - **Abas clicáveis** — mouse troca o modo ativo ao clicar no texto ou na borda da aba (área de hit inclui linhas 1 e 2 da aba)
 - **Navegação por teclado** — `F2` Cofre, `F3` Modelos, `F4` Config (escopo Área de trabalho — só ativas com cofre aberto)
 - **Indicador dirty** — aparece/desaparece imediatamente conforme `IsDirty()`, sem animação
 - **Truncamento dinâmico** — recalculado a cada renderização (resize do terminal, mudança de modo ativo, cofre aberto/fechado)
-
----
-

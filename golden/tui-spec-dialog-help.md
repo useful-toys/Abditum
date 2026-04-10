@@ -57,7 +57,7 @@
 
 > **Nota:** os wireframes são snapshots ilustrativos. O conteúdo real é gerado dinamicamente pelo ActionManager a partir do contexto ativo.
 
-### Tokens
+### Identidade Visual
 
 | Elemento | Token | Atributo |
 |---|---|---|
@@ -69,7 +69,7 @@
 | Thumb de posição (`■` na borda direita) | `text.secondary` | — |
 | Borda | `border.default` | — |
 
-### Estados dos componentes
+### Estados
 
 | Componente | Estado | Condição |
 |---|---|---|

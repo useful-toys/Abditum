@@ -30,7 +30,7 @@
 
 > Logo e versão centralizados via `lipgloss.Place()`. As linhas do logo recebem as cores do [DS — Gradiente do logo](tui-design-system.md#gradiente-do-logo) — não representável neste wireframe monocromático.
 
-### Tokens
+### Identidade Visual
 
 | Elemento | Token | Atributo |
 |---|---|---|
@@ -39,7 +39,7 @@
 
 > As cores do logo não são tokens nomeados — são os valores hexadecimais da tabela de gradiente do DS, aplicados por linha conforme o tema ativo.
 
-### Estados dos componentes
+### Estados
 
 | Componente | Estado | Condição |
 |---|---|---|
