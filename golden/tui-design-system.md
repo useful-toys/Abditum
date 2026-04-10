@@ -899,11 +899,16 @@ Cada ação registrada no contexto ativo possui atributos que controlam sua apre
 | `Enabled = true` | Exibida com estilo normal | Listada |
 | `Enabled = false` | Oculta | Listada |
 | `HideFromBar = true` | Oculta | Listada |
+| `HideFromBar = false` | Exibida (se `Enabled`) | Listada |
+
+Além destes:
+
+- **Prioridade** — valor numérico. Maior prioridade → mais à esquerda. Quando o espaço é insuficiente, ações de menor prioridade são removidas primeiro.
+- **Grupo** — valor numérico. Usado exclusivamente no modal de Ajuda para organizar ações. Grupos renderizados em ordem numérica crescente. Dentro de cada grupo, ações ordenadas por `Prioridade`. Não afeta a barra de comandos.
+- **Label do grupo** — string registrada por grupo (ex: grupo 1 → "Navegação"). Exibido como título de seção no Help em `text.secondary` **bold**.
 
 Regras de layout:
 
-- **Prioridade** governa ordenação: maior prioridade → mais à esquerda.
-- **Espaço insuficiente:** ações de menor prioridade removidas primeiro.
 - **`F1 Ajuda` sempre visível** — âncora fixa na extrema direita; o cálculo de espaço desconta `F1 Ajuda` antes de distribuir as demais ações.
 - **Ações desabilitadas desaparecem** — `Enabled = false` remove da barra (não fica dim). A ação continua listada no Help.
 - **Ações de confirmação/cancelamento** (`Enter`/`Esc`) já estão na borda inferior do diálogo — não são duplicadas na barra.
