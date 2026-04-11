@@ -457,10 +457,6 @@ func renderShortcuts(shortcuts []Shortcut, width int, theme *Theme) string {
 // If modal is non-nil, it is centered inside the work area using lipgloss.Place.
 // The modal must have been sized with SetSize(width, workH) before calling.
 func (m *rootModel) renderFrame(modal modalView) string {
-	if m.width == 0 || m.height == 0 {
-		return "Initializing..."
-	}
-
 	cmdBarStyle := lipgloss.NewStyle().Width(m.width).Background(m.theme.SurfaceBase)
 	workAreaStyle := lipgloss.NewStyle().Width(m.width).Background(m.theme.SurfaceBase)
 
