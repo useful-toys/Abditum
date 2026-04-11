@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"math"
 	"sort"
 	"strings"
@@ -155,6 +156,9 @@ func (m *helpModal) Update(msg tea.Msg) tea.Cmd {
 // View renders the help modal with title in top border and action in bottom border.
 // Follows DS dialog anatomy (§436-458): title embedded in top border, action bar in bottom border.
 func (m *helpModal) View() string {
+	if m.width == 0 || m.height == 0 {
+		panic(fmt.Sprintf("helpModal.View() called without SetSize: width=%d height=%d", m.width, m.height))
+	}
 	// Dynamic sizing per DS: max 60 cols or 70% of terminal
 	maxW := 60
 	if m.width > 0 {
