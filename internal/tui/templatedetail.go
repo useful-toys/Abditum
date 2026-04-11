@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"fmt"
+
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/useful-toys/abditum/internal/vault"
@@ -37,6 +39,9 @@ func (m *templateDetailModel) Update(msg tea.Msg) tea.Cmd {
 
 // View renders a placeholder for the template detail panel.
 func (m *templateDetailModel) View() string {
+	if m.width == 0 || m.height == 0 {
+		panic(fmt.Sprintf("templateDetailModel.View() called without SetSize: width=%d height=%d", m.width, m.height))
+	}
 	return lipgloss.NewStyle().Foreground(m.theme.SemanticInfo).
 		Render("[template detail - Phase 8]")
 }
