@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	"charm.land/bubbles/v2/textinput"
@@ -174,6 +175,9 @@ func (m *passwordCreateModal) Update(msg tea.Msg) tea.Cmd {
 
 // View renders the modal following the spec wireframe.
 func (m *passwordCreateModal) View() string {
+	if m.width == 0 || m.height == 0 {
+		panic(fmt.Sprintf("passwordCreateModal.View() called without SetSize: width=%d height=%d", m.width, m.height))
+	}
 	const fixedWidth = 50
 	boxW := fixedWidth
 	if m.width > 0 && m.width < fixedWidth {
