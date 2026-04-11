@@ -3,6 +3,7 @@ package tui
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"fmt"
 	"github.com/useful-toys/abditum/internal/vault"
 )
 
@@ -37,6 +38,9 @@ func (m *settingsModel) Update(msg tea.Msg) tea.Cmd {
 
 // View renders a placeholder for the settings screen.
 func (m *settingsModel) View() string {
+	if m.width == 0 || m.height == 0 {
+		panic(fmt.Sprintf("settingsModel.View() called without SetSize: width=%d height=%d", m.width, m.height))
+	}
 	return lipgloss.NewStyle().Foreground(m.theme.SemanticInfo).
 		Render("[settings - Phase 9]")
 }
