@@ -1054,3 +1054,16 @@ func TestGoldenFilePickerOpenBothScroll80x24(t *testing.T) {
 	}
 	runFPKGolden(t, fpk, "open-bothscroll-80x24")
 }
+
+// TestFilePickerModal_ViewPanicsWithoutSetSize verifies that calling View()
+// without first calling SetSize() results in a panic — the rootModel contract.
+func TestFilePickerModal_ViewPanicsWithoutSetSize(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("filePickerModal.View() should panic without SetSize")
+		}
+	}()
+	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen}
+	fpk.Init()
+	fpk.View() // Should panic here
+}

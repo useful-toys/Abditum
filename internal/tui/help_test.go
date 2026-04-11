@@ -316,3 +316,15 @@ func TestFormatKeyForHelp(t *testing.T) {
 		})
 	}
 }
+
+// TestHelpModal_ViewPanicsWithoutSetSize verifies that calling View()
+// without first calling SetSize() results in a panic — the rootModel contract.
+func TestHelpModal_ViewPanicsWithoutSetSize(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("helpModal.View() should panic without SetSize")
+		}
+	}()
+	hm := newHelpModal(help3actions(), helpGroupLabel)
+	hm.View() // Should panic here
+}

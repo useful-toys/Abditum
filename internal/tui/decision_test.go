@@ -709,3 +709,17 @@ func TestDecisionDialog_Update_UnknownExplicitKey(t *testing.T) {
 		t.Error("unknown key 'z' on 3-action dialog must return nil cmd")
 	}
 }
+
+// TestDecisionDialog_ViewPanicsWithoutSetSize verifies that calling View()
+// without first calling SetSize() results in a panic — the rootModel contract.
+func TestDecisionDialog_ViewPanicsWithoutSetSize(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("DecisionDialog.View() should panic without SetSize")
+		}
+	}()
+	d := NewDecisionDialog(SeverityInformative, IntentionAcknowledge, "Title", "Message", []DecisionAction{
+		{Key: "Enter", Label: "OK", Default: true},
+	})
+	d.View() // Should panic here
+}

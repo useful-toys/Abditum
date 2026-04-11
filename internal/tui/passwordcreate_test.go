@@ -420,3 +420,16 @@ func TestPasswordCreateModal_Golden_FilledMatch(t *testing.T) {
 	jsonPath := goldenPath("passwordcreate", "filled-match", 80, "json")
 	checkOrUpdateGolden(t, jsonPath, string(jsonBytes))
 }
+
+// TestPasswordCreateModal_ViewPanicsWithoutSetSize verifies that calling View()
+// without first calling SetSize() results in a panic — the rootModel contract.
+func TestPasswordCreateModal_ViewPanicsWithoutSetSize(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("passwordCreateModal.View() should panic without SetSize")
+		}
+	}()
+	m := &passwordCreateModal{title: "Criar senha", theme: ThemeTokyoNight}
+	m.Init()
+	m.View() // Should panic here
+}

@@ -126,3 +126,15 @@ func TestWelcomeModel_Golden(t *testing.T) {
 		})
 	}
 }
+
+// TestWelcomeModel_ViewPanicsWithoutSetSize verifies that calling View()
+// without first calling SetSize() results in a panic — the rootModel contract.
+func TestWelcomeModel_ViewPanicsWithoutSetSize(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("welcomeModel.View() should panic without SetSize")
+		}
+	}()
+	wm := newWelcomeModel(nil, ThemeTokyoNight, "dev")
+	wm.View() // Should panic here
+}
