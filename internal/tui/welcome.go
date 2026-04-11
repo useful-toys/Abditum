@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"fmt"
+
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
@@ -41,6 +43,10 @@ func (m *welcomeModel) Update(msg tea.Msg) tea.Cmd {
 // Logo width is hardcoded to 43 columns matching the ASCII art width.
 // Version is displayed below the logo in text.secondary color.
 func (m *welcomeModel) View() string {
+	if m.width == 0 || m.height == 0 {
+		panic(fmt.Sprintf("welcomeModel.View() called without SetSize: width=%d height=%d", m.width, m.height))
+	}
+
 	// 43 = width of AsciiArt (const in ascii.go) — each line is exactly 43 characters.
 	// No background is set here: the root workAreaStyle already applies SurfaceBase
 	// to the entire work area. Setting background here would emit redundant SGR codes
@@ -54,11 +60,6 @@ func (m *welcomeModel) View() string {
 
 	content := lipgloss.JoinVertical(lipgloss.Center, logoBlock, "", versionLine)
 
-	if m.width == 0 || m.height == 0 {
-		// Terminal dimensions not yet set (edge case during init)
-		// Return uncentered content as fallback
-		return content
-	}
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
 }
 
