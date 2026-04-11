@@ -1,66 +1,69 @@
 package tui
 
 import (
-	"strings"
-
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
 
-// logoLines contains the ASCII art logo for Abditum (5 lines for gradient).
-var logoLines = [5]string{
-	`    _    _         _ _ _                    `,
-	`   / \  | |__   __| (_) |_ _   _ _ __ ___  `,
-	`  / _ \ | '_ \ / _` + "`" + ` | | __| | | | '_ ` + "`" + ` _ \ `,
-	` / ___ \| |_) | (_| | | |_| |_| | | | | | |`,
-	`/_/   \_\_.__/ \__,_|_|\__|\__,_|_| |_| |_|`,
+// welcomeModel renders the welcome background (ASCII art logo + version + action hints).
+// It is active during workAreaWelcome and has no sub-states.
+// Open/create vault flows are orchestrated via the modal stack, not this model.
+type welcomeModel struct {
+	actions *ActionManager
+	theme   *Theme
+	version string // Application version to display below logo
+	width   int
+	height  int
 }
 
-// renderWelcome renders the welcome screen work area.
-// height: height of the work area (not the full terminal).
-func renderWelcome(st styles, width, height int, version string) string {
-	lines := make([]string, 0, height)
-
-	// logo (5) + blank + subtitle + blank + hint = 9 content lines
-	contentHeight := len(logoLines) + 1 + 1 + 1 + 1
-	topPad := (height - contentHeight) / 2
-	if topPad < 0 {
-		topPad = 0
-	}
-
-	for i := 0; i < topPad; i++ {
-		lines = append(lines, "")
-	}
-
-	// render logo with gradient colors
-	colors := st.pal.logoGrad
-	for i, line := range logoLines {
-		colored := lipgloss.NewStyle().Foreground(lipgloss.Color(colors[i])).Render(line)
-		lines = append(lines, centerText(colored, width, len([]rune(line))))
-	}
-
-	lines = append(lines, "")
-
-	subtitle := "v" + version + "  ·  Gerenciador de Segredos"
-	lines = append(lines, centerText(st.TextSecondary.Render(subtitle), width, len([]rune(subtitle))))
-
-	lines = append(lines, "")
-
-	hint := "F5 Novo cofre  ·  F6 Abrir cofre existente"
-	lines = append(lines, centerText(st.TextDisabled.Render(hint), width, len([]rune(hint))))
-
-	for len(lines) < height {
-		lines = append(lines, "")
-	}
-
-	return strings.Join(lines[:height], "\n")
+// ApplyTheme applies the given theme to the welcomeModel.
+func (m *welcomeModel) ApplyTheme(t *Theme) {
+	m.theme = t
 }
 
-// centerText centers a pre-rendered string (with ANSI escapes) in a field of `width` columns.
-// visLen is the visual (rune) length of the string without ANSI escapes.
-func centerText(rendered string, width, visLen int) string {
-	if visLen >= width {
-		return rendered
+// Compile-time assertion: welcomeModel satisfies childModel.
+var _ childModel = &welcomeModel{}
+
+// newWelcomeModel creates a new welcome screen model.
+func newWelcomeModel(actions *ActionManager, theme *Theme, version string) *welcomeModel {
+	return &welcomeModel{actions: actions, theme: theme, version: version}
+}
+
+// Update processes messages for the welcome screen.
+// Phase 5.1: welcomeModel is display-only. No input handling until Phase 6.
+func (m *welcomeModel) Update(msg tea.Msg) tea.Cmd {
+	return nil
+}
+
+// View renders the ASCII art logo centered on screen.
+// Per spec (tui-specification-novo.md § Boas-vindas), the logo and version
+// are centered horizontally and vertically via lipgloss.Place().
+// Logo width is hardcoded to 43 columns matching the ASCII art width.
+// Version is displayed below the logo in text.secondary color.
+func (m *welcomeModel) View() string {
+	// 43 = width of AsciiArt (const in ascii.go) — each line is exactly 43 characters.
+	// No background is set here: the root workAreaStyle already applies SurfaceBase
+	// to the entire work area. Setting background here would emit redundant SGR codes
+	// that may conflict with the terminal's own background rendering.
+	logoBlock := lipgloss.NewStyle().Width(43).Render(RenderLogo(m.theme))
+
+	// Format version with semantic.secondary color (from theme)
+	// Per spec: version token = text.secondary
+	versionStyle := lipgloss.NewStyle().Foreground(m.theme.TextSecondary)
+	versionLine := versionStyle.Render(m.version)
+
+	content := lipgloss.JoinVertical(lipgloss.Center, logoBlock, "", versionLine)
+
+	if m.width == 0 || m.height == 0 {
+		// Terminal dimensions not yet set (edge case during init)
+		// Return uncentered content as fallback
+		return content
 	}
-	pad := (width - visLen) / 2
-	return strings.Repeat(" ", pad) + rendered
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
+}
+
+// SetSize stores the allocated terminal dimensions for layout.
+func (m *welcomeModel) SetSize(w, h int) {
+	m.width = w
+	m.height = h
 }
