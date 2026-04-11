@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -168,6 +169,9 @@ func (d *DecisionDialog) Update(msg tea.Msg) tea.Cmd {
 //	│                                                                 │
 //	╰── Enter Excluir ─────────────────────────────────── Esc Cancelar ──╯
 func (d *DecisionDialog) View() string {
+	if d.width == 0 || d.height == 0 {
+		panic(fmt.Sprintf("DecisionDialog.View() called without SetSize: width=%d height=%d", d.width, d.height))
+	}
 	borderColor := d.borderColor()
 	boxW := d.boxWidth()
 
