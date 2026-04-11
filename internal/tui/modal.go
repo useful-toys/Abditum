@@ -62,6 +62,7 @@ func (m *modalModel) Update(msg tea.Msg) tea.Cmd {
 }
 
 // View renders the modal box. Returns only the box - rootModel positions it.
+// MUST only be called after SetSize has been called by rootModel.
 func (m *modalModel) View() string {
 	boxW := 50
 
@@ -97,7 +98,10 @@ func (m *modalModel) View() string {
 // Shortcuts returns nil - basic dialog modals show no command bar shortcuts.
 func (m *modalModel) Shortcuts() []Shortcut { return nil }
 
-// SetSize is a no-op for modalModel — it uses fixed width.
+// SetSize stores terminal dimensions for layout calculations.
+// For modalModel, this is called by rootModel before View() per the SetSize-before-View contract,
+// but modalModel uses fixed width and doesn't need the dimensions.
+// Other modalView implementations may use these dimensions to constrain their layout.
 func (m *modalModel) SetSize(w, h int) {}
 
 // Compile-time assertion: modalModel must satisfy the modalView interface.
