@@ -1116,6 +1116,9 @@ func (m *filePickerModal) renderBottomBorder(innerW, treeW int, theme *Theme) st
 
 // View renders the spec-accurate two-panel file picker modal (D-08, D-09, D-20).
 func (m *filePickerModal) View() string {
+	if m.width == 0 || m.height == 0 {
+		panic(fmt.Sprintf("filePickerModal.View() called without SetSize: width=%d height=%d", m.width, m.height))
+	}
 	// Nil-safe theme fallback (D-17)
 	theme := m.theme
 	if theme == nil {
