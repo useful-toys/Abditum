@@ -104,6 +104,9 @@ func (m *passwordEntryModal) Update(msg tea.Msg) tea.Cmd {
 //	│  Tentativa N de 5                          │  ← attempt ≥ 2 only
 //	╰── Enter Confirmar ──────────── Esc Cancelar ──╯
 func (m *passwordEntryModal) View() string {
+	if m.width == 0 || m.height == 0 {
+		panic(fmt.Sprintf("passwordEntryModal.View() called without SetSize: width=%d height=%d", m.width, m.height))
+	}
 	const fixedWidth = 50
 	boxW := fixedWidth
 	if m.width > 0 && m.width < fixedWidth {
