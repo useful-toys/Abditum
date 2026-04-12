@@ -64,7 +64,7 @@ func (m *welcomeModel) View() string {
 }
 
 // SetSize stores the allocated terminal dimensions for layout.
-func (m *welcomeModel) SetSize(w, h int) {
-	m.width = w
-	m.height = h
+func (m *welcomeModel) SetSize(width, height int) {
+	m.width = width
+	m.height = height
 }
