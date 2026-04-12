@@ -47,7 +47,7 @@ func TestFilePickerModalInit(t *testing.T) {
 // TestFilePickerModalView verifies View() returns a string.
 func TestFilePickerModalView(t *testing.T) {
 	fpk := newTestFilePickerModal()
-	fpk.SetSize(80, 24)
+	fpk.SetAvailableSize(80, 24)
 	view := fpk.View()
 	if view == "" {
 		t.Log("View() returned empty string (acceptable for initial render)")
@@ -57,15 +57,15 @@ func TestFilePickerModalView(t *testing.T) {
 // TestFilePickerModalUpdate verifies Update() accepts messages.
 func TestFilePickerModalUpdate(t *testing.T) {
 	fpk := newTestFilePickerModal()
-	fpk.SetSize(80, 24)
+	fpk.SetAvailableSize(80, 24)
 	// Update with arbitrary message - should not panic
 	_ = fpk.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 }
 
-// TestFilePickerModalSetSize verifies SetSize() is callable.
-func TestFilePickerModalSetSize(t *testing.T) {
+// TestFilePickerModalSetSize verifies SetAvailableSize() is callable.
+func TestFilePickerModalSetAvailableSize(t *testing.T) {
 	fpk := newTestFilePickerModal()
-	fpk.SetSize(80, 24)
+	fpk.SetAvailableSize(80, 24)
 	if fpk.width != 80 || fpk.height != 24 {
 		t.Errorf("SetSize did not update width/height: got %dx%d", fpk.width, fpk.height)
 	}
@@ -92,7 +92,7 @@ func TestFilePickerModalShortcuts(t *testing.T) {
 // TestFilePickerModalEmitsMessageOnEsc verifies ESC triggers a command.
 func TestFilePickerModalEmitsMessageOnEsc(t *testing.T) {
 	fpk := newTestFilePickerModal()
-	fpk.SetSize(80, 24)
+	fpk.SetAvailableSize(80, 24)
 
 	// Press ESC
 	msg := tea.KeyPressMsg{Code: tea.KeyEsc}
@@ -114,7 +114,7 @@ func TestFilePickerModalEmitsMessageOnEsc(t *testing.T) {
 // TestFilePickerModalContainsPanelLabels verifies View contains expected labels.
 func TestFilePickerModalContainsPanelLabels(t *testing.T) {
 	fpk := newTestFilePickerModal()
-	fpk.SetSize(80, 24)
+	fpk.SetAvailableSize(80, 24)
 
 	view := fpk.View()
 
@@ -260,7 +260,7 @@ func TestFilePickerModalTabFocus(t *testing.T) {
 	fpk.Init()
 	fpk.currentPath = testDir
 	fpk.loadFilesForCursor()
-	fpk.SetSize(80, 24)
+	fpk.SetAvailableSize(80, 24)
 
 	initialFocus := fpk.focusPanel // 0 (tree)
 	fpk.Update(tea.KeyPressMsg{Code: tea.KeyTab})
@@ -276,7 +276,7 @@ func TestFilePickerModalDisplaysFileSizes(t *testing.T) {
 	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen, focusPanel: 1}
 	fpk.Init()
 	fpk.currentPath = testDir
-	fpk.SetSize(80, 24)
+	fpk.SetAvailableSize(80, 24)
 
 	// Create test files with different sizes
 	testFiles := []struct {
@@ -310,7 +310,7 @@ func TestFilePickerModalDisplaysRelativeDates(t *testing.T) {
 	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen, focusPanel: 1}
 	fpk.Init()
 	fpk.currentPath = testDir
-	fpk.SetSize(80, 24)
+	fpk.SetAvailableSize(80, 24)
 
 	// Create a test file
 	file, _ := os.Create(testDir + "/recent.abditum")
@@ -361,7 +361,7 @@ func TestFilePickerModalMouseScrollSupport(t *testing.T) {
 		}
 	}
 	fpk.loadFilesForCursor()
-	fpk.SetSize(40, 5) // Small height to force scrolling
+	fpk.SetAvailableSize(40, 5) // Small height to force scrolling
 
 	initialCursor := fpk.fileCursor
 	for i := 0; i < 15; i++ {
@@ -413,7 +413,7 @@ func TestFilePickerUpdateBehavior(t *testing.T) {
 		fpk.currentPath = dir // override CWD after Init
 		fpk.loadFilesForCursor()
 		fpk.focusPanel = focus // set focus AFTER Init (Init resets to 0)
-		fpk.SetSize(80, 24)
+		fpk.SetAvailableSize(80, 24)
 		return fpk
 	}
 
@@ -932,7 +932,7 @@ func newGoldenFPK(mode FilePickerMode, title, dir string, w, h int) *filePickerM
 	// Replace currentPath with a fixed stub so golden files don't contain
 	// the randomly-named temp directory path.
 	fpk.currentPath = "/golden/stub/path"
-	fpk.SetSize(w, h)
+	fpk.SetAvailableSize(w, h)
 	return fpk
 }
 
@@ -1056,8 +1056,8 @@ func TestGoldenFilePickerOpenBothScroll80x24(t *testing.T) {
 }
 
 // TestFilePickerModal_ViewPanicsWithoutSetSize verifies that calling View()
-// without first calling SetSize() results in a panic — the rootModel contract.
-func TestFilePickerModal_ViewPanicsWithoutSetSize(t *testing.T) {
+// without first calling SetAvailableSize() results in a panic — the rootModel contract.
+func TestFilePickerModal_ViewPanicsWithoutSetAvailableSize(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("filePickerModal.View() should panic without SetSize")

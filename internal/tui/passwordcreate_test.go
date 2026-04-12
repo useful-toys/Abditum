@@ -46,7 +46,7 @@ func TestPasswordCreateModalView(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
 	m.theme = ThemeTokyoNight
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 	view := m.View()
 	if view == "" {
 		t.Fatal("View() returned empty string")
@@ -57,9 +57,9 @@ func TestPasswordCreateModalView(t *testing.T) {
 }
 
 // TestPasswordCreateModalSetSize verifies SetSize stores dimensions.
-func TestPasswordCreateModalSetSize(t *testing.T) {
+func TestPasswordCreateModalSetAvailableSize(t *testing.T) {
 	m := &passwordCreateModal{}
-	m.SetSize(100, 30)
+	m.SetAvailableSize(100, 30)
 	if m.width != 100 || m.height != 30 {
 		t.Fatalf("SetSize failed: got %dx%d, want 100x30", m.width, m.height)
 	}
@@ -103,7 +103,7 @@ func TestPasswordCreateModalMismatchedPasswords(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
 	m.theme = ThemeTokyoNight
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 
 	// Set different passwords
 	m.password.SetValue("password1")
@@ -138,7 +138,7 @@ func TestPasswordCreateModalMatchingPasswords(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
 	m.theme = ThemeTokyoNight
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 
 	// Set matching passwords
 	m.password.SetValue("SamePassword123!")
@@ -162,7 +162,7 @@ func TestPasswordCreateModalEscKey(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
 	m.theme = ThemeTokyoNight
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 
 	// Press ESC
 	cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
@@ -279,7 +279,7 @@ func TestPasswordCreate_EnterBlocked_EmptyFields(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
 	m.theme = ThemeTokyoNight
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 
 	m.password.SetValue("")
 	m.confirm.SetValue("")
@@ -296,7 +296,7 @@ func TestPasswordCreate_EnterBlocked_Mismatch(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
 	m.theme = ThemeTokyoNight
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 
 	m.password.SetValue("password1")
 	m.confirm.SetValue("password2")
@@ -313,7 +313,7 @@ func TestPasswordCreate_StrengthMeterHidden_EmptyPassword(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
 	m.theme = ThemeTokyoNight
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 	// Leave password empty (default after Init)
 
 	plain := stripANSI(m.View())
@@ -330,7 +330,7 @@ func TestPasswordCreate_StrengthMeterVisible_NonEmptyPassword(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
 	m.theme = ThemeTokyoNight
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 	m.password.SetValue("test123")
 	m.updateStrength()
 
@@ -353,7 +353,7 @@ func TestPasswordCreateModal_Golden(t *testing.T) {
 	m.Init()
 	m.theme = ThemeTokyoNight
 	m.messages = NewMessageManager()
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 
 	out := m.View()
 
@@ -378,7 +378,7 @@ func TestPasswordCreateModal_Golden_Empty(t *testing.T) {
 	m.Init()
 	m.theme = ThemeTokyoNight
 	m.messages = NewMessageManager()
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 	// Leave both fields empty (default after Init)
 
 	out := m.View()
@@ -402,7 +402,7 @@ func TestPasswordCreateModal_Golden_FilledMatch(t *testing.T) {
 	m.Init()
 	m.theme = ThemeTokyoNight
 	m.messages = NewMessageManager()
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 	m.password.SetValue("SamePass123!")
 	m.confirm.SetValue("SamePass123!")
 	m.updateStrength()
@@ -422,8 +422,8 @@ func TestPasswordCreateModal_Golden_FilledMatch(t *testing.T) {
 }
 
 // TestPasswordCreateModal_ViewPanicsWithoutSetSize verifies that calling View()
-// without first calling SetSize() results in a panic — the rootModel contract.
-func TestPasswordCreateModal_ViewPanicsWithoutSetSize(t *testing.T) {
+// without first calling SetAvailableSize() results in a panic — the rootModel contract.
+func TestPasswordCreateModal_ViewPanicsWithoutSetAvailableSize(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("passwordCreateModal.View() should panic without SetSize")

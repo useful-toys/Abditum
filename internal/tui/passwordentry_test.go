@@ -42,7 +42,7 @@ func TestPasswordEntryModalView(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
 	m.theme = ThemeTokyoNight
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 	view := m.View()
 	if view == "" {
 		t.Fatal("View() returned empty string")
@@ -54,9 +54,9 @@ func TestPasswordEntryModalView(t *testing.T) {
 }
 
 // TestPasswordEntryModalSetSize verifies SetSize stores dimensions.
-func TestPasswordEntryModalSetSize(t *testing.T) {
+func TestPasswordEntryModalSetAvailableSize(t *testing.T) {
 	m := &passwordEntryModal{}
-	m.SetSize(100, 30)
+	m.SetAvailableSize(100, 30)
 	if m.width != 100 || m.height != 30 {
 		t.Fatalf("SetSize failed: got %dx%d, want 100x30", m.width, m.height)
 	}
@@ -76,7 +76,7 @@ func TestPasswordEntryModalAttemptCounter(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
 	m.theme = ThemeTokyoNight
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 
 	// First attempt - counter should be hidden
 	view := m.View()
@@ -92,7 +92,7 @@ func TestPasswordEntryModalAttemptCounterShowsFromSecondAttempt(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
 	m.theme = ThemeTokyoNight
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 
 	// Simulate first wrong attempt
 	m.HandleWrongPassword()
@@ -115,7 +115,7 @@ func TestPasswordEntryModalEnterKey(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
 	m.theme = ThemeTokyoNight
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 
 	// Type a password
 	m.input.SetValue("test1234!")
@@ -141,7 +141,7 @@ func TestPasswordEntryModalEscKey(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
 	m.theme = ThemeTokyoNight
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 
 	// Press ESC
 	cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
@@ -160,7 +160,7 @@ func TestPasswordEntryModalEscKey(t *testing.T) {
 func TestPasswordEntryModalMaskedInput(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 
 	// Input should have echo character set to '•'
 	if m.input.EchoCharacter != '•' {
@@ -193,7 +193,7 @@ func TestPasswordEntryModal_Golden(t *testing.T) {
 	m.Init()
 	m.theme = ThemeTokyoNight
 	m.messages = NewMessageManager()
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 
 	out := m.View()
 
@@ -222,7 +222,7 @@ func TestPasswordEntryModal_ConfirmarDisabledWhenEmpty(t *testing.T) {
 	m.Init()
 	m.theme = ThemeTokyoNight
 	m.messages = NewMessageManager()
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 	// input is empty after Init
 
 	out := m.View()
@@ -260,7 +260,7 @@ func TestPasswordEntryModal_ConfirmarActiveWhenFilled(t *testing.T) {
 	m.Init()
 	m.theme = ThemeTokyoNight
 	m.messages = NewMessageManager()
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 	m.input.SetValue("hunter2") // non-empty → activates "Enter Confirmar"
 
 	out := m.View()
@@ -297,7 +297,7 @@ func TestPasswordEntryModal_Golden_Filled(t *testing.T) {
 	m.Init()
 	m.theme = ThemeTokyoNight
 	m.messages = NewMessageManager()
-	m.SetSize(80, 24)
+	m.SetAvailableSize(80, 24)
 	m.input.SetValue("hunter2") // non-empty → activates "Enter Confirmar"
 
 	out := m.View()
@@ -315,8 +315,8 @@ func TestPasswordEntryModal_Golden_Filled(t *testing.T) {
 }
 
 // TestPasswordEntryModal_ViewPanicsWithoutSetSize verifies that calling View()
-// without first calling SetSize() results in a panic — the rootModel contract.
-func TestPasswordEntryModal_ViewPanicsWithoutSetSize(t *testing.T) {
+// without first calling SetAvailableSize() results in a panic — the rootModel contract.
+func TestPasswordEntryModal_ViewPanicsWithoutSetAvailableSize(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("passwordEntryModal.View() should panic without SetSize")

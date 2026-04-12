@@ -107,7 +107,7 @@ func TestHelpModal_Golden(t *testing.T) {
 	// Helper: build 15-action modal and compute maxScroll for "bottom" scenarios.
 	make15 := func(w, h, scroll int) *helpModal {
 		m := newHelpModal(help15actions(), helpGroupLabel)
-		m.SetSize(w, h)
+		m.SetAvailableSize(w, h)
 		if scroll < 0 {
 			// Negative sentinel: use actual maxScroll.
 			maxScroll := m.totalLines() - m.contentHeight()
@@ -127,7 +127,7 @@ func TestHelpModal_Golden(t *testing.T) {
 			variant: "3actions-30x12",
 			modal: func() *helpModal {
 				m := newHelpModal(help3actions(), helpGroupLabel)
-				m.SetSize(30, 12)
+				m.SetAvailableSize(30, 12)
 				return m
 			}(),
 		},
@@ -135,7 +135,7 @@ func TestHelpModal_Golden(t *testing.T) {
 			variant: "3actions-60x12",
 			modal: func() *helpModal {
 				m := newHelpModal(help3actions(), helpGroupLabel)
-				m.SetSize(60, 12)
+				m.SetAvailableSize(60, 12)
 				return m
 			}(),
 		},
@@ -174,7 +174,7 @@ func TestHelpModal_Golden(t *testing.T) {
 // TestHelpModal_Update_DownIncreasesScroll: "down" key increases scroll by 1.
 func TestHelpModal_Update_DownIncreasesScroll(t *testing.T) {
 	m := newHelpModal(help15actions(), helpGroupLabel)
-	m.SetSize(60, 16)
+	m.SetAvailableSize(60, 16)
 	initial := m.scroll // 0
 	m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	if m.scroll != initial+1 {
@@ -185,7 +185,7 @@ func TestHelpModal_Update_DownIncreasesScroll(t *testing.T) {
 // TestHelpModal_Update_UpDoesNotGoBelowZero: "up" at scroll=0 stays at 0.
 func TestHelpModal_Update_UpDoesNotGoBelowZero(t *testing.T) {
 	m := newHelpModal(help15actions(), helpGroupLabel)
-	m.SetSize(60, 16)
+	m.SetAvailableSize(60, 16)
 	m.scroll = 0
 	m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	if m.scroll != 0 {
@@ -196,7 +196,7 @@ func TestHelpModal_Update_UpDoesNotGoBelowZero(t *testing.T) {
 // TestHelpModal_Update_UpDecreasesScroll: "up" at scroll>0 decreases by 1.
 func TestHelpModal_Update_UpDecreasesScroll(t *testing.T) {
 	m := newHelpModal(help15actions(), helpGroupLabel)
-	m.SetSize(60, 16)
+	m.SetAvailableSize(60, 16)
 	m.scroll = 3
 	m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	if m.scroll != 2 {
@@ -207,7 +207,7 @@ func TestHelpModal_Update_UpDecreasesScroll(t *testing.T) {
 // TestHelpModal_Update_HomeResetsScroll: "home" key sets scroll to 0.
 func TestHelpModal_Update_HomeResetsScroll(t *testing.T) {
 	m := newHelpModal(help15actions(), helpGroupLabel)
-	m.SetSize(60, 16)
+	m.SetAvailableSize(60, 16)
 	m.scroll = 5
 	m.Update(tea.KeyPressMsg{Code: tea.KeyHome})
 	if m.scroll != 0 {
@@ -218,7 +218,7 @@ func TestHelpModal_Update_HomeResetsScroll(t *testing.T) {
 // TestHelpModal_Update_EndScrollsToBottom: "end" key clamps scroll to maxScroll.
 func TestHelpModal_Update_EndScrollsToBottom(t *testing.T) {
 	m := newHelpModal(help15actions(), helpGroupLabel)
-	m.SetSize(60, 16)
+	m.SetAvailableSize(60, 16)
 	maxScroll := m.totalLines() - m.contentHeight()
 	if maxScroll < 0 {
 		maxScroll = 0
@@ -232,7 +232,7 @@ func TestHelpModal_Update_EndScrollsToBottom(t *testing.T) {
 // TestHelpModal_Update_ScrollClampedAtMax: down past maxScroll stays at maxScroll.
 func TestHelpModal_Update_ScrollClampedAtMax(t *testing.T) {
 	m := newHelpModal(help15actions(), helpGroupLabel)
-	m.SetSize(60, 16)
+	m.SetAvailableSize(60, 16)
 	maxScroll := m.totalLines() - m.contentHeight()
 	if maxScroll < 0 {
 		maxScroll = 0
@@ -247,7 +247,7 @@ func TestHelpModal_Update_ScrollClampedAtMax(t *testing.T) {
 // TestHelpModal_Update_EscDismisses: "esc" key returns non-nil cmd (popModalMsg).
 func TestHelpModal_Update_EscDismisses(t *testing.T) {
 	m := newHelpModal(help3actions(), helpGroupLabel)
-	m.SetSize(60, 12)
+	m.SetAvailableSize(60, 12)
 	cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	if cmd == nil {
 		t.Error("esc key must return non-nil cmd (pop modal)")
@@ -257,7 +257,7 @@ func TestHelpModal_Update_EscDismisses(t *testing.T) {
 // TestHelpModal_Update_F1Dismisses: "f1" key returns non-nil cmd (popModalMsg).
 func TestHelpModal_Update_F1Dismisses(t *testing.T) {
 	m := newHelpModal(help3actions(), helpGroupLabel)
-	m.SetSize(60, 12)
+	m.SetAvailableSize(60, 12)
 	cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyF1})
 	if cmd == nil {
 		t.Error("f1 key must return non-nil cmd (pop modal)")
@@ -317,9 +317,9 @@ func TestFormatKeyForHelp(t *testing.T) {
 	}
 }
 
-// TestHelpModal_ViewPanicsWithoutSetSize verifies that calling View()
-// without first calling SetSize() results in a panic — the rootModel contract.
-func TestHelpModal_ViewPanicsWithoutSetSize(t *testing.T) {
+// TestHelpModal_ViewPanicsWithoutSetAvailableSize verifies that calling View()
+// without first calling SetAvailableSize() results in a panic — the rootModel contract.
+func TestHelpModal_ViewPanicsWithoutSetAvailableSize(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("helpModal.View() should panic without SetSize")
