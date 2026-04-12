@@ -7,11 +7,12 @@ import (
 
 // childModel represents a UI component managed by rootModel.
 //
-// CRITICAL CONTRACT: rootModel guarantees that SetSize(w, h) is ALWAYS called
+// CRITICAL CONTRACT: rootModel guarantees that SetSize(width, height) is ALWAYS called
 // immediately before View(). Implementations must panic if View() is called
 // with width or height equal to zero — this indicates a bug in rootModel.
 //
-// Layout and rendering MUST assume w > 0 and h > 0.
+// Layout and rendering MUST assume width > 0 and height > 0.
+// SetSize receives EXACT allocated dimensions that the component MUST occupy.
 //
 // D-01: 3 methods only. Closures that capture child state directly.
 type childModel interface {
@@ -19,8 +20,9 @@ type childModel interface {
 	// View renders the component. MUST only be called after SetSize.
 	// If width or height are zero, panic with a descriptive message.
 	View() string
-	// SetSize stores terminal dimensions for layout.
-	SetSize(w, h int)
+	// SetSize stores exact allocated dimensions for layout.
+	// Component MUST occupy exactly this space.
+	SetSize(width, height int)
 	ApplyTheme(*Theme)
 }
 
@@ -32,24 +34,26 @@ type Shortcut struct {
 
 // modalView represents an overlay modal dialog.
 //
-// CRITICAL CONTRACT: rootModel guarantees that SetSize(w, h) is ALWAYS called
+// CRITICAL CONTRACT: rootModel guarantees that SetAvailableSize(maxWidth, maxHeight) is ALWAYS called
 // immediately before View(). Implementations must panic if View() is called
-// with width or height equal to zero — this indicates a bug in rootModel.
+// with maxWidth or maxHeight equal to zero — this indicates a bug in rootModel.
 //
 // Modals auto-size by content but need terminal dimensions to calculate their
-// own limits (e.g., 80% of terminal width). rootModel calls SetSize on every
+// own limits (e.g., 80% of terminal width). rootModel calls SetAvailableSize on every
 // resize and before View().
+// SetAvailableSize receives MAXIMUM available dimensions; modal MAY use less space (e.g., center and pad).
 //
 // D-02: Separate from childModel.
 type modalView interface {
 	Update(tea.Msg) tea.Cmd
-	// View renders the modal. MUST only be called after SetSize.
-	// If width or height are zero, panic with a descriptive message.
+	// View renders the modal. MUST only be called after SetAvailableSize.
+	// If maxWidth or maxHeight are zero, panic with a descriptive message.
 	View() string
 	// Shortcuts returns the command bar shortcuts active while this modal is displayed.
 	Shortcuts() []Shortcut
-	// SetSize stores terminal dimensions for layout calculations.
-	SetSize(w, h int)
+	// SetAvailableSize stores maximum available dimensions for layout calculations.
+	// Modal MAY use less space (e.g., center and pad).
+	SetAvailableSize(maxWidth, maxHeight int)
 }
 
 // modalResult - D-03: Marker interface for messages carrying sensitive data.
