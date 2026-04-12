@@ -425,7 +425,7 @@ func (m *rootModel) View() tea.View {
 			workH = 0
 		}
 		top := m.modals[len(m.modals)-1]
-		top.SetSize(m.width, workH) // pass workH, not total height
+		top.SetAvailableSize(m.width, workH) // pass workH as maxHeight
 		content = m.renderFrame(top)
 	}
 
@@ -455,7 +455,7 @@ func renderShortcuts(shortcuts []Shortcut, width int, theme *Theme) string {
 
 // renderFrame composes the full frame: header + work area + msg bar + cmd bar.
 // If modal is non-nil, it is centered inside the work area using lipgloss.Place.
-// The modal must have been sized with SetSize(width, workH) before calling.
+// The modal must have been sized with SetAvailableSize(width, workH) before calling.
 func (m *rootModel) renderFrame(modal modalView) string {
 	cmdBarStyle := lipgloss.NewStyle().Width(m.width).Background(m.theme.SurfaceBase)
 	workAreaStyle := lipgloss.NewStyle().Width(m.width).Background(m.theme.SurfaceBase)
