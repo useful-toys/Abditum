@@ -47,7 +47,7 @@ func (m *templateListModel) View() string {
 }
 
 // SetSize stores the allocated panel dimensions.
-func (m *templateListModel) SetSize(w, h int) {
-	m.width = w
-	m.height = h
+func (m *templateListModel) SetSize(width, height int) {
+	m.width = width
+	m.height = height
 }
