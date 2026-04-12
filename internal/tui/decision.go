@@ -117,10 +117,10 @@ func Decision(severity Severity, title, body string, defaultAction DecisionActio
 // modalView implementation
 // ─────────────────────────────────────────────────────────────────────────────
 
-// SetSize stores terminal dimensions for future rendering.
-func (d *DecisionDialog) SetSize(w, h int) {
-	d.width = w
-	d.height = h
+// SetAvailableSize stores maximum available dimensions for future rendering.
+func (d *DecisionDialog) SetAvailableSize(maxWidth, maxHeight int) {
+	d.width = maxWidth
+	d.height = maxHeight
 }
 
 // Shortcuts returns nil — while a DecisionDialog is active the command bar shows
