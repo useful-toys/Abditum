@@ -116,10 +116,10 @@ func newHelpModal(actions []Action, groupLabel func(int) string) *helpModal {
 	return &helpModal{actions: actions, groupLabel: groupLabel}
 }
 
-// SetSize sets the terminal dimensions for dynamic modal sizing.
-func (m *helpModal) SetSize(w, h int) {
-	m.width = w
-	m.height = h
+// SetAvailableSize sets the maximum available dimensions for dynamic modal sizing.
+func (m *helpModal) SetAvailableSize(maxWidth, maxHeight int) {
+	m.width = maxWidth
+	m.height = maxHeight
 }
 
 // Update handles keyboard input for the help modal.
