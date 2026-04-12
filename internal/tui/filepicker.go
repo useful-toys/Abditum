@@ -70,24 +70,12 @@ type filePickerModal struct {
 	// Test injection (D-07)
 	timeFmt func(time.Time) string // if nil, defaults to Local "02/01/06 15:04"
 
-	// Dimensions (set by rootModel via SetSize)
-	width  int
-	height int
+	// Dimensions calculated in View()
+	viewportHeight int // Height of content viewport (set in View, used in Update)
 }
 
 // compile-time assertion: filePickerModal implements modalView.
 var _ modalView = &filePickerModal{}
-
-// SetAvailableSize stores the maximum available dimensions for use in View().
-func (m *filePickerModal) SetAvailableSize(maxWidth, maxHeight int) {
-	m.width = maxWidth
-	m.height = maxHeight
-	// Reset scroll to 0 then re-adjust so the cursor is visible with the real
-	// viewport height. Without the reset, a bogus scroll computed during Init
-	// (when height was 0) would persist and hide parent nodes above the cursor.
-	m.treeScroll = 0
-	m.adjustTreeScroll()
-}
 
 // Shortcuts returns the keyboard shortcuts shown in the command bar (D-18).
 func (m *filePickerModal) Shortcuts() []Shortcut {
@@ -401,16 +389,8 @@ func (m *filePickerModal) parentCursor(node *treeNode) int {
 
 // visibleTreeHeight returns the number of rows available for tree/file rows inside the modal.
 func (m *filePickerModal) visibleTreeHeight() int {
-	modalH := m.height * 8 / 10
-	// subtract: top border(1) + Caminho header(1) + panel separator(1) + bottom border(1) = 4
-	h := modalH - 4
-	if m.mode == FilePickerSave {
-		h -= 3 // campo nome section
-	}
-	if h < 1 {
-		h = 1
-	}
-	return h
+	// viewportHeight is calculated and stored in View(), used here in Update()
+	return m.viewportHeight
 }
 
 func (m *filePickerModal) visibleFilesHeight() int {
@@ -1115,10 +1095,38 @@ func (m *filePickerModal) renderBottomBorder(innerW, treeW int, theme *Theme) st
 }
 
 // View renders the spec-accurate two-panel file picker modal (D-08, D-09, D-20).
-func (m *filePickerModal) View() string {
-	if m.width == 0 || m.height == 0 {
-		panic(fmt.Sprintf("filePickerModal.View() called without SetSize: width=%d height=%d", m.width, m.height))
+func (m *filePickerModal) View(maxWidth, maxHeight int) string {
+	if maxWidth == 0 || maxHeight == 0 {
+		panic(fmt.Sprintf("filePickerModal.View() called without maxWidth/maxHeight: maxWidth=%d maxHeight=%d", maxWidth, maxHeight))
 	}
+
+	// Calculate and store viewportHeight for use in Update()
+	modalH := maxHeight * 8 / 10
+	if modalH < 6 {
+		modalH = 6
+	}
+	visibleH := modalH - 4 // top border + Caminho + panel sep + bottom border
+	if m.mode == FilePickerSave {
+		visibleH -= 3 // field separator + field row + bottom padding
+	}
+	if visibleH < 1 {
+		visibleH = 1
+	}
+
+	// First render: reset scroll so cursor is visible with real viewport height.
+	// (Previously done in SetAvailableSize; safe here because rootModel guarantees
+	// View() is called before any Update() keypress.)
+	// Check if this is the first render (viewportHeight was 0 before assignment)
+	isFirstRender := m.viewportHeight == 0
+
+	// Save viewport height for Update() (pgup/pgdown scroll calculations)
+	m.viewportHeight = visibleH
+
+	if isFirstRender {
+		m.treeScroll = 0
+		m.adjustTreeScroll()
+	}
+
 	// Nil-safe theme fallback (D-17)
 	theme := m.theme
 	if theme == nil {
@@ -1126,13 +1134,9 @@ func (m *filePickerModal) View() string {
 	}
 
 	// Layout dimensions (D-08)
-	modalW := m.width * 95 / 100
+	modalW := maxWidth * 95 / 100
 	if modalW < 60 {
 		modalW = 60
-	}
-	modalH := m.height * 8 / 10
-	if modalH < 6 {
-		modalH = 6
 	}
 	innerW := modalW - 2
 	treeW := innerW * 40 / 100
@@ -1142,13 +1146,6 @@ func (m *filePickerModal) View() string {
 	filesW := innerW - treeW - 1
 	if filesW < 8 {
 		filesW = 8
-	}
-	visibleH := modalH - 4 // top border + Caminho + panel sep + bottom border
-	if m.mode == FilePickerSave {
-		visibleH -= 3 // field separator + field row + bottom padding
-	}
-	if visibleH < 1 {
-		visibleH = 1
 	}
 
 	var lines []string
