@@ -78,10 +78,10 @@ type filePickerModal struct {
 // compile-time assertion: filePickerModal implements modalView.
 var _ modalView = &filePickerModal{}
 
-// SetSize stores the terminal dimensions for use in View().
-func (m *filePickerModal) SetSize(w, h int) {
-	m.width = w
-	m.height = h
+// SetAvailableSize stores the maximum available dimensions for use in View().
+func (m *filePickerModal) SetAvailableSize(maxWidth, maxHeight int) {
+	m.width = maxWidth
+	m.height = maxHeight
 	// Reset scroll to 0 then re-adjust so the cursor is visible with the real
 	// viewport height. Without the reset, a bogus scroll computed during Init
 	// (when height was 0) would persist and hide parent nodes above the cursor.
