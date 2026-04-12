@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"math"
 	"sort"
 	"strings"
@@ -98,11 +97,10 @@ func formatKeyForHelp(raw string) string {
 // Pushed onto the modal stack when the user presses F1.
 // Dismissed via ESC or F1.
 type helpModal struct {
-	actions    []Action         // all registered actions for the help overlay
-	groupLabel func(int) string // resolves a group int to a display label
-	width      int              // terminal width for dynamic sizing
-	height     int              // terminal height for dynamic sizing
-	scroll     int              // current scroll offset
+	actions        []Action         // all registered actions for the help overlay
+	groupLabel     func(int) string // resolves a group int to a display label
+	viewportHeight int              // usable content lines; set by View(), used by Update()
+	scroll         int              // current scroll offset
 }
 
 // Compile-time assertion: helpModal satisfies modalView.
@@ -114,12 +112,6 @@ var _ modalView = &helpModal{}
 // without needing an ActionManager.
 func newHelpModal(actions []Action, groupLabel func(int) string) *helpModal {
 	return &helpModal{actions: actions, groupLabel: groupLabel}
-}
-
-// SetAvailableSize sets the maximum available dimensions for dynamic modal sizing.
-func (m *helpModal) SetAvailableSize(maxWidth, maxHeight int) {
-	m.width = maxWidth
-	m.height = maxHeight
 }
 
 // Update handles keyboard input for the help modal.
@@ -155,14 +147,12 @@ func (m *helpModal) Update(msg tea.Msg) tea.Cmd {
 
 // View renders the help modal with title in top border and action in bottom border.
 // Follows DS dialog anatomy (§436-458): title embedded in top border, action bar in bottom border.
-func (m *helpModal) View() string {
-	if m.width == 0 || m.height == 0 {
-		panic(fmt.Sprintf("helpModal.View() called without SetSize: width=%d height=%d", m.width, m.height))
-	}
+// Calculates and saves viewportHeight for use by Update() (pgup/pgdown/end/clamp).
+func (m *helpModal) View(maxWidth, maxHeight int) string {
 	// Dynamic sizing per DS: max 60 cols or 70% of terminal
 	maxW := 60
-	if m.width > 0 {
-		pctW := int(float64(m.width) * 0.7)
+	if maxWidth > 0 {
+		pctW := int(float64(maxWidth) * 0.7)
 		if pctW < maxW {
 			maxW = pctW
 		}
@@ -176,7 +166,7 @@ func (m *helpModal) View() string {
 	// Dialog layout: top border(1) + content(innerH) + bottom border(1)
 	// Content area: top padding(1) + action lines(usableH) + bottom padding(1)
 	// Total dialog = usableH + 4 lines — must fit in terminal.
-	maxUsable := m.height - 4
+	maxUsable := maxHeight - 4
 	if maxUsable > 20 {
 		maxUsable = 20 // cap for large terminals
 	}
@@ -184,6 +174,10 @@ func (m *helpModal) View() string {
 		maxUsable = 3 // minimum usable action lines
 	}
 	usableH := maxUsable
+
+	// Save viewport height for Update() (pgup/pgdown/end/clamp)
+	m.viewportHeight = usableH
+
 	innerH := usableH + 2 // content area includes padding lines
 
 	// Clamp visible window to available content
@@ -208,9 +202,9 @@ func (m *helpModal) View() string {
 
 // renderDialog builds the full dialog with title in top border and action in bottom border.
 func (m *helpModal) renderDialog(lines []string, boxW, innerH int, hasAbove, hasBelow bool, totalLines, start, viewH int) string {
-	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderDefault))
-	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(ColorTextPrimary))
-	actionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextSecondary))
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#414868"))
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#a9b1d6"))
+	actionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
 	innerW := boxW - 6 // 2 borders + 4 padding (2 each side)
 
 	// Top border: ╭── Title ──────────────╮
@@ -221,7 +215,7 @@ func (m *helpModal) renderDialog(lines []string, boxW, innerH int, hasAbove, has
 	if topFill < 1 {
 		topFill = 1
 	}
-	topBorder := borderStyle.Render("╭── ") + titleRendered + borderStyle.Render(" "+strings.Repeat(SymBorder, topFill)+"╮")
+	topBorder := borderStyle.Render("╭── ") + titleRendered + borderStyle.Render(" "+strings.Repeat(SymBorderH, topFill)+"╮")
 
 	// Content lines with 2-col horizontal padding + 1-line vertical padding (DS §240-241)
 	var contentLines []string
@@ -269,7 +263,7 @@ func (m *helpModal) renderDialog(lines []string, boxW, innerH int, hasAbove, has
 	if bottomFill < 1 {
 		bottomFill = 1
 	}
-	bottomBorder := borderStyle.Render("╰") + borderStyle.Render(strings.Repeat(SymBorder, bottomFill)) + " " + actionRendered + " " + borderStyle.Render("─╯")
+	bottomBorder := borderStyle.Render("╰") + borderStyle.Render(strings.Repeat(SymBorderH, bottomFill)) + " " + actionRendered + " " + borderStyle.Render("─╯")
 
 	return topBorder + "\n" + strings.Join(contentLines, "\n") + "\n" + bottomBorder
 }
@@ -279,23 +273,16 @@ func (m *helpModal) totalLines() int {
 	return len(m.buildContentLines(m.actions))
 }
 
-// contentHeight returns the visible content height (excluding borders).
-// Must match the usableH calculation in View() exactly.
+// contentHeight returns the visible content height (usable action lines).
+// Value is set by View() each render; safe to use in Update() per rootModel invariant.
 func (m *helpModal) contentHeight() int {
-	maxUsable := m.height - 4
-	if maxUsable > 20 {
-		maxUsable = 20
-	}
-	if maxUsable < 3 {
-		maxUsable = 3
-	}
-	return maxUsable
+	return m.viewportHeight
 }
 
 // buildContentLines formats actions into display lines.
 func (m *helpModal) buildContentLines(actions []Action) []string {
-	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorAccentPrimary))
-	groupStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(ColorTextSecondary))
+	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	groupStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#565f89"))
 
 	var lines []string
 

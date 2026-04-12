@@ -62,7 +62,7 @@ func newSaveAndExitFlowWithMock(saver vaultSaver, path string, meta storage.File
 		path:     path,
 		metadata: meta,
 		messages: messages,
-		theme:    ThemeTokyoNight,
+		theme:    TokyoNight,
 	}
 }
 

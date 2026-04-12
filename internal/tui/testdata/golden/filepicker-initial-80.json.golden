@@ -25,7 +25,7 @@
   [3,3,null,null,["bold","faint"]],
   [3,30,null,null,["faint"]],
   [3,31,"#000000",null,["faint"]],
-  [3,32,null,null,["bold","faint"]],
+  [3,32,null,"#000000",["bold","faint"]],
   [3,75,null,null,["faint"]],
   [3,76,null,null,[]],
   [4,0,null,null,["faint"]],

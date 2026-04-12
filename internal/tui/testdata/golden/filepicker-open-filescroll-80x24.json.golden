@@ -70,7 +70,7 @@
   [8,1,null,null,[]],
   [8,30,null,null,["faint"]],
   [8,31,"#000000",null,["faint"]],
-  [8,32,null,null,["bold","faint"]],
+  [8,32,null,"#000000",["bold","faint"]],
   [8,75,null,null,["faint"]],
   [8,76,null,null,[]],
   [9,0,null,null,["faint"]],

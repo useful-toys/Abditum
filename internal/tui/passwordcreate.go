@@ -1,14 +1,12 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/useful-toys/abditum/internal/crypto"
-	"github.com/useful-toys/abditum/internal/tui/tokens"
 )
 
 // passwordCreateModal is a modal for creating a password when creating a vault.
@@ -37,7 +35,6 @@ type passwordCreateModal struct {
 	focusIndex int // 0 = Nova senha, 1 = Confirmação
 	title      string
 	width      int
-	height     int
 	theme      *Theme
 	messages   *MessageManager
 	strength   crypto.StrengthLevel
@@ -69,12 +66,12 @@ func (m *passwordCreateModal) Init() tea.Cmd {
 
 // showPasswordHint displays the hint for the Nova senha field.
 func (m *passwordCreateModal) showPasswordHint() {
-	m.messages.Show(MsgHint, tokens.SymHint+" A senha mestra protege todo o cofre — use 12+ caracteres", 0, false)
+	m.messages.Show(MessageHint, SymBullet+" A senha mestra protege todo o cofre — use 12+ caracteres", 0, false)
 }
 
 // showConfirmHint displays the hint for the Confirmação field.
 func (m *passwordCreateModal) showConfirmHint() {
-	m.messages.Show(MsgHint, tokens.SymHint+" Redigite a senha para confirmar", 0, false)
+	m.messages.Show(MessageHint, SymBullet+" Redigite a senha para confirmar", 0, false)
 }
 
 // updateStrength evaluates password strength based on current input.
@@ -104,7 +101,7 @@ func (m *passwordCreateModal) Update(msg tea.Msg) tea.Cmd {
 				confirmVal := m.confirm.Value()
 				passwordVal := m.password.Value()
 				if len(confirmVal) > 0 && confirmVal != passwordVal {
-					m.messages.Show(MsgError, tokens.SymError+" As senhas não conferem — digite novamente", 5, false)
+					m.messages.Show(MessageError, SymError+" As senhas não conferem — digite novamente", 5, false)
 				} else {
 					m.showConfirmHint()
 				}
@@ -116,7 +113,7 @@ func (m *passwordCreateModal) Update(msg tea.Msg) tea.Cmd {
 				confirmVal := m.confirm.Value()
 				passwordVal := m.password.Value()
 				if len(confirmVal) > 0 && confirmVal != passwordVal {
-					m.messages.Show(MsgError, tokens.SymError+" As senhas não conferem — digite novamente", 5, false)
+					m.messages.Show(MessageError, SymError+" As senhas não conferem — digite novamente", 5, false)
 				} else {
 					m.showPasswordHint()
 				}
@@ -128,16 +125,16 @@ func (m *passwordCreateModal) Update(msg tea.Msg) tea.Cmd {
 
 			// D-PC-04: Block Enter when either field is empty or passwords diverge
 			if len(passwordVal) == 0 {
-				m.messages.Show(MsgError, tokens.SymError+" Digite uma senha", 3, false)
+				m.messages.Show(MessageError, SymError+" Digite uma senha", 3, false)
 				return nil
 			}
 			if len(confirmVal) == 0 {
-				m.messages.Show(MsgError, tokens.SymError+" Confirme a senha", 3, false)
+				m.messages.Show(MessageError, SymError+" Confirme a senha", 3, false)
 				return nil
 			}
 			if passwordVal != confirmVal {
 				// D-PC-07: exact error text
-				m.messages.Show(MsgError, tokens.SymError+" As senhas não conferem — digite novamente", 5, false)
+				m.messages.Show(MessageError, SymError+" As senhas não conferem — digite novamente", 5, false)
 				m.confirm.SetValue("")
 				m.password.Focus()
 				m.focusIndex = 0
@@ -162,7 +159,7 @@ func (m *passwordCreateModal) Update(msg tea.Msg) tea.Cmd {
 		confirmVal := m.confirm.Value()
 		passwordVal := m.password.Value()
 		if len(confirmVal) > 0 && confirmVal != passwordVal {
-			m.messages.Show(MsgError, tokens.SymError+" As senhas não conferem — digite novamente", 5, false)
+			m.messages.Show(MessageError, SymError+" As senhas não conferem — digite novamente", 5, false)
 		} else if len(confirmVal) == 0 {
 			m.showConfirmHint()
 		} else {
@@ -174,22 +171,20 @@ func (m *passwordCreateModal) Update(msg tea.Msg) tea.Cmd {
 }
 
 // View renders the modal following the spec wireframe.
-func (m *passwordCreateModal) View() string {
-	if m.width == 0 || m.height == 0 {
-		panic(fmt.Sprintf("passwordCreateModal.View() called without SetSize: width=%d height=%d", m.width, m.height))
-	}
+func (m *passwordCreateModal) View(maxWidth, maxHeight int) string {
+	m.width = maxWidth
 	const fixedWidth = 50
 	boxW := fixedWidth
 	if m.width > 0 && m.width < fixedWidth {
 		boxW = m.width
 	}
 
-	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
-	titleSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused)).Bold(true)
-	activeLabelSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorAccentPrimary)).Bold(true)
-	inactiveLabelSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextSecondary))
-	secondarySt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextSecondary))
-	fieldBgSt := lipgloss.NewStyle().Background(lipgloss.Color(ColorSurfaceInput))
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	titleSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7")).Bold(true)
+	activeLabelSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7")).Bold(true)
+	inactiveLabelSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
+	secondarySt := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
+	fieldBgSt := lipgloss.NewStyle().Background(lipgloss.Color("#1e1f2e"))
 
 	dashes := func(n int) string {
 		if n < 0 {
@@ -268,10 +263,10 @@ func (m *passwordCreateModal) View() string {
 		var strengthLabel string
 		var strengthColor string
 		if m.strength == crypto.StrengthStrong {
-			strengthColor = ColorSuccess
+			strengthColor = "#9ece6a"
 			strengthLabel = "Forte"
 		} else {
-			strengthColor = ColorWarn
+			strengthColor = "#e0af68"
 			strengthLabel = "Fraca"
 		}
 		strengthSt := lipgloss.NewStyle().Foreground(lipgloss.Color(strengthColor))
@@ -287,9 +282,9 @@ func (m *passwordCreateModal) View() string {
 
 	var enterSt lipgloss.Style
 	if isActive {
-		enterSt = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorAccentPrimary)).Bold(true)
+		enterSt = lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7")).Bold(true)
 	} else {
-		enterSt = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextDisabled))
+		enterSt = lipgloss.NewStyle().Foreground(lipgloss.Color("#3b4261"))
 	}
 
 	enterToken := enterSt.Render("Enter") + secondarySt.Render(" Confirmar")
@@ -310,12 +305,6 @@ func (m *passwordCreateModal) View() string {
 
 	lines = append(lines, actionBar)
 	return strings.Join(lines, "\n")
-}
-
-// SetAvailableSize stores the maximum available modal dimensions.
-func (m *passwordCreateModal) SetAvailableSize(maxWidth, maxHeight int) {
-	m.width = maxWidth
-	m.height = maxHeight
 }
 
 // Shortcuts returns keyboard hints for the command bar.

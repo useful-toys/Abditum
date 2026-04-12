@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"fmt"
-
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
@@ -14,8 +12,6 @@ type welcomeModel struct {
 	actions *ActionManager
 	theme   *Theme
 	version string // Application version to display below logo
-	width   int
-	height  int
 }
 
 // ApplyTheme applies the given theme to the welcomeModel.
@@ -42,11 +38,7 @@ func (m *welcomeModel) Update(msg tea.Msg) tea.Cmd {
 // are centered horizontally and vertically via lipgloss.Place().
 // Logo width is hardcoded to 43 columns matching the ASCII art width.
 // Version is displayed below the logo in text.secondary color.
-func (m *welcomeModel) View() string {
-	if m.width == 0 || m.height == 0 {
-		panic(fmt.Sprintf("welcomeModel.View() called without SetSize: width=%d height=%d", m.width, m.height))
-	}
-
+func (m *welcomeModel) View(width, height int) string {
 	// 43 = width of AsciiArt (const in ascii.go) — each line is exactly 43 characters.
 	// No background is set here: the root workAreaStyle already applies SurfaceBase
 	// to the entire work area. Setting background here would emit redundant SGR codes
@@ -55,16 +47,10 @@ func (m *welcomeModel) View() string {
 
 	// Format version with semantic.secondary color (from theme)
 	// Per spec: version token = text.secondary
-	versionStyle := lipgloss.NewStyle().Foreground(m.theme.TextSecondary)
+	versionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.Text.Secondary))
 	versionLine := versionStyle.Render(m.version)
 
 	content := lipgloss.JoinVertical(lipgloss.Center, logoBlock, "", versionLine)
 
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
-}
-
-// SetSize stores the allocated terminal dimensions for layout.
-func (m *welcomeModel) SetSize(width, height int) {
-	m.width = width
-	m.height = height
+	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, content)
 }

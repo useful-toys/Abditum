@@ -26,29 +26,17 @@ type pwdCreatedMsg struct {
 	Password []byte
 }
 
-// MsgKind classifies the semantic type of a status bar message.
-type MsgKind int
-
-const (
-	MsgSuccess MsgKind = iota // operação concluída — #9ece6a, TTL 3s default
-	MsgInfo                   // informação neutra — #7dcfff, TTL 3s default
-	MsgWarn                   // atenção — #e0af68, permanente, clearOnInput
-	MsgError                  // falha — #f7768e + bold, TTL 5s default
-	MsgBusy                   // spinner — #7aa2f7, permanente
-	MsgHint                   // dica contextual — #565f89 + italic, permanente
-)
-
 // DisplayMessage is the read-only view of the current message for rootModel.View().
 type DisplayMessage struct {
 	Text  string
-	Kind  MsgKind
+	Kind  MessageKind
 	Frame int // animation frame index for MsgBusy (0-3), incremented by Tick()
 }
 
 // activeMessage is the internal state of MessageManager.
 type activeMessage struct {
 	text         string
-	kind         MsgKind
+	kind         MessageKind
 	startedAt    time.Time
 	frame        int
 	ttlTicks     int  // 0 = permanent; decremented by Tick()
@@ -67,10 +55,10 @@ func NewMessageManager() *MessageManager {
 
 // Show sets the current message. Last-write-wins.
 // ttlSeconds == 0 means permanent (no auto-expiry).
-// MsgBusy ignores ttlSeconds - it persists until replaced or cleared.
-func (m *MessageManager) Show(kind MsgKind, text string, ttlSeconds int, clearOnInput bool) {
+// MessageBusy ignores ttlSeconds - it persists until replaced or cleared.
+func (m *MessageManager) Show(kind MessageKind, text string, ttlSeconds int, clearOnInput bool) {
 	ttl := ttlSeconds
-	if kind == MsgBusy {
+	if kind == MessageBusy {
 		ttl = 0
 	}
 	m.current = &activeMessage{
@@ -104,7 +92,7 @@ func (m *MessageManager) Tick() {
 	if m.current == nil {
 		return
 	}
-	if m.current.kind == MsgBusy {
+	if m.current.kind == MessageBusy {
 		m.current.frame = (m.current.frame + 1) % 4
 		return
 	}
@@ -128,8 +116,8 @@ func (m *MessageManager) HandleInput() {
 // When msg == nil, renders a plain border line. Exported for PoC and rootModel use.
 // Anatomy when msg != nil: ── <symbol> <text> ─...─  (fills to width)
 func RenderMessageBar(msg *DisplayMessage, width int, theme *Theme) string {
-	borderStyle := lipgloss.NewStyle().Foreground(theme.SurfaceRaised)
-	borderChar := SymBorder
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Surface.Raised))
+	borderChar := SymBorderH
 
 	if msg == nil || width <= 0 {
 		if width <= 0 {
@@ -141,24 +129,24 @@ func RenderMessageBar(msg *DisplayMessage, width int, theme *Theme) string {
 	var symbol string
 	var symStyle lipgloss.Style
 	switch msg.Kind {
-	case MsgSuccess:
+	case MessageSuccess:
 		symbol = SymSuccess
-		symStyle = lipgloss.NewStyle().Foreground(theme.SemanticSuccess)
-	case MsgInfo:
+		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Semantic.Success))
+	case MessageInfo:
 		symbol = SymInfo
-		symStyle = lipgloss.NewStyle().Foreground(theme.SemanticInfo)
-	case MsgWarn:
-		symbol = SymWarn
-		symStyle = lipgloss.NewStyle().Foreground(theme.SemanticWarning)
-	case MsgError:
+		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Semantic.Info))
+	case MessageWarning:
+		symbol = SymWarning
+		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Semantic.Warning))
+	case MessageError:
 		symbol = SymError
-		symStyle = lipgloss.NewStyle().Foreground(theme.SemanticError).Bold(true)
-	case MsgBusy:
+		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Semantic.Error)).Bold(true)
+	case MessageBusy:
 		symbol = SpinnerFrame(msg.Frame)
-		symStyle = lipgloss.NewStyle().Foreground(theme.AccentPrimary)
-	default: // MsgHint
-		symbol = SymHint
-		symStyle = lipgloss.NewStyle().Foreground(theme.AccentSecondary).Italic(true)
+		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Accent.Primary))
+	default: // MessageHint
+		symbol = SymBullet
+		symStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Accent.Secondary)).Italic(true)
 	}
 
 	// Prefix: "── " (2 border chars + space = 3 visible chars)

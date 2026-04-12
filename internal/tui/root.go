@@ -102,7 +102,7 @@ func newRootModel(initialPath string) *rootModel {
 		actions:      actions,
 		messages:     messages,
 		lastActionAt: time.Now(),
-		theme:        ThemeTokyoNight,
+		theme:        TokyoNight,
 		header:       headerModel{},
 		version:      "dev",
 	}
@@ -188,13 +188,10 @@ func (m *rootModel) Init() tea.Cmd {
 func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
-	// --- Window resize: propagate to work-area children only (not modals - D-02) ---
+	// --- Window resize: store dimensions only (D-02) ---
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		for _, child := range m.liveWorkChildren() {
-			child.SetSize(msg.Width, msg.Height)
-		}
 		return m, nil
 
 	// --- Modal stack: push ---
@@ -307,10 +304,10 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Check for F12 theme toggle before any other key handling
 		if key == "f12" {
-			if m.theme == ThemeTokyoNight {
-				m.theme = ThemeCyberpunk
+			if m.theme == TokyoNight {
+				m.theme = Cyberpunk
 			} else {
-				m.theme = ThemeTokyoNight
+				m.theme = TokyoNight
 			}
 			m.applyTheme()
 			return m, nil
@@ -334,9 +331,11 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.activeFlow != nil {
 			return m, m.activeFlow.Update(msg)
 		}
-		// 4. Active work-area child
-		if child := m.activeChild(); child != nil {
-			return m, child.Update(msg)
+		// 4. Active work-area child - only if width > 0 (guard against Update before first View)
+		if m.width > 0 {
+			if child := m.activeChild(); child != nil {
+				return m, child.Update(msg)
+			}
 		}
 		return m, nil
 	}
@@ -425,40 +424,21 @@ func (m *rootModel) View() tea.View {
 			workH = 0
 		}
 		top := m.modals[len(m.modals)-1]
-		top.SetAvailableSize(m.width, workH) // pass workH as maxHeight
-		content = m.renderFrame(top)
+		// Pass dimensions to renderFrame which will pass them to modal.View()
+		content = m.renderFrameWithModal(top, m.width, workH)
 	}
 
 	v := tea.NewView(content)
 	v.AltScreen = true
-	v.BackgroundColor = m.theme.SurfaceBase
+	v.BackgroundColor = lipgloss.Color(m.theme.Surface.Base)
 	return v
 }
 
-// overlayModal renders a modal dialog centered over the existing frame content.
-// The frame remains visible behind/around the modal — only the modal region is replaced.
-// Deprecated: kept for reference; replaced by lipgloss.Place inside renderFrame.
-// renderShortcuts renders a command bar from modal shortcuts.
-func renderShortcuts(shortcuts []Shortcut, width int, theme *Theme) string {
-	if len(shortcuts) == 0 {
-		return ""
-	}
-	keyStyle := lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
-	labelStyle := lipgloss.NewStyle().Foreground(theme.TextPrimary)
-	sepStyle := lipgloss.NewStyle().Foreground(theme.TextSecondary)
-	var parts []string
-	for _, s := range shortcuts {
-		parts = append(parts, keyStyle.Render(s.Key)+" "+labelStyle.Render(s.Label))
-	}
-	return "  " + strings.Join(parts, sepStyle.Render("  |  ")+"  ")
-}
-
-// renderFrame composes the full frame: header + work area + msg bar + cmd bar.
-// If modal is non-nil, it is centered inside the work area using lipgloss.Place.
-// The modal must have been sized with SetAvailableSize(width, workH) before calling.
-func (m *rootModel) renderFrame(modal modalView) string {
-	cmdBarStyle := lipgloss.NewStyle().Width(m.width).Background(m.theme.SurfaceBase)
-	workAreaStyle := lipgloss.NewStyle().Width(m.width).Background(m.theme.SurfaceBase)
+// renderFrameWithModal renders a frame with a modal at specified dimensions.
+// This is used when pushing a modal to pass dimensions to its View() method.
+func (m *rootModel) renderFrameWithModal(modal modalView, modalWidth, modalHeight int) string {
+	cmdBarStyle := lipgloss.NewStyle().Width(m.width).Background(lipgloss.Color(m.theme.Surface.Base))
+	workAreaStyle := lipgloss.NewStyle().Width(m.width).Background(lipgloss.Color(m.theme.Surface.Base))
 
 	const headerH = 2
 	const msgBarH = 1
@@ -474,13 +454,12 @@ func (m *rootModel) renderFrame(modal modalView) string {
 	// Message bar
 	msgBar := RenderMessageBar(m.messages.Current(), m.width, m.theme)
 
-	// Work area
+	// Work area - render normally (no modal overlay)
 	var workContent string
 	switch m.area {
 	case workAreaWelcome:
 		if m.welcome != nil {
-			m.welcome.SetSize(m.width, workH)
-			workContent = m.welcome.View()
+			workContent = m.welcome.View(m.width, workH)
 		}
 	case workAreaVault:
 		workContent = m.renderVaultArea(workH)
@@ -488,8 +467,86 @@ func (m *rootModel) renderFrame(modal modalView) string {
 		workContent = m.renderTemplatesArea(workH)
 	case workAreaSettings:
 		if m.settings != nil {
-			m.settings.SetSize(m.width, workH)
-			workContent = m.settings.View()
+			workContent = m.settings.View(m.width, workH)
+		}
+	}
+	workArea := workAreaStyle.Height(workH).Render(workContent)
+
+	// Overlay modal centered inside work area using lipgloss.Place.
+	// Pass dimensions to modal.View() as per new interface
+	if modal != nil {
+		modalStr := modal.View(modalWidth, modalHeight)
+		workArea = lipgloss.Place(m.width, workH, lipgloss.Center, lipgloss.Center, modalStr)
+	}
+
+	// Command bar: always render so the frame occupies exactly `height` lines.
+	// When no shortcuts, render a blank background line.
+	var cmdBarContent string
+	if modal != nil {
+		cmdBarContent = renderShortcuts(modal.Shortcuts(), m.width, m.theme)
+	} else {
+		cmdBarContent = RenderCommandBar(m.actions.Visible(), m.width, m.theme)
+	}
+	if cmdBarContent == "" {
+		cmdBarContent = strings.Repeat(" ", m.width)
+	}
+	cmdBar := cmdBarStyle.Render(cmdBarContent)
+
+	return strings.Join([]string{header, workArea, msgBar, cmdBar}, "\n")
+}
+
+// overlayModal renders a modal dialog centered over the existing frame content.
+// The frame remains visible behind/around the modal — only the modal region is replaced.
+// Deprecated: kept for reference; replaced by lipgloss.Place inside renderFrame.
+// renderShortcuts renders a command bar from modal shortcuts.
+func renderShortcuts(shortcuts []Shortcut, width int, theme *Theme) string {
+	if len(shortcuts) == 0 {
+		return ""
+	}
+	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Accent.Primary)).Bold(true)
+	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary))
+	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
+	var parts []string
+	for _, s := range shortcuts {
+		parts = append(parts, keyStyle.Render(s.Key)+" "+labelStyle.Render(s.Label))
+	}
+	return "  " + strings.Join(parts, sepStyle.Render("  |  ")+"  ")
+}
+
+// renderFrame composes the full frame: header + work area + msg bar + cmd bar.
+// If modal is non-nil, it is centered inside the work area using lipgloss.Place.
+func (m *rootModel) renderFrame(modal modalView) string {
+	cmdBarStyle := lipgloss.NewStyle().Width(m.width).Background(lipgloss.Color(m.theme.Surface.Base))
+	workAreaStyle := lipgloss.NewStyle().Width(m.width).Background(lipgloss.Color(m.theme.Surface.Base))
+
+	const headerH = 2
+	const msgBarH = 1
+	const cmdBarH = 1
+	workH := m.height - headerH - msgBarH - cmdBarH
+	if workH < 0 {
+		workH = 0
+	}
+
+	// Header
+	header := m.header.Render(m.width, m.vaultPath, m.mgr != nil && m.mgr.IsModified(), m.area, m.theme)
+
+	// Message bar
+	msgBar := RenderMessageBar(m.messages.Current(), m.width, m.theme)
+
+	// Work area - pass dimensions to View() calls
+	var workContent string
+	switch m.area {
+	case workAreaWelcome:
+		if m.welcome != nil {
+			workContent = m.welcome.View(m.width, workH)
+		}
+	case workAreaVault:
+		workContent = m.renderVaultArea(workH)
+	case workAreaTemplates:
+		workContent = m.renderTemplatesArea(workH)
+	case workAreaSettings:
+		if m.settings != nil {
+			workContent = m.settings.View(m.width, workH)
 		}
 	}
 	workArea := workAreaStyle.Height(workH).Render(workContent)
@@ -497,7 +554,7 @@ func (m *rootModel) renderFrame(modal modalView) string {
 	// Overlay modal centered inside work area using lipgloss.Place.
 	// lipgloss.Place handles ANSI correctly and never touches header/msgBar/cmdBar.
 	if modal != nil {
-		modalStr := modal.View()
+		modalStr := modal.View(m.width, workH)
 		workArea = lipgloss.Place(m.width, workH, lipgloss.Center, lipgloss.Center, modalStr)
 	}
 
@@ -520,20 +577,14 @@ func (m *rootModel) renderFrame(modal modalView) string {
 // renderVaultArea renders workAreaVault: vaultTree (left) + secretDetail (right).
 func (m *rootModel) renderVaultArea(workH int) string {
 	halfW := m.width / 2
-	if m.vaultTree != nil {
-		m.vaultTree.SetSize(halfW, workH)
-	}
-	if m.secretDetail != nil {
-		m.secretDetail.SetSize(m.width-halfW, workH)
-	}
 
 	left := "[vault tree - Phase 7]"
 	right := "[secret detail - Phase 8]"
 	if m.vaultTree != nil {
-		left = m.vaultTree.View()
+		left = m.vaultTree.View(halfW, workH)
 	}
 	if m.secretDetail != nil {
-		right = m.secretDetail.View()
+		right = m.secretDetail.View(m.width-halfW, workH)
 	}
 
 	leftStyle := lipgloss.NewStyle().Width(halfW).Height(workH)
@@ -544,20 +595,14 @@ func (m *rootModel) renderVaultArea(workH int) string {
 // renderTemplatesArea renders workAreaTemplates: templateList (left) + templateDetail (right).
 func (m *rootModel) renderTemplatesArea(workH int) string {
 	halfW := m.width / 2
-	if m.templateList != nil {
-		m.templateList.SetSize(halfW, workH)
-	}
-	if m.templateDetail != nil {
-		m.templateDetail.SetSize(m.width-halfW, workH)
-	}
 
 	left := "[template list - Phase 8]"
 	right := "[template detail - Phase 8]"
 	if m.templateList != nil {
-		left = m.templateList.View()
+		left = m.templateList.View(halfW, workH)
 	}
 	if m.templateDetail != nil {
-		right = m.templateDetail.View()
+		right = m.templateDetail.View(m.width-halfW, workH)
 	}
 
 	leftStyle := lipgloss.NewStyle().Width(halfW).Height(workH)
@@ -572,8 +617,7 @@ func (m *rootModel) enterVault() tea.Cmd {
 	m.welcome = nil // GC old model
 	m.vaultTree = newVaultTreeModel(m.mgr, m.actions, m.messages, m.theme)
 	m.secretDetail = newSecretDetailModel(m.mgr, m.actions, m.messages, m.theme)
-	m.vaultTree.SetSize(m.width/2, m.height-4)
-	m.secretDetail.SetSize(m.width-m.width/2, m.height-4)
+	// Dimensions are passed to View() when rendering, no SetSize needed
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tickMsg(t) })
 }
 

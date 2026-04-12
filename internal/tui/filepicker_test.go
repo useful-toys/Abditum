@@ -904,7 +904,7 @@ func newGoldenFPK(mode FilePickerMode, title, dir string, w, h int) *filePickerM
 		ext:        ".abditum",
 		mode:       mode,
 		title:      title,
-		theme:      ThemeTokyoNight,
+		theme:      TokyoNight,
 		timeFmt:    func(t time.Time) string { return t.UTC().Format("02/01/06 15:04") },
 		root:       root,
 		focusPanel: 0,

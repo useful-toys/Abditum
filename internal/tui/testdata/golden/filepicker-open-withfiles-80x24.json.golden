@@ -22,7 +22,7 @@
   [2,76,null,null,[]],
   [3,0,null,null,["faint"]],
   [3,1,null,null,["faint"]],
-  [3,3,null,null,["bold","faint"]],
+  [3,3,null,"#000000",["bold","faint"]],
   [3,30,null,null,["faint"]],
   [3,31,"#000000",null,["faint"]],
   [3,32,null,null,["bold","faint"]],

@@ -18,12 +18,12 @@ func (h *headerModel) Render(width int, vaultName string, isDirty bool, activeAr
 	}
 
 	// Styles
-	appNameStyle := lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
-	separatorStyle := lipgloss.NewStyle().Foreground(theme.SurfaceRaised)
-	vaultNameStyle := lipgloss.NewStyle().Foreground(theme.TextPrimary).Bold(true)
-	dirtyStyle := lipgloss.NewStyle().Foreground(theme.SemanticWarning).Bold(true)
-	tabStyle := lipgloss.NewStyle().Foreground(theme.TextSecondary)
-	activeTabStyle := lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
+	appNameStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Accent.Primary)).Bold(true)
+	separatorStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Surface.Raised))
+	vaultNameStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary)).Bold(true)
+	dirtyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Semantic.Warning)).Bold(true)
+	tabStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
+	activeTabStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Accent.Primary)).Bold(true)
 
 	// Line 1 content
 	var line1 string

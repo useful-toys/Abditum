@@ -254,7 +254,7 @@ func TestRenderCommandBar_MultiKeyShowsFirst(t *testing.T) {
 		Handler:  func() tea.Cmd { return nil },
 	})
 
-	result := RenderCommandBar(am.Visible(), 80, ThemeTokyoNight)
+	result := RenderCommandBar(am.Visible(), 80, TokyoNight)
 	if !containsKey(result, "F10") {
 		t.Error("RenderCommandBar must show Keys[0] (f10)")
 	}
@@ -277,7 +277,7 @@ func TestRenderCommandBar_TruncatesLowestPriority(t *testing.T) {
 
 	// 30 cols: body ("  f10 High · f9 Mid · f2 Low") + anchor ("f1 Help") exceeds width.
 	// Truncation removes lowest priority first: f2 goes, f9 stays.
-	result := RenderCommandBar(am.Visible(), 30, ThemeTokyoNight)
+	result := RenderCommandBar(am.Visible(), 30, TokyoNight)
 
 	if !containsKey(result, "F10") {
 		t.Error("highest priority action (f10) must be kept")
@@ -302,7 +302,7 @@ func TestRenderCommandBar_NarrowTerminal_F1Only(t *testing.T) {
 	)
 
 	// 10 cols: body doesn't fit at all, only anchor survives.
-	result := RenderCommandBar(am.Visible(), 10, ThemeTokyoNight)
+	result := RenderCommandBar(am.Visible(), 10, TokyoNight)
 
 	if !containsKey(result, "F1") {
 		t.Error("at 10 cols, F1 anchor must still be visible")
@@ -400,7 +400,7 @@ func TestRenderCommandBar_Golden(t *testing.T) {
 			w := w
 			name := fmt.Sprintf("%s-%d", tc.variant, w)
 			t.Run(name, func(t *testing.T) {
-				out := RenderCommandBar(tc.actions, w, ThemeTokyoNight)
+				out := RenderCommandBar(tc.actions, w, TokyoNight)
 
 				// .txt.golden: raw ANSI output
 				txtPath := goldenPath("commandbar", tc.variant, w, "txt")

@@ -259,12 +259,12 @@ func TestDecisionDialog_SymbolPresence(t *testing.T) {
 		{
 			name:       "Alerta contains ⚠",
 			d:          pocKey7(),
-			wantSymbol: SymWarn,
+			wantSymbol: SymWarning,
 		},
 		{
 			name:       "Destrutivo contains ⚠",
 			d:          pocKey1(),
-			wantSymbol: SymWarn,
+			wantSymbol: SymWarning,
 		},
 		{
 			name:       "Erro contains ✕",
@@ -275,7 +275,7 @@ func TestDecisionDialog_SymbolPresence(t *testing.T) {
 			name:       "Neutro has no symbol",
 			d:          pocKeyD(),
 			wantSymbol: "",
-			wantAbsent: []string{SymWarn, SymError, SymInfo},
+			wantAbsent: []string{SymWarning, SymError, SymInfo},
 		},
 	}
 

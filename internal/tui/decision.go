@@ -61,7 +61,6 @@ type DecisionDialog struct {
 	intention Intention
 	actions   []DecisionAction // ordered: default first, cancel last
 	width     int
-	height    int
 }
 
 // Compile-time assertion: DecisionDialog must satisfy modalView.
@@ -117,12 +116,6 @@ func Decision(severity Severity, title, body string, defaultAction DecisionActio
 // modalView implementation
 // ─────────────────────────────────────────────────────────────────────────────
 
-// SetAvailableSize stores maximum available dimensions for future rendering.
-func (d *DecisionDialog) SetAvailableSize(maxWidth, maxHeight int) {
-	d.width = maxWidth
-	d.height = maxHeight
-}
-
 // Shortcuts returns nil — while a DecisionDialog is active the command bar shows
 // only the global F1 Ajuda shortcut (injected by rootModel via ActionManager).
 func (d *DecisionDialog) Shortcuts() []Shortcut { return nil }
@@ -168,16 +161,18 @@ func (d *DecisionDialog) Update(msg tea.Msg) tea.Cmd {
 //	│  desfeita.                                                      │
 //	│                                                                 │
 //	╰── Enter Excluir ─────────────────────────────────── Esc Cancelar ──╯
-func (d *DecisionDialog) View() string {
-	if d.width == 0 || d.height == 0 {
-		panic(fmt.Sprintf("DecisionDialog.View() called without SetSize: width=%d height=%d", d.width, d.height))
+func (d *DecisionDialog) View(maxWidth, maxHeight int) string {
+	if maxWidth == 0 {
+		panic(fmt.Sprintf("DecisionDialog.View() called without maxWidth: maxWidth=%d", maxWidth))
 	}
+	// Store width for use by boxWidth()
+	d.width = maxWidth
 	borderColor := d.borderColor()
 	boxW := d.boxWidth()
 
 	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(borderColor))
 	titleSt := lipgloss.NewStyle().Foreground(lipgloss.Color(borderColor)).Bold(true)
-	bodySt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextPrimary))
+	bodySt := lipgloss.NewStyle().Foreground(lipgloss.Color("#a9b1d6"))
 
 	// ── Top border ───────────────────────────────────────────────────────────
 	// "╭── {symbol}  {title} ────...────╮"
@@ -279,15 +274,15 @@ func wrapBody(text string, maxWidth int) []string {
 func (d *DecisionDialog) borderColor() string {
 	switch d.severity {
 	case SeverityInformative:
-		return ColorInfo
+		return "#7dcfff"
 	case SeverityAlert:
-		return ColorWarn
+		return "#e0af68"
 	case SeverityError:
-		return ColorError
+		return "#f7768e"
 	case SeverityDestructive:
-		return ColorWarn // destructive: border = semantic.warning
+		return "#e0af68" // destructive: border = semantic.warning
 	default: // SeverityNeutral
-		return ColorBorderDefault
+		return "#414868"
 	}
 }
 
@@ -295,9 +290,9 @@ func (d *DecisionDialog) borderColor() string {
 func (d *DecisionDialog) defaultKeyColor() string {
 	switch d.severity {
 	case SeverityDestructive:
-		return ColorError // destructive: default key = semantic.error
+		return "#f7768e" // destructive: default key = semantic.error
 	default:
-		return ColorAccentPrimary
+		return "#7aa2f7"
 	}
 }
 
@@ -307,7 +302,7 @@ func (d *DecisionDialog) symbol() string {
 	case SeverityInformative:
 		return SymInfo
 	case SeverityAlert, SeverityDestructive:
-		return SymWarn
+		return SymWarning
 	case SeverityError:
 		return SymError
 	default:

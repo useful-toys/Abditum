@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"fmt"
-
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/useful-toys/abditum/internal/vault"
@@ -15,8 +13,6 @@ type templateDetailModel struct {
 	actions *ActionManager
 	msgs    *MessageManager
 	theme   *Theme
-	width   int
-	height  int
 }
 
 // ApplyTheme applies the given theme to the templateDetailModel.
@@ -32,22 +28,13 @@ func newTemplateDetailModel(mgr *vault.Manager, actions *ActionManager, msgs *Me
 	return &templateDetailModel{mgr: mgr, actions: actions, msgs: msgs, theme: theme}
 }
 
-// Update processes messages for the template detail panel.
+// Update processes messages for the template detail.
 func (m *templateDetailModel) Update(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
 // View renders a placeholder for the template detail panel.
-func (m *templateDetailModel) View() string {
-	if m.width == 0 || m.height == 0 {
-		panic(fmt.Sprintf("templateDetailModel.View() called without SetSize: width=%d height=%d", m.width, m.height))
-	}
-	return lipgloss.NewStyle().Foreground(m.theme.SemanticInfo).
+func (m *templateDetailModel) View(width, height int) string {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.Semantic.Info)).
 		Render("[template detail - Phase 8]")
-}
-
-// SetSize stores the allocated panel dimensions.
-func (m *templateDetailModel) SetSize(width, height int) {
-	m.width = width
-	m.height = height
 }

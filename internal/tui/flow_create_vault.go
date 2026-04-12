@@ -91,11 +91,11 @@ func (f *createVaultFlow) Update(msg tea.Msg) tea.Cmd {
 		// User chose "S Salvar" in dirty-check dialog: save current vault then open file picker.
 		mgr := f.mgr
 		messages := f.messages
-		// D-SIG-02: emit MsgBusy synchronously before returning background Cmd
-		messages.Show(MsgBusy, "Salvando cofre...", 0, false)
+		// D-SIG-02: emit MessageBusy synchronously before returning background Cmd
+		messages.Show(MessageBusy, "Salvando cofre...", 0, false)
 		return func() tea.Msg {
 			if err := mgr.Salvar(); err != nil {
-				messages.Show(MsgError, "Não foi possível salvar o cofre.", 5, false)
+				messages.Show(MessageError, "Não foi possível salvar o cofre.", 5, false)
 				return endFlowMsg{}
 			}
 			return FilePicker("Salvar cofre", FilePickerSave, ".abditum", messages, nil)()
@@ -202,15 +202,15 @@ func (f *createVaultFlow) View(width, height int) string {
 func (f *createVaultFlow) saveVault(password []byte) tea.Cmd {
 	f.state = stateSaveNew
 	path := f.targetPath
-	// D-SIG-02: emit MsgBusy synchronously before returning background Cmd
-	f.messages.Show(MsgBusy, "Criando cofre...", 0, false)
+	// D-SIG-02: emit MessageBusy synchronously before returning background Cmd
+	f.messages.Show(MessageBusy, "Criando cofre...", 0, false)
 	return func() tea.Msg {
 		newVault := vault.NovoCofre()
 		newVault.InicializarConteudoPadrao()
 		err := storage.SaveNew(path, newVault, password)
 		crypto.Wipe(password)
 		if err != nil {
-			f.messages.Show(MsgError, "Não foi possível salvar o cofre.", 5, false)
+			f.messages.Show(MessageError, "Não foi possível salvar o cofre.", 5, false)
 			return endFlow()
 		}
 		// Compute file metadata for external change detection baseline
@@ -219,8 +219,8 @@ func (f *createVaultFlow) saveVault(password []byte) tea.Cmd {
 			// Metadata failure is non-fatal: vault was saved successfully
 			metadata = storage.FileMetadata{}
 		}
-		// D-SUC-02: emit MsgSuccess before vaultOpenedMsg
-		f.messages.Show(MsgSuccess, "✓ Cofre criado com sucesso", 5, false)
+		// D-SUC-02: emit MessageSuccess before vaultOpenedMsg
+		f.messages.Show(MessageSuccess, "✓ Cofre criado com sucesso", 5, false)
 		return vaultOpenedMsg{Path: path, Metadata: metadata}
 	}
 }

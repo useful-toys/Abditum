@@ -178,7 +178,7 @@ func (f *saveAndExitFlow) doSave() tea.Cmd {
 	messages := f.messages
 	return func() tea.Msg {
 		if err := mgr.Salvar(); err != nil {
-			messages.Show(MsgError, "Não foi possível salvar o cofre antes de sair.", 5, false)
+			messages.Show(MessageError, "Não foi possível salvar o cofre antes de sair.", 5, false)
 			return endFlowMsg{}
 		}
 		return saveAndExitOKMsg{}

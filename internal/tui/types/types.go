@@ -28,18 +28,6 @@ const (
 	FilePickerModeSave
 )
 
-// MsgKind defines the type of message to display.
-type MsgKind int
-
-const (
-	MsgInfo MsgKind = iota
-	MsgSuccess
-	MsgWarning
-	MsgError
-	MsgBusy // Added MsgBusy
-	MsgHint // Added for password entry hints
-)
-
 // PwdEnteredMsg is sent when a password has been entered by the user.
 // The Password field MUST be zeroed after use.
 type PwdEnteredMsg struct {

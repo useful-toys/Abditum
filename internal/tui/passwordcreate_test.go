@@ -45,7 +45,7 @@ func TestPasswordCreateModalInit(t *testing.T) {
 func TestPasswordCreateModalView(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	view := m.View(80, 24)
 	if view == "" {
@@ -69,7 +69,7 @@ func TestPasswordCreateModalShortcuts(t *testing.T) {
 func TestPasswordCreateModalTabNavigation(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	// Start at password field
 	if m.focusIndex != 0 {
@@ -93,7 +93,7 @@ func TestPasswordCreateModalTabNavigation(t *testing.T) {
 func TestPasswordCreateModalMismatchedPasswords(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	// Set different passwords
 	m.password.SetValue("password1")
@@ -110,7 +110,7 @@ func TestPasswordCreateModalMismatchedPasswords(t *testing.T) {
 func TestPasswordCreateModalEmptyPassword(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	// Leave password empty
 	m.password.SetValue("")
@@ -127,7 +127,7 @@ func TestPasswordCreateModalEmptyPassword(t *testing.T) {
 func TestPasswordCreateModalMatchingPasswords(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	// Set matching passwords
 	m.password.SetValue("SamePassword123!")
@@ -150,7 +150,7 @@ func TestPasswordCreateModalMatchingPasswords(t *testing.T) {
 func TestPasswordCreateModalEscKey(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	// Press ESC
 	cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
@@ -183,11 +183,11 @@ func TestPasswordCreateModalMaskedInput(t *testing.T) {
 func TestPasswordCreateModalApplyTheme(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
-	m.ApplyTheme(ThemeTokyoNight)
+	m.ApplyTheme(TokyoNight)
 	if m.theme == nil {
 		t.Fatal("ApplyTheme did not store theme")
 	}
-	if m.theme != ThemeTokyoNight {
+	if m.theme != TokyoNight {
 		t.Fatal("ApplyTheme did not store the correct theme")
 	}
 }
@@ -196,7 +196,7 @@ func TestPasswordCreateModalApplyTheme(t *testing.T) {
 func TestPasswordCreateModalStrengthEvaluation(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	// Weak password
 	m.password.SetValue("weak")
@@ -220,7 +220,7 @@ func TestPasswordCreateModalStrengthEvaluation(t *testing.T) {
 func TestPasswordCreate_RealtimeValidation_ShowsErrorOnMismatch(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
 	m.password.SetValue("abc123")
@@ -237,8 +237,8 @@ func TestPasswordCreate_RealtimeValidation_ShowsErrorOnMismatch(t *testing.T) {
 	if !strings.Contains(curr.Text, "não conferem") {
 		t.Errorf("expected 'não conferem' in message text, got %q", curr.Text)
 	}
-	if curr.Kind != MsgError {
-		t.Errorf("expected MsgError, got %v", curr.Kind)
+	if curr.Kind != MessageError {
+		t.Errorf("expected MessageError, got %v", curr.Kind)
 	}
 }
 
@@ -247,7 +247,7 @@ func TestPasswordCreate_RealtimeValidation_ShowsErrorOnMismatch(t *testing.T) {
 func TestPasswordCreate_RealtimeValidation_NoErrorWhenEmpty(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
 	m.password.SetValue("abc123")
@@ -256,8 +256,8 @@ func TestPasswordCreate_RealtimeValidation_NoErrorWhenEmpty(t *testing.T) {
 
 	// The hint should be shown (not an error) when confirm is empty
 	curr := m.messages.Current()
-	if curr != nil && curr.Kind == MsgError {
-		t.Errorf("expected no error when confirm is empty, but got MsgError: %q", curr.Text)
+	if curr != nil && curr.Kind == MessageError {
+		t.Errorf("expected no error when confirm is empty, but got MessageError: %q", curr.Text)
 	}
 }
 
@@ -266,7 +266,7 @@ func TestPasswordCreate_RealtimeValidation_NoErrorWhenEmpty(t *testing.T) {
 func TestPasswordCreate_EnterBlocked_EmptyFields(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	m.password.SetValue("")
 	m.confirm.SetValue("")
@@ -282,7 +282,7 @@ func TestPasswordCreate_EnterBlocked_EmptyFields(t *testing.T) {
 func TestPasswordCreate_EnterBlocked_Mismatch(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	m.password.SetValue("password1")
 	m.confirm.SetValue("password2")
@@ -298,7 +298,7 @@ func TestPasswordCreate_EnterBlocked_Mismatch(t *testing.T) {
 func TestPasswordCreate_StrengthMeterHidden_EmptyPassword(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	// Leave password empty (default after Init)
 
@@ -315,7 +315,7 @@ func TestPasswordCreate_StrengthMeterHidden_EmptyPassword(t *testing.T) {
 func TestPasswordCreate_StrengthMeterVisible_NonEmptyPassword(t *testing.T) {
 	m := &passwordCreateModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	m.password.SetValue("test123")
 	m.updateStrength()
@@ -337,7 +337,7 @@ func TestPasswordCreateModal_Golden(t *testing.T) {
 		title: "Criar senha mestra",
 	}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
 	out := m.View(80, 24)
@@ -361,7 +361,7 @@ func TestPasswordCreateModal_Golden(t *testing.T) {
 func TestPasswordCreateModal_Golden_Empty(t *testing.T) {
 	m := &passwordCreateModal{title: "Criar senha mestra"}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
 	// Leave both fields empty (default after Init)
@@ -385,7 +385,7 @@ func TestPasswordCreateModal_Golden_Empty(t *testing.T) {
 func TestPasswordCreateModal_Golden_FilledMatch(t *testing.T) {
 	m := &passwordCreateModal{title: "Criar senha mestra"}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
 	m.password.SetValue("SamePass123!")

@@ -103,11 +103,11 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 		// Capture pointers into locals to avoid closure aliasing.
 		mgr := f.mgr
 		messages := f.messages
-		// D-SIG-02: emit MsgBusy synchronously before returning background Cmd
-		messages.Show(MsgBusy, "Salvando cofre...", 0, false)
+		// D-SIG-02: emit MessageBusy synchronously before returning background Cmd
+		messages.Show(MessageBusy, "Salvando cofre...", 0, false)
 		return func() tea.Msg {
 			if err := mgr.Salvar(); err != nil {
-				messages.Show(MsgError, "Não foi possível salvar o cofre.", 5, false)
+				messages.Show(MessageError, "Não foi possível salvar o cofre.", 5, false)
 				return endFlowMsg{}
 			}
 			return FilePicker("Abrir cofre", FilePickerOpen, ".abditum", messages, nil)()
@@ -117,8 +117,8 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 		f.state = statePreload
 		password := msg.Password
 		path := f.pickedPath
-		// D-SIG-01: emit MsgBusy synchronously BEFORE returning the background Cmd
-		f.messages.Show(MsgBusy, "Abrindo cofre...", 0, false)
+		// D-SIG-01: emit MessageBusy synchronously BEFORE returning the background Cmd
+		f.messages.Show(MessageBusy, "Abrindo cofre...", 0, false)
 		// Attempt to load the vault in a background command
 		return func() tea.Msg {
 			// Call RecoverOrphans silently
@@ -131,7 +131,7 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 					f.passwordAttempt++
 					if f.passwordAttempt >= 5 {
 						// D-PWD-02: exact exhaustion message text
-						f.messages.Show(MsgError, "✕ Limite de tentativas atingido", 5, false)
+						f.messages.Show(MessageError, "✕ Limite de tentativas atingido", 5, false)
 						return endFlowMsg{}
 					}
 					// Wrong password (attempt < 5): show Acknowledge dialog (spec: Desvio 4)
@@ -153,8 +153,8 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 					"Arquivo corrompido ou inválido. Necessário fechar.",
 					func() tea.Msg { return FilePicker("Abrir cofre", FilePickerOpen, ".abditum", f.messages, f.theme)() })()
 			}
-			// D-SUC-01: emit MsgSuccess before vaultOpenedMsg
-			f.messages.Show(MsgSuccess, "✓ Cofre aberto com sucesso", 5, false)
+			// D-SUC-01: emit MessageSuccess before vaultOpenedMsg
+			f.messages.Show(MessageSuccess, "✓ Cofre aberto com sucesso", 5, false)
 			// Success: store metadata and notify rootModel
 			f.vaultMetadata = metadata
 			f.state = stateDone

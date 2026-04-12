@@ -270,7 +270,7 @@ func TestCreateVaultFlow_DirtyCheck_UsesDecisionSeverityAlert(t *testing.T) {
 	// with a nil mgr (no dirty state), which exercises the non-dirty Init path.
 	// The actual dirty-check Decision dialog is validated by unit tests in
 	// flow_create_vault_test.go which use a properly-constructed manager.
-	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 
 	_ = flow // flow created successfully — type check only for this test
 	// Verify the flow is IntentionConfirm when dirty by checking the dialog struct shape
@@ -281,7 +281,7 @@ func TestCreateVaultFlow_DirtyCheck_UsesDecisionSeverityAlert(t *testing.T) {
 
 // TestCreateVaultFlow_DirtyCheck_HasThreeActions verifies S/D/Esc actions.
 func TestCreateVaultFlow_DirtyCheck_HasThreeActions(t *testing.T) {
-	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	_ = flow
 	// Covered by flow_create_vault_test.go — requires a real modified *vault.Manager.
 	t.Skip("dirty-check branch requires a real modified *vault.Manager — covered by flow_create_vault_test.go")
@@ -296,7 +296,7 @@ func TestCreateVaultFlow_OverwriteDialog_TitleAndBody(t *testing.T) {
 		t.Fatalf("create temp .abditum file: %v", err)
 	}
 
-	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	cmd := flow.Update(filePickerResult{Path: tmp, Cancelled: false})
 	if cmd == nil {
 		t.Fatal("expected cmd from filePickerResult with existing file")
@@ -323,7 +323,7 @@ func TestCreateVaultFlow_OverwriteDialog_HasThreeActions(t *testing.T) {
 		t.Fatalf("create temp .abditum file: %v", err)
 	}
 
-	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	cmd := flow.Update(filePickerResult{Path: tmp, Cancelled: false})
 	dialog := unwrapDecisionDialogFrom(t, cmd)
 
@@ -344,7 +344,7 @@ func TestCreateVaultFlow_OverwriteDialog_HasThreeActions(t *testing.T) {
 // TestCreateVaultFlow_WeakPwdDialog_DefaultIsProsseguir verifies desvio 8:
 // the weak password dialog has P (Prosseguir) as default, not R (Revisar).
 func TestCreateVaultFlow_WeakPwdDialog_DefaultIsProsseguir(t *testing.T) {
-	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 
 	// Provide a weak password (short, single category) to trigger the strength check.
 	weakPwd := []byte("weak")
@@ -376,7 +376,7 @@ func TestCreateVaultFlow_WeakPwdDialog_DefaultIsProsseguir(t *testing.T) {
 // TestCreateVaultFlow_WeakPwdDialog_EscCancelsFlow verifies desvio 8:
 // Esc action emits endFlowMsg (cancels entire flow), not weakPwdProceedMsg.
 func TestCreateVaultFlow_WeakPwdDialog_EscCancelsFlow(t *testing.T) {
-	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 
 	weakPwd := []byte("weak")
 	cmd := flow.Update(pwdCreatedMsg{Password: weakPwd})
@@ -403,7 +403,7 @@ func TestCreateVaultFlow_WeakPwdDialog_EscCancelsFlow(t *testing.T) {
 // TestCreateVaultFlow_WeakPwdDialog_SecondaryIsRevisar verifies that R Revisar
 // is the secondary (non-default, non-cancel) action.
 func TestCreateVaultFlow_WeakPwdDialog_SecondaryIsRevisar(t *testing.T) {
-	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 
 	weakPwd := []byte("weak")
 	cmd := flow.Update(pwdCreatedMsg{Password: weakPwd})

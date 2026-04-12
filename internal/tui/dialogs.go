@@ -47,7 +47,7 @@ func Confirm(dtype DialogType, title, message string, onYes, onNo tea.Cmd) tea.C
 // PasswordEntry creates a password-entry modal.
 func PasswordEntry(title string) tea.Cmd {
 	m := &passwordEntryModal{title: title}
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 	cmd := m.Init()
 	return tea.Batch(
@@ -59,7 +59,7 @@ func PasswordEntry(title string) tea.Cmd {
 // PasswordCreate creates a password-creation modal.
 func PasswordCreate(title string) tea.Cmd {
 	m := &passwordCreateModal{title: title}
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 	cmd := m.Init()
 	return tea.Batch(

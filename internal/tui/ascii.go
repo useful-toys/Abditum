@@ -19,10 +19,10 @@ const AsciiArt = `    ___    __        ___ __
 // Each of the 5 ASCII art lines gets its corresponding color.
 // Returns the colored multi-line string ready for display.
 func RenderLogo(t *Theme) string {
-	colors := t.LogoGradient
+	colors := t.Logo[:]
 	// Validate gradient has exactly 5 colors per design system spec
 	if len(colors) != 5 {
-		panic("LogoGradient must contain exactly 5 colors (one per ASCII art line)")
+		panic("Logo must contain exactly 5 colors (one per ASCII art line)")
 	}
 
 	lines := strings.Split(AsciiArt, "\n")
@@ -32,7 +32,7 @@ func RenderLogo(t *Theme) string {
 		if i >= len(colors) {
 			break // Should never happen due to validation above
 		}
-		style := lipgloss.NewStyle().Foreground(colors[i])
+		style := lipgloss.NewStyle().Foreground(lipgloss.Color(colors[i]))
 		rendered = append(rendered, style.Render(line))
 	}
 

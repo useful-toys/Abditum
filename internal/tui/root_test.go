@@ -118,7 +118,7 @@ func TestLiveWorkChildren_NilSafety(t *testing.T) {
 	}
 
 	// Restore welcome.
-	m.welcome = newWelcomeModel(m.actions, ThemeTokyoNight, "dev")
+	m.welcome = newWelcomeModel(m.actions, TokyoNight, "dev")
 	live = m.liveWorkChildren()
 	if len(live) != 1 {
 		t.Errorf("expected 1 live child after restoring welcome, got %d", len(live))
@@ -275,7 +275,7 @@ func TestD09_ActionManagerBeforeModal(t *testing.T) {
 // every KeyPressMsg, even when no registered action matches the key.
 func TestKeyPress_CallsHandleInput(t *testing.T) {
 	m := NewRootModel()
-	m.messages.Show(MsgHint, "dismiss me", 0, true) // clearOnInput=true
+	m.messages.Show(MessageHint, "dismiss me", 0, true) // clearOnInput=true
 
 	m.Update(makeKeyPress("z")) // unknown key, no action registered
 

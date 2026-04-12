@@ -21,7 +21,7 @@ func TestOpenVaultFlowImplementsFlowHandler(t *testing.T) {
 
 // TestOpenVaultFlowNewCreatesFlow validates newOpenVaultFlow creates a flow.
 func TestOpenVaultFlowNewCreatesFlow(t *testing.T) {
-	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	if flow == nil {
 		t.Error("newOpenVaultFlow should return a non-nil flow")
 	}
@@ -32,7 +32,7 @@ func TestOpenVaultFlowNewCreatesFlow(t *testing.T) {
 
 // TestOpenVaultFlowInit validates Init() initializes the flow.
 func TestOpenVaultFlowInit(t *testing.T) {
-	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	cmd := flow.Init()
 	// Init should return a valid tea.Cmd
 	if cmd != nil {
@@ -46,7 +46,7 @@ func TestOpenVaultFlowInit(t *testing.T) {
 
 // TestOpenVaultFlowUpdate validates Update() handles messages.
 func TestOpenVaultFlowUpdate(t *testing.T) {
-	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	flow.state = statePickFile
 	// Send a generic message
 	cmd := flow.Update(nil)
@@ -59,7 +59,7 @@ func TestOpenVaultFlowUpdate(t *testing.T) {
 
 // TestOpenVaultFlowHandlesFilePickerResult validates handling of file selection.
 func TestOpenVaultFlowHandlesFilePickerResult(t *testing.T) {
-	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	flow.state = statePickFile
 	msg := filePickerResult{Path: "/tmp/test.abditum", Cancelled: false}
 	cmd := flow.Update(msg)
@@ -73,7 +73,7 @@ func TestOpenVaultFlowHandlesFilePickerResult(t *testing.T) {
 
 // TestOpenVaultFlowHandlesFilePickerCancelled validates cancellation.
 func TestOpenVaultFlowHandlesFilePickerCancelled(t *testing.T) {
-	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	flow.state = statePickFile
 	msg := filePickerResult{Path: "", Cancelled: true}
 	cmd := flow.Update(msg)
@@ -84,7 +84,7 @@ func TestOpenVaultFlowHandlesFilePickerCancelled(t *testing.T) {
 
 // TestOpenVaultFlowView validates View() returns a string.
 func TestOpenVaultFlowView(t *testing.T) {
-	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	view := flow.View(80, 24)
 	// View should return a string (may be empty for flow-driven interface)
 	if view == "" {
@@ -168,7 +168,7 @@ func TestOpenVaultFlow_WrongPassword_AcknowledgeSpec(t *testing.T) {
 // storage.Load fails (nonexistent file → generic I/O error), the Update cmd
 // produces a pushModalMsg{*DecisionDialog} — NOT a message-bar Show call.
 func TestOpenVaultFlow_Update_FileError_ProducesAcknowledge(t *testing.T) {
-	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	flow.pickedPath = "/nonexistent/path/vault.abditum"
 	flow.state = statePwdEntry
 	flow.passwordAttempt = 0
@@ -287,14 +287,14 @@ func TestOpenVaultFlow_FileError_InvalidMagic_VsCorrupted_DifferentBodies(t *tes
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Behavioral Tests — D-SIG-01 synchronous MsgBusy and D-PWD-02 exhaustion text
+// Behavioral Tests — D-SIG-01 synchronous MessageBusy and D-PWD-02 exhaustion text
 // ─────────────────────────────────────────────────────────────────────────────
 
 // TestOpenVaultFlow_MsgBusy_EmittedSynchronously verifies D-SIG-01:
-// calling Update(pwdEnteredMsg) synchronously sets MsgBusy BEFORE returning the Cmd.
+// calling Update(pwdEnteredMsg) synchronously sets MessageBusy BEFORE returning the Cmd.
 func TestOpenVaultFlow_MsgBusy_EmittedSynchronously(t *testing.T) {
 	msgs := NewMessageManager()
-	flow := newOpenVaultFlow(nil, msgs, NewActionManager(), ThemeTokyoNight)
+	flow := newOpenVaultFlow(nil, msgs, NewActionManager(), TokyoNight)
 	flow.pickedPath = "/nonexistent/path/vault.abditum"
 	flow.state = statePwdEntry
 
@@ -303,16 +303,16 @@ func TestOpenVaultFlow_MsgBusy_EmittedSynchronously(t *testing.T) {
 		t.Fatal("expected no message before Update")
 	}
 
-	// Call Update — D-SIG-01: Show(MsgBusy) must be called synchronously inside Update
+	// Call Update — D-SIG-01: Show(MessageBusy) must be called synchronously inside Update
 	_ = flow.Update(pwdEnteredMsg{Password: []byte("testpassword")})
 
-	// BEFORE running the returned Cmd, verify MsgBusy was set synchronously
+	// BEFORE running the returned Cmd, verify MessageBusy was set synchronously
 	curr := msgs.Current()
 	if curr == nil {
-		t.Fatal("expected MsgBusy to be set synchronously after Update(pwdEnteredMsg), got nil")
+		t.Fatal("expected MessageBusy to be set synchronously after Update(pwdEnteredMsg), got nil")
 	}
-	if curr.Kind != MsgBusy {
-		t.Errorf("expected MsgBusy kind, got %v", curr.Kind)
+	if curr.Kind != MessageBusy {
+		t.Errorf("expected MessageBusy kind, got %v", curr.Kind)
 	}
 	if curr.Text != "Abrindo cofre..." {
 		t.Errorf("expected 'Abrindo cofre...' text, got %q", curr.Text)
@@ -331,7 +331,7 @@ func TestOpenVaultFlow_ExhaustionMessage_Text(t *testing.T) {
 	// Directly simulate the exhaustion path: call messages.Show as the code does
 	// when passwordAttempt >= 5 (from flow_open_vault.go pwdEnteredMsg handler).
 	// This locks in the exact string from the spec.
-	msgs.Show(MsgError, want, 5, false)
+	msgs.Show(MessageError, want, 5, false)
 
 	curr := msgs.Current()
 	if curr == nil {
@@ -340,8 +340,8 @@ func TestOpenVaultFlow_ExhaustionMessage_Text(t *testing.T) {
 	if curr.Text != want {
 		t.Errorf("exhaustion message: got %q, want %q", curr.Text, want)
 	}
-	if curr.Kind != MsgError {
-		t.Errorf("expected MsgError kind for exhaustion message, got %v", curr.Kind)
+	if curr.Kind != MessageError {
+		t.Errorf("expected MessageError kind for exhaustion message, got %v", curr.Kind)
 	}
 }
 
@@ -351,7 +351,7 @@ func TestOpenVaultFlow_ExhaustionMessage_Text(t *testing.T) {
 
 // TestOpenVaultFlow_Golden validates flow view rendering against golden files.
 func TestOpenVaultFlow_Golden(t *testing.T) {
-	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	flow.state = stateCheckDirty
 
 	view := flow.View(80, 24)

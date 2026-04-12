@@ -18,7 +18,7 @@ func TestCreateVaultFlowImplementsFlowHandler(t *testing.T) {
 
 // TestCreateVaultFlowNewCreatesFlow validates newCreateVaultFlow creates a flow.
 func TestCreateVaultFlowNewCreatesFlow(t *testing.T) {
-	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	if flow == nil {
 		t.Error("newCreateVaultFlow should return a non-nil flow")
 	}
@@ -29,7 +29,7 @@ func TestCreateVaultFlowNewCreatesFlow(t *testing.T) {
 
 // TestCreateVaultFlowInit validates Init() initializes the flow.
 func TestCreateVaultFlowInit(t *testing.T) {
-	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	cmd := flow.Init()
 	// Init should return a valid tea.Cmd
 	if cmd != nil {
@@ -43,7 +43,7 @@ func TestCreateVaultFlowInit(t *testing.T) {
 
 // TestCreateVaultFlowUpdate validates Update() handles messages.
 func TestCreateVaultFlowUpdate(t *testing.T) {
-	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	flow.state = statePickFile
 	// Send a generic message
 	cmd := flow.Update(nil)
@@ -56,7 +56,7 @@ func TestCreateVaultFlowUpdate(t *testing.T) {
 
 // TestCreateVaultFlowHandlesFilePickerResult validates handling of file selection.
 func TestCreateVaultFlowHandlesFilePickerResult(t *testing.T) {
-	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	flow.state = statePickFile
 	msg := filePickerResult{Path: "/tmp/test.abditum", Cancelled: false}
 	cmd := flow.Update(msg)
@@ -70,7 +70,7 @@ func TestCreateVaultFlowHandlesFilePickerResult(t *testing.T) {
 
 // TestCreateVaultFlowHandlesFilePickerCancelled validates cancellation.
 func TestCreateVaultFlowHandlesFilePickerCancelled(t *testing.T) {
-	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	flow.state = statePickFile
 	msg := filePickerResult{Path: "", Cancelled: true}
 	cmd := flow.Update(msg)
@@ -81,7 +81,7 @@ func TestCreateVaultFlowHandlesFilePickerCancelled(t *testing.T) {
 
 // TestCreateVaultFlowView validates View() returns a string.
 func TestCreateVaultFlowView(t *testing.T) {
-	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	view := flow.View(80, 24)
 	// View should return a string (may be empty for flow-driven interface)
 	if view == "" {
@@ -99,32 +99,32 @@ func TestCreateVaultFlowEmitsVaultOpenedMsg(t *testing.T) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Behavioral Tests — D-SIG-02 synchronous MsgBusy and D-CLI-02 cliPath fast-path
+// Behavioral Tests — D-SIG-02 synchronous MessageBusy and D-CLI-02 cliPath fast-path
 // ─────────────────────────────────────────────────────────────────────────────
 
 // TestCreateVaultFlow_MsgBusy_EmittedSynchronously verifies D-SIG-02:
-// calling saveVault() synchronously sets MsgBusy BEFORE returning the Cmd.
+// calling saveVault() synchronously sets MessageBusy BEFORE returning the Cmd.
 func TestCreateVaultFlow_MsgBusy_EmittedSynchronously(t *testing.T) {
 	msgs := NewMessageManager()
-	flow := newCreateVaultFlow(nil, msgs, NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, msgs, NewActionManager(), TokyoNight)
 	flow.targetPath = "/tmp/test-abditum-sync.abditum"
 	flow.state = statePwdCreate
 
 	// The MessageManager should be empty (or have hint) before saveVault
-	if curr := msgs.Current(); curr != nil && curr.Kind == MsgBusy {
-		t.Fatal("did not expect MsgBusy before saveVault")
+	if curr := msgs.Current(); curr != nil && curr.Kind == MessageBusy {
+		t.Fatal("did not expect MessageBusy before saveVault")
 	}
 
-	// Call saveVault directly — D-SIG-02: Show(MsgBusy) must be called synchronously
+	// Call saveVault directly — D-SIG-02: Show(MessageBusy) must be called synchronously
 	_ = flow.saveVault([]byte("testpassword"))
 
-	// BEFORE running the returned Cmd, verify MsgBusy was set synchronously
+	// BEFORE running the returned Cmd, verify MessageBusy was set synchronously
 	curr := msgs.Current()
 	if curr == nil {
-		t.Fatal("expected MsgBusy to be set synchronously after saveVault(), got nil")
+		t.Fatal("expected MessageBusy to be set synchronously after saveVault(), got nil")
 	}
-	if curr.Kind != MsgBusy {
-		t.Errorf("expected MsgBusy kind, got %v", curr.Kind)
+	if curr.Kind != MessageBusy {
+		t.Errorf("expected MessageBusy kind, got %v", curr.Kind)
 	}
 	if curr.Text != "Criando cofre..." {
 		t.Errorf("expected 'Criando cofre...' text, got %q", curr.Text)
@@ -136,7 +136,7 @@ func TestCreateVaultFlow_MsgBusy_EmittedSynchronously(t *testing.T) {
 // a Cmd that emits pushModalMsg{modal: *passwordCreateModal}.
 func TestCreateVaultFlow_CliPath_SkipsToPasswordCreate(t *testing.T) {
 	msgs := NewMessageManager()
-	flow := newCreateVaultFlow(nil, msgs, NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, msgs, NewActionManager(), TokyoNight)
 	flow.cliPath = "/tmp/test-new.abditum"
 
 	cmd := flow.Init()
@@ -171,7 +171,7 @@ func TestCreateVaultFlow_CliPath_SkipsToPasswordCreate(t *testing.T) {
 
 // TestCreateVaultFlow_Golden validates flow view rendering against golden files.
 func TestCreateVaultFlow_Golden(t *testing.T) {
-	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), ThemeTokyoNight)
+	flow := newCreateVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	flow.state = stateCheckDirty
 
 	view := flow.View(80, 24)

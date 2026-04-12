@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"fmt"
-
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/useful-toys/abditum/internal/vault"
@@ -15,8 +13,6 @@ type vaultTreeModel struct {
 	actions *ActionManager
 	msgs    *MessageManager
 	theme   *Theme
-	width   int
-	height  int
 }
 
 // ApplyTheme applies the given theme to the vaultTreeModel.
@@ -38,16 +34,7 @@ func (m *vaultTreeModel) Update(msg tea.Msg) tea.Cmd {
 }
 
 // View renders a placeholder for the vault tree panel.
-func (m *vaultTreeModel) View() string {
-	if m.width == 0 || m.height == 0 {
-		panic(fmt.Sprintf("vaultTreeModel.View() called without SetSize: width=%d height=%d", m.width, m.height))
-	}
-	return lipgloss.NewStyle().Foreground(m.theme.SemanticInfo).
+func (m *vaultTreeModel) View(width, height int) string {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.Semantic.Info)).
 		Render("[vault tree - Phase 7]")
-}
-
-// SetSize stores the allocated panel dimensions.
-func (m *vaultTreeModel) SetSize(width, height int) {
-	m.width = width
-	m.height = height
 }

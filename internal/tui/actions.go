@@ -173,9 +173,9 @@ func (a *ActionManager) All() []Action {
 // Actions are sorted by Priority descending before rendering — callers may pass unsorted slices.
 // Callers should pass am.Visible() to obtain the visible action slice.
 func RenderCommandBar(actions []Action, width int, theme *Theme) string {
-	keyStyle := lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
-	labelStyle := lipgloss.NewStyle().Foreground(theme.TextPrimary)
-	sepStyle := lipgloss.NewStyle().Foreground(theme.TextSecondary)
+	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Accent.Primary)).Bold(true)
+	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary))
+	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
 
 	// renderPart builds a single "KEY Label" token pair.
 	renderPart := func(key, label string) string {

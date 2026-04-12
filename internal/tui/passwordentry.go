@@ -7,7 +7,6 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/useful-toys/abditum/internal/tui/tokens"
 )
 
 // passwordEntryModal is a modal for entering a password when opening a vault.
@@ -30,7 +29,6 @@ type passwordEntryModal struct {
 	attempt     int
 	maxAttempts int
 	width       int
-	height      int
 	theme       *Theme
 	messages    *MessageManager
 }
@@ -56,12 +54,12 @@ func (m *passwordEntryModal) Init() tea.Cmd {
 func (m *passwordEntryModal) HandleWrongPassword() {
 	m.attempt++
 	m.input.SetValue("")
-	m.messages.Show(MsgError, tokens.SymError+" Senha incorreta", 5, false)
+	m.messages.Show(MessageError, SymError+" Senha incorreta", 5, false)
 }
 
 // showHint displays the initial hint message.
 func (m *passwordEntryModal) showHint() {
-	m.messages.Show(MsgHint, tokens.SymHint+" Digite a senha para desbloquear o cofre", 0, false)
+	m.messages.Show(MessageHint, SymBullet+" Digite a senha para desbloquear o cofre", 0, false)
 }
 
 // Update handles keyboard input.
@@ -78,7 +76,7 @@ func (m *passwordEntryModal) Update(msg tea.Msg) tea.Cmd {
 		case tea.KeyEnter:
 			password := []byte(m.input.Value())
 			if len(password) == 0 {
-				m.messages.Show(MsgError, tokens.SymError+" Digite uma senha", 3, false)
+				m.messages.Show(MessageError, SymError+" Digite uma senha", 3, false)
 				return nil
 			}
 			// Return the entered password to the flow
@@ -103,21 +101,19 @@ func (m *passwordEntryModal) Update(msg tea.Msg) tea.Cmd {
 //	│                                            │
 //	│  Tentativa N de 5                          │  ← attempt ≥ 2 only
 //	╰── Enter Confirmar ──────────── Esc Cancelar ──╯
-func (m *passwordEntryModal) View() string {
-	if m.width == 0 || m.height == 0 {
-		panic(fmt.Sprintf("passwordEntryModal.View() called without SetSize: width=%d height=%d", m.width, m.height))
-	}
+func (m *passwordEntryModal) View(maxWidth, maxHeight int) string {
+	m.width = maxWidth
 	const fixedWidth = 50
 	boxW := fixedWidth
 	if m.width > 0 && m.width < fixedWidth {
 		boxW = m.width
 	}
 
-	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
-	titleSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused)).Bold(true)
-	labelSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorAccentPrimary)).Bold(true)
-	secondarySt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextSecondary))
-	fieldBgSt := lipgloss.NewStyle().Background(lipgloss.Color(ColorSurfaceInput))
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	titleSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7")).Bold(true)
+	labelSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7")).Bold(true)
+	secondarySt := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
+	fieldBgSt := lipgloss.NewStyle().Background(lipgloss.Color("#1e1f2e"))
 
 	dashes := func(n int) string {
 		if n < 0 {
@@ -187,9 +183,9 @@ func (m *passwordEntryModal) View() string {
 	isEmpty := len(m.input.Value()) == 0
 	var enterSt lipgloss.Style
 	if isEmpty {
-		enterSt = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextDisabled))
+		enterSt = lipgloss.NewStyle().Foreground(lipgloss.Color("#3b4261"))
 	} else {
-		enterSt = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorAccentPrimary)).Bold(true)
+		enterSt = lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7")).Bold(true)
 	}
 
 	// Left: "╰── Enter Confirmar "
@@ -212,12 +208,6 @@ func (m *passwordEntryModal) View() string {
 
 	lines = append(lines, actionBar)
 	return strings.Join(lines, "\n")
-}
-
-// SetAvailableSize stores the maximum available modal dimensions.
-func (m *passwordEntryModal) SetAvailableSize(maxWidth, maxHeight int) {
-	m.width = maxWidth
-	m.height = maxHeight
 }
 
 // Shortcuts returns keyboard hints for the command bar.

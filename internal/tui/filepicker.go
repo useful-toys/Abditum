@@ -133,7 +133,7 @@ func (m *filePickerModal) Init() tea.Cmd {
 		m.currentPath = home
 		warnCmd = func() tea.Msg {
 			if m.messages != nil {
-				m.messages.Show(MsgWarn, "⚠ Diretório atual inacessível — navegando para home", 0, true)
+				m.messages.Show(MessageWarning, "⚠ Diretório atual inacessível — navegando para home", 0, true)
 			}
 			return nil
 		}
@@ -360,7 +360,7 @@ func (m *filePickerModal) emitHint() tea.Cmd {
 			text = "Confirme para salvar o cofre"
 		}
 	}
-	m.messages.Show(MsgHint, text, 0, true)
+	m.messages.Show(MessageHint, text, 0, true)
 	return nil
 }
 
@@ -483,7 +483,7 @@ func (m *filePickerModal) updateTree(msg tea.KeyPressMsg) tea.Cmd {
 		if err := m.expandNode(node); err != nil {
 			// D-22: permission error — show dir basename only
 			if m.messages != nil {
-				m.messages.Show(MsgError, "✕ Sem permissão para acessar "+filepath.Base(node.path), 5, true)
+				m.messages.Show(MessageError, "✕ Sem permissão para acessar "+filepath.Base(node.path), 5, true)
 			}
 			return nil
 		}
@@ -682,8 +682,8 @@ func padRight(s string, width int) string {
 
 // renderTopBorder draws the top rounded border with the modal title centered (D-08, D-09).
 func (m *filePickerModal) renderTopBorder(modalW int, theme *Theme) string {
-	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
-	titleSt := lipgloss.NewStyle().Foreground(theme.TextPrimary).Bold(true)
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	titleSt := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary)).Bold(true)
 
 	title := " " + m.title + " "
 	titleRendered := titleSt.Render(title)
@@ -701,8 +701,8 @@ func (m *filePickerModal) renderTopBorder(modalW int, theme *Theme) string {
 
 // renderCaminhoHeader draws the "/path/to/dir" row with 1-space lateral padding (D-20).
 func (m *filePickerModal) renderCaminhoHeader(innerW int, theme *Theme) string {
-	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
-	valueSt := lipgloss.NewStyle().Foreground(theme.TextPrimary)
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	valueSt := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary))
 
 	// 1 space of padding on each side; path uses the remaining space
 	padding := 1
@@ -726,9 +726,9 @@ func (m *filePickerModal) renderCaminhoHeader(innerW int, theme *Theme) string {
 
 // renderPanelSeparator draws the ├── Estrutura ──┬── Arquivos ──┤ line (D-08, D-09).
 func (m *filePickerModal) renderPanelSeparator(innerW, treeW, filesW int, theme *Theme) string {
-	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
-	headerSt := lipgloss.NewStyle().Foreground(theme.TextSecondary).Bold(true)
-	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
+	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	headerSt := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary)).Bold(true)
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
 
 	treeLabel := " Estrutura "
 	treeLabelW := lipgloss.Width(treeLabel)
@@ -758,8 +758,8 @@ func (m *filePickerModal) renderPanelSeparator(innerW, treeW, filesW int, theme 
 // renderTreeSepChar returns the character for the tree│files separator column at row i.
 // Replaces │ with ↑/■/↓ scroll indicators when tree content overflows (D-08).
 func renderTreeSepChar(scroll, total, visibleH, row int) string {
-	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
-	indSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextSecondary))
+	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	indSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
 	if total <= visibleH {
 		return sepSt.Render("│")
 	}
@@ -788,8 +788,8 @@ func renderTreeSepChar(scroll, total, visibleH, row int) string {
 // renderFileSepChar returns the right modal border char at row i.
 // Replaces │ with ↑/■/↓ scroll indicators when files content overflows (D-08).
 func renderFileSepChar(scroll, total, visibleH, row int) string {
-	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
-	indSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextSecondary))
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	indSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
 	if total <= visibleH {
 		return borderSt.Render("│")
 	}
@@ -821,13 +821,13 @@ func (m *filePickerModal) renderTreeContent(treeW, visibleH int, theme *Theme) [
 	// When another panel is focused the tree shows a passive cursor (bold + accent, no bg).
 	var selectedSt lipgloss.Style
 	if m.focusPanel == 0 {
-		selectedBg := lipgloss.Color("#3d59a1") // special.highlight
-		selectedSt = lipgloss.NewStyle().Background(selectedBg).Foreground(theme.AccentPrimary).Bold(true)
+		selectedBg := lipgloss.Color(theme.Special.Highlight) // special.highlight
+		selectedSt = lipgloss.NewStyle().Background(selectedBg).Foreground(lipgloss.Color(theme.Accent.Primary)).Bold(true)
 	} else {
-		selectedSt = lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
+		selectedSt = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Accent.Primary)).Bold(true)
 	}
-	normalSt := lipgloss.NewStyle().Foreground(theme.TextPrimary)
-	indicatorSt := lipgloss.NewStyle().Foreground(theme.AccentSecondary)
+	normalSt := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary))
+	indicatorSt := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Accent.Secondary))
 
 	var lines []string
 	end := m.treeScroll + visibleH
@@ -880,18 +880,18 @@ func (m *filePickerModal) renderTreeContent(treeW, visibleH int, theme *Theme) [
 
 // renderFilesContent returns visibleH lines for the files (Arquivos) panel (D-09, D-11, D-15).
 func (m *filePickerModal) renderFilesContent(filesW, visibleH int, theme *Theme) []string {
-	normalSt := lipgloss.NewStyle().Foreground(theme.TextPrimary)
-	bulletSt := lipgloss.NewStyle().Foreground(theme.TextSecondary)
-	metaSt := lipgloss.NewStyle().Foreground(theme.TextSecondary)
-	disabledSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextSecondary))
+	normalSt := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary))
+	bulletSt := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
+	metaSt := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
+	disabledSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
 	// Highlight the selected file only when the files panel has focus (D-09).
 	// When the tree panel is focused the files panel shows a passive cursor (bold only, no bg).
 	var selectedSt lipgloss.Style
 	if m.focusPanel == 1 {
-		selectedBg := lipgloss.Color("#3d59a1") // special.highlight
-		selectedSt = lipgloss.NewStyle().Background(selectedBg).Foreground(theme.TextPrimary).Bold(true)
+		selectedBg := lipgloss.Color(theme.Special.Highlight) // special.highlight
+		selectedSt = lipgloss.NewStyle().Background(selectedBg).Foreground(lipgloss.Color(theme.Text.Primary)).Bold(true)
 	} else {
-		selectedSt = lipgloss.NewStyle().Foreground(theme.TextPrimary).Bold(true)
+		selectedSt = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary)).Bold(true)
 	}
 
 	if len(m.files) == 0 {
@@ -963,8 +963,8 @@ func (m *filePickerModal) renderFilesContent(filesW, visibleH int, theme *Theme)
 
 // renderFieldSeparator draws the ├────┴────┤ separator above the Save mode campo nome (D-08).
 func (m *filePickerModal) renderFieldSeparator(innerW, treeW int) string {
-	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
-	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
 
 	leftDashes := strings.Repeat("─", treeW)
 	// rightLen: innerW total = treeW(─) + 1(┴) + rightLen(─)
@@ -981,15 +981,15 @@ func (m *filePickerModal) renderFieldSeparator(innerW, treeW int) string {
 
 // renderFieldRow draws the filename textinput row for Save mode (D-12, D-09).
 func (m *filePickerModal) renderFieldRow(innerW int, theme *Theme) string {
-	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
-	fieldBgSt := lipgloss.NewStyle().Background(lipgloss.Color(ColorSurfaceInput))
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	fieldBgSt := lipgloss.NewStyle().Background(lipgloss.Color("#1e1f2e"))
 
 	isFocused := m.focusPanel == 2
 	var labelSt lipgloss.Style
 	if isFocused {
-		labelSt = lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
+		labelSt = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Accent.Primary)).Bold(true)
 	} else {
-		labelSt = lipgloss.NewStyle().Foreground(theme.TextSecondary)
+		labelSt = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
 	}
 
 	prefix := " " // 1 space padding at left edge
@@ -1003,7 +1003,7 @@ func (m *filePickerModal) renderFieldRow(innerW int, theme *Theme) string {
 	val := m.nameField.Value()
 	var fieldContent string
 	if isFocused {
-		cursor := lipgloss.NewStyle().Foreground(theme.TextPrimary).Render("▌")
+		cursor := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary)).Render("▌")
 		fieldContent = val + cursor
 	} else {
 		fieldContent = val
@@ -1025,11 +1025,11 @@ func (m *filePickerModal) renderFieldRow(innerW int, theme *Theme) string {
 
 // renderBottomBorder draws the bottom rounded border with action text state (D-08, D-09).
 func (m *filePickerModal) renderBottomBorder(innerW, treeW int, theme *Theme) string {
-	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
-	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
-	activeSt := lipgloss.NewStyle().Foreground(theme.AccentPrimary).Bold(true)
-	disabledSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextDisabled))
-	cancelSt := lipgloss.NewStyle().Foreground(theme.TextPrimary)
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	sepSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	activeSt := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Accent.Primary)).Bold(true)
+	disabledSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#3b4261"))
+	cancelSt := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary))
 
 	var actionActive bool
 	if m.mode == FilePickerOpen {
@@ -1130,7 +1130,7 @@ func (m *filePickerModal) View(maxWidth, maxHeight int) string {
 	// Nil-safe theme fallback (D-17)
 	theme := m.theme
 	if theme == nil {
-		theme = ThemeTokyoNight
+		theme = TokyoNight
 	}
 
 	// Layout dimensions (D-08)
@@ -1162,7 +1162,7 @@ func (m *filePickerModal) View(maxWidth, maxHeight int) string {
 	// 4. Panel content rows
 	treeLines := m.renderTreeContent(treeW, visibleH, theme)
 	filesLines := m.renderFilesContent(filesW, visibleH, theme)
-	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorderFocused))
+	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
 	for i := 0; i < visibleH; i++ {
 		tl := ""
 		fl := ""

@@ -41,7 +41,7 @@ func TestPasswordEntryModalInit(t *testing.T) {
 func TestPasswordEntryModalView(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	view := m.View(80, 24)
 	if view == "" {
@@ -66,7 +66,7 @@ func TestPasswordEntryModalShortcuts(t *testing.T) {
 func TestPasswordEntryModalAttemptCounter(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	// First attempt - counter should be hidden
 	view := m.View(80, 24)
@@ -81,7 +81,7 @@ func TestPasswordEntryModalAttemptCounter(t *testing.T) {
 func TestPasswordEntryModalAttemptCounterShowsFromSecondAttempt(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	// Simulate first wrong attempt
 	m.HandleWrongPassword()
@@ -103,7 +103,7 @@ func TestPasswordEntryModalAttemptCounterShowsFromSecondAttempt(t *testing.T) {
 func TestPasswordEntryModalEnterKey(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	// Type a password
 	m.input.SetValue("test1234!")
@@ -128,7 +128,7 @@ func TestPasswordEntryModalEnterKey(t *testing.T) {
 func TestPasswordEntryModalEscKey(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 
 	// Press ESC
 	cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
@@ -158,11 +158,11 @@ func TestPasswordEntryModalMaskedInput(t *testing.T) {
 func TestPasswordEntryModalApplyTheme(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
-	m.ApplyTheme(ThemeTokyoNight)
+	m.ApplyTheme(TokyoNight)
 	if m.theme == nil {
 		t.Fatal("ApplyTheme did not store theme")
 	}
-	if m.theme != ThemeTokyoNight {
+	if m.theme != TokyoNight {
 		t.Fatal("ApplyTheme did not store the correct theme")
 	}
 }
@@ -177,7 +177,7 @@ func TestPasswordEntryModal_Golden(t *testing.T) {
 		title: "Senha mestra",
 	}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
 	out := m.View(80, 24)
@@ -205,7 +205,7 @@ func TestPasswordEntryModal_Golden(t *testing.T) {
 func TestPasswordEntryModal_ConfirmarDisabledWhenEmpty(t *testing.T) {
 	m := &passwordEntryModal{title: "Senha mestra"}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
 	// input is empty after Init
@@ -243,7 +243,7 @@ func TestPasswordEntryModal_ConfirmarDisabledWhenEmpty(t *testing.T) {
 func TestPasswordEntryModal_ConfirmarActiveWhenFilled(t *testing.T) {
 	m := &passwordEntryModal{title: "Senha mestra"}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
 	m.input.SetValue("hunter2") // non-empty → activates "Enter Confirmar"
@@ -280,7 +280,7 @@ func TestPasswordEntryModal_ConfirmarActiveWhenFilled(t *testing.T) {
 func TestPasswordEntryModal_Golden_Filled(t *testing.T) {
 	m := &passwordEntryModal{title: "Senha mestra"}
 	m.Init()
-	m.theme = ThemeTokyoNight
+	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
 	m.input.SetValue("hunter2") // non-empty → activates "Enter Confirmar"

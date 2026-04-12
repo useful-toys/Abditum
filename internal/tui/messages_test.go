@@ -27,7 +27,7 @@ func TestMessageManager_InitiallyEmpty(t *testing.T) {
 // Current() returns it with the correct fields.
 func TestMessageManager_ShowAndCurrent(t *testing.T) {
 	mm := NewMessageManager()
-	mm.Show(MsgSuccess, "hello", 5, false)
+	mm.Show(MessageSuccess, "hello", 5, false)
 
 	curr := mm.Current()
 	if curr == nil {
@@ -36,15 +36,15 @@ func TestMessageManager_ShowAndCurrent(t *testing.T) {
 	if curr.Text != "hello" {
 		t.Errorf("expected text %q, got %q", "hello", curr.Text)
 	}
-	if curr.Kind != MsgSuccess {
-		t.Errorf("expected kind MsgSuccess, got %v", curr.Kind)
+	if curr.Kind != MessageSuccess {
+		t.Errorf("expected kind MessageSuccess, got %v", curr.Kind)
 	}
 }
 
 // TestMessageManager_Clear removes the current message immediately.
 func TestMessageManager_Clear(t *testing.T) {
 	mm := NewMessageManager()
-	mm.Show(MsgSuccess, "x", 0, false)
+	mm.Show(MessageSuccess, "x", 0, false)
 	mm.Clear()
 	if mm.Current() != nil {
 		t.Error("Current() must be nil after Clear()")
@@ -55,7 +55,7 @@ func TestMessageManager_Clear(t *testing.T) {
 // clears the message when it reaches zero.
 func TestMessageManager_Tick_ExpiresByTTL(t *testing.T) {
 	mm := NewMessageManager()
-	mm.Show(MsgSuccess, "expire-me", 2, false) // TTL = 2 ticks
+	mm.Show(MessageSuccess, "expire-me", 2, false) // TTL = 2 ticks
 
 	mm.Tick()
 	if mm.Current() == nil {
@@ -68,17 +68,17 @@ func TestMessageManager_Tick_ExpiresByTTL(t *testing.T) {
 	}
 }
 
-// TestMessageManager_Tick_BusyNeverExpires verifies that MsgBusy messages
+// TestMessageManager_Tick_BusyNeverExpires verifies that MessageBusy messages
 // never expire via Tick, regardless of tattempted TTL.
 func TestMessageManager_Tick_BusyNeverExpires(t *testing.T) {
 	mm := NewMessageManager()
-	mm.Show(MsgBusy, "loading", 5, false) // ttlSeconds ignored for MsgBusy
+	mm.Show(MessageBusy, "loading", 5, false) // ttlSeconds ignored for MessageBusy
 
 	for i := 0; i < 10; i++ {
 		mm.Tick()
 	}
 	if mm.Current() == nil {
-		t.Error("MsgBusy must never expire via Tick()")
+		t.Error("MessageBusy must never expire via Tick()")
 	}
 }
 
@@ -86,7 +86,7 @@ func TestMessageManager_Tick_BusyNeverExpires(t *testing.T) {
 // the animation frame index in a 0→1→2→3→0 cycle.
 func TestMessageManager_Tick_BusyAdvancesFrame(t *testing.T) {
 	mm := NewMessageManager()
-	mm.Show(MsgBusy, "loading", 0, false)
+	mm.Show(MessageBusy, "loading", 0, false)
 
 	expected := []int{1, 2, 3, 0, 1}
 	for i, want := range expected {
@@ -102,7 +102,7 @@ func TestMessageManager_Tick_BusyAdvancesFrame(t *testing.T) {
 // with clearOnInput=true are cleared on the next HandleInput call.
 func TestMessageManager_HandleInput_ClearOnInput(t *testing.T) {
 	mm := NewMessageManager()
-	mm.Show(MsgHint, "press key to dismiss", 0, true)
+	mm.Show(MessageHint, "press key to dismiss", 0, true)
 
 	mm.HandleInput()
 	if mm.Current() != nil {
@@ -110,16 +110,16 @@ func TestMessageManager_HandleInput_ClearOnInput(t *testing.T) {
 	}
 }
 
-// TestMessageManager_MsgKindDistinct verifies MsgSuccess and MsgInfo are distinct values.
+// TestMessageManager_MsgKindDistinct verifies MessageSuccess and MessageInfo are distinct values.
 func TestMessageManager_MsgKindDistinct(t *testing.T) {
-	if MsgSuccess == MsgInfo {
-		t.Error("MsgSuccess and MsgInfo must be distinct MsgKind values")
+	if MessageSuccess == MessageInfo {
+		t.Error("MessageSuccess and MessageInfo must be distinct MessageKind values")
 	}
 	mm := NewMessageManager()
-	mm.Show(MsgInfo, "neutral", 3, false)
+	mm.Show(MessageInfo, "neutral", 3, false)
 	curr := mm.Current()
-	if curr == nil || curr.Kind != MsgInfo {
-		t.Error("Show(MsgInfo, ...) must store MsgInfo kind")
+	if curr == nil || curr.Kind != MessageInfo {
+		t.Error("Show(MessageInfo, ...) must store MessageInfo kind")
 	}
 }
 
@@ -127,7 +127,7 @@ func TestMessageManager_MsgKindDistinct(t *testing.T) {
 // with clearOnInput=false survive a HandleInput call.
 func TestMessageManager_HandleInput_Persistent(t *testing.T) {
 	mm := NewMessageManager()
-	mm.Show(MsgWarn, "persistent warning", 0, false)
+	mm.Show(MessageWarning, "persistent warning", 0, false)
 
 	mm.HandleInput()
 	if mm.Current() == nil {
@@ -212,12 +212,12 @@ func TestRenderMessageBar_Golden(t *testing.T) {
 	}
 
 	cases := []testCase{
-		{"success", &DisplayMessage{Text: "Cofre salvo com sucesso — 12 segredos sincronizados", Kind: MsgSuccess, Frame: 0}},
-		{"error", &DisplayMessage{Text: "Falha ao salvar o cofre — verifique permissões do arquivo", Kind: MsgError, Frame: 0}},
-		{"warn", &DisplayMessage{Text: "Cofre modificado externamente — revisar antes de salvar", Kind: MsgWarn, Frame: 0}},
-		{"info", &DisplayMessage{Text: "Cofre aberto — 12 segredos, 3 pastas, 2 modelos", Kind: MsgInfo, Frame: 0}},
-		{"busy", &DisplayMessage{Text: "Carregando cofre, por favor aguarde...", Kind: MsgBusy, Frame: 0}},
-		{"hint", &DisplayMessage{Text: "Pressione F1 para ver todos os atalhos disponíveis", Kind: MsgHint, Frame: 0}},
+		{"success", &DisplayMessage{Text: "Cofre salvo com sucesso — 12 segredos sincronizados", Kind: MessageSuccess, Frame: 0}},
+		{"error", &DisplayMessage{Text: "Falha ao salvar o cofre — verifique permissões do arquivo", Kind: MessageError, Frame: 0}},
+		{"warn", &DisplayMessage{Text: "Cofre modificado externamente — revisar antes de salvar", Kind: MessageWarning, Frame: 0}},
+		{"info", &DisplayMessage{Text: "Cofre aberto — 12 segredos, 3 pastas, 2 modelos", Kind: MessageInfo, Frame: 0}},
+		{"busy", &DisplayMessage{Text: "Carregando cofre, por favor aguarde...", Kind: MessageBusy, Frame: 0}},
+		{"hint", &DisplayMessage{Text: "Pressione F1 para ver todos os atalhos disponíveis", Kind: MessageHint, Frame: 0}},
 	}
 	widths := []int{30, 60}
 
@@ -227,7 +227,7 @@ func TestRenderMessageBar_Golden(t *testing.T) {
 			w := w
 			name := fmt.Sprintf("%s-%d", tc.variant, w)
 			t.Run(name, func(t *testing.T) {
-				out := RenderMessageBar(tc.msg, w, ThemeTokyoNight)
+				out := RenderMessageBar(tc.msg, w, TokyoNight)
 
 				// .txt.golden: raw ANSI output — validates layout, spacing, truncation, borders
 				txtPath := goldenPath("messages", tc.variant, w, "txt")
