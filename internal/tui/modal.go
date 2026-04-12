@@ -98,11 +98,11 @@ func (m *modalModel) View() string {
 // Shortcuts returns nil - basic dialog modals show no command bar shortcuts.
 func (m *modalModel) Shortcuts() []Shortcut { return nil }
 
-// SetSize stores terminal dimensions for layout calculations.
-// For modalModel, this is called by rootModel before View() per the SetSize-before-View contract,
+// SetAvailableSize stores terminal dimensions for layout calculations.
+// For modalModel, this is called by rootModel before View() per the SetAvailableSize-before-View contract,
 // but modalModel uses fixed width and doesn't need the dimensions.
 // Other modalView implementations may use these dimensions to constrain their layout.
-func (m *modalModel) SetSize(w, h int) {}
+func (m *modalModel) SetAvailableSize(maxWidth, maxHeight int) {}
 
 // Compile-time assertion: modalModel must satisfy the modalView interface.
 var _ modalView = &modalModel{}
