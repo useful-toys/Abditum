@@ -47,7 +47,7 @@ func (m *secretDetailModel) View() string {
 }
 
 // SetSize stores the allocated panel dimensions.
-func (m *secretDetailModel) SetSize(w, h int) {
-	m.width = w
-	m.height = h
+func (m *secretDetailModel) SetSize(width, height int) {
+	m.width = width
+	m.height = height
 }
