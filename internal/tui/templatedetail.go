@@ -47,7 +47,7 @@ func (m *templateDetailModel) View() string {
 }
 
 // SetSize stores the allocated panel dimensions.
-func (m *templateDetailModel) SetSize(w, h int) {
-	m.width = w
-	m.height = h
+func (m *templateDetailModel) SetSize(width, height int) {
+	m.width = width
+	m.height = height
 }
