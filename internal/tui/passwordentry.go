@@ -214,10 +214,10 @@ func (m *passwordEntryModal) View() string {
 	return strings.Join(lines, "\n")
 }
 
-// SetSize stores the modal dimensions.
-func (m *passwordEntryModal) SetSize(w, h int) {
-	m.width = w
-	m.height = h
+// SetAvailableSize stores the maximum available modal dimensions.
+func (m *passwordEntryModal) SetAvailableSize(maxWidth, maxHeight int) {
+	m.width = maxWidth
+	m.height = maxHeight
 }
 
 // Shortcuts returns keyboard hints for the command bar.
