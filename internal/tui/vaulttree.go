@@ -47,7 +47,7 @@ func (m *vaultTreeModel) View() string {
 }
 
 // SetSize stores the allocated panel dimensions.
-func (m *vaultTreeModel) SetSize(w, h int) {
-	m.width = w
-	m.height = h
+func (m *vaultTreeModel) SetSize(width, height int) {
+	m.width = width
+	m.height = height
 }
