@@ -1,12 +1,4 @@
-// Package tui — design system foundation.
-//
-// design.go is the single source of truth for all visual tokens, symbols,
-// typography attributes and theme instances used by the TUI. It is aligned
-// 1:1 with golden/tui-design-system.md.
-//
-// To change a colour value, edit only the theme instance (TokyoNight or
-// Cyberpunk) below. To add a token category, add a new sub-struct and a
-// field to Theme. Never hardcode hex strings in component files.
+// Package tui provides the design system foundation for the Abditum TUI.
 package tui
 
 // ---------------------------------------------------------------------------
@@ -196,17 +188,23 @@ var Cyberpunk = &Theme{
 type MessageKind int
 
 const (
+	// MessageSuccess indicates a successful operation.
 	MessageSuccess MessageKind = iota
+	// MessageInfo indicates contextual information.
 	MessageInfo
+	// MessageWarning indicates a warning or alert.
 	MessageWarning
+	// MessageError indicates an operation error.
 	MessageError
+	// MessageBusy indicates an ongoing background operation.
 	MessageBusy
+	// MessageHint indicates a helpful hint or suggestion.
 	MessageHint
 )
 
-// SymbolFor returns the canonical symbol string for a MessageKind.
-func SymbolFor(kind MessageKind) string {
-	switch kind {
+// Symbol returns the canonical symbol string for the message kind.
+func (k MessageKind) Symbol() string {
+	switch k {
 	case MessageSuccess:
 		return SymSuccess
 	case MessageInfo:
@@ -222,9 +220,12 @@ func SymbolFor(kind MessageKind) string {
 	}
 }
 
-// ColorFor returns the theme hex colour that corresponds to a MessageKind.
-func ColorFor(t *Theme, kind MessageKind) string {
-	switch kind {
+// Color returns the theme hex colour that corresponds to the message kind.
+func (k MessageKind) Color(t *Theme) string {
+	if t == nil {
+		return ""
+	}
+	switch k {
 	case MessageSuccess:
 		return t.Semantic.Success
 	case MessageInfo:
@@ -250,53 +251,85 @@ func ColorFor(t *Theme, kind MessageKind) string {
 
 // Tree navigation
 const (
+	// SymFolderCollapsed is the symbol for a collapsed folder.
 	SymFolderCollapsed = "▶" // U+25B6 — collapsed folder
-	SymFolderExpanded  = "▼" // U+25BC — expanded folder
-	SymFolderEmpty     = "▷" // U+25B7 — empty folder
-	SymLeaf            = "●" // U+25CF — leaf item
+	// SymFolderExpanded is the symbol for an expanded folder.
+	SymFolderExpanded = "▼" // U+25BC — expanded folder
+	// SymFolderEmpty is the symbol for an empty folder.
+	SymFolderEmpty = "▷" // U+25B7 — empty folder
+	// SymLeaf is the symbol for a leaf item.
+	SymLeaf = "●" // U+25CF — leaf item
 )
 
 // Item state
 const (
+	// SymFavorite is the symbol for a favourite item.
 	SymFavorite = "★" // U+2605 — favourite item
-	SymDeleted  = "✗" // U+2717 — marked for deletion
-	SymCreated  = "✦" // U+2726 — newly created, unsaved
+	// SymDeleted is the symbol for an item marked for deletion.
+	SymDeleted = "✗" // U+2717 — marked for deletion
+	// SymCreated is the symbol for a newly created, unsaved item.
+	SymCreated = "✦" // U+2726 — newly created, unsaved
+	// SymModified is the symbol for a modified, unsaved item.
 	SymModified = "✎" // U+270E — modified, unsaved
 )
 
 // Message bar symbols
 const (
+	// SymSuccess is the symbol for a success message.
 	SymSuccess = "✓" // U+2713 — success
-	SymInfo    = "ℹ" // U+2139 — information
+	// SymInfo is the symbol for an information message.
+	SymInfo = "ℹ" // U+2139 — information
+	// SymWarning is the symbol for a warning message.
 	SymWarning = "⚠" // U+26A0 — warning / alert
-	SymError   = "✕" // U+2715 — error (distinct from SymDeleted ✗)
+	// SymError is the symbol for an error message.
+	SymError = "✕" // U+2715 — error (distinct from SymDeleted ✗)
 )
 
 // UI elements
 const (
-	SymSensitiveField = "◉"  // U+25C9 — revealable field indicator
-	SymSensMask       = "•"  // U+2022 — sensitive content mask character (same glyph as SymBullet, distinct semantic)
-	SymCursor         = "▌"  // U+258C — text field cursor
-	SymScrollUp       = "↑"  // U+2191 — scroll direction indicator (up)
-	SymScrollDown     = "↓"  // U+2193 — scroll direction indicator (down)
-	SymScrollThumb    = "■"  // U+25A0 — scroll position thumb
-	SymEllipsis       = "…"  // U+2026 — truncation
-	SymBullet         = "•"  // U+2022 — contextual indicator, hint marker, dirty marker
-	SymHeaderSep      = "·"  // U+00B7 — header separator
-	SymTreeConnector  = "<╡" // Basic Latin + U+2561 — tree → detail connector (2 columns)
+	// SymSensitiveField is the symbol for a revealable field indicator.
+	SymSensitiveField = "◉" // U+25C9 — revealable field indicator
+	// SymSensMask is the character used to mask sensitive content.
+	SymSensMask = "•" // U+2022 — sensitive content mask character (same glyph as SymBullet, distinct semantic)
+	// SymCursor is the symbol for a text field cursor.
+	SymCursor = "▌" // U+258C — text field cursor
+	// SymScrollUp is the indicator for scrolling up.
+	SymScrollUp = "↑" // U+2191 — scroll direction indicator (up)
+	// SymScrollDown is the indicator for scrolling down.
+	SymScrollDown = "↓" // U+2193 — scroll direction indicator (down)
+	// SymScrollThumb is the symbol for the scroll position thumb.
+	SymScrollThumb = "■" // U+25A0 — scroll position thumb
+	// SymEllipsis is the symbol for truncation.
+	SymEllipsis = "…" // U+2026 — truncation
+	// SymBullet is a contextual indicator or hint marker.
+	SymBullet = "•" // U+2022 — contextual indicator, hint marker, dirty marker
+	// SymHeaderSep is the symbol for a header separator.
+	SymHeaderSep = "·" // U+00B7 — header separator
+	// SymTreeConnector is the connector from tree to detail.
+	SymTreeConnector = "<╡" // Basic Latin + U+2561 — tree → detail connector (2 columns)
 )
 
 // Border characters (Box Drawing block)
 const (
-	SymBorderH   = "─" // U+2500 — horizontal separator
-	SymBorderV   = "│" // U+2502 — vertical separator
-	SymCornerTL  = "╭" // U+256D — top-left rounded corner
-	SymCornerTR  = "╮" // U+256E — top-right rounded corner
-	SymCornerBL  = "╰" // U+2570 — bottom-left rounded corner
-	SymCornerBR  = "╯" // U+256F — bottom-right rounded corner
+	// SymBorderH is the horizontal border separator.
+	SymBorderH = "─" // U+2500 — horizontal separator
+	// SymBorderV is the vertical border separator.
+	SymBorderV = "│" // U+2502 — vertical separator
+	// SymCornerTL is the top-left rounded corner.
+	SymCornerTL = "╭" // U+256D — top-left rounded corner
+	// SymCornerTR is the top-right rounded corner.
+	SymCornerTR = "╮" // U+256E — top-right rounded corner
+	// SymCornerBL is the bottom-left rounded corner.
+	SymCornerBL = "╰" // U+2570 — bottom-left rounded corner
+	// SymCornerBR is the bottom-right rounded corner.
+	SymCornerBR = "╯" // U+256F — bottom-right rounded corner
+	// SymJunctionL is the left-pointing T junction.
 	SymJunctionL = "├" // U+251C — T junction (left-pointing)
+	// SymJunctionT is the top-pointing T junction.
 	SymJunctionT = "┬" // U+252C — T junction (top-pointing)
+	// SymJunctionB is the bottom-pointing T junction.
 	SymJunctionB = "┴" // U+2534 — T junction (bottom-pointing)
+	// SymJunctionR is the right-pointing T junction.
 	SymJunctionR = "┤" // U+2524 — T junction (right-pointing)
 )
 
@@ -318,7 +351,10 @@ func SpinnerFrame(frame int) string {
 // These are the canonical representations defined in golden/tui-design-system.md §Teclado.
 
 const (
-	KeyCtrl  = "⌃" // U+2303 — Ctrl modifier
+	// KeyCtrl is the notation for the Ctrl modifier.
+	KeyCtrl = "⌃" // U+2303 — Ctrl modifier
+	// KeyShift is the notation for the Shift modifier.
 	KeyShift = "⇧" // U+21E7 — Shift modifier
-	KeyAlt   = "!" // no dedicated Unicode glyph — rendered as literal "!"
+	// KeyAlt is the notation for the Alt modifier.
+	KeyAlt = "!" // no dedicated Unicode glyph — rendered as literal "!"
 )
