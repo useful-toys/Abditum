@@ -14,9 +14,8 @@ import (
 
 // stubModal implements modalView for tests.
 type stubModal struct {
-	updateCalls   int
-	setSizeCalled bool
-	received      tea.Msg
+	updateCalls int
+	received    tea.Msg
 }
 
 func (s *stubModal) Update(msg tea.Msg) tea.Cmd {
@@ -24,9 +23,8 @@ func (s *stubModal) Update(msg tea.Msg) tea.Cmd {
 	s.received = msg
 	return nil
 }
-func (s *stubModal) View() string                             { return "stub" }
-func (s *stubModal) Shortcuts() []Shortcut                    { return nil }
-func (s *stubModal) SetAvailableSize(maxWidth, maxHeight int) {}
+func (s *stubModal) View(maxWidth, maxHeight int) string { return "stub" }
+func (s *stubModal) Shortcuts() []Shortcut               { return nil }
 
 // stubFlow implements flowHandler for tests.
 type stubFlow struct {
@@ -184,9 +182,9 @@ func TestModalResultRouting(t *testing.T) {
 	}
 }
 
-// TestWindowSizeMsg_NoModalSetSize verifies that modals do NOT receive SetSize
-// when tea.WindowSizeMsg is processed (modals are position-unaware per D-02).
-func TestWindowSizeMsg_NoModalSetSize(t *testing.T) {
+// TestWindowSizeMsg_NoModalUpdate verifies that WindowSizeMsg does not
+// propagate to modal.Update() — rootModel handles it directly.
+func TestWindowSizeMsg_NoModalUpdate(t *testing.T) {
 	m := NewRootModel()
 	modal := &stubModal{}
 
@@ -200,9 +198,9 @@ func TestWindowSizeMsg_NoModalSetSize(t *testing.T) {
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 
 	// The modal must NOT have received the WindowSizeMsg.
-	// WindowSizeMsg is handled by rootModel directly via liveWorkChildren().
+	// WindowSizeMsg is handled by rootModel directly; modals receive dimensions via View() parameters.
 	if modal.updateCalls > 0 {
-		t.Errorf("modal.Update() was called %d time(s) on WindowSizeMsg - modals must not receive SetSize", modal.updateCalls)
+		t.Errorf("modal.Update() was called %d time(s) on WindowSizeMsg - modals must not receive size messages directly", modal.updateCalls)
 	}
 	if m.width != 80 || m.height != 24 {
 		t.Errorf("rootModel size not updated: got %dx%d", m.width, m.height)

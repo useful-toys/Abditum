@@ -25,7 +25,6 @@ func pocKey1() *DecisionDialog {
 		[]DecisionAction{
 			{Key: "Enter", Label: "OK", Default: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -37,7 +36,6 @@ func pocKey2() *DecisionDialog {
 			{Key: "Enter", Label: "Excluir", Default: true},
 			{Key: "Esc", Label: "Cancelar", Cancel: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -50,7 +48,6 @@ func pocKey3() *DecisionDialog {
 			{Key: "M", Label: "Mover conteúdo"},
 			{Key: "Esc", Label: "Cancelar", Cancel: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -63,7 +60,6 @@ func pocKey4() *DecisionDialog {
 		[]DecisionAction{
 			{Key: "Enter", Label: "OK", Default: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -75,7 +71,6 @@ func pocKey5() *DecisionDialog {
 			{Key: "Enter", Label: "Tentar novamente", Default: true},
 			{Key: "Esc", Label: "Cancelar", Cancel: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -88,7 +83,6 @@ func pocKey6() *DecisionDialog {
 			{Key: "A", Label: "Abrir backup"},
 			{Key: "Esc", Label: "Cancelar", Cancel: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -101,7 +95,6 @@ func pocKey7() *DecisionDialog {
 		[]DecisionAction{
 			{Key: "Enter", Label: "OK", Default: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -113,7 +106,6 @@ func pocKey8() *DecisionDialog {
 			{Key: "Enter", Label: "Descartar", Default: true},
 			{Key: "Esc", Label: "Voltar", Cancel: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -126,7 +118,6 @@ func pocKey9() *DecisionDialog {
 			{Key: "T", Label: "Trocar senha"},
 			{Key: "Esc", Label: "Cancelar", Cancel: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -139,7 +130,6 @@ func pocKeyA() *DecisionDialog {
 		[]DecisionAction{
 			{Key: "Enter", Label: "OK", Default: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -151,7 +141,6 @@ func pocKeyB() *DecisionDialog {
 			{Key: "Enter", Label: "Sobrescrever", Default: true},
 			{Key: "Esc", Label: "Cancelar", Cancel: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -164,7 +153,6 @@ func pocKeyC() *DecisionDialog {
 			{Key: "F", Label: "Fechar"},
 			{Key: "Esc", Label: "OK", Cancel: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -177,7 +165,6 @@ func pocKeyD() *DecisionDialog {
 		[]DecisionAction{
 			{Key: "Enter", Label: "OK", Default: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -189,7 +176,6 @@ func pocKeyE() *DecisionDialog {
 			{Key: "Enter", Label: "Sair", Default: true},
 			{Key: "Esc", Label: "Cancelar", Cancel: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -202,7 +188,6 @@ func pocKeyF() *DecisionDialog {
 			{Key: "N", Label: "Não salvar"},
 			{Key: "Esc", Label: "Voltar", Cancel: true},
 		})
-	d.SetAvailableSize(80, 24)
 	return d
 }
 
@@ -240,7 +225,7 @@ func TestDecisionDialog_MatrixViewRenders(t *testing.T) {
 		f := f // capture loop variable
 		t.Run(f.name, func(t *testing.T) {
 			d := f.dialog()
-			out := d.View()
+			out := d.View(80, 24)
 
 			if out == "" {
 				t.Errorf("%s: View() returned empty string", f.name)
@@ -296,7 +281,7 @@ func TestDecisionDialog_SymbolPresence(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out := tt.d.View()
+			out := tt.d.View(80, 24)
 			if tt.wantSymbol != "" && !strings.Contains(out, tt.wantSymbol) {
 				t.Errorf("expected symbol %q in output\ngot:\n%s", tt.wantSymbol, out)
 			}
@@ -315,7 +300,7 @@ func TestDecisionDialog_SymbolPresence(t *testing.T) {
 
 func TestDecisionDialog_BorderChars(t *testing.T) {
 	d := pocKey1()
-	out := d.View()
+	out := d.View(80, 24)
 
 	if !strings.Contains(out, "╭") {
 		t.Errorf("View() missing top-left corner ╭\ngot:\n%s", out)
@@ -363,7 +348,7 @@ func TestDecisionDialog_UnknownKeyIgnored(t *testing.T) {
 // Edge case tests
 // ─────────────────────────────────────────────────────────────────────────────
 
-// TestDecisionDialog_LongBodyWraps: body with 150+ chars, SetAvailableSize(80,24),
+// TestDecisionDialog_LongBodyWraps: body with 150+ chars, View(80,24),
 // View() should contain \n (multi-line body).
 func TestDecisionDialog_LongBodyWraps(t *testing.T) {
 	longBody := "Esta é uma mensagem muito longa para testar o sistema de quebra de linha do corpo do diálogo que deve quebrar em múltiplas linhas quando excede a largura disponível da caixa do diálogo."
@@ -373,21 +358,19 @@ func TestDecisionDialog_LongBodyWraps(t *testing.T) {
 	d := NewDecisionDialog(SeverityNeutral, IntentionAcknowledge,
 		"Título", longBody,
 		[]DecisionAction{{Key: "Enter", Label: "OK", Default: true}})
-	d.SetAvailableSize(80, 24)
-	out := d.View()
+	out := d.View(80, 24)
 	if !strings.Contains(out, "\n") {
 		t.Error("View() with long body should contain newlines (multi-line wrapping)")
 	}
 }
 
-// TestDecisionDialog_ShortBodyFits: single short body, SetAvailableSize(50,10),
+// TestDecisionDialog_ShortBodyFits: single short body, View(50,10),
 // View() is non-empty and does not panic.
 func TestDecisionDialog_ShortBodyFits(t *testing.T) {
 	d := NewDecisionDialog(SeverityNeutral, IntentionAcknowledge,
 		"Título", "OK?",
 		[]DecisionAction{{Key: "Enter", Label: "OK", Default: true}})
-	d.SetAvailableSize(50, 10)
-	out := d.View()
+	out := d.View(50, 10)
 	if out == "" {
 		t.Error("View() with short body should return non-empty string")
 	}
@@ -397,18 +380,17 @@ func TestDecisionDialog_ShortBodyFits(t *testing.T) {
 // output should NOT contain "Esc".
 func TestDecisionDialog_AcknowledgeHasNoCancel(t *testing.T) {
 	d := pocKey1()
-	out := d.View()
+	out := d.View(80, 24)
 	if strings.Contains(out, "Esc") {
 		t.Errorf("Acknowledge dialog should not render 'Esc' in output\ngot:\n%s", out)
 	}
 }
 
-// TestDecisionDialog_SmallSizeUsesMinWidth: pocKey4 with SetAvailableSize(20,10) (below minimum),
+// TestDecisionDialog_SmallSizeUsesMinWidth: pocKey4 with View(20,10) (below minimum),
 // View() is non-empty and does not panic (falls back to boxWidth=40 floor).
 func TestDecisionDialog_SmallSizeUsesMinWidth(t *testing.T) {
 	d := pocKey4()
-	d.SetAvailableSize(20, 10) // override the 80,24 set by pocKey4
-	out := d.View()
+	out := d.View(20, 10)
 	if out == "" {
 		t.Error("View() with small terminal size should return non-empty string (uses min width floor)")
 	}
@@ -477,7 +459,6 @@ func TestDecisionDialog_Golden(t *testing.T) {
 			"Excluir segredo",
 			"Gmail será excluído permanentemente.",
 			[]DecisionAction{{Key: "Enter", Label: "Excluir", Default: true}})
-		d.SetAvailableSize(w, 24)
 		return d
 	}
 	newDestructive2Long := func(w int) *DecisionDialog {
@@ -488,7 +469,6 @@ func TestDecisionDialog_Golden(t *testing.T) {
 				{Key: "Enter", Label: "Excluir", Default: true},
 				{Key: "Esc", Label: "Cancelar", Cancel: true},
 			})
-		d.SetAvailableSize(w, 24)
 		return d
 	}
 	newError3Short := func(w int) *DecisionDialog {
@@ -500,7 +480,6 @@ func TestDecisionDialog_Golden(t *testing.T) {
 				{Key: "A", Label: "Abrir backup"},
 				{Key: "Esc", Label: "Cancelar", Cancel: true},
 			})
-		d.SetAvailableSize(w, 24)
 		return d
 	}
 	newError1Long := func(w int) *DecisionDialog {
@@ -508,7 +487,6 @@ func TestDecisionDialog_Golden(t *testing.T) {
 			"Erro crítico ao acessar o cofre — arquivo danificado",
 			"Não foi possível decodificar o arquivo. Verifique se o disco está íntegro e tente novamente.",
 			[]DecisionAction{{Key: "Enter", Label: "OK", Default: true}})
-		d.SetAvailableSize(w, 24)
 		return d
 	}
 	newAlert2Short := func(w int) *DecisionDialog {
@@ -519,7 +497,6 @@ func TestDecisionDialog_Golden(t *testing.T) {
 				{Key: "Enter", Label: "Sim", Default: true},
 				{Key: "Esc", Label: "Não", Cancel: true},
 			})
-		d.SetAvailableSize(w, 24)
 		return d
 	}
 	newAlert3Long := func(w int) *DecisionDialog {
@@ -531,7 +508,6 @@ func TestDecisionDialog_Golden(t *testing.T) {
 				{Key: "R", Label: "Renomear"},
 				{Key: "Esc", Label: "Cancelar", Cancel: true},
 			})
-		d.SetAvailableSize(w, 24)
 		return d
 	}
 	newInformative1Short := func(w int) *DecisionDialog {
@@ -539,7 +515,6 @@ func TestDecisionDialog_Golden(t *testing.T) {
 			"Dica",
 			"Pressione Ctrl+N para criar um novo cofre.",
 			[]DecisionAction{{Key: "Enter", Label: "Entendi", Default: true}})
-		d.SetAvailableSize(w, 24)
 		return d
 	}
 	newInformative2Long := func(w int) *DecisionDialog {
@@ -550,7 +525,6 @@ func TestDecisionDialog_Golden(t *testing.T) {
 				{Key: "Enter", Label: "Copiar", Default: true},
 				{Key: "Esc", Label: "Fechar", Cancel: true},
 			})
-		d.SetAvailableSize(w, 24)
 		return d
 	}
 	newNeutral3Short := func(w int) *DecisionDialog {
@@ -562,7 +536,6 @@ func TestDecisionDialog_Golden(t *testing.T) {
 				{Key: "N", Label: "Não"},
 				{Key: "Esc", Label: "Talvez", Cancel: true},
 			})
-		d.SetAvailableSize(w, 24)
 		return d
 	}
 	newNeutral2Long := func(w int) *DecisionDialog {
@@ -573,7 +546,6 @@ func TestDecisionDialog_Golden(t *testing.T) {
 				{Key: "Enter", Label: "Confirmar", Default: true},
 				{Key: "Esc", Label: "Cancelar", Cancel: true},
 			})
-		d.SetAvailableSize(w, 24)
 		return d
 	}
 
@@ -613,7 +585,14 @@ func TestDecisionDialog_Golden(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.variant, func(t *testing.T) {
-			out := tc.dialog.View()
+			// Extract width and height from variant (e.g., "destructive-1action-short-30x24")
+			var w, h int
+			if strings.HasSuffix(tc.variant, "-30x24") {
+				w, h = 30, 24
+			} else if strings.HasSuffix(tc.variant, "-60x24") {
+				w, h = 60, 24
+			}
+			out := tc.dialog.View(w, h)
 
 			// .txt.golden: raw ANSI output
 			checkOrUpdateDecisionGolden(t, tc.variant, "txt", stripANSI(out))
@@ -708,18 +687,4 @@ func TestDecisionDialog_Update_UnknownExplicitKey(t *testing.T) {
 	if cmd != nil {
 		t.Error("unknown key 'z' on 3-action dialog must return nil cmd")
 	}
-}
-
-// TestDecisionDialog_ViewPanicsWithoutSetSize verifies that calling View()
-// without first calling SetAvailableSize() results in a panic — the rootModel contract.
-func TestDecisionDialog_ViewPanicsWithoutSetAvailableSize(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("DecisionDialog.View() should panic without SetSize")
-		}
-	}()
-	d := NewDecisionDialog(SeverityInformative, IntentionAcknowledge, "Title", "Message", []DecisionAction{
-		{Key: "Enter", Label: "OK", Default: true},
-	})
-	d.View() // Should panic here
 }

@@ -47,8 +47,7 @@ func TestFilePickerModalInit(t *testing.T) {
 // TestFilePickerModalView verifies View() returns a string.
 func TestFilePickerModalView(t *testing.T) {
 	fpk := newTestFilePickerModal()
-	fpk.SetAvailableSize(80, 24)
-	view := fpk.View()
+	view := fpk.View(80, 24)
 	if view == "" {
 		t.Log("View() returned empty string (acceptable for initial render)")
 	}
@@ -57,18 +56,8 @@ func TestFilePickerModalView(t *testing.T) {
 // TestFilePickerModalUpdate verifies Update() accepts messages.
 func TestFilePickerModalUpdate(t *testing.T) {
 	fpk := newTestFilePickerModal()
-	fpk.SetAvailableSize(80, 24)
 	// Update with arbitrary message - should not panic
 	_ = fpk.Update(tea.KeyPressMsg{Code: tea.KeyDown})
-}
-
-// TestFilePickerModalSetSize verifies SetAvailableSize() is callable.
-func TestFilePickerModalSetAvailableSize(t *testing.T) {
-	fpk := newTestFilePickerModal()
-	fpk.SetAvailableSize(80, 24)
-	if fpk.width != 80 || fpk.height != 24 {
-		t.Errorf("SetSize did not update width/height: got %dx%d", fpk.width, fpk.height)
-	}
 }
 
 // TestFilePickerModalShortcuts verifies Shortcuts() returns exactly 2 entries: Tab+F1.
@@ -92,7 +81,6 @@ func TestFilePickerModalShortcuts(t *testing.T) {
 // TestFilePickerModalEmitsMessageOnEsc verifies ESC triggers a command.
 func TestFilePickerModalEmitsMessageOnEsc(t *testing.T) {
 	fpk := newTestFilePickerModal()
-	fpk.SetAvailableSize(80, 24)
 
 	// Press ESC
 	msg := tea.KeyPressMsg{Code: tea.KeyEsc}
@@ -114,9 +102,7 @@ func TestFilePickerModalEmitsMessageOnEsc(t *testing.T) {
 // TestFilePickerModalContainsPanelLabels verifies View contains expected labels.
 func TestFilePickerModalContainsPanelLabels(t *testing.T) {
 	fpk := newTestFilePickerModal()
-	fpk.SetAvailableSize(80, 24)
-
-	view := fpk.View()
+	view := fpk.View(80, 24)
 
 	hasEstrutura := len(view) > 0 && contains(view, "Estrutura")
 	hasArquivos := len(view) > 0 && contains(view, "Arquivos")
@@ -260,7 +246,6 @@ func TestFilePickerModalTabFocus(t *testing.T) {
 	fpk.Init()
 	fpk.currentPath = testDir
 	fpk.loadFilesForCursor()
-	fpk.SetAvailableSize(80, 24)
 
 	initialFocus := fpk.focusPanel // 0 (tree)
 	fpk.Update(tea.KeyPressMsg{Code: tea.KeyTab})
@@ -276,7 +261,6 @@ func TestFilePickerModalDisplaysFileSizes(t *testing.T) {
 	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen, focusPanel: 1}
 	fpk.Init()
 	fpk.currentPath = testDir
-	fpk.SetAvailableSize(80, 24)
 
 	// Create test files with different sizes
 	testFiles := []struct {
@@ -296,7 +280,7 @@ func TestFilePickerModalDisplaysFileSizes(t *testing.T) {
 	}
 
 	fpk.loadFilesForCursor()
-	view := fpk.View()
+	view := fpk.View(80, 24)
 
 	// Space-separated units per D-05: "512 B", "1.0 KB", "1.0 MB"
 	if !contains(view, " B") && !contains(view, " KB") && !contains(view, " MB") && !contains(view, " GB") {
@@ -310,7 +294,6 @@ func TestFilePickerModalDisplaysRelativeDates(t *testing.T) {
 	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen, focusPanel: 1}
 	fpk.Init()
 	fpk.currentPath = testDir
-	fpk.SetAvailableSize(80, 24)
 
 	// Create a test file
 	file, _ := os.Create(testDir + "/recent.abditum")
@@ -319,7 +302,7 @@ func TestFilePickerModalDisplaysRelativeDates(t *testing.T) {
 	}
 
 	fpk.loadFilesForCursor()
-	view := fpk.View()
+	view := fpk.View(80, 24)
 
 	// Absolute date format: "dd/mm/aa HH:MM" — must contain "/" between date parts (D-05)
 	if !contains(view, "/") {
@@ -361,7 +344,7 @@ func TestFilePickerModalMouseScrollSupport(t *testing.T) {
 		}
 	}
 	fpk.loadFilesForCursor()
-	fpk.SetAvailableSize(40, 5) // Small height to force scrolling
+	// Small height to force scrolling
 
 	initialCursor := fpk.fileCursor
 	for i := 0; i < 15; i++ {
@@ -413,7 +396,7 @@ func TestFilePickerUpdateBehavior(t *testing.T) {
 		fpk.currentPath = dir // override CWD after Init
 		fpk.loadFilesForCursor()
 		fpk.focusPanel = focus // set focus AFTER Init (Init resets to 0)
-		fpk.SetAvailableSize(80, 24)
+
 		return fpk
 	}
 
@@ -750,6 +733,8 @@ func TestFilePickerUpdateBehavior(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			fpk := tt.setup(t)
+			// Initialize viewportHeight by calling View() before Update()
+			fpk.View(80, 24)
 			cmd := fpk.Update(tea.KeyPressMsg{Code: tt.key.Code})
 			tt.check(t, fpk, cmd)
 		})
@@ -787,7 +772,7 @@ func TestFilePickerModal_Golden(t *testing.T) {
 	// Files panel focused (same as original test intent)
 	fpk.focusPanel = 1
 
-	out := fpk.View()
+	out := fpk.View(80, 24)
 
 	// .txt.golden: plain text render
 	txtPath := goldenPath("filepicker", "initial", 80, "txt")
@@ -929,17 +914,18 @@ func newGoldenFPK(mode FilePickerMode, title, dir string, w, h int) *filePickerM
 	fpk.treeCursor = 0
 	fpk.currentPath = dir
 	fpk.loadFilesForCursor()
+	// Initialize viewport dimensions before modifying scroll state
+	fpk.View(w, h)
 	// Replace currentPath with a fixed stub so golden files don't contain
 	// the randomly-named temp directory path.
 	fpk.currentPath = "/golden/stub/path"
-	fpk.SetAvailableSize(w, h)
 	return fpk
 }
 
-// runFPKGolden renders fpk.View() and checks/updates txt and json golden files.
+// runFPKGolden renders fpk.View(80, 24) and checks/updates txt and json golden files.
 func runFPKGolden(t *testing.T, fpk *filePickerModal, variant string) {
 	t.Helper()
-	out := fpk.View()
+	out := fpk.View(80, 24)
 	if out == "" {
 		t.Fatalf("View() returned empty string for variant %s", variant)
 	}
@@ -1053,17 +1039,4 @@ func TestGoldenFilePickerOpenBothScroll80x24(t *testing.T) {
 		fpk.fileCursor = 8
 	}
 	runFPKGolden(t, fpk, "open-bothscroll-80x24")
-}
-
-// TestFilePickerModal_ViewPanicsWithoutSetSize verifies that calling View()
-// without first calling SetAvailableSize() results in a panic — the rootModel contract.
-func TestFilePickerModal_ViewPanicsWithoutSetAvailableSize(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("filePickerModal.View() should panic without SetSize")
-		}
-	}()
-	fpk := &filePickerModal{ext: ".abditum", mode: FilePickerOpen}
-	fpk.Init()
-	fpk.View() // Should panic here
 }
