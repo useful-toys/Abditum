@@ -12,20 +12,14 @@ type secretDetailModel struct {
 	mgr     *vault.Manager
 	actions *ActionManager
 	msgs    *MessageManager
-	theme   *Theme
-}
-
-// ApplyTheme applies the given theme to the secretDetailModel.
-func (m *secretDetailModel) ApplyTheme(t *Theme) {
-	m.theme = t
 }
 
 // Compile-time assertion: secretDetailModel satisfies childModel.
 var _ childModel = &secretDetailModel{}
 
 // newSecretDetailModel creates a new secret detail stub.
-func newSecretDetailModel(mgr *vault.Manager, actions *ActionManager, msgs *MessageManager, theme *Theme) *secretDetailModel {
-	return &secretDetailModel{mgr: mgr, actions: actions, msgs: msgs, theme: theme}
+func newSecretDetailModel(mgr *vault.Manager, actions *ActionManager, msgs *MessageManager) *secretDetailModel {
+	return &secretDetailModel{mgr: mgr, actions: actions, msgs: msgs}
 }
 
 // Update processes messages for the secret detail panel.
@@ -34,7 +28,7 @@ func (m *secretDetailModel) Update(msg tea.Msg) tea.Cmd {
 }
 
 // View renders a placeholder for the secret detail panel.
-func (m *secretDetailModel) View(width, height int) string {
-	return lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.Semantic.Info)).
+func (m *secretDetailModel) View(width, height int, theme *Theme) string {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Semantic.Info)).
 		Render("[secret detail - Phase 8]")
 }

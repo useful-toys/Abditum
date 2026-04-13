@@ -616,7 +616,7 @@ func (m *rootModel) enterVault() tea.Cmd {
 	m.area = workAreaVault
 	m.welcome = nil // GC old model
 	m.vaultTree = newVaultTreeModel(m.mgr, m.actions, m.messages)
-	m.secretDetail = newSecretDetailModel(m.mgr, m.actions, m.messages, m.theme)
+	m.secretDetail = newSecretDetailModel(m.mgr, m.actions, m.messages)
 	// Dimensions are passed to View() when rendering, no SetSize needed
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tickMsg(t) })
 }
