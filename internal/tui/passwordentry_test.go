@@ -103,7 +103,6 @@ func TestPasswordEntryModalAttemptCounterShowsFromSecondAttempt(t *testing.T) {
 func TestPasswordEntryModalEnterKey(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
-	m.theme = TokyoNight
 
 	// Type a password
 	m.input.SetValue("test1234!")
@@ -128,7 +127,6 @@ func TestPasswordEntryModalEnterKey(t *testing.T) {
 func TestPasswordEntryModalEscKey(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
-	m.theme = TokyoNight
 
 	// Press ESC
 	cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
@@ -154,19 +152,6 @@ func TestPasswordEntryModalMaskedInput(t *testing.T) {
 	}
 }
 
-// TestPasswordEntryModalApplyTheme verifies ApplyTheme stores theme.
-func TestPasswordEntryModalApplyTheme(t *testing.T) {
-	m := &passwordEntryModal{}
-	m.Init()
-	m.ApplyTheme(TokyoNight)
-	if m.theme == nil {
-		t.Fatal("ApplyTheme did not store theme")
-	}
-	if m.theme != TokyoNight {
-		t.Fatal("ApplyTheme did not store the correct theme")
-	}
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Golden File Tests
 // ─────────────────────────────────────────────────────────────────────────────
@@ -177,7 +162,6 @@ func TestPasswordEntryModal_Golden(t *testing.T) {
 		title: "Senha mestra",
 	}
 	m.Init()
-	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
 	out := m.View(80, 24, TokyoNight)
@@ -205,7 +189,6 @@ func TestPasswordEntryModal_Golden(t *testing.T) {
 func TestPasswordEntryModal_ConfirmarDisabledWhenEmpty(t *testing.T) {
 	m := &passwordEntryModal{title: "Senha mestra"}
 	m.Init()
-	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
 	// input is empty after Init

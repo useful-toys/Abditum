@@ -174,6 +174,6 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 }
 
 // View is not used in flow-driven interface; modals handle visualization.
-func (f *openVaultFlow) View(width, height int) string {
+func (f *openVaultFlow) View(width, height int, theme *Theme) string {
 	return ""
 }
