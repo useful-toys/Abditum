@@ -43,7 +43,7 @@ func TestPasswordEntryModalView(t *testing.T) {
 	m.Init()
 	m.theme = TokyoNight
 
-	view := m.View(80, 24)
+	view := m.View(80, 24, TokyoNight)
 	if view == "" {
 		t.Fatal("View(80, 24) returned empty string")
 	}
@@ -69,7 +69,7 @@ func TestPasswordEntryModalAttemptCounter(t *testing.T) {
 	m.theme = TokyoNight
 
 	// First attempt - counter should be hidden
-	view := m.View(80, 24)
+	view := m.View(80, 24, TokyoNight)
 	if view == "" {
 		t.Fatal("View returned empty")
 	}
@@ -91,7 +91,7 @@ func TestPasswordEntryModalAttemptCounterShowsFromSecondAttempt(t *testing.T) {
 
 	// After second attempt, counter should be visible
 	if m.attempt >= 2 {
-		view := m.View(80, 24)
+		view := m.View(80, 24, TokyoNight)
 		if view == "" {
 			t.Fatal("View returned empty after increment")
 		}
@@ -180,7 +180,7 @@ func TestPasswordEntryModal_Golden(t *testing.T) {
 	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
-	out := m.View(80, 24)
+	out := m.View(80, 24, TokyoNight)
 
 	// .txt.golden: plain text render
 	txtPath := goldenPath("passwordentry", "initial", 80, "txt")
@@ -210,7 +210,7 @@ func TestPasswordEntryModal_ConfirmarDisabledWhenEmpty(t *testing.T) {
 
 	// input is empty after Init
 
-	out := m.View(80, 24)
+	out := m.View(80, 24, TokyoNight)
 	transitions := testdatapkg.ParseANSIStyle(out)
 
 	// Find the maximum line number (action hints are on the last rendered lines)
@@ -248,7 +248,7 @@ func TestPasswordEntryModal_ConfirmarActiveWhenFilled(t *testing.T) {
 
 	m.input.SetValue("hunter2") // non-empty → activates "Enter Confirmar"
 
-	out := m.View(80, 24)
+	out := m.View(80, 24, TokyoNight)
 	transitions := testdatapkg.ParseANSIStyle(out)
 
 	// Find the maximum line number
@@ -285,7 +285,7 @@ func TestPasswordEntryModal_Golden_Filled(t *testing.T) {
 
 	m.input.SetValue("hunter2") // non-empty → activates "Enter Confirmar"
 
-	out := m.View(80, 24)
+	out := m.View(80, 24, TokyoNight)
 
 	txtPath := goldenPath("passwordentry", "filled", 80, "txt")
 	checkOrUpdateGolden(t, txtPath, stripANSI(out))

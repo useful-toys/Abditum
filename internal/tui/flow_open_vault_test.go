@@ -85,7 +85,7 @@ func TestOpenVaultFlowHandlesFilePickerCancelled(t *testing.T) {
 // TestOpenVaultFlowView validates View() returns a string.
 func TestOpenVaultFlowView(t *testing.T) {
 	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
-	view := flow.View(80, 24)
+	view := flow.View(80, 24, TokyoNight)
 	// View should return a string (may be empty for flow-driven interface)
 	if view == "" {
 		// Empty string is acceptable; flow uses modals for visualization
@@ -354,7 +354,7 @@ func TestOpenVaultFlow_Golden(t *testing.T) {
 	flow := newOpenVaultFlow(nil, NewMessageManager(), NewActionManager(), TokyoNight)
 	flow.state = stateCheckDirty
 
-	view := flow.View(80, 24)
+	view := flow.View(80, 24, TokyoNight)
 
 	// .txt.golden: plain text render
 	txtPath := goldenPath("flow-open-vault", "initial", 80, "txt")

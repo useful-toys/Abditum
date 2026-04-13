@@ -11,8 +11,7 @@ import (
 // Each childModel implementation is a full tea.Model that handles its own state and updates.
 type childModel interface {
 	Update(tea.Msg) tea.Cmd
-	View(width, height int) string
-	ApplyTheme(*Theme)
+	View(width, height int, theme *Theme) string
 }
 
 // Shortcut is a key+label pair displayed in the command bar while a modal is active.
@@ -27,7 +26,7 @@ type Shortcut struct {
 // Each modalView implementation must handle its own state and update logic.
 type modalView interface {
 	Update(tea.Msg) tea.Cmd
-	View(maxWidth, maxHeight int) string
+	View(maxWidth, maxHeight int, theme *Theme) string
 	Shortcuts() []Shortcut
 }
 

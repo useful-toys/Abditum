@@ -224,7 +224,7 @@ func TestHelpModal_Update_HomeResetsScroll(t *testing.T) {
 // TestHelpModal_Update_EndScrollsToBottom: "end" key clamps scroll to maxScroll.
 func TestHelpModal_Update_EndScrollsToBottom(t *testing.T) {
 	m := newHelpModal(help15actions(), helpGroupLabel)
-	m.View(60, 16) // initialize viewportHeight
+	m.View(60, 16, TokyoNight) // initialize viewportHeight
 	maxScroll := m.totalLines() - m.contentHeight()
 	if maxScroll < 0 {
 		maxScroll = 0
@@ -238,7 +238,7 @@ func TestHelpModal_Update_EndScrollsToBottom(t *testing.T) {
 // TestHelpModal_Update_ScrollClampedAtMax: down past maxScroll stays at maxScroll.
 func TestHelpModal_Update_ScrollClampedAtMax(t *testing.T) {
 	m := newHelpModal(help15actions(), helpGroupLabel)
-	m.View(60, 16) // initialize viewportHeight
+	m.View(60, 16, TokyoNight) // initialize viewportHeight
 	maxScroll := m.totalLines() - m.contentHeight()
 	if maxScroll < 0 {
 		maxScroll = 0

@@ -10,21 +10,15 @@ import (
 // Open/create vault flows are orchestrated via the modal stack, not this model.
 type welcomeModel struct {
 	actions *ActionManager
-	theme   *Theme
 	version string // Application version to display below logo
-}
-
-// ApplyTheme applies the given theme to the welcomeModel.
-func (m *welcomeModel) ApplyTheme(t *Theme) {
-	m.theme = t
 }
 
 // Compile-time assertion: welcomeModel satisfies childModel.
 var _ childModel = &welcomeModel{}
 
 // newWelcomeModel creates a new welcome screen model.
-func newWelcomeModel(actions *ActionManager, theme *Theme, version string) *welcomeModel {
-	return &welcomeModel{actions: actions, theme: theme, version: version}
+func newWelcomeModel(actions *ActionManager, version string) *welcomeModel {
+	return &welcomeModel{actions: actions, version: version}
 }
 
 // Update processes messages for the welcome screen.
@@ -38,16 +32,16 @@ func (m *welcomeModel) Update(msg tea.Msg) tea.Cmd {
 // are centered horizontally and vertically via lipgloss.Place().
 // Logo width is hardcoded to 43 columns matching the ASCII art width.
 // Version is displayed below the logo in text.secondary color.
-func (m *welcomeModel) View(width, height int) string {
+func (m *welcomeModel) View(width, height int, theme *Theme) string {
 	// 43 = width of AsciiArt (const in ascii.go) — each line is exactly 43 characters.
 	// No background is set here: the root workAreaStyle already applies SurfaceBase
 	// to the entire work area. Setting background here would emit redundant SGR codes
 	// that may conflict with the terminal's own background rendering.
-	logoBlock := lipgloss.NewStyle().Width(43).Render(RenderLogo(m.theme))
+	logoBlock := lipgloss.NewStyle().Width(43).Render(RenderLogo(theme))
 
 	// Format version with semantic.secondary color (from theme)
 	// Per spec: version token = text.secondary
-	versionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.Text.Secondary))
+	versionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
 	versionLine := versionStyle.Render(m.version)
 
 	content := lipgloss.JoinVertical(lipgloss.Center, logoBlock, "", versionLine)

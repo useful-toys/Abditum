@@ -8,12 +8,9 @@ import (
 
 // TestWelcomeModel_Structure verifies the welcomeModel struct has required fields.
 func TestWelcomeModel_Structure(t *testing.T) {
-	wm := newWelcomeModel(nil, TokyoNight, "v0.1.0")
+	wm := newWelcomeModel(nil, "v0.1.0")
 	if wm == nil {
 		t.Fatal("newWelcomeModel returned nil")
-	}
-	if wm.theme != TokyoNight {
-		t.Errorf("expected theme to be set, got nil")
 	}
 	if wm.version != "v0.1.0" {
 		t.Errorf("expected version to be set, got %q", wm.version)
@@ -22,9 +19,9 @@ func TestWelcomeModel_Structure(t *testing.T) {
 
 // TestWelcomeModel_View verifies View() returns a non-empty string.
 func TestWelcomeModel_View(t *testing.T) {
-	wm := newWelcomeModel(nil, TokyoNight, "v0.1.0")
+	wm := newWelcomeModel(nil, "v0.1.0")
 
-	view := wm.View(80, 24)
+	view := wm.View(80, 24, TokyoNight)
 	if view == "" {
 		t.Error("View() returned empty string")
 	}
@@ -35,28 +32,18 @@ func TestWelcomeModel_View(t *testing.T) {
 
 // TestWelcomeModel_Update returns nil (display-only for now).
 func TestWelcomeModel_Update(t *testing.T) {
-	wm := newWelcomeModel(nil, TokyoNight, "v0.1.0")
+	wm := newWelcomeModel(nil, "v0.1.0")
 	cmd := wm.Update(nil)
 	if cmd != nil {
 		t.Error("Update() should return nil (display-only)")
 	}
 }
 
-// TestWelcomeModel_ApplyTheme applies a new theme.
-func TestWelcomeModel_ApplyTheme(t *testing.T) {
-	wm := newWelcomeModel(nil, TokyoNight, "v0.1.0")
-	wm.ApplyTheme(Cyberpunk)
-
-	if wm.theme != Cyberpunk {
-		t.Errorf("ApplyTheme failed: expected Cyberpunk")
-	}
-}
-
 // TestWelcomeModel_ViewContainsLogo verifies View includes the logo text.
 func TestWelcomeModel_ViewContainsLogo(t *testing.T) {
-	wm := newWelcomeModel(nil, TokyoNight, "v0.1.0")
+	wm := newWelcomeModel(nil, "v0.1.0")
 
-	view := wm.View(80, 24)
+	view := wm.View(80, 24, TokyoNight)
 	// Logo should contain "A" (part of "Abditum")
 	if len(view) == 0 {
 		t.Fatal("View should not be empty")
@@ -65,9 +52,9 @@ func TestWelcomeModel_ViewContainsLogo(t *testing.T) {
 
 // TestWelcomeModel_ViewContainsHints verifies View includes action hints.
 func TestWelcomeModel_ViewContainsHints(t *testing.T) {
-	wm := newWelcomeModel(nil, TokyoNight, "v0.1.0")
+	wm := newWelcomeModel(nil, "v0.1.0")
 
-	view := wm.View(80, 24)
+	view := wm.View(80, 24, TokyoNight)
 	// Should contain hint text about version
 	if len(view) == 0 {
 		t.Fatal("View should not be empty")
@@ -93,9 +80,9 @@ func TestWelcomeModel_Golden(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			wm := newWelcomeModel(nil, tc.theme, "v0.1.0")
+			wm := newWelcomeModel(nil, "v0.1.0")
 
-			out := wm.View(80, 24)
+			out := wm.View(80, 24, TokyoNight)
 
 			// .txt.golden: raw ANSI output stripped of codes
 			txtPath := goldenPath("welcome", tc.name, 80, "txt")

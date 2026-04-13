@@ -47,7 +47,7 @@ func TestPasswordCreateModalView(t *testing.T) {
 	m.Init()
 	m.theme = TokyoNight
 
-	view := m.View(80, 24)
+	view := m.View(80, 24, TokyoNight)
 	if view == "" {
 		t.Fatal("View(80, 24) returned empty string")
 	}
@@ -302,7 +302,7 @@ func TestPasswordCreate_StrengthMeterHidden_EmptyPassword(t *testing.T) {
 
 	// Leave password empty (default after Init)
 
-	plain := stripANSI(m.View(80, 24))
+	plain := stripANSI(m.View(80, 24, TokyoNight))
 
 	// Strength labels should NOT appear when password is empty
 	if strings.Contains(plain, "Força:") {
@@ -320,7 +320,7 @@ func TestPasswordCreate_StrengthMeterVisible_NonEmptyPassword(t *testing.T) {
 	m.password.SetValue("test123")
 	m.updateStrength()
 
-	plain := stripANSI(m.View(80, 24))
+	plain := stripANSI(m.View(80, 24, TokyoNight))
 
 	if !strings.Contains(plain, "Forte") && !strings.Contains(plain, "Fraca") {
 		t.Error("expected strength meter to be visible when password is non-empty (D-PC-03)")
@@ -340,7 +340,7 @@ func TestPasswordCreateModal_Golden(t *testing.T) {
 	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
-	out := m.View(80, 24)
+	out := m.View(80, 24, TokyoNight)
 
 	// .txt.golden: plain text render
 	txtPath := goldenPath("passwordcreate", "initial", 80, "txt")
@@ -366,7 +366,7 @@ func TestPasswordCreateModal_Golden_Empty(t *testing.T) {
 
 	// Leave both fields empty (default after Init)
 
-	out := m.View(80, 24)
+	out := m.View(80, 24, TokyoNight)
 
 	txtPath := goldenPath("passwordcreate", "empty", 80, "txt")
 	checkOrUpdateGolden(t, txtPath, stripANSI(out))
@@ -392,7 +392,7 @@ func TestPasswordCreateModal_Golden_FilledMatch(t *testing.T) {
 	m.confirm.SetValue("SamePass123!")
 	m.updateStrength()
 
-	out := m.View(80, 24)
+	out := m.View(80, 24, TokyoNight)
 
 	txtPath := goldenPath("passwordcreate", "filled-match", 80, "txt")
 	checkOrUpdateGolden(t, txtPath, stripANSI(out))

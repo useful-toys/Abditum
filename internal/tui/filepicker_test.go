@@ -47,7 +47,7 @@ func TestFilePickerModalInit(t *testing.T) {
 // TestFilePickerModalView verifies View() returns a string.
 func TestFilePickerModalView(t *testing.T) {
 	fpk := newTestFilePickerModal()
-	view := fpk.View(80, 24)
+	view := fpk.View(80, 24, TokyoNight)
 	if view == "" {
 		t.Log("View() returned empty string (acceptable for initial render)")
 	}
@@ -102,7 +102,7 @@ func TestFilePickerModalEmitsMessageOnEsc(t *testing.T) {
 // TestFilePickerModalContainsPanelLabels verifies View contains expected labels.
 func TestFilePickerModalContainsPanelLabels(t *testing.T) {
 	fpk := newTestFilePickerModal()
-	view := fpk.View(80, 24)
+	view := fpk.View(80, 24, TokyoNight)
 
 	hasEstrutura := len(view) > 0 && contains(view, "Estrutura")
 	hasArquivos := len(view) > 0 && contains(view, "Arquivos")
@@ -280,7 +280,7 @@ func TestFilePickerModalDisplaysFileSizes(t *testing.T) {
 	}
 
 	fpk.loadFilesForCursor()
-	view := fpk.View(80, 24)
+	view := fpk.View(80, 24, TokyoNight)
 
 	// Space-separated units per D-05: "512 B", "1.0 KB", "1.0 MB"
 	if !contains(view, " B") && !contains(view, " KB") && !contains(view, " MB") && !contains(view, " GB") {
@@ -302,7 +302,7 @@ func TestFilePickerModalDisplaysRelativeDates(t *testing.T) {
 	}
 
 	fpk.loadFilesForCursor()
-	view := fpk.View(80, 24)
+	view := fpk.View(80, 24, TokyoNight)
 
 	// Absolute date format: "dd/mm/aa HH:MM" — must contain "/" between date parts (D-05)
 	if !contains(view, "/") {
@@ -734,7 +734,7 @@ func TestFilePickerUpdateBehavior(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fpk := tt.setup(t)
 			// Initialize viewportHeight by calling View() before Update()
-			fpk.View(80, 24)
+			fpk.View(80, 24, TokyoNight)
 			cmd := fpk.Update(tea.KeyPressMsg{Code: tt.key.Code})
 			tt.check(t, fpk, cmd)
 		})
@@ -772,7 +772,7 @@ func TestFilePickerModal_Golden(t *testing.T) {
 	// Files panel focused (same as original test intent)
 	fpk.focusPanel = 1
 
-	out := fpk.View(80, 24)
+	out := fpk.View(80, 24, TokyoNight)
 
 	// .txt.golden: plain text render
 	txtPath := goldenPath("filepicker", "initial", 80, "txt")
@@ -922,10 +922,10 @@ func newGoldenFPK(mode FilePickerMode, title, dir string, w, h int) *filePickerM
 	return fpk
 }
 
-// runFPKGolden renders fpk.View(80, 24) and checks/updates txt and json golden files.
+// runFPKGolden renders fpk.View(80, 24, TokyoNight) and checks/updates txt and json golden files.
 func runFPKGolden(t *testing.T, fpk *filePickerModal, variant string) {
 	t.Helper()
-	out := fpk.View(80, 24)
+	out := fpk.View(80, 24, TokyoNight)
 	if out == "" {
 		t.Fatalf("View() returned empty string for variant %s", variant)
 	}

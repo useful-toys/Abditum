@@ -225,7 +225,7 @@ func TestDecisionDialog_MatrixViewRenders(t *testing.T) {
 		f := f // capture loop variable
 		t.Run(f.name, func(t *testing.T) {
 			d := f.dialog()
-			out := d.View(80, 24)
+			out := d.View(80, 24, TokyoNight)
 
 			if out == "" {
 				t.Errorf("%s: View() returned empty string", f.name)
@@ -281,7 +281,7 @@ func TestDecisionDialog_SymbolPresence(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out := tt.d.View(80, 24)
+			out := tt.d.View(80, 24, TokyoNight)
 			if tt.wantSymbol != "" && !strings.Contains(out, tt.wantSymbol) {
 				t.Errorf("expected symbol %q in output\ngot:\n%s", tt.wantSymbol, out)
 			}
@@ -300,7 +300,7 @@ func TestDecisionDialog_SymbolPresence(t *testing.T) {
 
 func TestDecisionDialog_BorderChars(t *testing.T) {
 	d := pocKey1()
-	out := d.View(80, 24)
+	out := d.View(80, 24, TokyoNight)
 
 	if !strings.Contains(out, "╭") {
 		t.Errorf("View() missing top-left corner ╭\ngot:\n%s", out)
@@ -358,7 +358,7 @@ func TestDecisionDialog_LongBodyWraps(t *testing.T) {
 	d := NewDecisionDialog(SeverityNeutral, IntentionAcknowledge,
 		"Título", longBody,
 		[]DecisionAction{{Key: "Enter", Label: "OK", Default: true}})
-	out := d.View(80, 24)
+	out := d.View(80, 24, TokyoNight)
 	if !strings.Contains(out, "\n") {
 		t.Error("View() with long body should contain newlines (multi-line wrapping)")
 	}
@@ -370,7 +370,7 @@ func TestDecisionDialog_ShortBodyFits(t *testing.T) {
 	d := NewDecisionDialog(SeverityNeutral, IntentionAcknowledge,
 		"Título", "OK?",
 		[]DecisionAction{{Key: "Enter", Label: "OK", Default: true}})
-	out := d.View(50, 10)
+	out := d.View(50, 10, TokyoNight)
 	if out == "" {
 		t.Error("View() with short body should return non-empty string")
 	}
@@ -380,7 +380,7 @@ func TestDecisionDialog_ShortBodyFits(t *testing.T) {
 // output should NOT contain "Esc".
 func TestDecisionDialog_AcknowledgeHasNoCancel(t *testing.T) {
 	d := pocKey1()
-	out := d.View(80, 24)
+	out := d.View(80, 24, TokyoNight)
 	if strings.Contains(out, "Esc") {
 		t.Errorf("Acknowledge dialog should not render 'Esc' in output\ngot:\n%s", out)
 	}
@@ -390,7 +390,7 @@ func TestDecisionDialog_AcknowledgeHasNoCancel(t *testing.T) {
 // View() is non-empty and does not panic (falls back to boxWidth=40 floor).
 func TestDecisionDialog_SmallSizeUsesMinWidth(t *testing.T) {
 	d := pocKey4()
-	out := d.View(20, 10)
+	out := d.View(20, 10, TokyoNight)
 	if out == "" {
 		t.Error("View() with small terminal size should return non-empty string (uses min width floor)")
 	}
