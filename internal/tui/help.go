@@ -97,10 +97,11 @@ func formatKeyForHelp(raw string) string {
 // Pushed onto the modal stack when the user presses F1.
 // Dismissed via ESC or F1.
 type helpModal struct {
-	actions        []Action         // all registered actions for the help overlay
-	groupLabel     func(int) string // resolves a group int to a display label
-	viewportHeight int              // usable content lines; set by View(), used by Update()
-	scroll         int              // current scroll offset
+	actions          []Action         // all registered actions for the help overlay
+	groupLabel       func(int) string // resolves a group int to a display label
+	viewportHeight   int              // usable content lines; set by View(), used by Update()
+	cachedTotalLines int              // total content lines; set by View(), used by Update()
+	scroll           int              // current scroll offset
 }
 
 // Compile-time assertion: helpModal satisfies modalView.
@@ -134,10 +135,10 @@ func (m *helpModal) Update(msg tea.Msg) tea.Cmd {
 		case "home":
 			m.scroll = 0
 		case "end":
-			m.scroll = m.totalLines() - m.contentHeight()
+			m.scroll = m.cachedTotalLines - m.contentHeight()
 		}
 		// Clamp scroll
-		maxScroll := max(0, m.totalLines()-m.contentHeight())
+		maxScroll := max(0, m.cachedTotalLines-m.contentHeight())
 		if m.scroll > maxScroll {
 			m.scroll = maxScroll
 		}
@@ -148,7 +149,7 @@ func (m *helpModal) Update(msg tea.Msg) tea.Cmd {
 // View renders the help modal with title in top border and action in bottom border.
 // Follows DS dialog anatomy (§436-458): title embedded in top border, action bar in bottom border.
 // Calculates and saves viewportHeight for use by Update() (pgup/pgdown/end/clamp).
-func (m *helpModal) View(maxWidth, maxHeight int) string {
+func (m *helpModal) View(maxWidth, maxHeight int, theme *Theme) string {
 	// Dynamic sizing per DS: max 60 cols or 70% of terminal
 	maxW := 60
 	if maxWidth > 0 {
@@ -160,8 +161,9 @@ func (m *helpModal) View(maxWidth, maxHeight int) string {
 	boxW := maxW
 
 	allActions := m.actions
-	lines := m.buildContentLines(allActions)
+	lines := m.buildContentLines(allActions, theme)
 	totalLines := len(lines)
+	m.cachedTotalLines = totalLines
 
 	// Dialog layout: top border(1) + content(innerH) + bottom border(1)
 	// Content area: top padding(1) + action lines(usableH) + bottom padding(1)
@@ -197,14 +199,14 @@ func (m *helpModal) View(maxWidth, maxHeight int) string {
 	hasAbove := start > 0
 	hasBelow := end < totalLines
 
-	return m.renderDialog(visibleLines, boxW, innerH, hasAbove, hasBelow, totalLines, start, usableH)
+	return m.renderDialog(visibleLines, boxW, innerH, hasAbove, hasBelow, totalLines, start, usableH, theme)
 }
 
 // renderDialog builds the full dialog with title in top border and action in bottom border.
-func (m *helpModal) renderDialog(lines []string, boxW, innerH int, hasAbove, hasBelow bool, totalLines, start, viewH int) string {
-	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#414868"))
-	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#a9b1d6"))
-	actionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
+func (m *helpModal) renderDialog(lines []string, boxW, innerH int, hasAbove, hasBelow bool, totalLines, start, viewH int, theme *Theme) string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Default))
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(theme.Text.Primary))
+	actionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
 	innerW := boxW - 6 // 2 borders + 4 padding (2 each side)
 
 	// Top border: ╭── Title ──────────────╮
@@ -270,7 +272,7 @@ func (m *helpModal) renderDialog(lines []string, boxW, innerH int, hasAbove, has
 
 // totalLines returns the total number of content lines.
 func (m *helpModal) totalLines() int {
-	return len(m.buildContentLines(m.actions))
+	return m.cachedTotalLines
 }
 
 // contentHeight returns the visible content height (usable action lines).
@@ -280,9 +282,9 @@ func (m *helpModal) contentHeight() int {
 }
 
 // buildContentLines formats actions into display lines.
-func (m *helpModal) buildContentLines(actions []Action) []string {
-	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
-	groupStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#565f89"))
+func (m *helpModal) buildContentLines(actions []Action, theme *Theme) []string {
+	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Accent.Primary))
+	groupStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(theme.Text.Secondary))
 
 	var lines []string
 
