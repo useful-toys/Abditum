@@ -12,20 +12,14 @@ type settingsModel struct {
 	mgr     *vault.Manager
 	actions *ActionManager
 	msgs    *MessageManager
-	theme   *Theme
-}
-
-// ApplyTheme applies the given theme to the settingsModel.
-func (m *settingsModel) ApplyTheme(t *Theme) {
-	m.theme = t
 }
 
 // Compile-time assertion: settingsModel satisfies childModel.
 var _ childModel = &settingsModel{}
 
 // newSettingsModel creates a new settings stub.
-func newSettingsModel(mgr *vault.Manager, actions *ActionManager, msgs *MessageManager, theme *Theme) *settingsModel {
-	return &settingsModel{mgr: mgr, actions: actions, msgs: msgs, theme: theme}
+func newSettingsModel(mgr *vault.Manager, actions *ActionManager, msgs *MessageManager) *settingsModel {
+	return &settingsModel{mgr: mgr, actions: actions, msgs: msgs}
 }
 
 // Update processes messages for the settings screen.
@@ -34,7 +28,7 @@ func (m *settingsModel) Update(msg tea.Msg) tea.Cmd {
 }
 
 // View renders a placeholder for the settings screen.
-func (m *settingsModel) View(width, height int) string {
-	return lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.Semantic.Info)).
+func (m *settingsModel) View(width, height int, theme *Theme) string {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Semantic.Info)).
 		Render("[settings - Phase 9]")
 }
