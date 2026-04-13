@@ -459,7 +459,7 @@ func (m *rootModel) renderFrameWithModal(modal modalView, modalWidth, modalHeigh
 	switch m.area {
 	case workAreaWelcome:
 		if m.welcome != nil {
-			workContent = m.welcome.View(m.width, workH)
+			workContent = m.welcome.View(m.width, workH, m.theme)
 		}
 	case workAreaVault:
 		workContent = m.renderVaultArea(workH)
@@ -467,7 +467,7 @@ func (m *rootModel) renderFrameWithModal(modal modalView, modalWidth, modalHeigh
 		workContent = m.renderTemplatesArea(workH)
 	case workAreaSettings:
 		if m.settings != nil {
-			workContent = m.settings.View(m.width, workH)
+			workContent = m.settings.View(m.width, workH, m.theme)
 		}
 	}
 	workArea := workAreaStyle.Height(workH).Render(workContent)
@@ -475,7 +475,7 @@ func (m *rootModel) renderFrameWithModal(modal modalView, modalWidth, modalHeigh
 	// Overlay modal centered inside work area using lipgloss.Place.
 	// Pass dimensions to modal.View() as per new interface
 	if modal != nil {
-		modalStr := modal.View(modalWidth, modalHeight)
+		modalStr := modal.View(modalWidth, modalHeight, m.theme)
 		workArea = lipgloss.Place(m.width, workH, lipgloss.Center, lipgloss.Center, modalStr)
 	}
 
@@ -538,7 +538,7 @@ func (m *rootModel) renderFrame(modal modalView) string {
 	switch m.area {
 	case workAreaWelcome:
 		if m.welcome != nil {
-			workContent = m.welcome.View(m.width, workH)
+			workContent = m.welcome.View(m.width, workH, m.theme)
 		}
 	case workAreaVault:
 		workContent = m.renderVaultArea(workH)
@@ -546,7 +546,7 @@ func (m *rootModel) renderFrame(modal modalView) string {
 		workContent = m.renderTemplatesArea(workH)
 	case workAreaSettings:
 		if m.settings != nil {
-			workContent = m.settings.View(m.width, workH)
+			workContent = m.settings.View(m.width, workH, m.theme)
 		}
 	}
 	workArea := workAreaStyle.Height(workH).Render(workContent)
@@ -554,7 +554,7 @@ func (m *rootModel) renderFrame(modal modalView) string {
 	// Overlay modal centered inside work area using lipgloss.Place.
 	// lipgloss.Place handles ANSI correctly and never touches header/msgBar/cmdBar.
 	if modal != nil {
-		modalStr := modal.View(m.width, workH)
+		modalStr := modal.View(m.width, workH, m.theme)
 		workArea = lipgloss.Place(m.width, workH, lipgloss.Center, lipgloss.Center, modalStr)
 	}
 
@@ -581,10 +581,10 @@ func (m *rootModel) renderVaultArea(workH int) string {
 	left := "[vault tree - Phase 7]"
 	right := "[secret detail - Phase 8]"
 	if m.vaultTree != nil {
-		left = m.vaultTree.View(halfW, workH)
+		left = m.vaultTree.View(halfW, workH, m.theme)
 	}
 	if m.secretDetail != nil {
-		right = m.secretDetail.View(m.width-halfW, workH)
+		right = m.secretDetail.View(m.width-halfW, workH, m.theme)
 	}
 
 	leftStyle := lipgloss.NewStyle().Width(halfW).Height(workH)
@@ -599,10 +599,10 @@ func (m *rootModel) renderTemplatesArea(workH int) string {
 	left := "[template list - Phase 8]"
 	right := "[template detail - Phase 8]"
 	if m.templateList != nil {
-		left = m.templateList.View(halfW, workH)
+		left = m.templateList.View(halfW, workH, m.theme)
 	}
 	if m.templateDetail != nil {
-		right = m.templateDetail.View(m.width-halfW, workH)
+		right = m.templateDetail.View(m.width-halfW, workH, m.theme)
 	}
 
 	leftStyle := lipgloss.NewStyle().Width(halfW).Height(workH)
@@ -624,10 +624,11 @@ func (m *rootModel) enterVault() tea.Cmd {
 // applyTheme propagates the current theme to all active child models and modals.
 func (m *rootModel) applyTheme() {
 	for _, child := range m.liveWorkChildren() {
-		child.ApplyTheme(m.theme)
+		if themeable, ok := child.(interface{ ApplyTheme(*Theme) }); ok {
+			themeable.ApplyTheme(m.theme)
+		}
 	}
 	for _, modal := range m.modals {
-		// Modals should implement ApplyTheme if they need theme changes.
 		if themeableModal, ok := modal.(interface{ ApplyTheme(*Theme) }); ok {
 			themeableModal.ApplyTheme(m.theme)
 		}
