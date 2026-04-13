@@ -260,6 +260,11 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	// --- Theme toggle: F12 action ---
+	case toggleThemeMsg:
+		m.toggleTheme()
+		return m, nil
+
 	// --- Keyboard input: D-09 dispatch order ---
 	case tea.KeyPressMsg:
 		m.messages.HandleInput()
@@ -300,16 +305,6 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				DecisionAction{Key: "Enter", Label: "Sair", Default: true, Cmd: tea.Quit},
 				nil,
 				DecisionAction{Key: "Esc", Label: "Voltar"})
-		}
-
-		// Check for F12 theme toggle before any other key handling
-		if key == "f12" {
-			if m.theme == TokyoNight {
-				m.theme = Cyberpunk
-			} else {
-				m.theme = TokyoNight
-			}
-			return m, nil
 		}
 
 		// 1. If help modal is open, let it handle ALL keys (including F1 and ESC)
@@ -607,6 +602,15 @@ func (m *rootModel) renderTemplatesArea(workH int) string {
 	leftStyle := lipgloss.NewStyle().Width(halfW).Height(workH)
 	rightStyle := lipgloss.NewStyle().Width(m.width - halfW).Height(workH)
 	return lipgloss.JoinHorizontal(lipgloss.Top, leftStyle.Render(left), rightStyle.Render(right))
+}
+
+// toggleTheme alternates the current theme between TokyoNight and Cyberpunk.
+func (m *rootModel) toggleTheme() {
+	if m.theme == TokyoNight {
+		m.theme = Cyberpunk
+	} else {
+		m.theme = TokyoNight
+	}
 }
 
 // enterVault transitions to workAreaVault, mounts the vault children, and

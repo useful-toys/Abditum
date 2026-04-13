@@ -215,6 +215,8 @@ func makeKeyPress(key string) tea.KeyPressMsg {
 		return tea.KeyPressMsg{Code: 'q', Mod: tea.ModCtrl}
 	case "f1":
 		return tea.KeyPressMsg{Code: tea.KeyF1}
+	case "f12":
+		return tea.KeyPressMsg{Code: tea.KeyF12}
 	default:
 		if len(key) == 1 {
 			return tea.KeyPressMsg{Code: rune(key[0])}
@@ -281,6 +283,40 @@ func TestKeyPress_CallsHandleInput(t *testing.T) {
 
 	if m.messages.Current() != nil {
 		t.Error("messages.HandleInput() must be called on every KeyPressMsg, including unhandled keys")
+	}
+}
+
+// TestF12_ThemeToggle verifies that F12 alternates the theme between TokyoNight and Cyberpunk
+// via the ActionManager → toggleThemeMsg → case in Update().
+func TestF12_ThemeToggle(t *testing.T) {
+	m := NewRootModel()
+
+	if m.theme != TokyoNight {
+		t.Fatalf("precondition: initial theme expected TokyoNight, got %v", m.theme)
+	}
+
+	// First F12 press: TokyoNight → Cyberpunk
+	result, cmd := m.Update(makeKeyPress("f12"))
+	rm := result.(*rootModel)
+	if cmd == nil {
+		t.Fatal("F12 must return cmd non-nil (toggleThemeMsg)")
+	}
+	result, _ = rm.Update(cmd())
+	rm = result.(*rootModel)
+	if rm.theme != Cyberpunk {
+		t.Errorf("after 1st F12 press: expected Cyberpunk, got %v", rm.theme)
+	}
+
+	// Second F12 press: Cyberpunk → TokyoNight
+	result, cmd = rm.Update(makeKeyPress("f12"))
+	rm = result.(*rootModel)
+	if cmd == nil {
+		t.Fatal("F12 must return cmd non-nil (toggleThemeMsg)")
+	}
+	result, _ = rm.Update(cmd())
+	rm = result.(*rootModel)
+	if rm.theme != TokyoNight {
+		t.Errorf("after 2nd F12 press: expected TokyoNight, got %v", rm.theme)
 	}
 }
 
