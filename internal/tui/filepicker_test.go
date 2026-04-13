@@ -904,7 +904,6 @@ func newGoldenFPK(mode FilePickerMode, title, dir string, w, h int) *filePickerM
 		ext:        ".abditum",
 		mode:       mode,
 		title:      title,
-		theme:      TokyoNight,
 		timeFmt:    func(t time.Time) string { return t.UTC().Format("02/01/06 15:04") },
 		root:       root,
 		focusPanel: 0,
@@ -915,7 +914,7 @@ func newGoldenFPK(mode FilePickerMode, title, dir string, w, h int) *filePickerM
 	fpk.currentPath = dir
 	fpk.loadFilesForCursor()
 	// Initialize viewport dimensions before modifying scroll state
-	fpk.View(w, h)
+	fpk.View(w, h, TokyoNight)
 	// Replace currentPath with a fixed stub so golden files don't contain
 	// the randomly-named temp directory path.
 	fpk.currentPath = "/golden/stub/path"
