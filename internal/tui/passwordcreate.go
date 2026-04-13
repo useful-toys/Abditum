@@ -35,7 +35,6 @@ type passwordCreateModal struct {
 	focusIndex int // 0 = Nova senha, 1 = Confirmação
 	title      string
 	width      int
-	theme      *Theme
 	messages   *MessageManager
 	strength   crypto.StrengthLevel
 }
@@ -171,7 +170,7 @@ func (m *passwordCreateModal) Update(msg tea.Msg) tea.Cmd {
 }
 
 // View renders the modal following the spec wireframe.
-func (m *passwordCreateModal) View(maxWidth, maxHeight int) string {
+func (m *passwordCreateModal) View(maxWidth, maxHeight int, theme *Theme) string {
 	m.width = maxWidth
 	const fixedWidth = 50
 	boxW := fixedWidth
@@ -314,9 +313,4 @@ func (m *passwordCreateModal) Shortcuts() []Shortcut {
 		{Key: "Enter", Label: "Criar"},
 		{Key: "Esc", Label: "Cancelar"},
 	}
-}
-
-// ApplyTheme applies a theme to the modal.
-func (m *passwordCreateModal) ApplyTheme(t *Theme) {
-	m.theme = t
 }

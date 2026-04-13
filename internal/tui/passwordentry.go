@@ -29,7 +29,6 @@ type passwordEntryModal struct {
 	attempt     int
 	maxAttempts int
 	width       int
-	theme       *Theme
 	messages    *MessageManager
 }
 
@@ -101,7 +100,7 @@ func (m *passwordEntryModal) Update(msg tea.Msg) tea.Cmd {
 //	│                                            │
 //	│  Tentativa N de 5                          │  ← attempt ≥ 2 only
 //	╰── Enter Confirmar ──────────── Esc Cancelar ──╯
-func (m *passwordEntryModal) View(maxWidth, maxHeight int) string {
+func (m *passwordEntryModal) View(maxWidth, maxHeight int, theme *Theme) string {
 	m.width = maxWidth
 	const fixedWidth = 50
 	boxW := fixedWidth
@@ -216,11 +215,6 @@ func (m *passwordEntryModal) Shortcuts() []Shortcut {
 		{Key: "Enter", Label: "Confirmar"},
 		{Key: "Esc", Label: "Cancelar"},
 	}
-}
-
-// ApplyTheme applies a theme to the modal.
-func (m *passwordEntryModal) ApplyTheme(t *Theme) {
-	m.theme = t
 }
 
 // flowCancelledMsg signals that a flow was cancelled.
