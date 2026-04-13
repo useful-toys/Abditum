@@ -161,13 +161,13 @@ func (d *DecisionDialog) Update(msg tea.Msg) tea.Cmd {
 //	│  desfeita.                                                      │
 //	│                                                                 │
 //	╰── Enter Excluir ─────────────────────────────────── Esc Cancelar ──╯
-func (d *DecisionDialog) View(maxWidth, maxHeight int) string {
+func (d *DecisionDialog) View(maxWidth, maxHeight int, theme *Theme) string {
 	if maxWidth == 0 {
 		panic(fmt.Sprintf("DecisionDialog.View() called without maxWidth: maxWidth=%d", maxWidth))
 	}
 	// Store width for use by boxWidth()
 	d.width = maxWidth
-	borderColor := d.borderColor()
+	borderColor := d.borderColor(theme)
 	boxW := d.boxWidth()
 
 	borderSt := lipgloss.NewStyle().Foreground(lipgloss.Color(borderColor))
@@ -214,7 +214,7 @@ func (d *DecisionDialog) View(maxWidth, maxHeight int) string {
 	}
 
 	// ── Action bar (bottom border) ───────────────────────────────────────────
-	actionBar := d.renderActionBar(boxW)
+	actionBar := d.renderActionBar(boxW, theme)
 
 	// ── Assembly ─────────────────────────────────────────────────────────────
 	lines := []string{topLine, emptyPad}
@@ -271,7 +271,7 @@ func wrapBody(text string, maxWidth int) []string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // borderColor returns the hex color for the box border and title.
-func (d *DecisionDialog) borderColor() string {
+func (d *DecisionDialog) borderColor(theme *Theme) string {
 	switch d.severity {
 	case SeverityInformative:
 		return "#7dcfff"
@@ -287,7 +287,7 @@ func (d *DecisionDialog) borderColor() string {
 }
 
 // defaultKeyColor returns the color for the default action key.
-func (d *DecisionDialog) defaultKeyColor() string {
+func (d *DecisionDialog) defaultKeyColor(theme *Theme) string {
 	switch d.severity {
 	case SeverityDestructive:
 		return "#f7768e" // destructive: default key = semantic.error
@@ -394,9 +394,9 @@ func (d *DecisionDialog) actionBarMinWidth() int {
 //   - Acknowledge:        ╰──────────────────────── Enter OK ──╯
 //   - Confirm 2-action:   ╰── Enter Excluir ─────── Esc Cancelar ──╯
 //   - Confirm 3-action:   ╰── Enter Salvar ── N Descartar ── Esc Voltar ──╯
-func (d *DecisionDialog) renderActionBar(boxW int) string {
-	borderColor := d.borderColor()
-	defaultKeyColor := d.defaultKeyColor()
+func (d *DecisionDialog) renderActionBar(boxW int, theme *Theme) string {
+	borderColor := d.borderColor(theme)
+	defaultKeyColor := d.defaultKeyColor(theme)
 
 	borderFg := lipgloss.Color(borderColor)
 	defaultFg := lipgloss.Color(defaultKeyColor)
