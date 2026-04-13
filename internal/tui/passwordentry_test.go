@@ -41,7 +41,6 @@ func TestPasswordEntryModalInit(t *testing.T) {
 func TestPasswordEntryModalView(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
-	m.theme = TokyoNight
 
 	view := m.View(80, 24, TokyoNight)
 	if view == "" {
@@ -66,7 +65,6 @@ func TestPasswordEntryModalShortcuts(t *testing.T) {
 func TestPasswordEntryModalAttemptCounter(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
-	m.theme = TokyoNight
 
 	// First attempt - counter should be hidden
 	view := m.View(80, 24, TokyoNight)
@@ -81,7 +79,6 @@ func TestPasswordEntryModalAttemptCounter(t *testing.T) {
 func TestPasswordEntryModalAttemptCounterShowsFromSecondAttempt(t *testing.T) {
 	m := &passwordEntryModal{}
 	m.Init()
-	m.theme = TokyoNight
 
 	// Simulate first wrong attempt
 	m.HandleWrongPassword()
@@ -226,7 +223,6 @@ func TestPasswordEntryModal_ConfirmarDisabledWhenEmpty(t *testing.T) {
 func TestPasswordEntryModal_ConfirmarActiveWhenFilled(t *testing.T) {
 	m := &passwordEntryModal{title: "Senha mestra"}
 	m.Init()
-	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
 	m.input.SetValue("hunter2") // non-empty → activates "Enter Confirmar"
@@ -263,7 +259,6 @@ func TestPasswordEntryModal_ConfirmarActiveWhenFilled(t *testing.T) {
 func TestPasswordEntryModal_Golden_Filled(t *testing.T) {
 	m := &passwordEntryModal{title: "Senha mestra"}
 	m.Init()
-	m.theme = TokyoNight
 	m.messages = NewMessageManager()
 
 	m.input.SetValue("hunter2") // non-empty → activates "Enter Confirmar"
