@@ -107,7 +107,7 @@ func newRootModel(initialPath string) *rootModel {
 		version:      "dev",
 	}
 
-	m.welcome = newWelcomeModel(actions, m.theme, m.version)
+	m.welcome = newWelcomeModel(actions, m.version)
 
 	// Register production actions: global F1 Help, F12 theme toggle, and vault open/create flows.
 	actions.Register(m,
@@ -615,7 +615,7 @@ func (m *rootModel) renderTemplatesArea(workH int) string {
 func (m *rootModel) enterVault() tea.Cmd {
 	m.area = workAreaVault
 	m.welcome = nil // GC old model
-	m.vaultTree = newVaultTreeModel(m.mgr, m.actions, m.messages, m.theme)
+	m.vaultTree = newVaultTreeModel(m.mgr, m.actions, m.messages)
 	m.secretDetail = newSecretDetailModel(m.mgr, m.actions, m.messages, m.theme)
 	// Dimensions are passed to View() when rendering, no SetSize needed
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tickMsg(t) })

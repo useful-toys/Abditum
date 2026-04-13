@@ -12,20 +12,14 @@ type vaultTreeModel struct {
 	mgr     *vault.Manager
 	actions *ActionManager
 	msgs    *MessageManager
-	theme   *Theme
-}
-
-// ApplyTheme applies the given theme to the vaultTreeModel.
-func (m *vaultTreeModel) ApplyTheme(t *Theme) {
-	m.theme = t
 }
 
 // Compile-time assertion: vaultTreeModel satisfies childModel.
 var _ childModel = &vaultTreeModel{}
 
 // newVaultTreeModel creates a new vault tree stub.
-func newVaultTreeModel(mgr *vault.Manager, actions *ActionManager, msgs *MessageManager, theme *Theme) *vaultTreeModel {
-	return &vaultTreeModel{mgr: mgr, actions: actions, msgs: msgs, theme: theme}
+func newVaultTreeModel(mgr *vault.Manager, actions *ActionManager, msgs *MessageManager) *vaultTreeModel {
+	return &vaultTreeModel{mgr: mgr, actions: actions, msgs: msgs}
 }
 
 // Update processes messages for the vault tree.
@@ -34,7 +28,7 @@ func (m *vaultTreeModel) Update(msg tea.Msg) tea.Cmd {
 }
 
 // View renders a placeholder for the vault tree panel.
-func (m *vaultTreeModel) View(width, height int) string {
-	return lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.Semantic.Info)).
+func (m *vaultTreeModel) View(width, height int, theme *Theme) string {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Semantic.Info)).
 		Render("[vault tree - Phase 7]")
 }
