@@ -107,7 +107,7 @@ func TestHelpModal_Golden(t *testing.T) {
 	// Helper: build 15-action modal and compute maxScroll for "bottom" scenarios.
 	make15 := func(w, h, scroll int) *helpModal {
 		m := newHelpModal(help15actions(), helpGroupLabel)
-		m.View(w, h) // initialize viewportHeight
+		m.View(w, h, TokyoNight) // initialize viewportHeight
 		if scroll < 0 {
 			// Negative sentinel: use actual maxScroll.
 			maxScroll := m.totalLines() - m.contentHeight()
@@ -161,7 +161,7 @@ func TestHelpModal_Golden(t *testing.T) {
 			case "15actions-top-60x16", "15actions-mid-60x16", "15actions-bottom-60x16":
 				w, h = 60, 16
 			}
-			out := tc.modal.View(w, h)
+			out := tc.modal.View(w, h, TokyoNight)
 
 			// .txt.golden: raw ANSI output
 			checkOrUpdateHelpGolden(t, tc.variant, "txt", stripANSI(out))
