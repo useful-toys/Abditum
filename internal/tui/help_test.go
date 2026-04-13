@@ -184,7 +184,8 @@ func TestHelpModal_Golden(t *testing.T) {
 // TestHelpModal_Update_DownIncreasesScroll: "down" key increases scroll by 1.
 func TestHelpModal_Update_DownIncreasesScroll(t *testing.T) {
 	m := newHelpModal(help15actions(), helpGroupLabel)
-	initial := m.scroll // 0
+	m.View(60, 16, TokyoNight) // initialize viewportHeight; 60x16 allows scroll
+	initial := m.scroll        // 0
 	m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	if m.scroll != initial+1 {
 		t.Errorf("down key: expected scroll %d, got %d", initial+1, m.scroll)
@@ -194,6 +195,7 @@ func TestHelpModal_Update_DownIncreasesScroll(t *testing.T) {
 // TestHelpModal_Update_UpDoesNotGoBelowZero: "up" at scroll=0 stays at 0.
 func TestHelpModal_Update_UpDoesNotGoBelowZero(t *testing.T) {
 	m := newHelpModal(help15actions(), helpGroupLabel)
+	m.View(80, 24, TokyoNight) // initialize viewportHeight
 	m.scroll = 0
 	m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	if m.scroll != 0 {
@@ -204,6 +206,7 @@ func TestHelpModal_Update_UpDoesNotGoBelowZero(t *testing.T) {
 // TestHelpModal_Update_UpDecreasesScroll: "up" at scroll>0 decreases by 1.
 func TestHelpModal_Update_UpDecreasesScroll(t *testing.T) {
 	m := newHelpModal(help15actions(), helpGroupLabel)
+	m.View(60, 16, TokyoNight) // initialize viewportHeight; 60x16 allows scroll
 	m.scroll = 3
 	m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	if m.scroll != 2 {

@@ -107,7 +107,7 @@ func newRootModel(initialPath string) *rootModel {
 		version:      "dev",
 	}
 
-	m.welcome = newWelcomeModel(actions, m.version, m.theme)
+	m.welcome = newWelcomeModel(actions, m.version)
 
 	// Register production actions: global F1 Help, F12 theme toggle, and vault open/create flows.
 	actions.Register(m,

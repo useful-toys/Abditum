@@ -11,15 +11,14 @@ import (
 type welcomeModel struct {
 	actions *ActionManager
 	version string
-	theme   *Theme
 }
 
 // Compile-time assertion: welcomeModel satisfies childModel.
 var _ childModel = &welcomeModel{}
 
 // newWelcomeModel creates a new welcome screen model.
-func newWelcomeModel(actions *ActionManager, version string, theme *Theme) *welcomeModel {
-	return &welcomeModel{actions: actions, version: version, theme: theme}
+func newWelcomeModel(actions *ActionManager, version string) *welcomeModel {
+	return &welcomeModel{actions: actions, version: version}
 }
 
 // Update processes messages for the welcome screen.
