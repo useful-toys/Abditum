@@ -7,9 +7,7 @@ import (
 
 // welcomeModel renders the welcome background (ASCII art logo + version + action hints).
 // It is active during workAreaWelcome and has no sub-states.
-// Open/create vault flows are orchestrated via the modal stack, not this model.
 type welcomeModel struct {
-	actions *ActionManager
 	version string
 }
 
@@ -17,12 +15,11 @@ type welcomeModel struct {
 var _ childModel = &welcomeModel{}
 
 // newWelcomeModel creates a new welcome screen model.
-func newWelcomeModel(actions *ActionManager, version string) *welcomeModel {
-	return &welcomeModel{actions: actions, version: version}
+func newWelcomeModel(version string) *welcomeModel {
+	return &welcomeModel{version: version}
 }
 
 // Update processes messages for the welcome screen.
-// Phase 5.1: welcomeModel is display-only. No input handling until Phase 6.
 func (m *welcomeModel) Update(msg tea.Msg) tea.Cmd {
 	return nil
 }

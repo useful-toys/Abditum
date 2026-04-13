@@ -107,7 +107,7 @@ func newRootModel(initialPath string) *rootModel {
 		version:      "dev",
 	}
 
-	m.welcome = newWelcomeModel(actions, m.version)
+	m.welcome = newWelcomeModel(m.version)
 
 	// Register production actions: global F1 Help, F12 theme toggle, and vault open/create flows.
 	actions.Register(m,
@@ -309,7 +309,6 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.theme = TokyoNight
 			}
-			m.applyTheme()
 			return m, nil
 		}
 
@@ -619,18 +618,4 @@ func (m *rootModel) enterVault() tea.Cmd {
 	m.secretDetail = newSecretDetailModel(m.mgr, m.actions, m.messages)
 	// Dimensions are passed to View() when rendering, no SetSize needed
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tickMsg(t) })
-}
-
-// applyTheme propagates the current theme to all active child models and modals.
-func (m *rootModel) applyTheme() {
-	for _, child := range m.liveWorkChildren() {
-		if themeable, ok := child.(interface{ ApplyTheme(*Theme) }); ok {
-			themeable.ApplyTheme(m.theme)
-		}
-	}
-	for _, modal := range m.modals {
-		if themeableModal, ok := modal.(interface{ ApplyTheme(*Theme) }); ok {
-			themeableModal.ApplyTheme(m.theme)
-		}
-	}
 }
