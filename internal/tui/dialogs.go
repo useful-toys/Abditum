@@ -74,14 +74,12 @@ func NewRecognitionError(title, text string) tea.Cmd {
 
 // FilePicker creates a file-picker modal.
 // messages: the flow's *MessageManager for status hints (D-03).
-// theme: the flow's *Theme for consistent styling (D-17).
-func FilePicker(title string, mode FilePickerMode, ext string, messages *MessageManager, theme *Theme) tea.Cmd {
+func FilePicker(title string, mode FilePickerMode, ext string, messages *MessageManager) tea.Cmd {
 	fpk := &filePickerModal{
 		title:    title,
 		mode:     mode,
 		ext:      ext,
 		messages: messages,
-		theme:    theme,
 	}
 	cmd := fpk.Init()
 	return tea.Batch(

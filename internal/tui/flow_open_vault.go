@@ -68,7 +68,7 @@ func (f *openVaultFlow) Init() tea.Cmd {
 				Cmd: func() tea.Msg { return openVaultSaveBeforeMsg{} }},
 			[]DecisionAction{
 				{Key: "D", Label: "Descartar",
-					Cmd: FilePicker("Abrir cofre", FilePickerOpen, ".abditum", f.messages, f.theme)},
+					Cmd: FilePicker("Abrir cofre", FilePickerOpen, ".abditum", f.messages)},
 			},
 			DecisionAction{Key: "Esc", Label: "Voltar"})
 	}
@@ -83,7 +83,7 @@ func (f *openVaultFlow) Init() tea.Cmd {
 
 	f.state = statePickFile
 	// Push file picker modal
-	return FilePicker("Abrir cofre", FilePickerOpen, ".abditum", f.messages, f.theme)
+	return FilePicker("Abrir cofre", FilePickerOpen, ".abditum", f.messages)
 }
 
 // Update processes messages from modals and transitions states.
@@ -110,7 +110,7 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 				messages.Show(MessageError, "Não foi possível salvar o cofre.", 5, false)
 				return endFlowMsg{}
 			}
-			return FilePicker("Abrir cofre", FilePickerOpen, ".abditum", messages, nil)()
+			return FilePicker("Abrir cofre", FilePickerOpen, ".abditum", messages)()
 		}
 
 	case pwdEnteredMsg:
@@ -146,12 +146,12 @@ func (f *openVaultFlow) Update(msg tea.Msg) tea.Cmd {
 				if errors.Is(err, storage.ErrInvalidMagic) || errors.Is(err, storage.ErrVersionTooNew) {
 					return Acknowledge(SeverityError, "Abrir cofre",
 						"Arquivo inválido ou versão não suportada. Necessário corrigir.",
-						func() tea.Msg { return FilePicker("Abrir cofre", FilePickerOpen, ".abditum", f.messages, f.theme)() })()
+						func() tea.Msg { return FilePicker("Abrir cofre", FilePickerOpen, ".abditum", f.messages)() })()
 				}
 				// ErrCorrupted and generic errors
 				return Acknowledge(SeverityError, "Abrir cofre",
 					"Arquivo corrompido ou inválido. Necessário fechar.",
-					func() tea.Msg { return FilePicker("Abrir cofre", FilePickerOpen, ".abditum", f.messages, f.theme)() })()
+					func() tea.Msg { return FilePicker("Abrir cofre", FilePickerOpen, ".abditum", f.messages)() })()
 			}
 			// D-SUC-01: emit MessageSuccess before vaultOpenedMsg
 			f.messages.Show(MessageSuccess, "✓ Cofre aberto com sucesso", 5, false)

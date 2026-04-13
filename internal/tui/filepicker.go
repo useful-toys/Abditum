@@ -45,7 +45,6 @@ type filePickerModal struct {
 	ext      string // required: e.g. ".abditum" (D-13)
 	title    string
 	messages *MessageManager
-	theme    *Theme
 
 	// Tree state (D-01)
 	root         *treeNode
@@ -1095,7 +1094,7 @@ func (m *filePickerModal) renderBottomBorder(innerW, treeW int, theme *Theme) st
 }
 
 // View renders the spec-accurate two-panel file picker modal (D-08, D-09, D-20).
-func (m *filePickerModal) View(maxWidth, maxHeight int) string {
+func (m *filePickerModal) View(maxWidth, maxHeight int, theme *Theme) string {
 	if maxWidth == 0 || maxHeight == 0 {
 		panic(fmt.Sprintf("filePickerModal.View() called without maxWidth/maxHeight: maxWidth=%d maxHeight=%d", maxWidth, maxHeight))
 	}
@@ -1128,7 +1127,6 @@ func (m *filePickerModal) View(maxWidth, maxHeight int) string {
 	}
 
 	// Nil-safe theme fallback (D-17)
-	theme := m.theme
 	if theme == nil {
 		theme = TokyoNight
 	}

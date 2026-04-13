@@ -134,7 +134,7 @@ func (f *saveAndExitFlow) Update(msg tea.Msg) tea.Cmd {
 		// User chose "N Salvar como novo": open file picker to choose alternate save path.
 		_ = msg
 		f.state = stateSaveAsNew
-		return FilePicker("Salvar cofre", FilePickerSave, ".abditum", f.messages, f.theme)
+		return FilePicker("Salvar cofre", FilePickerSave, ".abditum", f.messages)
 
 	case filePickerResult:
 		// Only handled when in stateSaveAsNew (user chose alternate path after external conflict).
