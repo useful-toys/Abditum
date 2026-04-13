@@ -592,7 +592,7 @@ func TestDecisionDialog_Golden(t *testing.T) {
 			} else if strings.HasSuffix(tc.variant, "-60x24") {
 				w, h = 60, 24
 			}
-			out := tc.dialog.View(w, h)
+			out := tc.dialog.View(w, h, TokyoNight)
 
 			// .txt.golden: raw ANSI output
 			checkOrUpdateDecisionGolden(t, tc.variant, "txt", stripANSI(out))
