@@ -62,7 +62,7 @@ func (m *modalModel) Update(msg tea.Msg) tea.Cmd {
 }
 
 // View renders the modal box. Returns only the box - rootModel positions it.
-func (m *modalModel) View(maxWidth, maxHeight int) string {
+func (m *modalModel) View(maxWidth, maxHeight int, theme *Theme) string {
 	boxW := 50
 
 	var content strings.Builder
