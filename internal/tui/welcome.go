@@ -10,15 +10,16 @@ import (
 // Open/create vault flows are orchestrated via the modal stack, not this model.
 type welcomeModel struct {
 	actions *ActionManager
-	version string // Application version to display below logo
+	version string
+	theme   *Theme
 }
 
 // Compile-time assertion: welcomeModel satisfies childModel.
 var _ childModel = &welcomeModel{}
 
 // newWelcomeModel creates a new welcome screen model.
-func newWelcomeModel(actions *ActionManager, version string) *welcomeModel {
-	return &welcomeModel{actions: actions, version: version}
+func newWelcomeModel(actions *ActionManager, version string, theme *Theme) *welcomeModel {
+	return &welcomeModel{actions: actions, version: version, theme: theme}
 }
 
 // Update processes messages for the welcome screen.

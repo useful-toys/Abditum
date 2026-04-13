@@ -23,8 +23,8 @@ func (s *stubModal) Update(msg tea.Msg) tea.Cmd {
 	s.received = msg
 	return nil
 }
-func (s *stubModal) View(maxWidth, maxHeight int) string { return "stub" }
-func (s *stubModal) Shortcuts() []Shortcut               { return nil }
+func (s *stubModal) View(maxWidth, maxHeight int, theme *Theme) string { return "stub" }
+func (s *stubModal) Shortcuts() []Shortcut                             { return nil }
 
 // stubFlow implements flowHandler for tests.
 type stubFlow struct {
@@ -118,7 +118,7 @@ func TestLiveWorkChildren_NilSafety(t *testing.T) {
 	}
 
 	// Restore welcome.
-	m.welcome = newWelcomeModel(m.actions, TokyoNight, "dev")
+	m.welcome = newWelcomeModel(m.actions, "dev", TokyoNight)
 	live = m.liveWorkChildren()
 	if len(live) != 1 {
 		t.Errorf("expected 1 live child after restoring welcome, got %d", len(live))
