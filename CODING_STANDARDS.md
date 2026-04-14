@@ -42,12 +42,14 @@ func NewPasswordModal(title string, onResult func([]byte)) ModalView
 func (m *Manager) EncryptVault() error
 ```
 
+Exceção: não é necessário comentar funções ou métodos simples e autoexplicativos, como getters/setters ou funções de utilidade óbvias, ou constantes óbvias.
+
 ## Acessibilidade
 
 O código deve ser acessível a leitores com menos familiaridade com Go:
 
-- Evitar shortcuts obscuros
-- Usar nomes que revelam intent
+- Evitar abreviações obscuras
+- Usar nomes que revelam intenção
 - Documentar estruturas complexas
 - Explicar decisões não óbvias
 

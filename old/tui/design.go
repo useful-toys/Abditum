@@ -74,6 +74,23 @@ var DefaultTypography = Typography{
 }
 
 // ---------------------------------------------------------------------------
+// Prescribed typography combinations
+// ---------------------------------------------------------------------------
+//
+// Documented in golden/tui-design-system.md §Tipografia — Combinações previstas.
+// These are not enforced by the type system; they are the canonical recipes
+// that components should follow when styling specific element types.
+//
+//   TypoAlertTitle   — Bold + semantic colour  → modal alert / info title
+//   TypoDeletedItem  — Dim + Strikethrough      → deleted item (pair with SymDeleted + Special.Muted)
+//   TypoHintText     — Italic + text.secondary  → hints, auxiliary text, virtual folders
+//
+// Usage example:
+//
+//	style := lipgloss.NewStyle().Bold(theme.Typography.Bold).Foreground(lipgloss.Color(theme.Semantic.Warning))
+//	// produces TypoAlertTitle for a warning modal.
+
+// ---------------------------------------------------------------------------
 // Theme
 // ---------------------------------------------------------------------------
 
@@ -344,12 +361,42 @@ func SpinnerFrame(frame int) string {
 }
 
 // ---------------------------------------------------------------------------
+// Layout constants
+// ---------------------------------------------------------------------------
+//
+// Minimum terminal dimensions and fixed zone heights defined in
+// golden/tui-design-system.md §Dimensionamento e Layout.
+
+const (
+	// LayoutMinWidth is the minimum supported terminal width in columns.
+	LayoutMinWidth = 80
+	// LayoutMinHeight is the minimum supported terminal height in lines.
+	LayoutMinHeight = 24
+
+	// LayoutHeaderHeight is the fixed height of the header zone (lines).
+	LayoutHeaderHeight = 2
+	// LayoutMessageBarHeight is the fixed height of the message bar zone (lines).
+	LayoutMessageBarHeight = 1
+	// LayoutCommandBarHeight is the fixed height of the command bar zone (lines).
+	LayoutCommandBarHeight = 1
+
+	// LayoutTreePanelPct is the nominal percentage of screen width for the
+	// left (tree / list) panel in two-panel modes (Vault, Templates).
+	// The implementation may adjust ±5% for aesthetic alignment.
+	LayoutTreePanelPct = 35
+	// LayoutDetailPanelPct is the nominal percentage of screen width for the
+	// right (detail) panel in two-panel modes.
+	LayoutDetailPanelPct = 65
+)
+
+// ---------------------------------------------------------------------------
 // Keyboard notation constants
 // ---------------------------------------------------------------------------
 //
 // Used by the command bar and Help dialog to render key bindings.
 // These are the canonical representations defined in golden/tui-design-system.md §Teclado.
 
+// Modifier symbols.
 const (
 	// KeyCtrl is the notation for the Ctrl modifier.
 	KeyCtrl = "⌃" // U+2303 — Ctrl modifier
@@ -357,4 +404,60 @@ const (
 	KeyShift = "⇧" // U+21E7 — Shift modifier
 	// KeyAlt is the notation for the Alt modifier.
 	KeyAlt = "!" // no dedicated Unicode glyph — rendered as literal "!"
+)
+
+// Special key labels — written in full as shown in the command bar and Help dialog.
+// Combinations are concatenated without spaces: "⌃Q", "⇧F6", "⌃!⇧Q".
+const (
+	// KeyEnter is the label for the Enter key.
+	KeyEnter = "Enter"
+	// KeyEsc is the label for the Escape key.
+	KeyEsc = "Esc"
+	// KeyTab is the label for the Tab key.
+	KeyTab = "Tab"
+	// KeyDel is the label for the Delete key.
+	KeyDel = "Del"
+	// KeyIns is the label for the Insert key.
+	KeyIns = "Ins"
+	// KeyHome is the label for the Home key.
+	KeyHome = "Home"
+	// KeyEnd is the label for the End key.
+	KeyEnd = "End"
+	// KeyPgUp is the label for the Page Up key.
+	KeyPgUp = "PgUp"
+	// KeyPgDn is the label for the Page Down key.
+	KeyPgDn = "PgDn"
+)
+
+// Function key labels — used in the command bar.
+const (
+	KeyF1  = "F1"
+	KeyF2  = "F2"
+	KeyF3  = "F3"
+	KeyF4  = "F4"
+	KeyF5  = "F5"
+	KeyF6  = "F6"
+	KeyF7  = "F7"
+	KeyF8  = "F8"
+	KeyF9  = "F9"
+	KeyF10 = "F10"
+	KeyF11 = "F11"
+	KeyF12 = "F12"
+)
+
+// Global shortcut strings — canonical representations used in the Help dialog.
+// These four shortcuts work in every application context (global scope).
+const (
+	// ShortcutHelp opens / closes the Help dialog.
+	ShortcutHelp = KeyF1
+	// ShortcutThemeToggle switches between Tokyo Night and Cyberpunk themes.
+	// Not displayed in the command bar; listed here for completeness.
+	ShortcutThemeToggle = KeyF12
+	// ShortcutQuit exits the application (with confirmation when there are
+	// unsaved changes).
+	ShortcutQuit = KeyCtrl + "Q"
+	// ShortcutLockVault locks the vault immediately, discarding unsaved changes
+	// without confirmation. The deliberately complex combination prevents
+	// accidental activation.
+	ShortcutLockVault = KeyCtrl + KeyAlt + KeyShift + "Q"
 )

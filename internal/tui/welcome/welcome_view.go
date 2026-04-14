@@ -3,29 +3,26 @@ package welcome
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/useful-toys/abditum/internal/tui"
+	"github.com/useful-toys/abditum/internal/tui/design"
 )
 
-type ViewState int
-
-const (
-	StateNormal ViewState = iota
-	StateAwaitingModal
-)
-
+// WelcomeView é exibida quando nenhum cofre está aberto.
+// Apresenta uma tela de boas-vindas com orientações para o usuário começar.
 type WelcomeView struct {
-	state ViewState
 }
 
+// NewWelcomeView cria uma nova instância da tela de boas-vindas.
 func NewWelcomeView() *WelcomeView {
-	return &WelcomeView{state: StateNormal}
+	return &WelcomeView{}
 }
 
+// ID retorna o identificador único desta view.
 func (v *WelcomeView) ID() string {
 	return "welcome"
 }
 
-func (v *WelcomeView) Render(height, width int, theme tui.Theme) string {
+// Render retorna a tela de boas-vindas preenchendo as dimensões fornecidas com o tema ativo.
+func (v *WelcomeView) Render(height, width int, theme design.Theme) string {
 	content := "Welcome"
 	style := lipgloss.NewStyle().
 		Width(width).
@@ -35,10 +32,16 @@ func (v *WelcomeView) Render(height, width int, theme tui.Theme) string {
 	return style.Render(content)
 }
 
+// HandleKey não processa nenhuma tecla nesta view.
 func (v *WelcomeView) HandleKey(msg tea.KeyMsg) tea.Cmd {
 	return nil
 }
 
+// HandleEvent não processa eventos externos nesta view.
 func (v *WelcomeView) HandleEvent(event any) {}
 
-func (v *WelcomeView) HandleTeaMsg(msg tea.Msg) {}
+// HandleTeaMsg não processa mensagens do framework nesta view.
+func (v *WelcomeView) HandleTeaMsg(msg tea.Msg) tea.Cmd { return nil }
+
+// Update não altera o estado desta view em resposta a mensagens.
+func (v *WelcomeView) Update(msg tea.Msg) tea.Cmd { return nil }
