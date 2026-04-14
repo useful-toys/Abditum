@@ -50,14 +50,14 @@ func (r *RootModel) View() tea.View {
 		return tea.NewView("Aguarde...")
 	}
 
-	base := r.activeView.Render(r.width, r.height, *r.theme)
+	base := r.activeView.Render(r.width, r.height, r.theme)
 
 	if len(r.modals) == 0 {
 		return tea.NewView(base)
 	}
 
 	top := r.modals[len(r.modals)-1]
-	modalView := top.Render(r.width, r.height, *r.theme)
+	modalView := top.Render(r.width, r.height, r.theme)
 
 	workH := r.height - 4 // 2 header + 1 msg + 1 action
 	modalContent := lipgloss.Place(r.width, workH, lipgloss.Center, lipgloss.Center, modalView)

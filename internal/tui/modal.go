@@ -9,7 +9,8 @@ import (
 // Modais são exibidos sobrepostos à área de trabalho e gerenciados por RootModel.
 type ModalView interface {
 	// Render retorna a representação visual do modal dentro dos limites fornecidos.
-	Render(maxHeight, maxWidth int, theme design.Theme) string
+	// theme é passado por ponteiro para evitar cópia — design.Theme tem 400 bytes.
+	Render(maxHeight, maxWidth int, theme *design.Theme) string
 	// HandleKey processa eventos de teclado e retorna um comando ou nil.
 	HandleKey(msg tea.KeyMsg) tea.Cmd
 	// Update processa mensagens do Bubble Tea e atualiza o estado interno do modal.

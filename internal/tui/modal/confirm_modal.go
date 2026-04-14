@@ -45,7 +45,7 @@ func NewConfirmModal(title, message string) *ConfirmModal {
 }
 
 // Render retorna o modal estilizado com borda, usando as cores do tema fornecido.
-func (m *ConfirmModal) Render(maxHeight, maxWidth int, theme design.Theme) string {
+func (m *ConfirmModal) Render(maxHeight, maxWidth int, theme *design.Theme) string {
 	content := m.title + "\n\n" + m.message
 	style := lipgloss.NewStyle().
 		Padding(1, 2).
