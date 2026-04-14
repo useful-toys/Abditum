@@ -3,7 +3,7 @@ package template
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/useful-toys/abditum/tui"
+	"github.com/useful-toys/abditum/internal/tui"
 )
 
 type ListView struct{}

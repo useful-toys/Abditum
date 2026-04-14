@@ -15,6 +15,7 @@ type RootModel struct {
 	activeView   ChildView
 	modals       []ModalView
 	lastActionAt time.Time
+	version      string
 }
 
 func (r *RootModel) View() tea.View {
@@ -76,10 +77,23 @@ func (r *RootModel) Init() tea.Cmd {
 	return nil
 }
 
-func NewRootModel(view ChildView) *RootModel {
-	return &RootModel{
+type RootModelOption func(*RootModel)
+
+func WithVersion(version string) RootModelOption {
+	return func(m *RootModel) {
+		m.version = version
+	}
+}
+
+func NewRootModel(opts ...RootModelOption) *RootModel {
+	m := &RootModel{
 		theme:      TokyoNight,
 		workArea:   WorkAreaWelcome,
-		activeView: view,
+		activeView: nil,
+		version:    "dev",
 	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
 }

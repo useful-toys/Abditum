@@ -1,9 +1,9 @@
-package template
+package secret
 
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/useful-toys/abditum/tui"
+	"github.com/useful-toys/abditum/internal/tui"
 )
 
 type DetailView struct{}
@@ -13,7 +13,7 @@ func NewDetailView() *DetailView {
 }
 
 func (v *DetailView) Render(height, width int, theme tui.Theme) string {
-	content := "Template Detail"
+	content := "Secret Detail"
 	style := lipgloss.NewStyle().
 		Width(width).
 		Height(height).
