@@ -138,7 +138,13 @@ func newRootModel(initialPath string) *rootModel {
 			Handler: func() tea.Cmd { return func() tea.Msg { return toggleThemeMsg{} } }},
 		Action{Keys: []string{"f1"}, Label: "Ajuda", Description: "Mostrar atalhos de teclado",
 			Group: 1, Scope: ScopeGlobal, Priority: 0, HideFromBar: false,
-			Enabled: func() bool { return true },
+			Enabled: func() bool {
+				if len(m.modals) == 0 {
+					return true
+				}
+				_, isHelp := m.modals[len(m.modals)-1].(*helpModal)
+				return !isHelp
+			},
 			Handler: func() tea.Cmd {
 				return func() tea.Msg { return pushModalMsg{modal: newHelpModal(actions.All(), actions.GroupLabel)} }
 			}},
@@ -307,17 +313,11 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				DecisionAction{Key: "Esc", Label: "Voltar"})
 		}
 
-		// 1. If help modal is open, let it handle ALL keys (including F1 and ESC)
-		if len(m.modals) > 0 {
-			if _, isHelp := m.modals[len(m.modals)-1].(*helpModal); isHelp {
-				return m, m.modals[len(m.modals)-1].Update(msg)
-			}
-		}
-		// 2. ActionManager.Dispatch - handles ScopeGlobal and ScopeLocal
+		// 1. ActionManager.Dispatch - handles ScopeGlobal and ScopeLocal
 		if cmd := m.actions.Dispatch(key, inFlowOrModal); cmd != nil {
 			return m, cmd
 		}
-		// 3. Other modals
+		// 2. Other modals
 		if len(m.modals) > 0 {
 			return m, m.modals[len(m.modals)-1].Update(msg)
 		}

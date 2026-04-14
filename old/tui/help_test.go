@@ -262,12 +262,13 @@ func TestHelpModal_Update_EscDismisses(t *testing.T) {
 	}
 }
 
-// TestHelpModal_Update_F1Dismisses: "f1" key returns non-nil cmd (popModalMsg).
-func TestHelpModal_Update_F1Dismisses(t *testing.T) {
+// TestHelpModal_Update_F1NoOp: "f1" key no longer dismisses the help modal
+// (dismiss now handled by ActionManager Enabled check, not helpModal Update).
+func TestHelpModal_Update_F1NoOp(t *testing.T) {
 	m := newHelpModal(help3actions(), helpGroupLabel)
 	cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyF1})
-	if cmd == nil {
-		t.Error("f1 key must return non-nil cmd (pop modal)")
+	if cmd != nil {
+		t.Error("f1 key must not return a cmd from helpModal")
 	}
 }
 

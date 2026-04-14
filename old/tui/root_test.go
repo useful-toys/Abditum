@@ -320,6 +320,31 @@ func TestF12_ThemeToggle(t *testing.T) {
 	}
 }
 
+// TestF1_WithHelpModalOpen verifies that pressing F1 while helpModal is open does NOT
+// push a second helpModal (Enabled() returns false when helpModal is topmost).
+func TestF1_WithHelpModalOpen(t *testing.T) {
+	m := NewRootModel()
+
+	// Open help modal via F1
+	result, cmd := m.Update(makeKeyPress("f1"))
+	rm := result.(*rootModel)
+	if cmd == nil {
+		t.Fatal("F1 must return cmd non-nil")
+	}
+	result, _ = rm.Update(cmd())
+	rm = result.(*rootModel)
+	if len(rm.modals) != 1 {
+		t.Fatalf("precondition: expected 1 modal after F1, got %d", len(rm.modals))
+	}
+
+	// Press F1 again — must not push a second helpModal
+	result, cmd = rm.Update(makeKeyPress("f1"))
+	rm = result.(*rootModel)
+	if len(rm.modals) != 1 {
+		t.Errorf("F1 with helpModal open must not push a second modal, got %d modals", len(rm.modals))
+	}
+}
+
 // TestDecisionDialog_ModalStackIntegration verifies that:
 // 1. An Acknowledge cmd pushes a DecisionDialog onto the modal stack.
 // 2. View() renders without panic with a modal present.

@@ -120,7 +120,7 @@ func (m *helpModal) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
-		case "esc", "f1":
+		case "esc":
 			return func() tea.Msg { return popModalMsg{} }
 		case "up":
 			if m.scroll > 0 {
