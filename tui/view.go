@@ -65,13 +65,15 @@ type ChildView interface {
 	Render(height, width int, theme Theme) string
 	HandleKey(msg tea.KeyMsg) tea.Cmd
 	HandleEvent(event any)
-	HandleTeaMsg(msg tea.Msg)
+	HandleTeaMsg(msg tea.Msg) tea.Cmd
+	Update(msg tea.Msg) tea.Cmd
 }
 
 // ModalView interface para modais
 type ModalView interface {
 	Render(maxHeight, maxWidth int, theme Theme) string
 	HandleKey(msg tea.KeyMsg) tea.Cmd
+	Update(msg tea.Msg) tea.Cmd
 }
 
 // OpenModalMsg empilha um novo modal
