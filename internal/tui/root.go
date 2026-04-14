@@ -6,6 +6,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/useful-toys/abditum/internal/tui/design"
+	"github.com/useful-toys/abditum/internal/vault"
 )
 
 // WorkArea representa qual área de trabalho está ativa na tela principal.
@@ -41,6 +42,65 @@ type RootModel struct {
 	lastActionAt time.Time
 	// version é a versão da aplicação, normalmente injetada via ldflags no build.
 	version string
+	// vaultManager é o gerenciador do cofre ativo, ou nil se nenhum cofre estiver carregado.
+	vaultManager *vault.Manager
+	// systemActions são as actions de sistema, avaliadas em qualquer contexto (inclusive com modal ativo).
+	systemActions []Action
+	// applicationActions são as actions globais da aplicação, avaliadas sem modal ativo.
+	applicationActions []Action
+	// actionGroups agrupa actions para exibição no modal de ajuda.
+	actionGroups []ActionGroup
+}
+
+// Manager retorna o vault manager ativo, ou nil se nenhum cofre estiver carregado.
+// Implementa a interface AppState.
+func (r *RootModel) Manager() *vault.Manager {
+	return r.vaultManager
+}
+
+// toggleTheme alterna o tema ativo entre TokyoNight e Cyberpunk.
+func (r *RootModel) toggleTheme() {
+	if r.theme == design.TokyoNight {
+		r.theme = design.Cyberpunk
+	} else {
+		r.theme = design.TokyoNight
+	}
+}
+
+// RegisterActionGroup adiciona um grupo de actions ao root.
+// Chamar múltiplas vezes acumula os grupos — não substitui.
+func (r *RootModel) RegisterActionGroup(group ActionGroup) {
+	r.actionGroups = append(r.actionGroups, group)
+}
+
+// RegisterSystemActions adiciona actions de sistema ao root.
+// System actions são avaliadas em qualquer contexto, inclusive com modal ativo.
+// Chamar múltiplas vezes acumula as listas — não substitui.
+func (r *RootModel) RegisterSystemActions(actions []Action) {
+	r.systemActions = append(r.systemActions, actions...)
+}
+
+// RegisterApplicationActions adiciona actions de aplicação ao root.
+// Application actions são avaliadas apenas quando nenhum modal está ativo.
+// Chamar múltiplas vezes acumula as listas — não substitui.
+func (r *RootModel) RegisterApplicationActions(actions []Action) {
+	r.applicationActions = append(r.applicationActions, actions...)
+}
+
+// evalActions percorre uma lista de actions e executa a primeira que corresponda
+// à tecla pressionada e cuja pré-condição esteja satisfeita.
+// Retorna o Cmd resultante e true se uma action foi executada; nil, false caso contrário.
+func (r *RootModel) evalActions(msg tea.KeyMsg, actions []Action) (tea.Cmd, bool) {
+	for _, action := range actions {
+		if !action.Matches(msg) {
+			continue
+		}
+		if action.AvailableWhen != nil && !action.AvailableWhen(r, r.activeView) {
+			continue
+		}
+		return action.OnExecute(), true
+	}
+	return nil, false
 }
 
 // View gera a representação visual atual da aplicação.
@@ -92,6 +152,33 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return r, parent.Update(msg)
 		}
 		return r, r.activeView.Update(msg)
+
+	case tea.KeyMsg:
+		// 1. System actions — avaliadas sempre, inclusive com modal ativo.
+		if cmd, ok := r.evalActions(msg, r.systemActions); ok {
+			return r, cmd
+		}
+
+		// 2. Modal ativo recebe a tecla.
+		if len(r.modals) > 0 {
+			top := len(r.modals) - 1
+			return r, r.modals[top].Update(msg)
+		}
+
+		// 3. View actions — avaliadas apenas sem modal ativo.
+		if r.activeView != nil {
+			if cmd, ok := r.evalActions(msg, r.activeView.Actions()); ok {
+				return r, cmd
+			}
+		}
+
+		// 4. Application actions — avaliadas apenas sem modal ativo, após View actions.
+		if cmd, ok := r.evalActions(msg, r.applicationActions); ok {
+			return r, cmd
+		}
+
+		// 5. Tecla não reconhecida — descartada silenciosamente.
+		return r, nil
 	}
 
 	if len(r.modals) > 0 {
@@ -99,7 +186,10 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, r.modals[top].Update(msg)
 	}
 
-	return r, r.activeView.Update(msg)
+	if r.activeView != nil {
+		return r, r.activeView.Update(msg)
+	}
+	return r, nil
 }
 
 // Init é chamado uma vez ao iniciar a aplicação. Não há comandos iniciais.
