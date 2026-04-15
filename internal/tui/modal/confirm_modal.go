@@ -25,7 +25,7 @@ func NewConfirmModal(title, message string) *ConfirmModal {
 		message: message,
 		options: []ModalOption{
 			{
-				Keys:   []string{"Enter"},
+				Keys:   []design.Key{design.Keys.Enter},
 				Label:  "Confirmar",
 				Intent: IntentConfirm,
 				Action: func() tea.Cmd {
@@ -33,7 +33,7 @@ func NewConfirmModal(title, message string) *ConfirmModal {
 				},
 			},
 			{
-				Keys:   []string{"Esc"},
+				Keys:   []design.Key{design.Keys.Esc},
 				Label:  "Cancelar",
 				Intent: IntentCancel,
 				Action: func() tea.Cmd {
@@ -59,8 +59,8 @@ func (m *ConfirmModal) Render(maxHeight, maxWidth int, theme *design.Theme) stri
 // HandleKey verifica se a tecla pressionada corresponde a alguma opção do modal e executa sua ação.
 func (m *ConfirmModal) HandleKey(msg tea.KeyMsg) tea.Cmd {
 	for _, opt := range m.options {
-		for _, key := range opt.Keys {
-			if msg.String() == key {
+		for _, k := range opt.Keys {
+			if k.Matches(msg) {
 				return opt.Action()
 			}
 		}
