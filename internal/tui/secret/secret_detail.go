@@ -3,6 +3,7 @@ package secret
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/useful-toys/abditum/internal/tui/actions"
 	"github.com/useful-toys/abditum/internal/tui/design"
 	"github.com/useful-toys/abditum/internal/vault"
 )
@@ -39,4 +40,4 @@ func (v *SecretDetailView) HandleTeaMsg(msg tea.Msg) tea.Cmd { return nil }
 func (v *SecretDetailView) Update(msg tea.Msg) tea.Cmd { return nil }
 
 // Actions retorna nil — SecretDetailView não possui actions próprias nesta sprint.
-func (v *SecretDetailView) Actions() []interface{} { return nil }
+func (v *SecretDetailView) Actions() []actions.Action { return nil }

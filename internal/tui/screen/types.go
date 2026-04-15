@@ -2,12 +2,9 @@ package screen
 
 import (
 	tea "charm.land/bubbletea/v2"
+	"github.com/useful-toys/abditum/internal/tui/actions"
 	"github.com/useful-toys/abditum/internal/tui/design"
 )
-
-// Action is a temporary placeholder to avoid circular imports.
-// The real Action type is defined in the tui package as a struct.
-type Action = interface{}
 
 // ChildView matches the interface from tui package to avoid importing it.
 // Defines the contract for renderable components on the main screen.
@@ -31,5 +28,5 @@ type ChildView interface {
 
 	// Actions returns the actions available in this view.
 	// May return nil if the view has no actions of its own.
-	Actions() []interface{}
+	Actions() []actions.Action
 }

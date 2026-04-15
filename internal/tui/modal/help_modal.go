@@ -8,18 +8,18 @@ import (
 )
 
 // HelpModal exibe todas as actions registradas, agrupadas por ActionGroup.
-// Atalhos com pré-condição não satisfeita são exibidos esmaecidos.
 // Implementa tui.ModalView.
 type HelpModal struct {
 	// actions é a lista completa de actions (System + Application + View) no momento da abertura.
-	actions []tui.Action
-	// groups são os grupos registrados, usados para montar o cabeçalho de cada seção.
-	groups []tui.ActionGroup
+	// Armazenadas como interface{} para evitar import cycle com actions package.
+	actions []interface{}
+	// groups são os grupos registrados, armazenados como interface{} também.
+	groups []interface{}
 }
 
 // NewHelpModal cria um HelpModal com as actions e grupos fornecidos.
-// Não mantém referência ao RootModel — recebe dados prontos no momento da criação.
-func NewHelpModal(actions []tui.Action, groups []tui.ActionGroup) *HelpModal {
+// actions e groups são armazenados como interface{} e podem ser de qualquer tipo compatível.
+func NewHelpModal(actions []interface{}, groups []interface{}) *HelpModal {
 	return &HelpModal{
 		actions: actions,
 		groups:  groups,

@@ -1,42 +1,17 @@
 package tui
 
 import (
-	tea "charm.land/bubbletea/v2"
-	"github.com/useful-toys/abditum/internal/tui/design"
-	"github.com/useful-toys/abditum/internal/vault"
+	"github.com/useful-toys/abditum/internal/tui/actions"
 )
 
-// ActionGroup agrupa actions relacionadas para exibição no modal de ajuda.
-type ActionGroup struct {
-	ID          string // identificador único do grupo
-	Label       string // cabeçalho exibido no modal de ajuda
-	Description string // texto descritivo do grupo
-}
+// Action is an alias for actions.Action to maintain backward compatibility.
+// Deprecated: Use actions.Action directly.
+type Action = actions.Action
 
-// Action associa teclas a um comportamento da aplicação.
-type Action struct {
-	Keys          []design.Key                            // Keys[0] é a tecla principal exibida; demais são aliases funcionais
-	Label         string                                  // texto curto para a linha de status
-	Description   string                                  // texto longo para o modal de ajuda
-	GroupID       string                                  // referencia um ActionGroup registrado
-	Priority      int                                     // ordenação na linha de status; menor valor = mais destaque
-	Visible       bool                                    // false: nunca aparece na linha de status
-	AvailableWhen func(app AppState, view ChildView) bool // nil = sempre disponível
-	OnExecute     func() tea.Cmd
-}
+// ActionGroup is an alias for actions.ActionGroup to maintain backward compatibility.
+// Deprecated: Use actions.ActionGroup directly.
+type ActionGroup = actions.ActionGroup
 
-// Matches retorna true se o evento de teclado corresponde a qualquer tecla declarada na action.
-func (a Action) Matches(msg tea.KeyMsg) bool {
-	for _, k := range a.Keys {
-		if k.Matches(msg) {
-			return true
-		}
-	}
-	return false
-}
-
-// AppState expõe o estado da aplicação necessário para avaliar pré-condições de actions.
-// Implementado por RootModel.
-type AppState interface {
-	Manager() *vault.Manager // nil se nenhum cofre estiver carregado
-}
+// AppState is an alias for actions.AppState to maintain backward compatibility.
+// Deprecated: Use actions.AppState directly.
+type AppState = actions.AppState

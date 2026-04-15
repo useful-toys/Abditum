@@ -3,6 +3,7 @@ package screen
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/useful-toys/abditum/internal/tui/actions"
 	"github.com/useful-toys/abditum/internal/tui/design"
 )
 
@@ -39,4 +40,4 @@ func (v *WelcomeView) HandleTeaMsg(msg tea.Msg) tea.Cmd { return nil }
 func (v *WelcomeView) Update(msg tea.Msg) tea.Cmd { return nil }
 
 // Actions retorna nil — WelcomeView não possui actions próprias nesta sprint.
-func (v *WelcomeView) Actions() []interface{} { return nil }
+func (v *WelcomeView) Actions() []actions.Action { return nil }

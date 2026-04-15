@@ -5,6 +5,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/useful-toys/abditum/internal/tui/actions"
 	"github.com/useful-toys/abditum/internal/tui/design"
 	"github.com/useful-toys/abditum/internal/tui/screen"
 	"github.com/useful-toys/abditum/internal/tui/secret"
@@ -67,12 +68,12 @@ type RootModel struct {
 	// modals is the stack of open modals; the top of stack is the active modal.
 	modals []ModalView
 
-	// systemActions are evaluated in any context, including with active modal.
-	systemActions []Action
-	// applicationActions are evaluated only when no modal is active.
-	applicationActions []Action
+	// systemActions stores global/system-level actions evaluated in any context.
+	systemActions []actions.Action
+	// appActions stores application-wide actions evaluated only without active modal.
+	appActions []actions.Action
 	// actionGroups groups actions for display in help modal.
-	actionGroups []ActionGroup
+	actionGroups []actions.ActionGroup
 
 	// lastActionAt records the time of last user interaction.
 	lastActionAt time.Time
@@ -102,41 +103,70 @@ func (r *RootModel) MessageController() MessageController {
 	return &r.messageLineView
 }
 
-// ActiveViewActions returns all actions applicable to the current view context.
-// Includes system actions, application actions, and activeView actions.
-func (r *RootModel) ActiveViewActions() []Action {
-	allActions := make([]Action, 0, len(r.systemActions)+len(r.applicationActions))
-	allActions = append(allActions, r.systemActions...)
-	allActions = append(allActions, r.applicationActions...)
-	// Note: view actions are returned as interface{} so we can't directly append them
-	return allActions
+// ActiveViewActions retorna todas as actions do contexto atual.
+// Combina system actions, application actions e actions da view ativa.
+// Usado pelo modal de Ajuda para exibir todos os atalhos disponíveis.
+func (r *RootModel) ActiveViewActions() []actions.Action {
+	viewActions := r.activeView.Actions()
+	all := make([]actions.Action, 0,
+		len(r.systemActions)+len(r.appActions)+len(viewActions))
+	all = append(all, r.systemActions...)
+	all = append(all, r.appActions...)
+	all = append(all, viewActions...)
+	return all
 }
 
-// GetActionGroups returns the list of registered action groups.
-// Exported for use by the actions package.
-func (r *RootModel) GetActionGroups() []ActionGroup {
+// ActiveViewActionsForBar retorna as actions filtradas e ordenadas para exibição
+// na barra de comandos. Filtra por Visible e AvailableWhen; ordena por Priority crescente.
+func (r *RootModel) ActiveViewActionsForBar() []actions.Action {
+	all := r.ActiveViewActions()
+
+	// Filtrar: Visible == true E (AvailableWhen == nil OU AvailableWhen satisfeita)
+	filtered := all[:0]
+	for _, a := range all {
+		if !a.Visible {
+			continue
+		}
+		if a.AvailableWhen != nil && !a.AvailableWhen(r, r.activeView) {
+			continue
+		}
+		filtered = append(filtered, a)
+	}
+
+	// Ordenar por Priority crescente (insertion sort — lista pequena)
+	for i := 1; i < len(filtered); i++ {
+		for j := i; j > 0 && filtered[j].Priority < filtered[j-1].Priority; j-- {
+			filtered[j], filtered[j-1] = filtered[j-1], filtered[j]
+		}
+	}
+	return filtered
+}
+
+// GetActionGroups retorna a lista de grupos de ações registrados.
+// Exportado para uso pelo package actions.
+func (r *RootModel) GetActionGroups() []actions.ActionGroup {
 	return r.actionGroups
 }
 
-// RegisterActionGroup adds an action group to root.
-func (r *RootModel) RegisterActionGroup(group ActionGroup) {
+// RegisterActionGroup adiciona um grupo de ações ao root.
+func (r *RootModel) RegisterActionGroup(group actions.ActionGroup) {
 	r.actionGroups = append(r.actionGroups, group)
 }
 
-// RegisterSystemActions adds system actions to root.
-func (r *RootModel) RegisterSystemActions(actions []Action) {
-	r.systemActions = append(r.systemActions, actions...)
+// RegisterSystemActions adiciona actions de sistema ao root.
+func (r *RootModel) RegisterSystemActions(acts []actions.Action) {
+	r.systemActions = append(r.systemActions, acts...)
 }
 
-// RegisterApplicationActions adds application actions to root.
-func (r *RootModel) RegisterApplicationActions(actions []Action) {
-	r.applicationActions = append(r.applicationActions, actions...)
+// RegisterApplicationActions adiciona actions de aplicação ao root.
+func (r *RootModel) RegisterApplicationActions(acts []actions.Action) {
+	r.appActions = append(r.appActions, acts...)
 }
 
-// evalActions iterates through an action list and executes the first one that matches
-// the pressed key and whose precondition is satisfied.
-func (r *RootModel) evalActions(msg tea.KeyMsg, actions []Action) (tea.Cmd, bool) {
-	for _, action := range actions {
+// evalActions itera através de uma lista de actions e executa a primeira que corresponde
+// à tecla pressionada e cuja pré-condição é satisfeita.
+func (r *RootModel) evalActions(msg tea.KeyMsg, acts []actions.Action) (tea.Cmd, bool) {
+	for _, action := range acts {
 		if !action.Matches(msg) {
 			continue
 		}
@@ -203,17 +233,11 @@ func (r *RootModel) View() tea.View {
 		return tea.NewView("Aumente a altura do terminal!")
 	}
 
-	allActions := r.ActiveViewActions()
-	actionsInterface := make([]interface{}, len(allActions))
-	for i, a := range allActions {
-		actionsInterface[i] = a
-	}
-
 	base := lipgloss.JoinVertical(lipgloss.Left,
 		r.headerView.Render(design.HeaderHeight, r.width, r.theme),
 		r.renderWorkArea(),
 		r.messageLineView.Render(r.width, r.theme),
-		r.actionLineView.Render(design.ActionHeight, r.width, r.theme, actionsInterface),
+		r.actionLineView.Render(r.width, r.theme, r.ActiveViewActionsForBar()),
 	)
 
 	if len(r.modals) > 0 {
@@ -280,22 +304,18 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// 3. View actions — evaluated only without active modal.
 		viewActions := r.activeView.Actions()
-		if viewActions != nil {
-			for _, a := range viewActions {
-				if action, ok := a.(Action); ok {
-					if !action.Matches(msg) {
-						continue
-					}
-					if action.AvailableWhen != nil && !action.AvailableWhen(r, r.activeView) {
-						continue
-					}
-					return r, action.OnExecute()
-				}
+		for _, action := range viewActions {
+			if !action.Matches(msg) {
+				continue
 			}
+			if action.AvailableWhen != nil && !action.AvailableWhen(r, r.activeView) {
+				continue
+			}
+			return r, action.OnExecute()
 		}
 
 		// 4. Application actions — evaluated after view actions.
-		if cmd, ok := r.evalActions(msg, r.applicationActions); ok {
+		if cmd, ok := r.evalActions(msg, r.appActions); ok {
 			return r, cmd
 		}
 

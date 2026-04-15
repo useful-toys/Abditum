@@ -2,6 +2,7 @@ package tui
 
 import (
 	tea "charm.land/bubbletea/v2"
+	"github.com/useful-toys/abditum/internal/tui/actions"
 	"github.com/useful-toys/abditum/internal/tui/design"
 )
 
@@ -26,5 +27,5 @@ type ChildView interface {
 
 	// Actions retorna as actions disponíveis nesta view.
 	// Pode retornar nil se a view não possuir actions próprias.
-	Actions() []interface{}
+	Actions() []actions.Action
 }
