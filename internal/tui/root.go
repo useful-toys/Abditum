@@ -73,28 +73,25 @@ func (r *RootModel) ToggleTheme() {
 	r.toggleTheme()
 }
 
-// GetSystemActions retorna a lista de system actions registradas.
-// Exportada para uso pelo package actions.
-func (r *RootModel) GetSystemActions() []Action {
-	return r.systemActions
-}
-
-// GetApplicationActions retorna a lista de application actions registradas.
-// Exportada para uso pelo package actions.
-func (r *RootModel) GetApplicationActions() []Action {
-	return r.applicationActions
+// ActiveViewActions retorna todas as actions aplicáveis ao contexto da view ativa.
+// Inclui system actions, application actions, e view actions se houver view ativa.
+// Encapsula a lógica de agregação, evitando vazamento de implementação.
+func (r *RootModel) ActiveViewActions() []Action {
+	var viewActions []Action
+	if r.activeView != nil {
+		viewActions = r.activeView.Actions()
+	}
+	allActions := make([]Action, 0, len(r.systemActions)+len(r.applicationActions)+len(viewActions))
+	allActions = append(allActions, r.systemActions...)
+	allActions = append(allActions, r.applicationActions...)
+	allActions = append(allActions, viewActions...)
+	return allActions
 }
 
 // GetActionGroups retorna a lista de action groups registrados.
 // Exportada para uso pelo package actions.
 func (r *RootModel) GetActionGroups() []ActionGroup {
 	return r.actionGroups
-}
-
-// GetActiveView retorna a view ativa atualmente.
-// Exportada para uso pelo package actions.
-func (r *RootModel) GetActiveView() ChildView {
-	return r.activeView
 }
 
 // RegisterActionGroup adiciona um grupo de actions ao root.

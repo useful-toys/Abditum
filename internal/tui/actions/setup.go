@@ -52,16 +52,7 @@ func SetupApplication(r *tui.RootModel) {
 			Priority:    10,
 			Visible:     true,
 			OnExecute: func() tea.Cmd {
-				var viewActions []tui.Action
-				if r.GetActiveView() != nil {
-					viewActions = r.GetActiveView().Actions()
-				}
-				// Concatenate all actions
-				allActions := make([]tui.Action, 0, len(r.GetSystemActions())+len(r.GetApplicationActions())+len(viewActions))
-				allActions = append(allActions, r.GetSystemActions()...)
-				allActions = append(allActions, r.GetApplicationActions()...)
-				allActions = append(allActions, viewActions...)
-				return tui.OpenModal(modal.NewHelpModal(allActions, r.GetActionGroups()))
+				return tui.OpenModal(modal.NewHelpModal(r.ActiveViewActions(), r.GetActionGroups()))
 			},
 		},
 		{
