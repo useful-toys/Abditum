@@ -214,14 +214,14 @@ func applyCode(state *ansiState, code int) {
 	case 29: // Normal (not strikethrough)
 		state.style["strikethrough"] = false
 	case 30, 31, 32, 33, 34, 35, 36, 37: // 16-color foreground
-		color := colorCode16(code)
+		color := colorCode16(code - 30)
 		state.fg = &color
 	case 38: // 256-color or truecolor foreground (handled separately with next codes)
 		// Será tratado em contexto de múltiplos códigos
 	case 39: // Default foreground
 		state.fg = nil
 	case 40, 41, 42, 43, 44, 45, 46, 47: // 16-color background
-		color := colorCode16(code - 10)
+		color := colorCode16(code - 40)
 		state.bg = &color
 	case 48: // 256-color or truecolor background (handled separately)
 	case 49: // Default background
