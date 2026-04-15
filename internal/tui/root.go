@@ -39,12 +39,10 @@ type RootModel struct {
 
 	// headerView is the header region — always present, implements ChildView.
 	headerView screen.HeaderView
-	// messageLineView is the status message bar — stateless renderer.
+	// messageLineView is the status message bar — manages state and renders messages.
 	messageLineView screen.MessageLineView
 	// actionLineView is the context action bar — stateless renderer.
 	actionLineView screen.ActionLineView
-	// currentMessage is the current status message, displayed in messageLineView.
-	currentMessage string
 
 	// workArea indicates which work area is currently displayed.
 	workArea WorkArea
@@ -98,10 +96,10 @@ func (r *RootModel) ToggleTheme() {
 	}
 }
 
-// SetMessage defines the status message displayed in the bottom bar.
-// Pass empty string to clear the message.
-func (r *RootModel) SetMessage(msg string) {
-	r.currentMessage = msg
+// MessageController returns the interface for controlling status messages.
+// Allows views and actions to set busy, success, error, warning, info, and hint messages.
+func (r *RootModel) MessageController() MessageController {
+	return &r.messageLineView
 }
 
 // ActiveViewActions returns all actions applicable to the current view context.
@@ -214,7 +212,7 @@ func (r *RootModel) View() tea.View {
 	base := lipgloss.JoinVertical(lipgloss.Left,
 		r.headerView.Render(design.HeaderHeight, r.width, r.theme),
 		r.renderWorkArea(),
-		r.messageLineView.Render(design.MessageHeight, r.width, r.theme, r.currentMessage),
+		r.messageLineView.Render(r.width, r.theme),
 		r.actionLineView.Render(design.ActionHeight, r.width, r.theme, actionsInterface),
 	)
 
@@ -264,6 +262,10 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return r, r.activeView.Update(msg)
 
+	case TickMsg:
+		// Animate the message bar spinner and decrement TTL.
+		return r, r.messageLineView.Update(msg)
+
 	case tea.KeyMsg:
 		// 1. System actions — evaluated always, including with active modal.
 		if cmd, ok := r.evalActions(msg, r.systemActions); ok {
@@ -311,9 +313,12 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return r, tea.Batch(cmds...)
 }
 
-// Init is called once at application startup. No initial commands.
+// Init is called once at application startup.
+// Returns a command that emits TickMsg every second for spinner animation and TTL decrement.
 func (r *RootModel) Init() tea.Cmd {
-	return nil
+	return tea.Every(1*time.Second, func(time.Time) tea.Msg {
+		return TickMsg{}
+	})
 }
 
 // RootModelOption is a configuration function applied to RootModel at creation.
