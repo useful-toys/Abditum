@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -22,35 +23,19 @@ type RenderFn func(w, h int, theme *design.Theme) string
 // goldenPath constructs the filesystem path to a golden file.
 // Parameters: component (e.g., "tree"), variant (e.g., "expanded"), size (e.g., "30x20" or "80"),
 // ext (e.g., "txt" or "json").
-// Example: goldenPath("vault_tree", "expanded", "80x24", "txt") → "testdata/golden/vault_tree_expanded_80x24.txt"
+// Example: goldenPath("messages", "success", "80", "txt") → "testdata/golden/messages-success-80.golden.txt"
 func goldenPath(component, variant, size, ext string) string {
-	filename := component + "_" + variant + "_" + size + "." + ext
+	filename := component + "-" + variant + "-" + size + ".golden." + ext
 	return filepath.Join("testdata", "golden", filename)
 }
 
+// ansiEscapeRe captura todas as sequências de escape ANSI SGR.
+var ansiEscapeRe = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
+
 // ansiToCleanText removes all ANSI escape sequences from a string,
-// returning only the visible text content.
+// returning only the visible text content. Safe for multi-byte UTF-8.
 func ansiToCleanText(s string) string {
-	// This regex matches all ANSI escape sequences.
-	// Pattern: ESC [ followed by any number of parameter bytes (0-9;) and a final byte (letter).
-	// Also handles other escape formats like ESC followed by a single character.
-	cleaned := ""
-	inEscape := false
-	for i := 0; i < len(s); i++ {
-		if s[i] == '\x1b' { // ESC character
-			inEscape = true
-			continue
-		}
-		if inEscape {
-			// Skip until we find a letter that ends the escape sequence
-			if (s[i] >= 'A' && s[i] <= 'Z') || (s[i] >= 'a' && s[i] <= 'z') {
-				inEscape = false
-			}
-			continue
-		}
-		cleaned += string(s[i])
-	}
-	return cleaned
+	return ansiEscapeRe.ReplaceAllString(s, "")
 }
 
 // checkOrUpdateGolden compares the rendered output against a golden file.
@@ -153,9 +138,18 @@ func TestRenderManaged(t *testing.T, component, variant string, sizes []string, 
 			// Render the component
 			output := render(w, h, theme)
 
-			// Determine golden file path and check/update
-			path := goldenPath(component, variant, sizeStr, "txt")
-			checkOrUpdateGolden(t, path, output)
+			// Check/update clean text golden file (.txt.golden) — ANSI stripped
+			txtPath := goldenPath(component, variant, sizeStr, "txt")
+			checkOrUpdateGolden(t, txtPath, ansiToCleanText(output))
+
+			// Check/update style transitions golden file (.json)
+			transitions := ansiToStyleChanges(output)
+			jsonBytes, err := marshalStyleChanges(transitions)
+			if err != nil {
+				t.Fatalf("failed to marshal style transitions: %v", err)
+			}
+			jsonPath := goldenPath(component, variant, sizeStr, "json")
+			checkOrUpdateGolden(t, jsonPath, string(jsonBytes))
 		})
 	}
 }

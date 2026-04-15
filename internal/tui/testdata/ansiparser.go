@@ -148,10 +148,7 @@ func ansiToStyleChanges(output string) []StyleTransition {
 		}
 
 		codes := strings.Split(codeStr, ";")
-		for _, codeNum := range codes {
-			code, _ := strconv.Atoi(strings.TrimSpace(codeNum))
-			applyCode(&currentState, code)
-		}
+		applyCodes(&currentState, codes)
 
 		// Checa se estado mudou
 		newStateKey := stateKey(currentState)
@@ -179,60 +176,93 @@ func ansiToStyleChanges(output string) []StyleTransition {
 	return result
 }
 
-// applyCode aplica um código SGR ao estado
-func applyCode(state *ansiState, code int) {
-	switch code {
-	case 0: // Reset
-		state.fg = nil
-		state.bg = nil
-		state.style = make(map[string]bool)
-	case 1: // Bold
-		state.style["bold"] = true
-	case 2: // Faint
-		state.style["faint"] = true
-	case 3: // Italic
-		state.style["italic"] = true
-	case 4: // Underline
-		state.style["underline"] = true
-	case 5: // Blink
-		state.style["blink"] = true
-	case 7: // Reverse
-		state.style["reverse"] = true
-	case 9: // Strikethrough
-		state.style["strikethrough"] = true
-	case 21, 22: // Normal (not bold/faint)
-		state.style["bold"] = false
-		state.style["faint"] = false
-	case 23: // Normal (not italic)
-		state.style["italic"] = false
-	case 24: // Normal (not underline)
-		state.style["underline"] = false
-	case 25: // Normal (not blink)
-		state.style["blink"] = false
-	case 27: // Normal (not reverse)
-		state.style["reverse"] = false
-	case 29: // Normal (not strikethrough)
-		state.style["strikethrough"] = false
-	case 30, 31, 32, 33, 34, 35, 36, 37: // 16-color foreground
-		color := colorCode16(code - 30)
-		state.fg = &color
-	case 38: // 256-color or truecolor foreground (handled separately with next codes)
-		// Será tratado em contexto de múltiplos códigos
-	case 39: // Default foreground
-		state.fg = nil
-	case 40, 41, 42, 43, 44, 45, 46, 47: // 16-color background
-		color := colorCode16(code - 40)
-		state.bg = &color
-	case 48: // 256-color or truecolor background (handled separately)
-	case 49: // Default background
-		state.bg = nil
-	case 90, 91, 92, 93, 94, 95, 96, 97: // Bright foreground (16-color)
-		color := colorCode16(code - 60 + 8)
-		state.fg = &color
-	case 100, 101, 102, 103, 104, 105, 106, 107: // Bright background (16-color)
-		color := colorCode16(code - 100 + 8)
-		state.bg = &color
+// applyCodes processa uma sequência de códigos SGR, tratando corretamente
+// sequências multi-código como 38;2;R;G;B (truecolor) e 38;5;N (256-color).
+func applyCodes(state *ansiState, codes []string) {
+	for i := 0; i < len(codes); i++ {
+		code, _ := strconv.Atoi(strings.TrimSpace(codes[i]))
+		switch code {
+		case 0: // Reset
+			state.fg = nil
+			state.bg = nil
+			state.style = make(map[string]bool)
+		case 1:
+			state.style["bold"] = true
+		case 2:
+			state.style["faint"] = true
+		case 3:
+			state.style["italic"] = true
+		case 4:
+			state.style["underline"] = true
+		case 5:
+			state.style["blink"] = true
+		case 7:
+			state.style["reverse"] = true
+		case 9:
+			state.style["strikethrough"] = true
+		case 21, 22:
+			state.style["bold"] = false
+			state.style["faint"] = false
+		case 23:
+			state.style["italic"] = false
+		case 24:
+			state.style["underline"] = false
+		case 25:
+			state.style["blink"] = false
+		case 27:
+			state.style["reverse"] = false
+		case 29:
+			state.style["strikethrough"] = false
+		case 30, 31, 32, 33, 34, 35, 36, 37:
+			color := colorCode16(code - 30)
+			state.fg = &color
+		case 38: // Foreground: 38;5;N (256-color) ou 38;2;R;G;B (truecolor)
+			i = applyExtendedColor(codes, i, &state.fg)
+		case 39:
+			state.fg = nil
+		case 40, 41, 42, 43, 44, 45, 46, 47:
+			color := colorCode16(code - 40)
+			state.bg = &color
+		case 48: // Background: 48;5;N (256-color) ou 48;2;R;G;B (truecolor)
+			i = applyExtendedColor(codes, i, &state.bg)
+		case 49:
+			state.bg = nil
+		case 90, 91, 92, 93, 94, 95, 96, 97:
+			color := colorCode16(code - 90 + 8)
+			state.fg = &color
+		case 100, 101, 102, 103, 104, 105, 106, 107:
+			color := colorCode16(code - 100 + 8)
+			state.bg = &color
+		}
 	}
+}
+
+// applyExtendedColor processa 256-color (5;N) ou truecolor (2;R;G;B) a partir
+// da posição i (que aponta para o código 38 ou 48). Retorna o novo índice i.
+func applyExtendedColor(codes []string, i int, target **string) int {
+	if i+1 >= len(codes) {
+		return i
+	}
+	mode, _ := strconv.Atoi(strings.TrimSpace(codes[i+1]))
+	switch mode {
+	case 5: // 256-color: 38;5;N
+		if i+2 < len(codes) {
+			n, _ := strconv.Atoi(strings.TrimSpace(codes[i+2]))
+			color := colorCode256(n)
+			*target = &color
+			return i + 2
+		}
+	case 2: // Truecolor: 38;2;R;G;B
+		if i+4 < len(codes) {
+			r, _ := strconv.Atoi(strings.TrimSpace(codes[i+2]))
+			g, _ := strconv.Atoi(strings.TrimSpace(codes[i+3]))
+			b, _ := strconv.Atoi(strings.TrimSpace(codes[i+4]))
+			color := fmt.Sprintf("#%02x%02x%02x", r, g, b)
+			*target = &color
+			return i + 4
+		}
+	}
+	return i + 1
 }
 
 // colorCode16 converte código ANSI 16-color para hex
@@ -259,6 +289,27 @@ func colorCode16(code int) string {
 		return colors[code]
 	}
 	return "#000000"
+}
+
+// colorCode256 converte código ANSI 256-color para hex.
+// Cobre as 3 faixas: 0-15 (16-color), 16-231 (cubo 6×6×6), 232-255 (grayscale).
+func colorCode256(code int) string {
+	if code < 16 {
+		return colorCode16(code)
+	}
+	if code < 232 {
+		// Cubo 6×6×6: código 16-231
+		idx := code - 16
+		b := idx % 6
+		g := (idx / 6) % 6
+		r := idx / 36
+		// Cada componente mapeia para 0, 95, 135, 175, 215, 255
+		levels := [6]int{0, 95, 135, 175, 215, 255}
+		return fmt.Sprintf("#%02x%02x%02x", levels[r], levels[g], levels[b])
+	}
+	// Grayscale: código 232-255
+	gray := 8 + (code-232)*10
+	return fmt.Sprintf("#%02x%02x%02x", gray, gray, gray)
 }
 
 // styleMapToArray converte map de estilos para array ordenado

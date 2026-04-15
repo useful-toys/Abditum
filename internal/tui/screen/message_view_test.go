@@ -1,11 +1,13 @@
 package screen
 
 import (
+	"strconv"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/useful-toys/abditum/internal/tui/design"
+	"github.com/useful-toys/abditum/internal/tui/testdata"
 )
 
 func TestMessageLineView_ZeroValue(t *testing.T) {
@@ -226,5 +228,94 @@ func TestMessageLineView_HintField_NeverExpires(t *testing.T) {
 	}
 	if v.current.Kind != design.MsgHintField {
 		t.Errorf("MsgHintField não deve expirar: Kind = %d, want %d", v.current.Kind, design.MsgHintField)
+	}
+}
+
+// --- Golden file tests ---
+
+// goldenSizes define os tamanhos usados nos testes golden da barra de mensagens.
+var goldenSizes = []string{"60x1"}
+
+// messageRenderFn adapta MessageLineView.Render para testdata.RenderFn,
+// ignorando o parâmetro height (a barra é sempre uma única linha).
+func messageRenderFn(setup func(v *MessageLineView)) testdata.RenderFn {
+	return func(w, _ int, theme *design.Theme) string {
+		var v MessageLineView
+		setup(&v)
+		return v.Render(w, theme)
+	}
+}
+
+func TestMessageLineView_Golden_Empty(t *testing.T) {
+	testdata.TestRenderManaged(t, "messages", "empty", goldenSizes,
+		messageRenderFn(func(_ *MessageLineView) {}),
+	)
+}
+
+func TestMessageLineView_Golden_Success(t *testing.T) {
+	testdata.TestRenderManaged(t, "messages", "success", goldenSizes,
+		messageRenderFn(func(v *MessageLineView) { v.SetSuccess("Cofre salvo com sucesso") }),
+	)
+}
+
+func TestMessageLineView_Golden_Error(t *testing.T) {
+	testdata.TestRenderManaged(t, "messages", "error", goldenSizes,
+		messageRenderFn(func(v *MessageLineView) { v.SetError("Falha ao abrir cofre") }),
+	)
+}
+
+func TestMessageLineView_Golden_Warning(t *testing.T) {
+	testdata.TestRenderManaged(t, "messages", "warning", goldenSizes,
+		messageRenderFn(func(v *MessageLineView) { v.SetWarning("Arquivo modificado externamente") }),
+	)
+}
+
+func TestMessageLineView_Golden_Info(t *testing.T) {
+	testdata.TestRenderManaged(t, "messages", "info", goldenSizes,
+		messageRenderFn(func(v *MessageLineView) { v.SetInfo("3 segredos encontrados") }),
+	)
+}
+
+func TestMessageLineView_Golden_Busy(t *testing.T) {
+	testdata.TestRenderManaged(t, "messages", "busy", goldenSizes,
+		messageRenderFn(func(v *MessageLineView) { v.SetBusy("Salvando cofre") }),
+	)
+}
+
+func TestMessageLineView_Golden_HintField(t *testing.T) {
+	testdata.TestRenderManaged(t, "messages", "hint-field", goldenSizes,
+		messageRenderFn(func(v *MessageLineView) { v.SetHintField("Pressione Enter para confirmar") }),
+	)
+}
+
+func TestMessageLineView_Golden_HintUsage(t *testing.T) {
+	testdata.TestRenderManaged(t, "messages", "hint-usage", goldenSizes,
+		messageRenderFn(func(v *MessageLineView) { v.SetHintUsage("Ctrl+S salvar · Ctrl+Q sair") }),
+	)
+}
+
+func TestMessageLineView_Golden_LongText(t *testing.T) {
+	testdata.TestRenderManaged(t, "messages", "long-text", goldenSizes,
+		messageRenderFn(func(v *MessageLineView) {
+			v.SetError("Este texto é propositalmente muito longo para caber na largura disponível e deve ser truncado pela renderização da barra de mensagens")
+		}),
+	)
+}
+
+func TestMessageLineView_Golden_SpinnerFrames(t *testing.T) {
+	for frame := 0; frame < 4; frame++ {
+		frame := frame // captura para closure
+		name := strconv.Itoa(frame)
+		t.Run(name, func(t *testing.T) {
+			variant := "spinner-frame-" + name
+			testdata.TestRenderManaged(t, "messages", variant, goldenSizes,
+				messageRenderFn(func(v *MessageLineView) {
+					v.SetBusy("Processando")
+					for i := 0; i < frame; i++ {
+						v._testTick()
+					}
+				}),
+			)
+		})
 	}
 }
