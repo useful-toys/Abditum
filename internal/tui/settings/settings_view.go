@@ -5,13 +5,15 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/useful-toys/abditum/internal/tui"
 	"github.com/useful-toys/abditum/internal/tui/design"
+	"github.com/useful-toys/abditum/internal/vault"
 )
 
 // SettingsView exibe as opções de configuração da aplicação.
 type SettingsView struct{}
 
 // NewSettingsView cria uma nova instância da tela de configurações.
-func NewSettingsView() *SettingsView {
+// vm é o gerenciador do cofre ativo — pode ser nil durante inicialização.
+func NewSettingsView(vm *vault.Manager) *SettingsView {
 	return &SettingsView{}
 }
 
