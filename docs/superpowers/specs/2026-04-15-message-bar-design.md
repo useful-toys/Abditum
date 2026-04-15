@@ -1,121 +1,90 @@
 # Design — Barra de Mensagens
 
-> Implementação da barra de mensagens conforme `golden/tui-spec-barras.md`.
+> Implementação da barra de mensagens conforme `golden/tui-design-system.md` e `golden/tui-spec-barras.md`.
 
 ## Escopo
 
-- Renderização visual do componente `MessageLineView`
-- Sistema de mensagens (`MessageKind`, `Message`, helpers)
-- Subsistema `MessageBar` dedicado
-- Integração com `RootModel`
+- Tipos visuais de mensagem (`MessageKind`, `Message`, helpers, `Render`)
+- Estado e renderização da barra (`MessageLineView`)
+- Interface `MessageController` para controle externo
+- Integração com `RootModel` via timer global e `TickMsg`
 
 ## Arquivos
 
 | Arquivo | Conteúdo |
 |---|---|
-| `internal/tui/design/design_message.go` | `MessageKind`, `Message`, helpers, `Render()` |
-| `internal/tui/screen/message_view.go` | `MessageLineView.Render()` |
-| `internal/tui/subsystem/message_bar.go` | Subsistema `MessageBar` |
-| `internal/tui/root.go` | Integração com `MessageBar`, timer TTL |
+| `internal/tui/design/design_message.go` | `MessageKind`, `Message`, helpers, `Message.Render` |
+| `internal/tui/screen/message_view.go` | `MessageLineView` — estado + render + implementa `MessageController` |
+| `internal/tui/root.go` | Timer global, trata `TickMsg`, expõe `MessageController()` |
 
 ## Arquitetura
 
-### MessageBar (subsistema dedicado)
+### Interface `MessageController`
 
-Responsável exclusivamente por manter o estado da barra de mensagens.
+Definida em `package tui` (evita ciclo de imports com `screen`).
 
 ```go
-type MessageBar struct {
+type MessageController interface {
+    SetBusy(text string)
+    SetSuccess(text string)
+    SetError(text string)
+    SetWarning(text string)
+    SetInfo(text string)
+    SetHintField(text string)
+    SetHintUsage(text string)
+    Clear()
+}
+```
+
+Usada por ações via closure: `r.MessageController().SetSuccess("Cofre salvo")`.
+
+### `MessageLineView` (em `screen/message_view.go`)
+
+Struct única — estado + renderização + implementação da interface:
+
+```go
+type MessageLineView struct {
     current      design.Message
+    ttl          int  // segundos restantes; 0 = sem TTL (permanente)
     spinnerFrame int
 }
-
-func NewMessageBar() *MessageBar
 ```
 
-**API:**
-```go
-// Estado
-func (mb *MessageBar) Current() design.Message
+**Métodos da interface:**
+- `SetXxx(text string)` — popula `current` e seta `ttl = kind.DefaultTTL()`
+- `Clear()` — zera `current` e `ttl`
 
-// Controles
-func (mb *MessageBar) Clear()
-func (mb *MessageBar) SetBusy(text string)
-func (mb *MessageBar) Success(text string)
-func (mb *MessageBar) Error(text string)
-func (mb *MessageBar) Warning(text string)
-func (mb *MessageBar) Info(text string)
-func (mb *MessageBar) HintField(text string)
-func (mb *MessageBar) HintUsage(text string)
+**Tick:**
+- Se `current.Kind == MsgBusy` → avança `spinnerFrame = (spinnerFrame + 1) % 4`
+- Se `ttl > 0` → decrementa; se chega a 0 → `current = design.Message{}`
+- As duas operações acontecem no mesmo tick
 
-// Renderização
-func (mb *MessageBar) Render(theme *design.Theme, width int) string
+**Render:**
+- Delega para `current.Render(theme, maxWidth, spinnerFrame)` para obter conteúdo
+- Monta a estrutura visual conforme spec (ver seção abaixo)
 
-// Tick (para animação do spinner)
-func (mb *MessageBar) Tick()
-```
+### `RootModel` (em `root.go`)
 
-Nota: `Success`, `Error`, `Warning`, `Info` substituem automaticamente qualquer mensagem anterior (incluindo spinner).
+- Campo `messageLineView *screen.MessageLineView` substitui `currentMessage string`
+- `SetMessage(string)` removido
+- `MessageController() MessageController` exposto — retorna `r.messageLineView`
+- `Init()` retorna timer global: `tea.Every(1*time.Second, func(time.Time) tea.Msg { return TickMsg{} })`
+- `Update` trata `TickMsg` → `r.messageLineView.Tick()`
+- `View()` chama `r.messageLineView.Render(r.width, r.theme)`
 
-### Timer no RootModel
-
-O TTL é gerenciado pelo RootModel, não pelo MessageBar.
+### Mensagens Bubble Tea
 
 ```go
-type RootModel struct {
-    // ...
-    messageBar  *MessageBar
-    msgTimer    *time.Timer
-}
+// TickMsg é emitido 1 vez por segundo pelo timer global.
+// Avança animação do spinner e decrementa TTL de mensagens temporárias.
+type TickMsg struct{}
 ```
 
-```go
-func (r *RootModel) SetMessage(msg design.Message) {
-    r.messageBar.SetMessage(msg)
-    
-    if r.msgTimer != nil {
-        r.msgTimer.Stop()
-    }
-    
-    ttl := msg.TTL
-    if ttl == 0 {
-        ttl = msg.Kind.DefaultTTL()
-    }
-    if ttl > 0 {
-        r.msgTimer = time.AfterFunc(ttl, func() {
-            r.Send(ClearMessageMsg{})
-        })
-    }
-}
+---
 
-func (r *RootModel) ClearMessage() {
-    r.messageBar.Clear()
-    if r.msgTimer != nil {
-        r.msgTimer.Stop()
-        r.msgTimer = nil
-    }
-}
-```
+## `design/design_message.go`
 
-No `Update`:
-```go
-case ClearMessageMsg:
-    r.messageBar.Clear()
-    return r, nil
-```
-
-### Tick
-
-Para animação do spinner:
-```go
-case TickMsg:
-    r.messageBar.Tick()
-    return r, nil
-```
-
-## 1. design_message.go
-
-### MessageKind
+### `MessageKind`
 
 ```go
 type MessageKind int
@@ -131,97 +100,84 @@ const (
 )
 ```
 
-| Kind | Símbolo | Token | Atributo |
-|---|---|---|---|
-| MsgSuccess | ✓ | semantic.success | — |
-| MsgInfo | ℹ | semantic.info | — |
-| MsgWarning | ⚠ | semantic.warning | — |
-| MsgError | ✕ | semantic.error | bold |
-| MsgBusy | ◐ | accent.primary | — |
-| MsgHintField | • | text.secondary | italic |
-| MsgHintUsage | • | text.secondary | italic |
+### Métodos de `MessageKind`
 
-### MessageKind Métodos
+| Método | Descrição |
+|---|---|
+| `Symbol() string` | Símbolo Unicode do tipo |
+| `Color(theme *Theme) string` | Token de cor hex |
+| `Style(theme *Theme) lipgloss.Style` | Estilo com cor + atributos |
+| `DefaultTTL() int` | TTL padrão em segundos (0 = permanente) |
 
-```go
-func (k MessageKind) Symbol() string
-func (k MessageKind) Color(theme *Theme) string
-func (k MessageKind) Style(theme *Theme) lipgloss.Style
-func (k MessageKind) DefaultTTL() time.Duration
-```
+Tabela de valores:
 
-### Message
+| Kind | Símbolo | Token | Atributo | TTL |
+|---|---|---|---|---|
+| MsgSuccess | `✓` | `semantic.success` | — | 5s |
+| MsgInfo | `ℹ` | `semantic.info` | — | 5s |
+| MsgWarning | `⚠` | `semantic.warning` | — | 5s |
+| MsgError | `✕` | `semantic.error` | **bold** | 5s |
+| MsgBusy | frame do spinner | `accent.primary` | — | 0 |
+| MsgHintField | `•` | `text.secondary` | *italic* | 0 |
+| MsgHintUsage | `•` | `text.secondary` | *italic* | 0 |
+
+### `Message`
 
 ```go
 type Message struct {
     Kind MessageKind
     Text string
-    TTL  time.Duration
 }
 ```
+
+Sem campo `TTL` — o TTL é sempre `kind.DefaultTTL()` (padrão) ou sobrescrito no `SetXxx` se necessário no futuro.
 
 ### Helpers
 
 ```go
-func Success(text string, ttl ...time.Duration) Message
-func Error(text string, ttl ...time.Duration) Message
-func Info(text string, ttl ...time.Duration) Message
-func Warning(text string, ttl ...time.Duration) Message
-func Busy(text ...string) Message
+func Success(text string) Message
+func Error(text string) Message
+func Info(text string) Message
+func Warning(text string) Message
+func Busy(text ...string) Message   // texto é opcional para MsgBusy
 func HintField(text string) Message
 func HintUsage(text string) Message
 ```
 
-Nota: `Busy(text ...string)` permite texto opcional de descrição.
-
-### Message.Render
+### `Message.Render`
 
 ```go
-// Retorna símbolo + "  " + texto com cor aplicada, truncado se maxWidth excedido.
-// Retorna a string ANSI e o comprimento real em colunas.
-func (m Message) Render(theme *Theme, maxWidth int) (output string, columns int)
+func (m Message) Render(theme *Theme, maxWidth int, spinnerFrame int) (output string, columns int)
 ```
 
-Implementação:
-- Para `MsgBusy`: retorna `SpinnerFrame(mb.spinnerFrame)` (sem texto)
-- Para demais: símbolo + "  " + texto com cor, truncado se necessário
-- Usa `Style()` do Kind para cor + atributos
+- Para `MsgBusy`: símbolo = `SpinnerFrame(spinnerFrame)`, sem texto
+- Para demais: símbolo + `"  "` (2 espaços) + texto, truncado com `…` se necessário
+- Cor aplicada via `m.Kind.Style(theme)` a símbolo e texto juntos
+- Usa `lipgloss.Width()` para medir colunas — nunca `len()`
+- `maxWidth` para tipos sem símbolo: `width - 6`; com símbolo: `width - 9` (conforme spec)
 
-### MessageLineView.Render
+---
 
-Usa o `MessageBar` para renderizar:
+## Estrutura Visual da Barra
 
-```go
-func (v *MessageLineView) Render(height, width int, theme *design.Theme, mb *MessageBar) string {
-    return mb.Render(theme, width)
-}
+Conforme `golden/tui-spec-barras.md`:
+
+**Sem mensagem:**
+```
+────────────────────────────────────────────────────── (largura total)
 ```
 
-## TTLs Padrão
-
-| Kind | TTL |
-|---|---|
-| MsgSuccess | 5s |
-| MsgInfo | 5s |
-| MsgWarning | 5s |
-| MsgError | 5s |
-| MsgBusy | — (manual) |
-| MsgHintField | permanente |
-| MsgHintUsage | permanente |
-
-## Mensagens Bubble Tea
-
-```go
-type ClearMessageMsg struct{}
-
-type TickMsg struct{}
+**Com mensagem:**
+```
+─── ✓  Cofre salvo ────────────────────────────────────
 ```
 
-## Constantes
+Estrutura char a char:
+- `───` (3× `SymBorderH`) + ` ` (1 espaço) + conteúdo + ` ` (1 espaço) + `─`×N (mínimo 1)
+- Borda sempre em `border.default`
+- Conteúdo: símbolo + `"  "` + texto (para tipos com símbolo)
+- Truncamento: texto truncado com `…` se excede espaço disponível
 
-`design.go` já possui:
-```go
-const HeaderHeight = 2
-const MessageHeight = 1
-const ActionHeight = 1
-```
+**Cálculo de largura máxima do texto** (conforme spec):
+- Com símbolo: `width - 9`
+- Sem símbolo (extensibilidade futura): `width - 6`
