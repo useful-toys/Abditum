@@ -51,17 +51,7 @@ func setupApplication(r *tui.RootModel) {
 			Priority:    10,
 			Visible:     true,
 			OnExecute: func() tea.Cmd {
-				// Convert to interface{} to match NewHelpModal signature
-				viewActions := r.ActiveViewActions()
-				actionsInterface := make([]interface{}, len(viewActions))
-				for i, a := range viewActions {
-					actionsInterface[i] = a
-				}
-				groupsInterface := make([]interface{}, len(r.GetActionGroups()))
-				for i, g := range r.GetActionGroups() {
-					groupsInterface[i] = g
-				}
-				return tui.OpenModal(modal.NewHelpModal(actionsInterface, groupsInterface))
+				return tui.OpenModal(modal.NewHelpModal(r.ActiveViewActions(), r.GetActionGroups()))
 			},
 		},
 		{

@@ -4,24 +4,21 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/useful-toys/abditum/internal/tui"
+	"github.com/useful-toys/abditum/internal/tui/actions"
 	"github.com/useful-toys/abditum/internal/tui/design"
 )
 
 // HelpModal exibe todas as actions registradas, agrupadas por ActionGroup.
 // Implementa tui.ModalView.
 type HelpModal struct {
-	// actions é a lista completa de actions (System + Application + View) no momento da abertura.
-	// Armazenadas como interface{} para evitar import cycle com actions package.
-	actions []interface{}
-	// groups são os grupos registrados, armazenados como interface{} também.
-	groups []interface{}
+	actions []actions.Action
+	groups  []actions.ActionGroup
 }
 
 // NewHelpModal cria um HelpModal com as actions e grupos fornecidos.
-// actions e groups são armazenados como interface{} e podem ser de qualquer tipo compatível.
-func NewHelpModal(actions []interface{}, groups []interface{}) *HelpModal {
+func NewHelpModal(acts []actions.Action, groups []actions.ActionGroup) *HelpModal {
 	return &HelpModal{
-		actions: actions,
+		actions: acts,
 		groups:  groups,
 	}
 }
