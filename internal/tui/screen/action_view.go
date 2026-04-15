@@ -52,34 +52,50 @@ func (v *ActionLineView) Render(width int, theme *design.Theme, acts []actions.A
 	availableCols := width - prefixCols - minPadding - anchorCols
 
 	// Renderizar ações normais que cabem no espaço disponível.
-	// TODO: Usar design.RenderAction e design.ActionSeparator quando estiverem disponíveis
-	sep := " " + design.SymHeaderSep + " "
-	var renderedNormal []string
+	// Usar design.RenderAction e design.ActionSeparator para estilização consistente.
+	separator := design.ActionSeparator(theme)
+
+	type renderedActionItem struct {
+		text  string
+		width int
+	}
+	var renderedNormal []renderedActionItem
 	usedCols := 0
+
 	for _, a := range normal {
-		if len(a.Keys) == 0 {
+		// Pular ações que não estão visíveis ou não têm tecla
+		if !a.Visible || len(a.Keys) == 0 {
 			continue
 		}
-		// Renderizar ação: tecla + espaço + label
-		actionText := a.Keys[0].Label + " " + a.Label
-		needed := lipgloss.Width(actionText)
+
+		// Renderizar ação usando design helper
+		rendered := design.RenderAction(a.Keys[0].Label, a.Label, theme)
+		needed := rendered.Width
+
+		// Contar espaço do separador se não é a primeira ação
 		if len(renderedNormal) > 0 {
-			needed += lipgloss.Width(sep) // separador antes de cada ação (exceto a primeira)
+			needed += separator.Width
 		}
+
+		// Parar se não cabe no espaço disponível
 		if usedCols+needed > availableCols {
-			break // ações restantes não cabem — descartar
+			break
 		}
-		renderedNormal = append(renderedNormal, actionText)
+
+		renderedNormal = append(renderedNormal, renderedActionItem{
+			text:  rendered.Text,
+			width: rendered.Width,
+		})
 		usedCols += needed
 	}
 
 	// Montar bloco de ações normais com separadores.
 	var normalBuilder strings.Builder
-	for i, text := range renderedNormal {
+	for i, item := range renderedNormal {
 		if i > 0 {
-			normalBuilder.WriteString(sep)
+			normalBuilder.WriteString(separator.Text)
 		}
-		normalBuilder.WriteString(text)
+		normalBuilder.WriteString(item.text)
 	}
 	normalText := normalBuilder.String()
 
@@ -93,7 +109,8 @@ func (v *ActionLineView) Render(width int, theme *design.Theme, acts []actions.A
 	// Renderizar âncora ou preencher com espaços quando ausente.
 	var anchorText string
 	if anchor != nil && len(anchor.Keys) > 0 {
-		anchorText = anchor.Keys[0].Label + " " + anchor.Label
+		renderedAnchor := design.RenderAction(anchor.Keys[0].Label, anchor.Label, theme)
+		anchorText = renderedAnchor.Text
 	} else {
 		anchorText = strings.Repeat(" ", anchorCols)
 	}
