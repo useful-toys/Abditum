@@ -3,7 +3,6 @@ package settings
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/useful-toys/abditum/internal/tui"
 	"github.com/useful-toys/abditum/internal/tui/design"
 	"github.com/useful-toys/abditum/internal/vault"
 )
@@ -41,4 +40,4 @@ func (v *SettingsView) HandleTeaMsg(msg tea.Msg) tea.Cmd { return nil }
 func (v *SettingsView) Update(msg tea.Msg) tea.Cmd { return nil }
 
 // Actions retorna nil — SettingsView não possui actions próprias nesta sprint.
-func (v *SettingsView) Actions() []tui.Action { return nil }
+func (v *SettingsView) Actions() []interface{} { return nil }

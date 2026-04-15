@@ -3,7 +3,6 @@ package template
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/useful-toys/abditum/internal/tui"
 	"github.com/useful-toys/abditum/internal/tui/design"
 	"github.com/useful-toys/abditum/internal/vault"
 )
@@ -40,4 +39,4 @@ func (v *TemplateDetailView) HandleTeaMsg(msg tea.Msg) tea.Cmd { return nil }
 func (v *TemplateDetailView) Update(msg tea.Msg) tea.Cmd { return nil }
 
 // Actions retorna nil — TemplateDetailView não possui actions próprias nesta sprint.
-func (v *TemplateDetailView) Actions() []tui.Action { return nil }
+func (v *TemplateDetailView) Actions() []interface{} { return nil }

@@ -26,5 +26,5 @@ type ChildView interface {
 
 	// Actions retorna as actions disponíveis nesta view.
 	// Pode retornar nil se a view não possuir actions próprias.
-	Actions() []Action
+	Actions() []interface{}
 }

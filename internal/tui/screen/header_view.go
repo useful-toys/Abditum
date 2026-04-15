@@ -2,7 +2,6 @@ package screen
 
 import (
 	tea "charm.land/bubbletea/v2"
-	"github.com/useful-toys/abditum/internal/tui"
 	"github.com/useful-toys/abditum/internal/tui/design"
 )
 
@@ -34,4 +33,4 @@ func (v *HeaderView) HandleTeaMsg(msg tea.Msg) tea.Cmd { return nil }
 func (v *HeaderView) Update(msg tea.Msg) tea.Cmd { return nil }
 
 // Actions retorna nil — HeaderView não possui actions próprias nesta sprint.
-func (v *HeaderView) Actions() []tui.Action { return nil }
+func (v *HeaderView) Actions() []interface{} { return nil }
