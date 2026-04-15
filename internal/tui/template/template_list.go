@@ -5,18 +5,19 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/useful-toys/abditum/internal/tui"
 	"github.com/useful-toys/abditum/internal/tui/design"
+	"github.com/useful-toys/abditum/internal/vault"
 )
 
-// ListView exibe a lista de templates disponíveis para criação de segredos.
-type ListView struct{}
+// TemplateListView exibe a lista de templates disponíveis para criação de segredos.
+type TemplateListView struct{}
 
-// NewListView cria uma nova instância da lista de templates.
-func NewListView() *ListView {
-	return &ListView{}
+// NewTemplateListView cria uma nova instância da lista de templates.
+func NewTemplateListView(vm *vault.Manager) *TemplateListView {
+	return &TemplateListView{}
 }
 
 // Render retorna a lista de templates preenchendo as dimensões fornecidas com o tema ativo.
-func (v *ListView) Render(height, width int, theme *design.Theme) string {
+func (v *TemplateListView) Render(height, width int, theme *design.Theme) string {
 	content := "Template List"
 	style := lipgloss.NewStyle().
 		Width(width).
@@ -27,16 +28,16 @@ func (v *ListView) Render(height, width int, theme *design.Theme) string {
 }
 
 // HandleKey não processa teclas nesta view.
-func (v *ListView) HandleKey(msg tea.KeyMsg) tea.Cmd { return nil }
+func (v *TemplateListView) HandleKey(msg tea.KeyMsg) tea.Cmd { return nil }
 
 // HandleEvent não processa eventos externos nesta view.
-func (v *ListView) HandleEvent(event any) {}
+func (v *TemplateListView) HandleEvent(event any) {}
 
 // HandleTeaMsg não processa mensagens do framework nesta view.
-func (v *ListView) HandleTeaMsg(msg tea.Msg) tea.Cmd { return nil }
+func (v *TemplateListView) HandleTeaMsg(msg tea.Msg) tea.Cmd { return nil }
 
 // Update não altera o estado desta view em resposta a mensagens.
-func (v *ListView) Update(msg tea.Msg) tea.Cmd { return nil }
+func (v *TemplateListView) Update(msg tea.Msg) tea.Cmd { return nil }
 
-// Actions retorna nil — ListView não possui actions próprias nesta sprint.
-func (v *ListView) Actions() []tui.Action { return nil }
+// Actions retorna nil — TemplateListView não possui actions próprias nesta sprint.
+func (v *TemplateListView) Actions() []tui.Action { return nil }
