@@ -1,6 +1,7 @@
 package design
 
 import (
+	"charm.land/lipgloss/v2"
 	"testing"
 )
 
@@ -113,5 +114,75 @@ func TestBusyHelper_SpinnerFrame_ZeroValue(t *testing.T) {
 	msg := Busy("teste")
 	if msg.SpinnerFrame != 0 {
 		t.Errorf("Busy(): SpinnerFrame = %d, want 0 (zero value)", msg.SpinnerFrame)
+	}
+}
+
+func TestMessage_Render_Basic(t *testing.T) {
+	theme := TokyoNight
+
+	msg := Success("Cofre salvo")
+	output, cols := msg.Render(theme, 100)
+
+	if lipgloss.Width(output) != cols {
+		t.Errorf("Render: lipgloss.Width(output) = %d, mas cols retornado = %d", lipgloss.Width(output), cols)
+	}
+	if cols > 100 {
+		t.Errorf("Render: cols = %d, excede maxWidth = 100", cols)
+	}
+}
+
+func TestMessage_Render_BusyWithText(t *testing.T) {
+	theme := TokyoNight
+
+	msg := Busy("Salvando cofre...")
+	msg.SpinnerFrame = 1 // simular frame 1 da animação
+	output, cols := msg.Render(theme, 100)
+
+	if cols > 100 {
+		t.Errorf("Render Busy: cols = %d, excede maxWidth = 100", cols)
+	}
+	if lipgloss.Width(output) != cols {
+		t.Errorf("Render Busy: lipgloss.Width(output) != cols: %d != %d", lipgloss.Width(output), cols)
+	}
+}
+
+func TestMessage_Render_BusyWithoutText(t *testing.T) {
+	theme := TokyoNight
+
+	msg := Busy()
+	_, cols := msg.Render(theme, 100)
+
+	if cols > 100 {
+		t.Errorf("Render Busy sem texto: cols = %d, excede maxWidth = 100", cols)
+	}
+}
+
+func TestMessage_Render_TruncatesLongText(t *testing.T) {
+	theme := TokyoNight
+
+	long := "Este texto é muito longo e deve ser truncado com reticências para caber na barra de mensagem da interface"
+	msg := Info(long)
+	_, cols := msg.Render(theme, 30)
+
+	if cols > 30 {
+		t.Errorf("Render: texto longo não foi truncado — cols = %d, maxWidth = 30", cols)
+	}
+}
+
+func TestMessage_Render_SpinnerFrameVaries(t *testing.T) {
+	theme := TokyoNight
+
+	// Os 4 frames devem produzir outputs de mesma largura (frames têm mesma largura visual).
+	widths := make([]int, 4)
+	for i := 0; i < 4; i++ {
+		msg := Busy("teste")
+		msg.SpinnerFrame = i
+		_, cols := msg.Render(theme, 100)
+		widths[i] = cols
+	}
+	for i := 1; i < 4; i++ {
+		if widths[i] != widths[0] {
+			t.Errorf("frame %d produziu cols = %d, esperado %d (mesmo que frame 0)", i, widths[i], widths[0])
+		}
 	}
 }
