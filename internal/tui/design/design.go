@@ -85,25 +85,25 @@ type SpecialTokens struct {
 
 // TokyoNight é o tema padrão da aplicação, baseado na paleta Tokyo Night.
 var TokyoNight = &Theme{
-	Name:     "Tokyo Night",
-	Surface:  SurfaceTokens{"#1a1b26", "#24283b", "#1e1f2e"},
-	Text:     TextTokens{"#a9b1d6", "#565f89", "#3b4261", "#7aa2f7"},
-	Accent:   AccentTokens{"#7aa2f7", "#bb9af7"},
-	Border:   BorderTokens{"#414868", "#7aa2f7"},
-	Semantic: SemanticTokens{"#9ece6a", "#e0af68", "#f7768e", "#7dcfff", "#737aa2"},
-	Special:  SpecialTokens{"#8690b5", "#283457", "#f7c67a"},
+	Name:         "Tokyo Night",
+	Surface:      SurfaceTokens{"#1a1b26", "#24283b", "#1e1f2e"},
+	Text:         TextTokens{"#a9b1d6", "#565f89", "#3b4261", "#7aa2f7"},
+	Accent:       AccentTokens{"#7aa2f7", "#bb9af7"},
+	Border:       BorderTokens{"#414868", "#7aa2f7"},
+	Semantic:     SemanticTokens{"#9ece6a", "#e0af68", "#f7768e", "#7dcfff", "#737aa2"},
+	Special:      SpecialTokens{"#8690b5", "#283457", "#f7c67a"},
 	LogoGradient: [5]string{"#9d7cd8", "#89ddff", "#7aa2f7", "#7dcfff", "#bb9af7"},
 }
 
 // Cyberpunk é um tema alternativo com paleta neon sobre fundo escuro.
 var Cyberpunk = &Theme{
-	Name:     "Cyberpunk",
-	Surface:  SurfaceTokens{"#0a0a1a", "#1a1a2e", "#0e0e22"},
-	Text:     TextTokens{"#e0e0ff", "#8888aa", "#444466", "#ff2975"},
-	Accent:   AccentTokens{"#ff2975", "#00fff5"},
-	Border:   BorderTokens{"#3a3a5c", "#ff2975"},
-	Semantic: SemanticTokens{"#05ffa1", "#ffe900", "#ff3860", "#00b4d8", "#9999cc"},
-	Special:  SpecialTokens{"#666688", "#2a1533", "#ffc107"},
+	Name:         "Cyberpunk",
+	Surface:      SurfaceTokens{"#0a0a1a", "#1a1a2e", "#0e0e22"},
+	Text:         TextTokens{"#e0e0ff", "#8888aa", "#444466", "#ff2975"},
+	Accent:       AccentTokens{"#ff2975", "#00fff5"},
+	Border:       BorderTokens{"#3a3a5c", "#ff2975"},
+	Semantic:     SemanticTokens{"#05ffa1", "#ffe900", "#ff3860", "#00b4d8", "#9999cc"},
+	Special:      SpecialTokens{"#666688", "#2a1533", "#ffc107"},
 	LogoGradient: [5]string{"#ff2975", "#b026ff", "#00fff5", "#05ffa1", "#ff2975"},
 }
 
@@ -116,3 +116,12 @@ const MinHeight = 24
 // PanelTreeRatio é a proporção nominal do painel de navegação esquerdo em modos de dois painéis.
 // O painel direito (detalhe) ocupa o restante. A implementação pode ajustar ±5%.
 const PanelTreeRatio = 0.35
+
+// HeaderHeight é a altura em linhas da região de cabeçalho da tela principal.
+const HeaderHeight = 2
+
+// MessageHeight é a altura em linhas da barra de mensagens de status.
+const MessageHeight = 1
+
+// ActionHeight é a altura em linhas da barra de ações do contexto atual.
+const ActionHeight = 1

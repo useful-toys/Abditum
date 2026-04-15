@@ -28,3 +28,20 @@ func TestLayoutConstants(t *testing.T) {
 		t.Errorf("PanelTreeRatio = %v, want %v", PanelTreeRatio, wantRatio)
 	}
 }
+
+func TestLayoutHeightConstants(t *testing.T) {
+	if HeaderHeight != 2 {
+		t.Errorf("HeaderHeight = %d, want 2", HeaderHeight)
+	}
+	if MessageHeight != 1 {
+		t.Errorf("MessageHeight = %d, want 1", MessageHeight)
+	}
+	if ActionHeight != 1 {
+		t.Errorf("ActionHeight = %d, want 1", ActionHeight)
+	}
+	// Verificação de sanidade: a soma deve ser menor que MinHeight
+	fixed := HeaderHeight + MessageHeight + ActionHeight
+	if fixed >= MinHeight {
+		t.Errorf("soma das regiões fixas %d >= MinHeight %d, não sobraria espaço para work area", fixed, MinHeight)
+	}
+}
