@@ -11,6 +11,7 @@ type ActionGroup struct {
 	ID          string // identificador único do grupo
 	Label       string // cabeçalho exibido no modal de ajuda
 	Description string // texto descritivo do grupo
+	Order       int    // ordem de exibição no modal de ajuda; menor valor aparece primeiro
 }
 
 // Action associa teclas a um comportamento da aplicação.
