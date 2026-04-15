@@ -58,19 +58,14 @@ func (r *RootModel) Manager() *vault.Manager {
 	return r.vaultManager
 }
 
-// toggleTheme alterna o tema ativo entre TokyoNight e Cyberpunk.
-func (r *RootModel) toggleTheme() {
+// ToggleTheme alterna o tema ativo entre TokyoNight e Cyberpunk.
+// Exportada para uso pelo package actions.
+func (r *RootModel) ToggleTheme() {
 	if r.theme == design.TokyoNight {
 		r.theme = design.Cyberpunk
 	} else {
 		r.theme = design.TokyoNight
 	}
-}
-
-// ToggleTheme alterna o tema ativo entre TokyoNight e Cyberpunk.
-// Exportada para uso pelo package actions.
-func (r *RootModel) ToggleTheme() {
-	r.toggleTheme()
 }
 
 // ActiveViewActions retorna todas as actions aplicáveis ao contexto da view ativa.
