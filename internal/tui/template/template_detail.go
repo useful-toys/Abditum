@@ -3,20 +3,20 @@ package template
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/useful-toys/abditum/internal/tui"
 	"github.com/useful-toys/abditum/internal/tui/design"
+	"github.com/useful-toys/abditum/internal/vault"
 )
 
-// DetailView exibe os detalhes e campos de um template de segredo selecionado.
-type DetailView struct{}
+// TemplateDetailView exibe os detalhes e campos de um template de segredo selecionado.
+type TemplateDetailView struct{}
 
-// NewDetailView cria uma nova instância do painel de detalhes de template.
-func NewDetailView() *DetailView {
-	return &DetailView{}
+// NewTemplateDetailView cria uma nova instância do painel de detalhes de template.
+func NewTemplateDetailView(vm *vault.Manager) *TemplateDetailView {
+	return &TemplateDetailView{}
 }
 
 // Render retorna os detalhes do template selecionado pelas dimensões fornecidas com o tema ativo.
-func (v *DetailView) Render(height, width int, theme *design.Theme) string {
+func (v *TemplateDetailView) Render(height, width int, theme *design.Theme) string {
 	content := "Template Detail"
 	style := lipgloss.NewStyle().
 		Width(width).
@@ -27,16 +27,16 @@ func (v *DetailView) Render(height, width int, theme *design.Theme) string {
 }
 
 // HandleKey não processa teclas nesta view.
-func (v *DetailView) HandleKey(msg tea.KeyMsg) tea.Cmd { return nil }
+func (v *TemplateDetailView) HandleKey(msg tea.KeyMsg) tea.Cmd { return nil }
 
 // HandleEvent não processa eventos externos nesta view.
-func (v *DetailView) HandleEvent(event any) {}
+func (v *TemplateDetailView) HandleEvent(event any) {}
 
 // HandleTeaMsg não processa mensagens do framework nesta view.
-func (v *DetailView) HandleTeaMsg(msg tea.Msg) tea.Cmd { return nil }
+func (v *TemplateDetailView) HandleTeaMsg(msg tea.Msg) tea.Cmd { return nil }
 
 // Update não altera o estado desta view em resposta a mensagens.
-func (v *DetailView) Update(msg tea.Msg) tea.Cmd { return nil }
+func (v *TemplateDetailView) Update(msg tea.Msg) tea.Cmd { return nil }
 
-// Actions retorna nil — DetailView não possui actions próprias nesta sprint.
-func (v *DetailView) Actions() []tui.Action { return nil }
+// Actions retorna nil — TemplateDetailView não possui actions próprias nesta sprint.
+func (v *TemplateDetailView) Actions() []interface{} { return nil }

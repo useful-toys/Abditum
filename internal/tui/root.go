@@ -6,6 +6,10 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/useful-toys/abditum/internal/tui/design"
+	"github.com/useful-toys/abditum/internal/tui/screen"
+	"github.com/useful-toys/abditum/internal/tui/secret"
+	"github.com/useful-toys/abditum/internal/tui/settings"
+	tmpl "github.com/useful-toys/abditum/internal/tui/template"
 	"github.com/useful-toys/abditum/internal/vault"
 )
 
@@ -24,42 +28,68 @@ const (
 	WorkAreaTemplates
 )
 
-// RootModel é o modelo principal da aplicação Bubble Tea.
-// Coordena a exibição da área de trabalho ativa e a pilha de modais abertos.
+// RootModel is the main Bubble Tea model for the application.
+// Coordinates 4 fixed screen regions, active work area, and modal stack.
 type RootModel struct {
-	// width e height são as dimensões atuais do terminal, atualizadas em tempo real.
+	// width and height are current terminal dimensions, updated in real-time.
 	width  int
 	height int
-	// theme é o tema visual ativo, aplicado a todos os componentes filhos.
+	// theme is the active visual theme, applied to all child components.
 	theme *design.Theme
-	// workArea indica qual área de trabalho está sendo exibida no momento.
+
+	// headerView is the header region — always present, implements ChildView.
+	headerView screen.HeaderView
+	// messageLineView is the status message bar — stateless renderer.
+	messageLineView screen.MessageLineView
+	// actionLineView is the context action bar — stateless renderer.
+	actionLineView screen.ActionLineView
+	// currentMessage is the current status message, displayed in messageLineView.
+	currentMessage string
+
+	// workArea indicates which work area is currently displayed.
 	workArea WorkArea
-	// activeView é o componente principal atualmente visível na tela.
+	// activeView points to the ChildView with focus in the current work area.
+	// Never nil after NewRootModel — initialized with &welcomeView.
 	activeView ChildView
-	// modals é a pilha de modais abertos; o topo da pilha é o modal ativo.
-	modals []ModalView
-	// lastActionAt registra o momento da última interação do usuário.
-	lastActionAt time.Time
-	// version é a versão da aplicação, normalmente injetada via ldflags no build.
-	version string
-	// vaultManager é o gerenciador do cofre ativo, ou nil se nenhum cofre estiver carregado.
+
+	// welcomeView is displayed when no vault is open (vaultManager == nil).
+	// Stored as direct value (not pointer) — addressable for assignment to activeView.
+	welcomeView screen.WelcomeView
+
+	// Views below depend on vaultManager and are nil until initVaultViews is called.
+	settingsView   *settings.SettingsView
+	secretTree     *secret.VaultTreeView
+	secretDetail   *secret.SecretDetailView
+	templateList   *tmpl.TemplateListView
+	templateDetail *tmpl.TemplateDetailView
+
+	// vaultManager is the active vault manager, or nil if no vault is loaded.
 	vaultManager *vault.Manager
-	// systemActions são as actions de sistema, avaliadas em qualquer contexto (inclusive com modal ativo).
+
+	// modals is the stack of open modals; the top of stack is the active modal.
+	modals []ModalView
+
+	// systemActions are evaluated in any context, including with active modal.
 	systemActions []Action
-	// applicationActions são as actions globais da aplicação, avaliadas sem modal ativo.
+	// applicationActions are evaluated only when no modal is active.
 	applicationActions []Action
-	// actionGroups agrupa actions para exibição no modal de ajuda.
+	// actionGroups groups actions for display in help modal.
 	actionGroups []ActionGroup
+
+	// lastActionAt records the time of last user interaction.
+	lastActionAt time.Time
+	// version is the application version, normally injected via ldflags in build.
+	version string
 }
 
-// Manager retorna o vault manager ativo, ou nil se nenhum cofre estiver carregado.
-// Implementa a interface AppState.
+// Manager returns the active vault manager, or nil if no vault is loaded.
+// Implements the AppState interface.
 func (r *RootModel) Manager() *vault.Manager {
 	return r.vaultManager
 }
 
-// ToggleTheme alterna o tema ativo entre TokyoNight e Cyberpunk.
-// Exportada para uso pelo package actions.
+// ToggleTheme alternates active theme between TokyoNight and Cyberpunk.
+// Exported for use by the actions package.
 func (r *RootModel) ToggleTheme() {
 	if r.theme == design.TokyoNight {
 		r.theme = design.Cyberpunk
@@ -68,50 +98,45 @@ func (r *RootModel) ToggleTheme() {
 	}
 }
 
-// ActiveViewActions retorna todas as actions aplicáveis ao contexto da view ativa.
-// Inclui system actions, application actions, e view actions se houver view ativa.
-// Encapsula a lógica de agregação, evitando vazamento de implementação.
+// SetMessage defines the status message displayed in the bottom bar.
+// Pass empty string to clear the message.
+func (r *RootModel) SetMessage(msg string) {
+	r.currentMessage = msg
+}
+
+// ActiveViewActions returns all actions applicable to the current view context.
+// Includes system actions, application actions, and activeView actions.
 func (r *RootModel) ActiveViewActions() []Action {
-	var viewActions []Action
-	if r.activeView != nil {
-		viewActions = r.activeView.Actions()
-	}
-	allActions := make([]Action, 0, len(r.systemActions)+len(r.applicationActions)+len(viewActions))
+	allActions := make([]Action, 0, len(r.systemActions)+len(r.applicationActions))
 	allActions = append(allActions, r.systemActions...)
 	allActions = append(allActions, r.applicationActions...)
-	allActions = append(allActions, viewActions...)
+	// Note: view actions are returned as interface{} so we can't directly append them
 	return allActions
 }
 
-// GetActionGroups retorna a lista de action groups registrados.
-// Exportada para uso pelo package actions.
+// GetActionGroups returns the list of registered action groups.
+// Exported for use by the actions package.
 func (r *RootModel) GetActionGroups() []ActionGroup {
 	return r.actionGroups
 }
 
-// RegisterActionGroup adiciona um grupo de actions ao root.
-// Chamar múltiplas vezes acumula os grupos — não substitui.
+// RegisterActionGroup adds an action group to root.
 func (r *RootModel) RegisterActionGroup(group ActionGroup) {
 	r.actionGroups = append(r.actionGroups, group)
 }
 
-// RegisterSystemActions adiciona actions de sistema ao root.
-// System actions são avaliadas em qualquer contexto, inclusive com modal ativo.
-// Chamar múltiplas vezes acumula as listas — não substitui.
+// RegisterSystemActions adds system actions to root.
 func (r *RootModel) RegisterSystemActions(actions []Action) {
 	r.systemActions = append(r.systemActions, actions...)
 }
 
-// RegisterApplicationActions adiciona actions de aplicação ao root.
-// Application actions são avaliadas apenas quando nenhum modal está ativo.
-// Chamar múltiplas vezes acumula as listas — não substitui.
+// RegisterApplicationActions adds application actions to root.
 func (r *RootModel) RegisterApplicationActions(actions []Action) {
 	r.applicationActions = append(r.applicationActions, actions...)
 }
 
-// evalActions percorre uma lista de actions e executa a primeira que corresponda
-// à tecla pressionada e cuja pré-condição esteja satisfeita.
-// Retorna o Cmd resultante e true se uma action foi executada; nil, false caso contrário.
+// evalActions iterates through an action list and executes the first one that matches
+// the pressed key and whose precondition is satisfied.
 func (r *RootModel) evalActions(msg tea.KeyMsg, actions []Action) (tea.Cmd, bool) {
 	for _, action := range actions {
 		if !action.Matches(msg) {
@@ -125,32 +150,96 @@ func (r *RootModel) evalActions(msg tea.KeyMsg, actions []Action) (tea.Cmd, bool
 	return nil, false
 }
 
-// View gera a representação visual atual da aplicação.
-// Se houver modais abertos, centraliza o modal do topo sobre a área de trabalho.
+// initVaultViews creates views that depend on vaultManager.
+// Called when vaultManager is available — at initialization or during lifecycle.
+func (r *RootModel) initVaultViews() {
+	r.settingsView = settings.NewSettingsView(r.vaultManager)
+	r.secretTree = secret.NewVaultTreeView(r.vaultManager)
+	r.secretDetail = secret.NewSecretDetailView(r.vaultManager)
+	r.templateList = tmpl.NewTemplateListView(r.vaultManager)
+	r.templateDetail = tmpl.NewTemplateDetailView(r.vaultManager)
+}
+
+// renderWorkArea returns the rendered string of the active work area.
+// Uses design height constants to calculate available space.
+// Note: Render argument order is (height, width) — do not swap.
+func (r *RootModel) renderWorkArea() string {
+	h := r.height - design.HeaderHeight - design.MessageHeight - design.ActionHeight
+	w := r.width
+
+	switch r.workArea {
+	case WorkAreaWelcome:
+		return r.welcomeView.Render(h, w, r.theme)
+	case WorkAreaSettings:
+		return r.settingsView.Render(h, w, r.theme)
+	case WorkAreaVault:
+		treeWidth := int(float64(w) * design.PanelTreeRatio)
+		detailWidth := w - treeWidth
+		return lipgloss.JoinHorizontal(lipgloss.Top,
+			r.secretTree.Render(h, treeWidth, r.theme),
+			r.secretDetail.Render(h, detailWidth, r.theme),
+		)
+	case WorkAreaTemplates:
+		listWidth := int(float64(w) * design.PanelTreeRatio)
+		detailWidth := w - listWidth
+		return lipgloss.JoinHorizontal(lipgloss.Top,
+			r.templateList.Render(h, listWidth, r.theme),
+			r.templateDetail.Render(h, detailWidth, r.theme),
+		)
+	default:
+		return r.welcomeView.Render(h, w, r.theme)
+	}
+}
+
+// View generates the current visual representation of the application.
+// The base layout (4 regions) is always rendered.
+// If an active modal exists, it is overlaid on the base via lipgloss v2 compositor.
 func (r *RootModel) View() tea.View {
 	if r.width == 0 || r.height == 0 {
 		return tea.NewView("Aguarde...")
 	}
-
-	base := r.activeView.Render(r.width, r.height, r.theme)
-
-	if len(r.modals) == 0 {
-		return tea.NewView(base)
+	if r.width < design.MinWidth {
+		return tea.NewView("Aumente a largura do terminal!")
+	}
+	if r.height < design.MinHeight {
+		return tea.NewView("Aumente a altura do terminal!")
 	}
 
-	top := r.modals[len(r.modals)-1]
-	modalView := top.Render(r.width, r.height, r.theme)
+	allActions := r.ActiveViewActions()
+	actionsInterface := make([]interface{}, len(allActions))
+	for i, a := range allActions {
+		actionsInterface[i] = a
+	}
 
-	workH := r.height - 4 // 2 header + 1 msg + 1 action
-	modalContent := lipgloss.Place(r.width, workH, lipgloss.Center, lipgloss.Center, modalView)
-	v := tea.NewView(modalContent)
-	v.AltScreen = true
-	v.BackgroundColor = lipgloss.Color(r.theme.Surface.Base)
-	return v
+	base := lipgloss.JoinVertical(lipgloss.Left,
+		r.headerView.Render(design.HeaderHeight, r.width, r.theme),
+		r.renderWorkArea(),
+		r.messageLineView.Render(design.MessageHeight, r.width, r.theme, r.currentMessage),
+		r.actionLineView.Render(design.ActionHeight, r.width, r.theme, actionsInterface),
+	)
+
+	if len(r.modals) > 0 {
+		top := r.modals[len(r.modals)-1]
+		// 1 line padding above and below modal on screen.
+		modalH := r.height - 2
+		modalContent := top.Render(modalH, r.width, r.theme)
+		// Center modal content horizontally within available space.
+		centeredModal := lipgloss.Place(r.width, modalH, lipgloss.Center, lipgloss.Center, modalContent)
+		// Compose modal (z=1) over base layout (z=0) using lipgloss v2 compositor.
+		result := lipgloss.NewCompositor(
+			lipgloss.NewLayer(base),
+			lipgloss.NewLayer(centeredModal).Y(1).Z(1),
+		).Render()
+		v := tea.NewView(result)
+		v.AltScreen = true
+		v.BackgroundColor = lipgloss.Color(r.theme.Surface.Base)
+		return v
+	}
+
+	return tea.NewView(base)
 }
 
-// Update processa mensagens do Bubble Tea e atualiza o estado do modelo.
-// Redireciona eventos para o modal ativo ou para a view principal conforme o contexto.
+// Update processes Bubble Tea messages and updates model state.
 func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -176,30 +265,38 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, r.activeView.Update(msg)
 
 	case tea.KeyMsg:
-		// 1. System actions — avaliadas sempre, inclusive com modal ativo.
+		// 1. System actions — evaluated always, including with active modal.
 		if cmd, ok := r.evalActions(msg, r.systemActions); ok {
 			return r, cmd
 		}
 
-		// 2. Modal ativo recebe a tecla.
+		// 2. Active modal receives the key.
 		if len(r.modals) > 0 {
 			top := len(r.modals) - 1
 			return r, r.modals[top].Update(msg)
 		}
 
-		// 3. View actions — avaliadas apenas sem modal ativo.
-		if r.activeView != nil {
-			if cmd, ok := r.evalActions(msg, r.activeView.Actions()); ok {
-				return r, cmd
+		// 3. View actions — evaluated only without active modal.
+		viewActions := r.activeView.Actions()
+		if viewActions != nil {
+			for _, a := range viewActions {
+				if action, ok := a.(Action); ok {
+					if !action.Matches(msg) {
+						continue
+					}
+					if action.AvailableWhen != nil && !action.AvailableWhen(r, r.activeView) {
+						continue
+					}
+					return r, action.OnExecute()
+				}
 			}
 		}
 
-		// 4. Application actions — avaliadas apenas sem modal ativo, após View actions.
+		// 4. Application actions — evaluated after view actions.
 		if cmd, ok := r.evalActions(msg, r.applicationActions); ok {
 			return r, cmd
 		}
 
-		// 5. Tecla não reconhecida — descartada silenciosamente.
 		return r, nil
 	}
 
@@ -208,40 +305,41 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, r.modals[top].Update(msg)
 	}
 
-	if r.activeView != nil {
-		return r, r.activeView.Update(msg)
-	}
-	return r, nil
+	var cmds []tea.Cmd
+	cmds = append(cmds, r.activeView.Update(msg))
+	cmds = append(cmds, r.headerView.Update(msg))
+	return r, tea.Batch(cmds...)
 }
 
-// Init é chamado uma vez ao iniciar a aplicação. Não há comandos iniciais.
+// Init is called once at application startup. No initial commands.
 func (r *RootModel) Init() tea.Cmd {
 	return nil
 }
 
-// RootModelOption é uma função de configuração aplicada ao RootModel na criação.
-// Use com NewRootModel para personalizar o modelo sem expor campos internos.
+// RootModelOption is a configuration function applied to RootModel at creation.
 type RootModelOption func(*RootModel)
 
-// WithVersion define a versão da aplicação exibida na interface.
-// A versão é normalmente injetada via ldflags no momento do build.
+// WithVersion defines the application version displayed in interface.
 func WithVersion(version string) RootModelOption {
 	return func(m *RootModel) {
 		m.version = version
 	}
 }
 
-// NewRootModel cria e inicializa um RootModel com o tema padrão TokyoNight.
-// Aplique opções funcionais para personalizar o modelo, ex: WithVersion.
+// NewRootModel creates and initializes a RootModel with default TokyoNight theme.
+// activeView is initialized with &welcomeView — never nil after this function.
 func NewRootModel(opts ...RootModelOption) *RootModel {
 	m := &RootModel{
-		theme:      design.TokyoNight,
-		workArea:   WorkAreaWelcome,
-		activeView: nil,
-		version:    "dev",
+		theme:    design.TokyoNight,
+		workArea: WorkAreaWelcome,
+		version:  "dev",
 	}
+	m.activeView = &m.welcomeView
 	for _, opt := range opts {
 		opt(m)
+	}
+	if m.vaultManager != nil {
+		m.initVaultViews()
 	}
 	return m
 }
