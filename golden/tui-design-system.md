@@ -101,7 +101,7 @@ A paleta é organizada por **papel funcional** — cada papel define *para que* 
 | Categoria | Papel | Uso | Tokyo Night | Cyberpunk |
 |---|---|---|---|---|
 | **Superfícies** | `surface.base` | Cor de fundo da tela inteira | `#1a1b26` <span style="background:#1a1b26;color:#1a1b26">██</span> | `#0a0a1a` <span style="background:#0a0a1a;color:#0a0a1a">██</span> |
-| | `surface.raised` | Fundo dos painéis laterais e das janelas que abrem sobre a tela | `#24283b` <span style="background:#24283b;color:#24283b">██</span> | `#1a1a2e` <span style="background:#1a1a2e;color:#1a1a2e">██</span> |
+| | `surface.raised` | Fundo dos painéis laterais e das janelas que abrem sobre a tela, incluindo todos os diálogos modais | `#24283b` <span style="background:#24283b;color:#24283b">██</span> | `#1a1a2e` <span style="background:#1a1a2e;color:#1a1a2e">██</span> |
 | | `surface.input` | Fundo dos campos de texto dentro de diálogos — tom rebaixado que delimita a área digitável | `#1e1f2e` <span style="background:#1e1f2e;color:#1e1f2e">██</span> | `#0e0e22` <span style="background:#0e0e22;color:#0e0e22">██</span> |
 | **Texto** | `text.primary` | Texto normal — nomes de segredos, títulos de campos, conteúdo legível | `#a9b1d6` <span style="color:#a9b1d6">██</span> | `#e0e0ff` <span style="color:#e0e0ff">██</span> |
 | | `text.secondary` | Texto de apoio — descrições de segredos, texto dentro de campos vazios, atalhos na barra inferior | `#565f89` <span style="color:#565f89">██</span> | `#8888aa` <span style="color:#8888aa">██</span> |
@@ -300,6 +300,8 @@ Estados visuais definem como o mesmo elemento muda de aparência conforme o cont
 ## Diálogos
 
 Diálogos são janelas sobrepostas modais que capturam o foco para uma interação isolada. A área de trabalho permanece visível porém inativa — sem escurecimento de overlay. Os diálogos operam em pilha: apenas o topo recebe input; ao fechar, o foco retorna ao elemento anterior.
+
+**Fundo:** todos os diálogos usam `surface.raised` como cor de fundo de todas as linhas do corpo (bordas laterais e conteúdo). Isso os distingue visualmente da `surface.base` da tela por trás.
 
 A aplicação utiliza quatro tipos — Notificação, Confirmação, Ajuda e Funcional. A anatomia comum (borda superior com título, corpo, borda de ações com até 3 ações), o dimensionamento, o sistema de scroll, a identidade visual, a severidade e as convenções de teclado de diálogos são especificados em [Especificação Visual — Diálogos](tui-spec-dialogos.md#diálogos). O contrato de cada tipo e as instâncias concretas também residem na especificação:
 
