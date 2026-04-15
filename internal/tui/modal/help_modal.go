@@ -52,11 +52,3 @@ func (m *HelpModal) Update(msg tea.Msg) tea.Cmd {
 	}
 	return nil
 }
-
-// init registers the HelpModal factory to break circular imports.
-// This allows the tui package to create HelpModals without directly importing modal.
-func init() {
-	tui.RegisterHelpModalFactory(func(actions []tui.Action, groups []tui.ActionGroup) tui.ModalView {
-		return NewHelpModal(actions, groups)
-	})
-}

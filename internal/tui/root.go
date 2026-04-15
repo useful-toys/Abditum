@@ -67,6 +67,36 @@ func (r *RootModel) toggleTheme() {
 	}
 }
 
+// ToggleTheme alterna o tema ativo entre TokyoNight e Cyberpunk.
+// Exportada para uso pelo package actions.
+func (r *RootModel) ToggleTheme() {
+	r.toggleTheme()
+}
+
+// GetSystemActions retorna a lista de system actions registradas.
+// Exportada para uso pelo package actions.
+func (r *RootModel) GetSystemActions() []Action {
+	return r.systemActions
+}
+
+// GetApplicationActions retorna a lista de application actions registradas.
+// Exportada para uso pelo package actions.
+func (r *RootModel) GetApplicationActions() []Action {
+	return r.applicationActions
+}
+
+// GetActionGroups retorna a lista de action groups registrados.
+// Exportada para uso pelo package actions.
+func (r *RootModel) GetActionGroups() []ActionGroup {
+	return r.actionGroups
+}
+
+// GetActiveView retorna a view ativa atualmente.
+// Exportada para uso pelo package actions.
+func (r *RootModel) GetActiveView() ChildView {
+	return r.activeView
+}
+
 // RegisterActionGroup adiciona um grupo de actions ao root.
 // Chamar múltiplas vezes acumula os grupos — não substitui.
 func (r *RootModel) RegisterActionGroup(group ActionGroup) {

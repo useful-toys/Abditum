@@ -41,10 +41,3 @@ func OpenModal(modal ModalView) tea.Cmd {
 func CloseModal() tea.Cmd {
 	return func() tea.Msg { return CloseModalMsg{} }
 }
-
-// RegisterHelpModalFactory registers a factory function for creating HelpModals.
-// This allows the modal package to initialize the factory without creating a circular import.
-// Call this from the modal package's init() function.
-func RegisterHelpModalFactory(factory func([]Action, []ActionGroup) ModalView) {
-	helpModalFactory = factory
-}

@@ -12,6 +12,7 @@ import (
 	"github.com/atotto/clipboard"
 
 	"github.com/useful-toys/abditum/internal/tui"
+	"github.com/useful-toys/abditum/internal/tui/actions"
 )
 
 // version is injected at build time via -ldflags "-X main.version=$(git describe --tags --always)"
@@ -36,6 +37,8 @@ func run() error {
 	defer clipboard.WriteAll("") //nolint:errcheck
 
 	root := tui.NewRootModel(tui.WithVersion(version))
+	// Setup all actions (system and application)
+	actions.Setup(root)
 	p := tea.NewProgram(root, tea.WithContext(ctx))
 	_, err := p.Run()
 	return err
