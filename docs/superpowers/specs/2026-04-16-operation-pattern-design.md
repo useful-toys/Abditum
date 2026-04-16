@@ -102,20 +102,51 @@ case OperationCompletedMsg:
 
 case VaultOpenedMsg:
     r.setVaultManager(msg.Manager)
-    return r, screen.ChangeWorkArea(design.WorkAreaVault)
+    r.setWorkArea(design.WorkAreaVault)  // chamada direta — setWorkArea já existe em root.go
+    return r, nil
 
 case SecretExportedMsg:
     return r, nil
 ```
 
-**Roteamento genérico** — adicionado ao bloco de roteamento final (após o switch):
+**Roteamento genérico** — substitui o bloco final do `Update` (após o switch):
+
 ```go
-if r.activeOperation != nil {
-    cmds = append(cmds, r.activeOperation.Update(msg))
+// Antes (sem Operation):
+if len(r.modals) > 0 {
+    return r, r.modals[top].Update(msg)
 }
+var cmds []tea.Cmd
+cmds = append(cmds, r.activeView.Update(msg))
+cmds = append(cmds, r.headerView.Update(msg))
+return r, tea.Batch(cmds...)
+
+// Depois (com Operation):
+var cmds []tea.Cmd
+
+// Rota para activeOperation ANTES da bifurcação modal/view.
+// tea.Batch não garante ordem: mensagens privadas da operação (ex: fakeConfirmedMsg)
+// podem chegar antes de CloseModalMsg no mesmo Batch. Se esperarmos o modal sair
+// da pilha para rotear, a operação nunca receberia essas mensagens.
+if r.activeOperation != nil {
+    if cmd := r.activeOperation.Update(msg); cmd != nil {
+        cmds = append(cmds, cmd)
+    }
+}
+
+if len(r.modals) > 0 {
+    top := len(r.modals) - 1
+    cmds = append(cmds, r.modals[top].Update(msg))
+} else {
+    cmds = append(cmds, r.activeView.Update(msg))
+    cmds = append(cmds, r.headerView.Update(msg))
+}
+return r, tea.Batch(cmds...)
 ```
 
 Mensagens tratadas no `switch` com `return r, nil` (como `OperationCompletedMsg`) nunca chegam ao roteamento genérico — o `return` antecipado as consome. Isso é intencional: a operação não precisa processar sua própria mensagem de conclusão.
+
+`ModalReadyMsg` atualmente vai para `activeView`. Para FakeOperation (e qualquer operação que usa action closures para resultados de modal) isso não importa — a operação não usa `ModalReadyMsg`. Operações futuras que precisem desse mecanismo devem incluir roteamento adicional de `ModalReadyMsg` para `activeOperation`.
 
 Root não contém nenhuma lógica específica de operação além de tratar as mensagens terminais que já lhe pertencem.
 
@@ -146,10 +177,12 @@ Ação pressionada → OnExecute (em setup.go) retorna StartOperation(op)
 
 **Novos arquivos:**
 
-| Arquivo | Conteúdo |
-|---|---|
-| `internal/tui/operation.go` | Interface `Operation`, mensagens, helpers |
-| `internal/tui/operation/fake_operation.go` | `FakeOperation` para validação do padrão |
+| Arquivo | Pacote | Conteúdo |
+|---|---|---|
+| `internal/tui/operation.go` | `tui` | Interface `Operation`, mensagens, helpers |
+| `internal/tui/operation/fake_operation.go` | `operation` | `FakeOperation` para validação do padrão |
+
+> Nota: `internal/tui/operation.go` é um **arquivo** dentro do pacote `tui`, não o subpacote. O subpacote `tui/operation` (diretório) contém as implementações concretas.
 
 **Arquivos modificados:**
 
@@ -165,6 +198,34 @@ Propósito: validar o padrão Operation de ponta a ponta sem lógica de negócio
 **Estados:** `awaitingConfirmation` → `executing`
 
 **Modais utilizados:** apenas `modal.ConfirmModal` (já implementado). Nenhum modal novo necessário.
+
+**Construtor:**
+
+```go
+// NewFakeOperation cria uma FakeOperation.
+// notifier é usado para reportar progresso na barra de mensagem.
+func NewFakeOperation(notifier tui.MessageController) *FakeOperation {
+    return &FakeOperation{notifier: notifier}
+}
+```
+
+**Como disparar no setup.go:**
+
+```go
+{
+    Keys:        []design.Key{design.Keys.F2},
+    Label:       "Operação Fake",
+    Description: "Demonstração do padrão Operation — confirmação + trabalho assíncrono.",
+    GroupID:     "app",
+    Priority:    99,
+    Visible:     true,
+    OnExecute: func() tea.Cmd {
+        return tui.StartOperation(operation.NewFakeOperation(r.MessageController()))
+    },
+},
+```
+
+`design.Keys.F2` foi escolhido por não estar em uso no projeto.
 
 **Fluxo:**
 
