@@ -61,7 +61,7 @@ func setupApplication(r *tui.RootModel) {
 			GroupID:     "app",
 			Priority:    20,
 			Visible:     true,
-			OnExecute:   func() tea.Cmd { return tui.QuitWithCleanup() },
+			OnExecute:   func() tea.Cmd { return tea.Quit },
 		},
 	})
 }

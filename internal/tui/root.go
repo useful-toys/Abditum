@@ -219,15 +219,24 @@ func (r *RootModel) renderWorkArea() string {
 // View generates the current visual representation of the application.
 // The base layout (4 regions) is always rendered.
 // If an active modal exists, it is overlaid on the base via lipgloss v2 compositor.
+// AltScreen is always enabled to isolate the TUI from the terminal scroll history.
 func (r *RootModel) View() tea.View {
+	// Guard views shown before the terminal size is known use AltScreen too,
+	// so the application never leaks content into the terminal scroll buffer.
+	makeView := func(content string) tea.View {
+		v := tea.NewView(content)
+		v.AltScreen = true
+		return v
+	}
+
 	if r.width == 0 || r.height == 0 {
-		return tea.NewView("Aguarde...")
+		return makeView("Aguarde...")
 	}
 	if r.width < design.MinWidth {
-		return tea.NewView("Aumente a largura do terminal!")
+		return makeView("Aumente a largura do terminal!")
 	}
 	if r.height < design.MinHeight {
-		return tea.NewView("Aumente a altura do terminal!")
+		return makeView("Aumente a altura do terminal!")
 	}
 
 	base := lipgloss.JoinVertical(lipgloss.Left,
@@ -255,7 +264,7 @@ func (r *RootModel) View() tea.View {
 		return v
 	}
 
-	return tea.NewView(base)
+	return makeView(base)
 }
 
 // Update processes Bubble Tea messages and updates model state.
