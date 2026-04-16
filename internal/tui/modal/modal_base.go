@@ -1,29 +1,29 @@
 package modal
 
-import tea "charm.land/bubbletea/v2"
+import (
+	tea "charm.land/bubbletea/v2"
+	"github.com/useful-toys/abditum/internal/tui/design"
+)
 
-// Intent classifica a intenção semântica de uma opção de modal.
-// Permite que o componente pai interprete o resultado sem inspecionar o label.
+// Intent classifies the semantic intention of a modal option.
 type Intent int
 
 const (
-	// IntentConfirm indica que a ação confirma a operação em andamento.
 	IntentConfirm Intent = iota
-	// IntentCancel indica que a ação cancela e retorna ao estado anterior.
 	IntentCancel
-	// IntentOther indica uma ação auxiliar sem intenção semântica predefinida.
 	IntentOther
 )
 
-// ModalOption representa uma ação disponível ao usuário dentro de um modal.
-// Cada opção é ativada por uma ou mais teclas de atalho.
+// ModalOption represents an action available to the user within a modal.
 type ModalOption struct {
-	// Keys lista as teclas que ativam esta opção, ex: []string{"Enter", "y"}.
-	Keys []string
-	// Label é o texto exibido ao usuário para descrever a ação.
+	// Keys lists the keys that activate this option.
+	// Keys[0].Label is displayed in the dialog footer.
+	// Other Keys are functional aliases (ex: Enter as alias for "S Overwrite").
+	Keys []design.Key
+	// Label is the text displayed to the user describing the action.
 	Label string
-	// Intent classifica a intenção semântica desta ação.
+	// Intent classifies the semantic intention of this action.
 	Intent Intent
-	// Action é a função executada quando a opção é escolhida pelo usuário.
+	// Action is the function executed when the option is chosen.
 	Action func() tea.Cmd
 }
