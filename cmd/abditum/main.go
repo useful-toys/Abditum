@@ -38,7 +38,10 @@ func run() error {
 	root := tui.NewRootModel(tui.WithVersion(version))
 	// Setup all actions (system and application)
 	setupActions(root)
-	p := tea.NewProgram(root, tea.WithContext(ctx))
+	// Enable alternate screen (cleaner TUI) and mouse support for interactive components
+	p := tea.NewProgram(root,
+		tea.WithContext(ctx),
+	)
 	_, err := p.Run()
 	return err
 }
