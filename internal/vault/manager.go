@@ -179,6 +179,12 @@ func (m *Manager) IsModified() bool {
 	return m.cofre.modificado
 }
 
+// FilePath retorna o caminho completo do arquivo do cofre.
+// Retorna "" se nenhum cofre estiver aberto (caminho não inicializado).
+func (m *Manager) FilePath() string {
+	return m.caminho
+}
+
 // AlterarConfiguracoes updates vault timer settings.
 // Per D-20: All timers are mandatory (must be > 0).
 // Returns ErrConfigInvalida if any timer is <= 0.
@@ -829,7 +835,7 @@ func (m *Manager) Buscar(consulta string) []*Segredo {
 	if m.bloqueado {
 		return nil
 	}
-	
+
 	return m.cofre.buscar(consulta)
 }
 
@@ -841,6 +847,6 @@ func (m *Manager) ListarFavoritos() []*Segredo {
 	if m.bloqueado {
 		return nil
 	}
-	
+
 	return m.cofre.listarFavoritos()
 }
