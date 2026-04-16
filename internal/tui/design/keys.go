@@ -38,8 +38,8 @@ const (
 // Keys contém as teclas simples pré-definidas, sem modificadores.
 // Para teclas com modificadores, use as funções WithCtrl, WithShift, WithAlt e Letter.
 var Keys = struct {
-	Enter, Esc, Tab, Del, Ins, Home, End, PgUp, PgDn    Key
-	F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12 Key
+	Enter, Esc, Tab, Del, Ins, Home, End, PgUp, PgDn, Up, Down Key
+	F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12          Key
 }{
 	Enter: Key{Label: "Enter", Code: tea.KeyEnter},
 	Esc:   Key{Label: "Esc", Code: tea.KeyEscape},
@@ -50,6 +50,8 @@ var Keys = struct {
 	End:   Key{Label: "End", Code: tea.KeyEnd},
 	PgUp:  Key{Label: "PgUp", Code: tea.KeyPgUp},
 	PgDn:  Key{Label: "PgDn", Code: tea.KeyPgDown},
+	Up:    Key{Label: "↑", Code: tea.KeyUp},
+	Down:  Key{Label: "↓", Code: tea.KeyDown},
 	F1:    Key{Label: "F1", Code: tea.KeyF1},
 	F2:    Key{Label: "F2", Code: tea.KeyF2},
 	F3:    Key{Label: "F3", Code: tea.KeyF3},
