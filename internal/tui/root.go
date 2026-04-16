@@ -14,21 +14,6 @@ import (
 	"github.com/useful-toys/abditum/internal/vault"
 )
 
-// WorkArea representa qual área de trabalho está ativa na tela principal.
-// É usada por RootModel para decidir qual ChildView exibir.
-type WorkArea int
-
-const (
-	// WorkAreaWelcome exibe a tela de boas-vindas, para usuários sem cofre aberto.
-	WorkAreaWelcome WorkArea = iota
-	// WorkAreaSettings exibe as configurações da aplicação.
-	WorkAreaSettings
-	// WorkAreaVault exibe a área de gerenciamento do cofre de segredos.
-	WorkAreaVault
-	// WorkAreaTemplates exibe a área de gerenciamento de templates de segredos.
-	WorkAreaTemplates
-)
-
 // RootModel is the main Bubble Tea model for the application.
 // Coordinates 4 fixed screen regions, active work area, and modal stack.
 type RootModel struct {
@@ -46,7 +31,7 @@ type RootModel struct {
 	actionLineView screen.ActionLineView
 
 	// workArea indicates which work area is currently displayed.
-	workArea WorkArea
+	workArea design.WorkArea
 	// activeView points to the ChildView with focus in the current work area.
 	// Never nil after NewRootModel — initialized with &welcomeView.
 	activeView ChildView
@@ -196,18 +181,18 @@ func (r *RootModel) renderWorkArea() string {
 	w := r.width
 
 	switch r.workArea {
-	case WorkAreaWelcome:
+	case design.WorkAreaWelcome:
 		return r.welcomeView.Render(h, w, r.theme)
-	case WorkAreaSettings:
+	case design.WorkAreaSettings:
 		return r.settingsView.Render(h, w, r.theme)
-	case WorkAreaVault:
+	case design.WorkAreaVault:
 		treeWidth := int(float64(w) * design.PanelTreeRatio)
 		detailWidth := w - treeWidth
 		return lipgloss.JoinHorizontal(lipgloss.Top,
 			r.secretTree.Render(h, treeWidth, r.theme),
 			r.secretDetail.Render(h, detailWidth, r.theme),
 		)
-	case WorkAreaTemplates:
+	case design.WorkAreaTemplates:
 		listWidth := int(float64(w) * design.PanelTreeRatio)
 		detailWidth := w - listWidth
 		return lipgloss.JoinHorizontal(lipgloss.Top,
@@ -356,7 +341,7 @@ func WithVersion(version string) RootModelOption {
 func NewRootModel(opts ...RootModelOption) *RootModel {
 	m := &RootModel{
 		theme:    design.TokyoNight,
-		workArea: WorkAreaWelcome,
+		workArea: design.WorkAreaWelcome,
 		version:  "dev",
 	}
 	m.activeView = &m.welcomeView
