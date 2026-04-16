@@ -171,6 +171,18 @@ func (r *RootModel) initVaultViews() {
 	r.secretDetail = secret.NewSecretDetailView(r.vaultManager)
 	r.templateList = tmpl.NewTemplateListView(r.vaultManager)
 	r.templateDetail = tmpl.NewTemplateDetailView(r.vaultManager)
+	r.headerView.SetVault(r.vaultManager)
+}
+
+// setVaultManager sets the active vault manager and synchronizes the header.
+// When vault is set, initVaultViews is called. When vault is cleared (nil), header is notified.
+func (r *RootModel) setVaultManager(vm *vault.Manager) {
+	r.vaultManager = vm
+	if vm != nil {
+		r.initVaultViews()
+	} else {
+		r.headerView.SetVault(nil)
+	}
 }
 
 // renderWorkArea returns the rendered string of the active work area.
@@ -264,6 +276,10 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return r, nil
 
+	case screen.WorkAreaChangedMsg:
+		r.setWorkArea(msg.Area)
+		return r, nil
+
 	case ModalReadyMsg:
 		if len(r.modals) > 1 {
 			parent := r.modals[len(r.modals)-2]
@@ -316,6 +332,13 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds = append(cmds, r.activeView.Update(msg))
 	cmds = append(cmds, r.headerView.Update(msg))
 	return r, tea.Batch(cmds...)
+}
+
+// setWorkArea troca a área de trabalho ativa e sincroniza o estado do cabeçalho.
+// Deve ser chamado sempre que a work area mudar — inclusive na abertura de cofre.
+func (r *RootModel) setWorkArea(area design.WorkArea) {
+	r.workArea = area
+	r.headerView.SetActiveMode(area)
 }
 
 // Init is called once at application startup.
