@@ -1,0 +1,5 @@
+╭─ Exclusão permanente de dados ───────────────────────────────────────────────╮
+│                                                                              │
+│  Esta ação irá remover permanentemente todos os dados associados à sua conta. Esta operação não pode ser desfeita e resultará em perda total de todos os seus arquivos, configurações e histórico.  │
+│                                                                              │
+╰─ Enter Confirmar ───────────────────────────────────────────── Esc Cancelar ─╯

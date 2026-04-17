@@ -332,10 +332,6 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return r, r.activeView.Update(msg)
 
-	case TickMsg:
-		// Animate the message bar spinner and decrement TTL.
-		return r, r.messageLineView.Update(msg)
-
 	case tea.KeyMsg:
 		// 1. System actions — evaluated always, including with active modal.
 		if cmd, ok := r.evalActions(msg, r.systemActions); ok {
@@ -381,6 +377,14 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	// TickMsg sempre vai para messageLineView para animar o spinner.
+	// Também re-agenda o timer — tea.Every dispara uma única vez e para.
+	// Sem re-agendar, o spinner animaria apenas uma vez e pararia.
+	if _, isTickMsg := msg.(TickMsg); isTickMsg {
+		r.messageLineView.Update(msg)
+		cmds = append(cmds, tickCmd())
+	}
+
 	if len(r.modals) > 0 {
 		top := len(r.modals) - 1
 		cmds = append(cmds, r.modals[top].Update(msg))
@@ -401,6 +405,12 @@ func (r *RootModel) setWorkArea(area design.WorkArea) {
 // Init is called once at application startup.
 // Returns a command that emits TickMsg every second for spinner animation and TTL decrement.
 func (r *RootModel) Init() tea.Cmd {
+	return tickCmd()
+}
+
+// tickCmd agenda um único TickMsg para daqui a 1 segundo.
+// Deve ser re-agendado a cada TickMsg recebido — tea.Every dispara apenas uma vez.
+func tickCmd() tea.Cmd {
 	return tea.Every(1*time.Second, func(time.Time) tea.Msg {
 		return TickMsg{}
 	})

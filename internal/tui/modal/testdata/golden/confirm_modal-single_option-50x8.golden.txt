@@ -1,0 +1,5 @@
+╭─ Confirmação ──────╮
+│                    │
+│  Tem certeza?      │
+│                    │
+╰───────── Enter OK ─╯

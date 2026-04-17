@@ -1,0 +1,5 @@
+╭─ ⚠  Limpar histórico ─────────────────────────────╮
+│                                                   │
+│  Tem certeza que deseja limpar todo o histórico?  │
+│                                                   │
+╰─ S Sim ─────────────────────────────────── N Não ─╯

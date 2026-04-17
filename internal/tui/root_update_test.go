@@ -127,3 +127,61 @@ func TestRootModel_VaultOpenedMsg_SetsManagerAndWorkArea(t *testing.T) {
 		t.Errorf("VaultOpenedMsg: workArea = %v, esperado WorkAreaVault", r.workArea)
 	}
 }
+
+func TestRootModel_TickMsg_ReachesMessageLineView(t *testing.T) {
+	r := NewRootModel()
+	r.messageLineView.SetBusy("test")
+	initialFrame := r.messageLineView.CurrentSpinnerFrame()
+
+	_, _ = r.Update(TickMsg{})
+
+	if r.messageLineView.CurrentSpinnerFrame() == initialFrame {
+		t.Error("TickMsg: SpinnerFrame não avançou — TickMsg não chegou ao messageLineView")
+	}
+}
+
+func TestRootModel_TickMsg_WithActiveOperation_SpinnerStillAnimates(t *testing.T) {
+	r := NewRootModel()
+	r.messageLineView.SetBusy("test")
+	initialFrame := r.messageLineView.CurrentSpinnerFrame()
+
+	// Criar uma operação stub
+	op := &stubOperation{}
+	r.activeOperation = op
+
+	_, _ = r.Update(TickMsg{})
+
+	// TickMsg deve chegar à operação (se ela processar TickMsg)
+	// MAS TAMBÉM deve continuar atualizando o spinner!
+	if r.messageLineView.CurrentSpinnerFrame() == initialFrame {
+		t.Error("TickMsg com operação ativa: SpinnerFrame não avançou — spinner deveria continuar animando")
+	}
+}
+
+// TestRootModel_TickMsg_ReturnsCmd verifica que Update(TickMsg) retorna um Cmd não-nil.
+// tea.Every() dispara apenas uma vez — sem re-agendar, o spinner para após o primeiro tick.
+func TestRootModel_TickMsg_ReturnsCmd(t *testing.T) {
+	r := NewRootModel()
+
+	_, cmd := r.Update(TickMsg{})
+
+	if cmd == nil {
+		t.Error("Update(TickMsg): retornou nil — ticker não será re-agendado e spinner para")
+	}
+}
+
+// TestRootModel_TickMsg_SpinnerCycles verifica que múltiplos ticks avançam o frame
+// na sequência correta: 0→1→2→3→0, confirmando que o re-agendamento funciona.
+func TestRootModel_TickMsg_SpinnerCycles(t *testing.T) {
+	r := NewRootModel()
+	r.messageLineView.SetBusy("test")
+
+	for tick := 1; tick <= 8; tick++ {
+		_, _ = r.Update(TickMsg{})
+		want := tick % 4
+		got := r.messageLineView.CurrentSpinnerFrame()
+		if got != want {
+			t.Errorf("após %d ticks: SpinnerFrame = %d, want %d", tick, got, want)
+		}
+	}
+}

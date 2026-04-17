@@ -25,6 +25,7 @@ func NewConfirmModal(title, message string, opts []ModalOption) *ConfirmModal {
 }
 
 // NewConfirmModalSeverity cria um ConfirmModal com severidade visual explícita.
+// Se há apenas 1 opção, ESC é adicionado automaticamente como alias para disparar a mesma ação.
 func NewConfirmModalSeverity(severity design.Severity, title, message string, opts []ModalOption) *ConfirmModal {
 	m := &ConfirmModal{
 		severity: severity,
@@ -32,6 +33,23 @@ func NewConfirmModalSeverity(severity design.Severity, title, message string, op
 		message:  message,
 		options:  opts,
 	}
+
+	// Quando há apenas 1 ação, adiciona ESC como alias para disparar a mesma ação.
+	if len(opts) == 1 && opts[0].Keys != nil {
+		// Verifica se ESC já não está na lista de teclas
+		hasEsc := false
+		for _, k := range opts[0].Keys {
+			if k.Code == design.Keys.Esc.Code && k.Mod == design.Keys.Esc.Mod {
+				hasEsc = true
+				break
+			}
+		}
+		// Se ESC ainda não está registrada, adiciona como alias
+		if !hasEsc {
+			opts[0].Keys = append(opts[0].Keys, design.Keys.Esc)
+		}
+	}
+
 	m.keys = KeyHandler{Options: opts}
 	return m
 }
