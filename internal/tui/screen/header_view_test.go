@@ -220,3 +220,75 @@ func TestHeader_SearchQueryLong(t *testing.T) {
 		}),
 	)
 }
+
+// TestHeader_SearchTemplatesEmpty testa busca com aba Modelos ativa e query vazia.
+func TestHeader_SearchTemplatesEmpty(t *testing.T) {
+	testdata.TestRenderManaged(t, "header", "search-templates-empty", goldenSizesComponent,
+		headerRenderFn(func(v *HeaderView) {
+			manager := newTestVault("meu_cofre.abditum")
+			v.SetVault(manager)
+			v.SetActiveMode(design.WorkAreaTemplates)
+			v.SetSearchQuery(ptr(""))
+		}),
+	)
+}
+
+// TestHeader_SearchTemplatesWithQuery testa busca com aba Modelos ativa e query.
+func TestHeader_SearchTemplatesWithQuery(t *testing.T) {
+	testdata.TestRenderManaged(t, "header", "search-templates-query", goldenSizesComponent,
+		headerRenderFn(func(v *HeaderView) {
+			manager := newTestVault("meu_cofre.abditum")
+			v.SetVault(manager)
+			v.SetActiveMode(design.WorkAreaTemplates)
+			v.SetSearchQuery(ptr("senha"))
+		}),
+	)
+}
+
+// TestHeader_SearchTemplatesLong testa busca com aba Modelos ativa e query longa.
+func TestHeader_SearchTemplatesLong(t *testing.T) {
+	testdata.TestRenderManaged(t, "header", "search-templates-long", goldenSizesComponent,
+		headerRenderFn(func(v *HeaderView) {
+			manager := newTestVault("meu_cofre.abditum")
+			v.SetVault(manager)
+			v.SetActiveMode(design.WorkAreaTemplates)
+			v.SetSearchQuery(ptr("um_termo_de_busca_muito_muito_muito_longo_para_o_espaco_disponivel"))
+		}),
+	)
+}
+
+// TestHeader_SearchConfigEmpty testa busca com aba Config ativa e query vazia.
+func TestHeader_SearchConfigEmpty(t *testing.T) {
+	testdata.TestRenderManaged(t, "header", "search-config-empty", goldenSizesComponent,
+		headerRenderFn(func(v *HeaderView) {
+			manager := newTestVault("meu_cofre.abditum")
+			v.SetVault(manager)
+			v.SetActiveMode(design.WorkAreaSettings)
+			v.SetSearchQuery(ptr(""))
+		}),
+	)
+}
+
+// TestHeader_SearchConfigWithQuery testa busca com aba Config ativa e query.
+func TestHeader_SearchConfigWithQuery(t *testing.T) {
+	testdata.TestRenderManaged(t, "header", "search-config-query", goldenSizesComponent,
+		headerRenderFn(func(v *HeaderView) {
+			manager := newTestVault("meu_cofre.abditum")
+			v.SetVault(manager)
+			v.SetActiveMode(design.WorkAreaSettings)
+			v.SetSearchQuery(ptr("senha"))
+		}),
+	)
+}
+
+// TestHeader_SearchConfigLong testa busca com aba Config ativa e query longa.
+func TestHeader_SearchConfigLong(t *testing.T) {
+	testdata.TestRenderManaged(t, "header", "search-config-long", goldenSizesComponent,
+		headerRenderFn(func(v *HeaderView) {
+			manager := newTestVault("meu_cofre.abditum")
+			v.SetVault(manager)
+			v.SetActiveMode(design.WorkAreaSettings)
+			v.SetSearchQuery(ptr("um_termo_de_busca_muito_muito_muito_longo_para_o_espaco_disponivel"))
+		}),
+	)
+}

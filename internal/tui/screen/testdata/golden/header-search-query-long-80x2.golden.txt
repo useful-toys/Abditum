@@ -1,2 +1,2 @@
   Abditum · meu_cofre                         ╭───────╮  ╭ Modelos ╮  ╭ Config ╮
- ─ Busca: …ito_longo_para_o_espaco_disponivel─╯ Cofre ╰─────────────────────────
+ ─ Busca: …to_longo_para_o_espaco_disponivel ─╯ Cofre ╰─────────────────────────

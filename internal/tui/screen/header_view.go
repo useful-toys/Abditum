@@ -327,8 +327,8 @@ func RenderSeparatorLine(
 	// Espaço entre prefixo da busca e início do connector
 	prefixToConnector := connectorStartCol - searchPrefixCols
 
-	//	query pode ocupar até prefixToConnector - 1 colunas (precisamos de pelo menos 1 borda antes do connector)
-	querySpaceAvailable := prefixToConnector - 1
+	// Query pode ocupar até prefixToConnector - 2 colunas (1 espaço mínimo + 1 borda mínima)
+	querySpaceAvailable := prefixToConnector - 2
 	if querySpaceAvailable < 1 {
 		querySpaceAvailable = 1
 	}
@@ -337,9 +337,10 @@ func RenderSeparatorLine(
 	queryRendered := queryStyle.Render(query)
 	queryWidth := lipgloss.Width(queryRendered)
 
-	// Prefixo da busca + query + preenchimento até connector
-	prefixQueryFill := searchPrefixRendered + queryRendered
-	searchToConnectorWidth := searchPrefixCols + queryWidth
+	// Prefix + query + 1 espaço + preenchimento até connector
+	const minSpaceAfterQuery = 1
+	prefixQueryFill := searchPrefixRendered + queryRendered + strings.Repeat(" ", minSpaceAfterQuery)
+	searchToConnectorWidth := searchPrefixCols + queryWidth + minSpaceAfterQuery
 	fillBetween := connectorStartCol - searchToConnectorWidth
 	if fillBetween < 1 {
 		fillBetween = 1
