@@ -254,7 +254,12 @@ func (r *RootModel) View() tea.View {
 		top := r.modals[len(r.modals)-1]
 		// 1 line padding above and below modal on screen.
 		modalH := r.height - 2
-		modalContent := top.Render(modalH, r.width, r.theme)
+		// Largura máxima do modal: até 95% da tela (spec de diálogos)
+		maxModalWidth := (r.width * 95) / 100
+		if maxModalWidth < 20 {
+			maxModalWidth = 20
+		}
+		modalContent := top.Render(modalH, maxModalWidth, r.theme)
 		// Center modal content horizontally within available space.
 		centeredModal := lipgloss.Place(r.width, modalH, lipgloss.Center, lipgloss.Center, modalContent)
 		// Compose modal (z=1) over base layout (z=0) using lipgloss v2 compositor.
