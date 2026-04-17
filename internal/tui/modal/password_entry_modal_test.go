@@ -31,7 +31,7 @@ func TestPasswordEntryModal_Empty(t *testing.T) {
 		func(_ []byte) tea.Cmd { return nil },
 		func() tea.Cmd { return nil },
 	)
-	testdata.TestRenderManaged(t, "password_entry", "empty", []string{"50x7"},
+	testdata.TestRenderManaged(t, "password_entry", "empty", []string{"50x6"},
 		func(w, h int, theme *design.Theme) string {
 			return m.Render(h, w, theme)
 		})
@@ -47,7 +47,7 @@ func TestPasswordEntryModal_WithContent(t *testing.T) {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
 		m.Update(msg)
 	}
-	testdata.TestRenderManaged(t, "password_entry", "with_content", []string{"50x7"},
+	testdata.TestRenderManaged(t, "password_entry", "with_content", []string{"50x6"},
 		func(w, h int, theme *design.Theme) string {
 			return m.Render(h, w, theme)
 		})

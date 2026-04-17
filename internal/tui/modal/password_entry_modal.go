@@ -59,8 +59,8 @@ func (m *PasswordEntryModal) Render(maxHeight, maxWidth int, theme *design.Theme
 	fieldRendered := m.field.Render(innerWidth, true, theme)
 
 	// Body: padding + campo + padding inferior
-	// Linha 0: vazia, Linha 1: label, Linha 2: área digitável, Linha 3: vazia, Linha 4: vazia
-	body := "\n" + fieldRendered + "\n\n"
+	// Linha 0: vazia, Linha 1: label, Linha 2: área digitável, Linha 3: vazia
+	body := "\n" + fieldRendered + "\n"
 
 	confirmColor := theme.Text.Disabled
 	if m.field.Len() > 0 {
@@ -144,7 +144,6 @@ func (m *PasswordEntryModal) Update(msg tea.Msg) tea.Cmd {
 //	Linha 1: label "Senha"
 //	Linha 2: área digitável  ← cursor aqui
 //	Linha 3: vazia
-//	Linha 4: vazia
 //
 // Fórmula:
 //
