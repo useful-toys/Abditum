@@ -1,0 +1,6 @@
+╭─ Operação ───────────────────────────────╮
+│                                          │
+│  Primeira linha de texto                 │
+│  Segunda linha de texto                  │
+│                                          │
+╰─ Enter Continuar ─────────── Esc Voltar ─╯

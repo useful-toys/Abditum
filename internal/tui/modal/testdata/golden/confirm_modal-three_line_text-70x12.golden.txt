@@ -1,0 +1,7 @@
+╭─ Confirmação ───────────────────────────╮
+│                                         │
+│  Primeira linha de informação           │
+│  Segunda linha com mais detalhes        │
+│  Terceira linha final                   │
+│                                         │
+╰─ Enter Prosseguir ─────────── Esc Sair ─╯

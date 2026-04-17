@@ -37,6 +37,234 @@ func TestConfirmModal_Destructive(t *testing.T) {
 		})
 }
 
+// Golden file tests for different option counts
+
+func TestConfirmModal_SingleOption(t *testing.T) {
+	opts := []modal.ModalOption{
+		{
+			Keys:   []design.Key{design.Keys.Enter},
+			Label:  "OK",
+			Intent: modal.IntentConfirm,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+	}
+	m := modal.NewConfirmModal("Confirmação", "Tem certeza?", opts)
+	testdata.TestRenderManaged(t, "confirm_modal", "single_option", []string{"50x8"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+func TestConfirmModal_ThreeOptions(t *testing.T) {
+	opts := []modal.ModalOption{
+		{
+			Keys:   []design.Key{design.Keys.Enter},
+			Label:  "Salvar",
+			Intent: modal.IntentConfirm,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+		{
+			Keys:   []design.Key{design.Keys.Tab},
+			Label:  "Descartar",
+			Intent: modal.IntentOther,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+		{
+			Keys:   []design.Key{design.Keys.Esc},
+			Label:  "Cancelar",
+			Intent: modal.IntentCancel,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+	}
+	m := modal.NewConfirmModal("Alterações pendentes", "Deseja salvar as alterações?", opts)
+	testdata.TestRenderManaged(t, "confirm_modal", "three_options", []string{"70x10"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+// Tests with custom keys (S Sim / N Não)
+
+func TestConfirmModal_CustomKeysSimNao(t *testing.T) {
+	opts := []modal.ModalOption{
+		{
+			Keys:   []design.Key{design.Letter('s')},
+			Label:  "Sim",
+			Intent: modal.IntentConfirm,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+		{
+			Keys:   []design.Key{design.Letter('n')},
+			Label:  "Não",
+			Intent: modal.IntentCancel,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+	}
+	m := modal.NewConfirmModalSeverity(design.SeverityAlert,
+		"Limpar histórico",
+		"Tem certeza que deseja limpar todo o histórico?",
+		opts,
+	)
+	testdata.TestRenderManaged(t, "confirm_modal", "custom_keys_sim_nao", []string{"60x10"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+// Tests with text length variations
+
+func TestConfirmModal_ShortText(t *testing.T) {
+	opts := []modal.ModalOption{
+		{
+			Keys:   []design.Key{design.Keys.Enter},
+			Label:  "OK",
+			Intent: modal.IntentConfirm,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+		{
+			Keys:   []design.Key{design.Keys.Esc},
+			Label:  "Cancelar",
+			Intent: modal.IntentCancel,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+	}
+	m := modal.NewConfirmModal("Aviso", "Continuar?", opts)
+	testdata.TestRenderManaged(t, "confirm_modal", "short_text", []string{"50x8"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+func TestConfirmModal_LongText(t *testing.T) {
+	opts := []modal.ModalOption{
+		{
+			Keys:   []design.Key{design.Keys.Enter},
+			Label:  "Confirmar",
+			Intent: modal.IntentConfirm,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+		{
+			Keys:   []design.Key{design.Keys.Esc},
+			Label:  "Cancelar",
+			Intent: modal.IntentCancel,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+	}
+	m := modal.NewConfirmModal(
+		"Exclusão permanente de dados",
+		"Esta ação irá remover permanentemente todos os dados associados à sua conta. Esta operação não pode ser desfeita e resultará em perda total de todos os seus arquivos, configurações e histórico.",
+		opts,
+	)
+	testdata.TestRenderManaged(t, "confirm_modal", "long_text", []string{"80x12"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+// Tests with multiline text
+
+func TestConfirmModal_TwoLineText(t *testing.T) {
+	opts := []modal.ModalOption{
+		{
+			Keys:   []design.Key{design.Keys.Enter},
+			Label:  "Continuar",
+			Intent: modal.IntentConfirm,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+		{
+			Keys:   []design.Key{design.Keys.Esc},
+			Label:  "Voltar",
+			Intent: modal.IntentCancel,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+	}
+	m := modal.NewConfirmModal(
+		"Operação",
+		"Primeira linha de texto\nSegunda linha de texto",
+		opts,
+	)
+	testdata.TestRenderManaged(t, "confirm_modal", "two_line_text", []string{"60x10"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+func TestConfirmModal_ThreeLineText(t *testing.T) {
+	opts := []modal.ModalOption{
+		{
+			Keys:   []design.Key{design.Keys.Enter},
+			Label:  "Prosseguir",
+			Intent: modal.IntentConfirm,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+		{
+			Keys:   []design.Key{design.Keys.Esc},
+			Label:  "Sair",
+			Intent: modal.IntentCancel,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+	}
+	m := modal.NewConfirmModal(
+		"Confirmação",
+		"Primeira linha de informação\nSegunda linha com mais detalhes\nTerceira linha final",
+		opts,
+	)
+	testdata.TestRenderManaged(t, "confirm_modal", "three_line_text", []string{"70x12"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+// Tests with title variations
+
+func TestConfirmModal_ShortTitle(t *testing.T) {
+	opts := []modal.ModalOption{
+		{
+			Keys:   []design.Key{design.Keys.Enter},
+			Label:  "OK",
+			Intent: modal.IntentConfirm,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+		{
+			Keys:   []design.Key{design.Keys.Esc},
+			Label:  "Cancelar",
+			Intent: modal.IntentCancel,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+	}
+	m := modal.NewConfirmModal("OK?", "Prosseguir?", opts)
+	testdata.TestRenderManaged(t, "confirm_modal", "short_title", []string{"45x8"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+func TestConfirmModal_LongTitle(t *testing.T) {
+	opts := []modal.ModalOption{
+		{
+			Keys:   []design.Key{design.Keys.Enter},
+			Label:  "Confirmar",
+			Intent: modal.IntentConfirm,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+		{
+			Keys:   []design.Key{design.Keys.Esc},
+			Label:  "Cancelar",
+			Intent: modal.IntentCancel,
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+	}
+	m := modal.NewConfirmModal(
+		"Este é um título muito longo que descreve a operação em detalhes",
+		"Deseja confirmar esta ação?",
+		opts,
+	)
+	testdata.TestRenderManaged(t, "confirm_modal", "long_title", []string{"80x10"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
 func TestConfirmModal_HandleKey_Enter_ExecutesAction(t *testing.T) {
 	called := false
 	opts := []modal.ModalOption{

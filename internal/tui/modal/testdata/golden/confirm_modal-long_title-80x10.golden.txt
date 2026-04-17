@@ -1,0 +1,5 @@
+╭─ Este é um título muito longo que descreve a operação em detalhes ─────╮
+│                                                                        │
+│  Deseja confirmar esta ação?                                           │
+│                                                                        │
+╰─ Enter Confirmar ─────────────────────────────────────── Esc Cancelar ─╯

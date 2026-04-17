@@ -1,0 +1,5 @@
+╭─ Aviso ─────────────────────────────╮
+│                                     │
+│  Continuar?                         │
+│                                     │
+╰─ Enter OK ─────────── Esc Cancelar ─╯

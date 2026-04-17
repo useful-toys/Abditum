@@ -1,0 +1,5 @@
+╭─ Alterações pendentes ──────────────────────────────────────╮
+│                                                             │
+│  Deseja salvar as alterações?                               │
+│                                                             │
+╰─ Enter Salvar ─ Tab Descartar ─────────────── Esc Cancelar ─╯
