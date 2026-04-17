@@ -6,6 +6,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/useful-toys/abditum/internal/tui"
 	"github.com/useful-toys/abditum/internal/tui/modal"
 )
 
@@ -171,3 +172,5 @@ func (s *trackingMsgCtrl) SetSuccess(text string)    {}
 func (s *trackingMsgCtrl) SetInfo(text string)       {}
 func (s *trackingMsgCtrl) SetHintUsage(text string)  {}
 func (s *trackingMsgCtrl) Clear()                    {}
+
+var _ tui.MessageController = (*trackingMsgCtrl)(nil)
