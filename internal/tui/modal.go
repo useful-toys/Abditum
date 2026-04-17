@@ -15,6 +15,9 @@ type ModalView interface {
 	HandleKey(msg tea.KeyMsg) tea.Cmd
 	// Update processa mensagens do Bubble Tea e atualiza o estado interno do modal.
 	Update(msg tea.Msg) tea.Cmd
+	// Cursor retorna a posição do cursor real para o modal ativo, ou nil se não houver cursor.
+	// topY e leftX são as coordenadas absolutas do canto superior esquerdo do modal na tela.
+	Cursor(topY, leftX int) *tea.Cursor
 }
 
 // OpenModalMsg é enviada para empilhar um novo modal na pilha de modais.

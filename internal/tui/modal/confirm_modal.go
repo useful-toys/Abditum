@@ -71,3 +71,8 @@ func (m *ConfirmModal) Update(msg tea.Msg) tea.Cmd {
 	}
 	return nil
 }
+
+// Cursor retorna nil — ConfirmModal não tem campo de texto com cursor.
+func (m *ConfirmModal) Cursor(_, _ int) *tea.Cursor {
+	return nil
+}

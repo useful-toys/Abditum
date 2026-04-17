@@ -173,3 +173,8 @@ func (m *HelpModal) Update(msg tea.Msg) tea.Cmd {
 	}
 	return nil
 }
+
+// Cursor retorna nil — HelpModal não tem campo de texto com cursor.
+func (m *HelpModal) Cursor(_, _ int) *tea.Cursor {
+	return nil
+}
