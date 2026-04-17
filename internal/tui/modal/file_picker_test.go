@@ -266,3 +266,52 @@ func TestFilePicker_Render_SaveNameFilled(t *testing.T) {
 		})
 }
 
+// newOpenPickerManyFiles cria FilePicker Open com 12 arquivos em /home/usuario/projetos/abditum/
+// para golden files de scroll.
+func newOpenPickerManyFiles() *modal.FilePickerModal {
+	m := modal.NewFilePicker(modal.FilePickerOptions{
+		Mode:       modal.FilePickerOpen,
+		Extension:  ".abditum",
+		InitialDir: "/home/usuario/projetos/abditum",
+		OnResult:   func(string) tea.Cmd { return nil },
+	})
+	m.SetReadDirForTest(makeTestReadDirManyFiles())
+	m.SetTimeFmtForTest(fixedTimeFmt)
+	m.RebuildForTest("/home/usuario/projetos/abditum")
+	return m
+}
+
+func TestFilePicker_Render_OpenFilesScrollTop(t *testing.T) {
+	m := newOpenPickerManyFiles()
+	m.Update(tea.KeyPressMsg{Code: tea.KeyTab}) // foco para arquivos (no-op with stub)
+	// fileScroll=0, cursor=0 — estado inicial já é scroll top
+	testdata.TestRenderManaged(t, "file_picker", "open_files_scroll_top", []string{"88x30"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+func TestFilePicker_Render_OpenFilesScrollMid(t *testing.T) {
+	m := newOpenPickerManyFiles()
+	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	// Navegar para o meio da lista (6 downs — no-op with stub)
+	for i := 0; i < 6; i++ {
+		m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	testdata.TestRenderManaged(t, "file_picker", "open_files_scroll_mid", []string{"88x30"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+func TestFilePicker_Render_OpenFilesScrollEnd(t *testing.T) {
+	m := newOpenPickerManyFiles()
+	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	// End key (no-op with stub)
+	m.Update(tea.KeyPressMsg{Code: tea.KeyEnd})
+	testdata.TestRenderManaged(t, "file_picker", "open_files_scroll_end", []string{"88x30"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
