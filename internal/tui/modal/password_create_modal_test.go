@@ -19,31 +19,31 @@ func newCreateModal() *modal.PasswordCreateModal {
 }
 
 // TestPasswordCreateModal_Initial tests the initial render with both fields empty.
-// Expected output: 50x9 grid, no strength meter.
+// Expected output: 50x8 grid, no strength meter (6 body lines + 2 borders).
 func TestPasswordCreateModal_Initial(t *testing.T) {
 	m := newCreateModal()
-	testdata.TestRenderManaged(t, "password_create", "initial", []string{"50x9"},
+	testdata.TestRenderManaged(t, "password_create", "initial", []string{"50x8"},
 		func(w, h int, theme *design.Theme) string {
 			return m.Render(h, w, theme)
 		})
 }
 
 // TestPasswordCreateModal_WithMeter tests render with Nova senha having 8 characters.
-// Expected output: 50x11 grid (includes strength meter).
+// Expected output: 50x10 grid (8 body lines + 2 borders, includes strength meter).
 func TestPasswordCreateModal_WithMeter(t *testing.T) {
 	m := newCreateModal()
 	for _, r := range "12345678" {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
 		m.Update(msg)
 	}
-	testdata.TestRenderManaged(t, "password_create", "with_meter", []string{"50x11"},
+	testdata.TestRenderManaged(t, "password_create", "with_meter", []string{"50x10"},
 		func(w, h int, theme *design.Theme) string {
 			return m.Render(h, w, theme)
 		})
 }
 
 // TestPasswordCreateModal_Confirmed tests render with both fields filled with matching strong password.
-// Expected output: 50x11 grid (includes strength meter).
+// Expected output: 50x10 grid (8 body lines + 2 borders, includes strength meter).
 func TestPasswordCreateModal_Confirmed(t *testing.T) {
 	m := newCreateModal()
 	// Type strong password in Nova senha
@@ -58,14 +58,14 @@ func TestPasswordCreateModal_Confirmed(t *testing.T) {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
 		m.Update(msg)
 	}
-	testdata.TestRenderManaged(t, "password_create", "confirmed", []string{"50x11"},
+	testdata.TestRenderManaged(t, "password_create", "confirmed", []string{"50x10"},
 		func(w, h int, theme *design.Theme) string {
 			return m.Render(h, w, theme)
 		})
 }
 
 // TestPasswordCreateModal_Mismatch tests render with both fields filled but different.
-// Expected output: 50x11 grid (includes strength meter).
+// Expected output: 50x10 grid (8 body lines + 2 borders, includes strength meter).
 func TestPasswordCreateModal_Mismatch(t *testing.T) {
 	m := newCreateModal()
 	// Type password in Nova senha
@@ -80,7 +80,7 @@ func TestPasswordCreateModal_Mismatch(t *testing.T) {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
 		m.Update(msg)
 	}
-	testdata.TestRenderManaged(t, "password_create", "mismatch", []string{"50x11"},
+	testdata.TestRenderManaged(t, "password_create", "mismatch", []string{"50x10"},
 		func(w, h int, theme *design.Theme) string {
 			return m.Render(h, w, theme)
 		})
@@ -126,7 +126,7 @@ func TestPasswordCreateModal_Cursor_FocusedNew(t *testing.T) {
 }
 
 // TestPasswordCreateModal_Cursor_FocusedConfirm tests cursor position when focused on Confirmação.
-// Expected: Y = topY + 1 + 6 = 8, X = leftX + 1 + 2 + Len()
+// Expected: Y = topY + 1 + 5 = 7, X = leftX + 1 + 2 + Len()
 func TestPasswordCreateModal_Cursor_FocusedConfirm(t *testing.T) {
 	m := newCreateModal()
 	// Type in Nova senha
@@ -145,9 +145,9 @@ func TestPasswordCreateModal_Cursor_FocusedConfirm(t *testing.T) {
 	if c == nil {
 		t.Fatal("Cursor: expected non-nil cursor")
 	}
-	// Y = 1 + 1 + 6 = 8, X = 0 + 1 + 2 + 5 = 8
-	if c.Position.Y != 8 {
-		t.Errorf("Cursor.Y: expected 8, got %d", c.Position.Y)
+	// Y = 1 + 1 + 5 = 7, X = 0 + 1 + 2 + 5 = 8
+	if c.Position.Y != 7 {
+		t.Errorf("Cursor.Y: expected 7, got %d", c.Position.Y)
 	}
 	if c.Position.X != 8 {
 		t.Errorf("Cursor.X: expected 8, got %d", c.Position.X)

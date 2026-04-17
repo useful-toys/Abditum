@@ -125,14 +125,13 @@ func (m *PasswordCreateModal) Render(maxHeight, maxWidth int, theme *design.Them
 	// Linha 0: vazia (padding)
 	// Linha 1: label "Nova senha"
 	// Linha 2: input area Nova senha
-	// Linha 3: vazia
-	// Linha 4: vazia
-	// Linha 5: label "Confirmação"
-	// Linha 6: input area Confirmação
-	// Linha 7: vazia
-	// [Linha 8: strength meter]     ← only when Nova senha not empty
-	// [Linha 9: empty after meter]  ← only when Nova senha not empty
-	body := "\n" + fieldNewRendered + "\n\n\n" + fieldConfRendered + "\n"
+	// Linha 3: vazia (single blank line separator)
+	// Linha 4: label "Confirmação"
+	// Linha 5: input area Confirmação
+	// Linha 6: vazia
+	// [Linha 7: strength meter]     ← only when Nova senha not empty
+	// [Linha 8: empty after meter]  ← only when Nova senha not empty
+	body := "\n" + fieldNewRendered + "\n" + fieldConfRendered + "\n"
 
 	// Add strength meter if Nova senha is not empty
 	if m.fieldNew.Len() > 0 {
@@ -246,11 +245,10 @@ func (m *PasswordCreateModal) Update(msg tea.Msg) tea.Cmd {
 //	Linha 0: vazia (padding)
 //	Linha 1: label "Nova senha"
 //	Linha 2: área digitável do Nova senha  ← cursor aqui se focused == fieldNew
-//	Linha 3: vazia
-//	Linha 4: vazia
-//	Linha 5: label "Confirmação"
-//	Linha 6: área digitável do Confirmação  ← cursor aqui se focused == fieldConfirm
-//	Linha 7: vazia
+//	Linha 3: vazia (single blank line separator)
+//	Linha 4: label "Confirmação"
+//	Linha 5: área digitável do Confirmação  ← cursor aqui se focused == fieldConfirm
+//	Linha 6: vazia
 //
 // Fórmula (Nova senha):
 //
@@ -259,7 +257,7 @@ func (m *PasswordCreateModal) Update(msg tea.Msg) tea.Cmd {
 //
 // Fórmula (Confirmação):
 //
-//	cursorY = topY + 1 (borda superior) + 6 (linha do field no body)
+//	cursorY = topY + 1 (borda superior) + 5 (linha do field no body)
 //	cursorX = leftX + 1 (borda esquerda) + DialogPaddingH + field.Len()
 func (m *PasswordCreateModal) Cursor(topY, leftX int) *tea.Cursor {
 	var lineOffset int
@@ -269,7 +267,7 @@ func (m *PasswordCreateModal) Cursor(topY, leftX int) *tea.Cursor {
 		lineOffset = 2
 		field = m.fieldNew
 	} else {
-		lineOffset = 6
+		lineOffset = 5
 		field = m.fieldConf
 	}
 
