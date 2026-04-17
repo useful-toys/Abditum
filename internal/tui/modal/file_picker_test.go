@@ -9,7 +9,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/useful-toys/abditum/internal/tui"
+	"github.com/useful-toys/abditum/internal/tui/design"
 	"github.com/useful-toys/abditum/internal/tui/modal"
+	"github.com/useful-toys/abditum/internal/tui/testdata"
 )
 
 // fakeFileInfo implementa os.FileInfo com campos fixos.
@@ -208,3 +210,59 @@ func TestFormatFileSize(t *testing.T) {
 		}
 	}
 }
+
+func TestFilePicker_Render_OpenTreeInitial(t *testing.T) {
+	m := newOpenPicker()
+	testdata.TestRenderManaged(t, "file_picker", "open_tree_initial", []string{"88x30"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+func TestFilePicker_Render_OpenFilesNoScroll(t *testing.T) {
+	m := newOpenPicker()
+	// Mover foco para arquivos — Tab é no-op com HandleKey stub, mas o teste fica pronto para quando HandleKey for implementado
+	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	testdata.TestRenderManaged(t, "file_picker", "open_files_noscroll", []string{"88x30"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+func TestFilePicker_Render_OpenEmptyDir(t *testing.T) {
+	m := modal.NewFilePicker(modal.FilePickerOptions{
+		Mode:       modal.FilePickerOpen,
+		Extension:  ".abditum",
+		InitialDir: "/home/usuario/downloads/temporarios",
+		OnResult:   func(string) tea.Cmd { return nil },
+	})
+	m.SetReadDirForTest(makeTestReadDir())
+	m.SetTimeFmtForTest(fixedTimeFmt)
+	m.RebuildForTest("/home/usuario/downloads/temporarios")
+	testdata.TestRenderManaged(t, "file_picker", "open_empty_dir", []string{"88x30"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+func TestFilePicker_Render_SaveNameEmpty(t *testing.T) {
+	m := newSavePicker("")
+	// Tab x2: no-op com stub, mas teste pronto para quando HandleKey for implementado
+	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	testdata.TestRenderManaged(t, "file_picker", "save_name_empty", []string{"88x30"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+func TestFilePicker_Render_SaveNameFilled(t *testing.T) {
+	m := newSavePicker("meu-cofre")
+	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	testdata.TestRenderManaged(t, "file_picker", "save_name_filled", []string{"88x30"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
