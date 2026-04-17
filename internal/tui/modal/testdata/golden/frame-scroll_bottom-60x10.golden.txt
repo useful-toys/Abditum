@@ -1,4 +1,4 @@
-╭─ Diálogo com Scroll ─────────────────────────╮
+╭─ Diálogo com Scroll ─────────────────────────────────────╮
 │  Linha 23 de 30  ↑
 │  Linha 24 de 30  │
 │  Linha 25 de 30  │
@@ -7,4 +7,4 @@
 │  Linha 28 de 30  │
 │  Linha 29 de 30  │
 │  Linha 30 de 30  ■
-╰─ Enter Confirmar────────────── ─ Esc Cancelar ─╯
+╰─ Enter Confirmar────────────────────────── ─ Esc Cancelar ─╯

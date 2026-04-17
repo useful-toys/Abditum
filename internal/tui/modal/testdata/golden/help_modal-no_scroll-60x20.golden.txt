@@ -1,4 +1,4 @@
-╭─ Ajuda — Atalhos e Ações ──────────────────────╮
+╭─ Ajuda — Atalhos e Ações ────────────────────────────────╮
 │  Aplicação  │
 │  F1            Abre o diálogo de ajuda.  │
 │  ⌃Q            Encerra a aplicação.  │
@@ -6,4 +6,4 @@
 │  Navegação  │
 │  Enter         Abre o item selecionado.  │
 │  Esc           Retorna ao nível anterior.  │
-╰─ ──────────────────────────────────── Esc Fechar ─╯
+╰─ ────────────────────────────────────────────── Esc Fechar ─╯

@@ -1,3 +1,3 @@
-╭─ ⚠  Excluir item ──────────────────────────╮
+╭─ ⚠  Excluir item ────────────────────────────────────────╮
 │  Esta ação não pode ser desfeita.  │
-╰─ Enter Excluir────────────── ─ Esc Cancelar ─╯
+╰─ Enter Excluir──────────────────────────── ─ Esc Cancelar ─╯

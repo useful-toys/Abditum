@@ -47,11 +47,15 @@ func (f DialogFrame) Render(body string, maxWidth int, theme *design.Theme) stri
 	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(f.BorderColor))
 	bgStyle := lipgloss.NewStyle().Background(lipgloss.Color(theme.Surface.Raised))
 
-	// Calcular largura mínima necessária
-	minWidth := f.calculateMinWidth(body, theme)
-	innerWidth := maxWidth - 2 // subtrair as duas bordas verticais
-	if innerWidth > minWidth {
-		innerWidth = minWidth
+	// Calcular largura baseada no corpo + padding
+	bodyWidth := f.calculateBodyWidth(body, theme)
+	// Usar a maior largura entre: maxWidth, bodyWidth, e mínimo de 20
+	innerWidth := maxWidth - 2 // começar com maxWidth (subtrair bordas)
+	if bodyWidth > innerWidth {
+		innerWidth = bodyWidth
+	}
+	if innerWidth < 20 {
+		innerWidth = 20
 	}
 
 	// --- Borda superior ---
@@ -136,52 +140,44 @@ func (f DialogFrame) renderBodyLine(lineNum, totalLines int, content string, inn
 	return lBorder + lineContent + rBorder
 }
 
-// calculateMinWidth calcula a largura mínima necessária para o diálogo.
-// Largura mínima = mínimo entre 20 colunas e o necessário para título + ações.
-func (f DialogFrame) calculateMinWidth(body string, theme *design.Theme) int {
-	minWidth := 20 // mínimo absoluto
+// calculateBodyWidth calcula a largura baseada no conteúdo do corpo.
+func (f DialogFrame) calculateBodyWidth(body string, theme *design.Theme) int {
+	paddingH := 2 * design.DialogPaddingH
 
 	// Largura do título na borda superior
 	titleWidth := lipgloss.Width(f.Title)
 	if f.Symbol != "" {
-		titleWidth += lipgloss.Width(f.Symbol) + 2 // símbolo + 2 espaços
+		titleWidth += lipgloss.Width(f.Symbol) + 2
 	}
-	// " título " = +2, " ╭──" = 4, " ╮" = 2
-	titleWidth += 8
+	titleWidth += 8 // " título " + cantos
 
-	// Largura das ações (renderizadas com espaços: " key label ")
-	// Cada ação ocupa: 1 espaço + key + 1 espaço + label + 1 espaço = keyWidth + 3
-	actionWidth := 3 // cantos: " " + "─" + " " + "─" + " " = 5, mas 3 é o mínimo entre ações
+	// Largura das ações
+	actionWidth := 3
 	for _, opt := range f.Options {
 		if len(opt.Keys) == 0 {
 			continue
 		}
 		_, keyWidth := design.RenderDialogAction(opt.Keys[0].Label, opt.Label, f.BorderColor, theme)
-		actionWidth += keyWidth + 4 // ação + 1 espaço + dash + 1 espaço = keyWidth + 3 por ação + 1 dash
-		actionWidth += 3            // +3 por causa dos espaços em redor da ação
+		actionWidth += keyWidth + 4 + 3
 	}
 
 	// Largura do corpo (cada linha)
 	bodyLines := strings.Split(body, "\n")
-	bodyWidth := 0
-	paddingH := 2 * design.DialogPaddingH
+	maxBodyWidth := 0
 	for _, line := range bodyLines {
-		w := lipgloss.Width(line) + paddingH + 2 // +2 para bordas │
-		if w > bodyWidth {
-			bodyWidth = w
+		w := lipgloss.Width(line) + paddingH + 2
+		if w > maxBodyWidth {
+			maxBodyWidth = w
 		}
 	}
 
-	// Largura mínima = máximo entre título, ações e corpo (com mínimo de 20)
+	// Usar a maior largura needed
 	width := titleWidth
 	if actionWidth > width {
 		width = actionWidth
 	}
-	if bodyWidth > width {
-		width = bodyWidth
-	}
-	if width < minWidth {
-		width = minWidth
+	if maxBodyWidth > width {
+		width = maxBodyWidth
 	}
 
 	return width + 2 // +2 para bordas verticais
