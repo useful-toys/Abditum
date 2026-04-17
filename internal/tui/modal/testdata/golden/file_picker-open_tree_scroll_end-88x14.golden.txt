@@ -1,0 +1,12 @@
+╭─ Abrir cofre ──────────────────────────────────────────────────────╮
+│ \home\usuario\fotos                                                │
+├ Estrutura ────────────────┬ Arquivos ──────────────────────────────┤
+│\                          ■                                        │
+│  ▼ home                   │Nenhum cofre neste diretório            │
+│    ▼ usuario              │                                        │
+│      ▶ documentos         │                                        │
+│      ▶ downloads          │                                        │
+│      ▼ projetos           │                                        │
+│        ▶ abditum          │                                        │
+│        ▷ site             ↓                                        │
+╰─ Enter Abrir ─────────────────────────────────────── Esc Cancelar ─╯

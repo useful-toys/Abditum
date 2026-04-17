@@ -1,0 +1,12 @@
+╭─ Abrir cofre ──────────────────────────────────────────────────────╮
+│ \                                                                  │
+├ Estrutura ────────────────┬ Arquivos ──────────────────────────────┤
+│\                          ■                                        │
+│  ▼ home                   │Nenhum cofre neste diretório            │
+│    ▼ usuario              │                                        │
+│      ▶ documentos         │                                        │
+│      ▶ downloads          │                                        │
+│      ▼ projetos           │                                        │
+│        ▶ abditum          │                                        │
+│        ▷ site             ↓                                        │
+╰─ Enter Abrir ─────────────────────────────────────── Esc Cancelar ─╯

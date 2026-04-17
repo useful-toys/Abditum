@@ -1,0 +1,1176 @@
+package modal
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+	"unicode/utf8"
+
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/useful-toys/abditum/internal/tui"
+	"github.com/useful-toys/abditum/internal/tui/design"
+)
+
+// FilePickerMode controla o comportamento do picker.
+type FilePickerMode int
+
+const (
+	FilePickerOpen FilePickerMode = iota // abrir arquivo existente
+	FilePickerSave                       // salvar / nomear novo arquivo
+)
+
+// FilePickerOptions são os parâmetros de construção do FilePicker.
+type FilePickerOptions struct {
+	Mode       FilePickerMode
+	Extension  string                    // ex: ".abditum" — inclui o ponto
+	InitialDir string                    // "" → CWD → fallback ~
+	Suggested  string                    // Save: valor inicial do campo Arquivo:
+	OnResult   func(path string) tea.Cmd // path="" se cancelado
+	Messages   tui.MessageController     // nil tolerado
+}
+
+// treeNode representa uma entrada de diretório na árvore lazy.
+type treeNode struct {
+	path       string
+	name       string
+	depth      int
+	expanded   bool
+	loaded     bool
+	children   []*treeNode
+	hasSubdirs bool
+}
+
+// visibleNode é uma entrada achatada da árvore — visível no painel Estrutura.
+type visibleNode struct {
+	node *treeNode
+}
+
+// FilePickerModal implementa tui.ModalView para seleção de arquivo.
+type FilePickerModal struct {
+	mode     FilePickerMode
+	ext      string
+	onResult func(string) tea.Cmd
+	messages tui.MessageController
+
+	root         *treeNode
+	visibleNodes []visibleNode
+	treeCursor   int
+	treeScroll   int
+
+	currentPath string
+	files       []string
+	fileInfos   []os.FileInfo
+	fileCursor  int // -1 quando vazio
+	fileScroll  int
+
+	focusPanel int // 0=árvore 1=arquivos 2=campo nome (Save apenas)
+
+	nameField textinput.Model
+
+	lastMaxHeight int
+	lastMaxWidth  int
+
+	readDir     func(string) ([]os.DirEntry, error)
+	hintEmitted bool
+	timeFmt     func(time.Time) string
+
+	// fallbackWarning: emitido no primeiro Render() se InitialDir não era acessível
+	fallbackWarning string
+}
+
+// SetReadDirForTest injeta filesystem fictício — usado exclusivamente em testes.
+func (m *FilePickerModal) SetReadDirForTest(fn func(string) ([]os.DirEntry, error)) {
+	m.readDir = fn
+}
+
+// SetTimeFmtForTest injeta formatação de tempo fixa — usado exclusivamente em testes.
+func (m *FilePickerModal) SetTimeFmtForTest(fn func(time.Time) string) {
+	m.timeFmt = fn
+}
+
+// dirRead chama m.readDir se injetado, caso contrário os.ReadDir.
+func (m *FilePickerModal) dirRead(path string) ([]os.DirEntry, error) {
+	if m.readDir != nil {
+		return m.readDir(path)
+	}
+	return os.ReadDir(path)
+}
+
+// formatTime formata um time.Time usando m.timeFmt se injetado, caso contrário local.
+func (m *FilePickerModal) formatTime(t time.Time) string {
+	if m.timeFmt != nil {
+		return m.timeFmt(t)
+	}
+	return t.Format("02/01/06 15:04")
+}
+
+// NewFilePicker cria e inicializa o modal.
+// Chamar tui.OpenModal(NewFilePicker(opts)) para exibir.
+func NewFilePicker(opts FilePickerOptions) *FilePickerModal {
+	nf := textinput.New()
+	nf.Prompt = ""
+	if opts.Suggested != "" {
+		nf.SetValue(opts.Suggested)
+	}
+
+	m := &FilePickerModal{
+		mode:       opts.Mode,
+		ext:        opts.Extension,
+		onResult:   opts.OnResult,
+		messages:   opts.Messages,
+		nameField:  nf,
+		fileCursor: -1,
+	}
+
+	// Resolver InitialDir
+	dir := opts.InitialDir
+	if dir == "" {
+		if cwd, err := os.Getwd(); err == nil {
+			dir = cwd
+		}
+	}
+	if dir == "" || !dirExists(dir) {
+		if home, err := os.UserHomeDir(); err == nil {
+			if dir != "" {
+				m.fallbackWarning = design.SymWarning + " Diretório atual inacessível — navegando para home"
+			}
+			dir = home
+		}
+	}
+	m.currentPath = dir
+
+	// Construir árvore e carregar arquivos
+	m.root = m.buildTreeChain(dir)
+	m.buildVisibleNodes()
+	// Posicionar treeCursor no nó de dir
+	for i, vn := range m.visibleNodes {
+		if vn.node.path == dir {
+			m.treeCursor = i
+			break
+		}
+	}
+	m.loadFiles(dir)
+
+	return m
+}
+
+// dirExists retorna true se path é um diretório acessível.
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
+}
+
+// buildTreeChain constrói a árvore da raiz até targetDir com todos os ancestors expandidos.
+// Funciona em Unix (raiz = "/") e Windows (raiz = "C:\") via filepath.VolumeName.
+func (m *FilePickerModal) buildTreeChain(targetDir string) *treeNode {
+	// Determinar raiz do filesystem
+	vol := filepath.VolumeName(targetDir)
+	rootPath := vol + string(filepath.Separator)
+
+	root := &treeNode{
+		path:  rootPath,
+		name:  rootPath,
+		depth: 0,
+	}
+
+	// Dividir targetDir em segmentos a partir da raiz
+	rel, err := filepath.Rel(rootPath, targetDir)
+	if err != nil || rel == "." {
+		// targetDir é a raiz
+		m.expandNodeWith(root)
+		return root
+	}
+
+	parts := strings.Split(filepath.ToSlash(rel), "/")
+	current := root
+	currentPath := rootPath
+
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		m.expandNodeWith(current)
+		childPath := filepath.Join(currentPath, part)
+		var found *treeNode
+		for _, ch := range current.children {
+			if ch.path == childPath {
+				found = ch
+				break
+			}
+		}
+		if found == nil {
+			// Criar nó intermediário se não encontrado (ex: leitura falhou parcialmente)
+			found = &treeNode{
+				path:  childPath,
+				name:  part,
+				depth: i + 1,
+			}
+			current.children = append(current.children, found)
+		}
+		found.expanded = true
+		currentPath = childPath
+		current = found
+	}
+	return root
+}
+
+// expandNodeWith carrega os filhos de node usando m.dirRead, marcando hasSubdirs.
+// Se já está carregado (loaded=true), não relê o disco.
+func (m *FilePickerModal) expandNodeWith(node *treeNode) {
+	if node.loaded {
+		node.expanded = true
+		return
+	}
+	entries, err := m.dirRead(node.path)
+	node.loaded = true
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if !e.IsDir() || strings.HasPrefix(e.Name(), ".") {
+			continue
+		}
+		child := &treeNode{
+			path:  filepath.Join(node.path, e.Name()),
+			name:  e.Name(),
+			depth: node.depth + 1,
+		}
+		node.children = append(node.children, child)
+	}
+	node.hasSubdirs = len(node.children) > 0
+	node.expanded = true
+}
+
+// buildVisibleNodes achata a árvore em m.visibleNodes (DFS pré-ordem).
+// Chamado após qualquer mudança de estado da árvore.
+func (m *FilePickerModal) buildVisibleNodes() {
+	m.visibleNodes = m.visibleNodes[:0]
+	if m.root != nil {
+		m.collectVisible(m.root)
+	}
+}
+
+func (m *FilePickerModal) collectVisible(node *treeNode) {
+	m.visibleNodes = append(m.visibleNodes, visibleNode{node: node})
+	if node.expanded {
+		for _, ch := range node.children {
+			m.collectVisible(ch)
+		}
+	}
+}
+
+// loadFiles carrega os arquivos com m.ext presentes em dir no painel de arquivos.
+// Atualiza m.files, m.fileInfos, m.currentPath, m.fileCursor, m.fileScroll.
+func (m *FilePickerModal) loadFiles(dir string) {
+	m.currentPath = dir
+	m.files = m.files[:0]
+	m.fileInfos = nil
+	m.fileCursor = -1
+	m.fileScroll = 0
+
+	entries, err := m.dirRead(dir)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if e.IsDir() || strings.HasPrefix(e.Name(), ".") {
+			continue
+		}
+		if !strings.HasSuffix(e.Name(), m.ext) {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		// Exibir nome sem extensão
+		nameNoExt := strings.TrimSuffix(e.Name(), m.ext)
+		m.files = append(m.files, nameNoExt)
+		m.fileInfos = append(m.fileInfos, info)
+	}
+	if len(m.files) > 0 {
+		m.fileCursor = 0
+	}
+}
+
+// RebuildForTest reinicializa a árvore e arquivos para o diretório especificado.
+// Usado exclusivamente em testes após SetReadDirForTest.
+func (m *FilePickerModal) RebuildForTest(dir string) {
+	m.fallbackWarning = "" // limpa aviso emitido durante construção com disco real
+	dir = filepath.Clean(dir)
+	m.currentPath = dir
+	m.root = m.buildTreeChain(dir)
+	m.buildVisibleNodes()
+	for i, vn := range m.visibleNodes {
+		if vn.node.path == dir {
+			m.treeCursor = i
+			break
+		}
+	}
+	m.loadFiles(dir)
+}
+
+// TreeCursorPath retorna o path do nó sob treeCursor — usado em testes.
+func (m *FilePickerModal) TreeCursorPath() string {
+	if m.treeCursor < 0 || m.treeCursor >= len(m.visibleNodes) {
+		return ""
+	}
+	return filepath.ToSlash(m.visibleNodes[m.treeCursor].node.path)
+}
+
+// FileCursor retorna o índice do arquivo selecionado no painel — usado em testes.
+func (m *FilePickerModal) FileCursor() int { return m.fileCursor }
+
+// Files retorna a lista de nomes de arquivo sem extensão — usado em testes.
+func (m *FilePickerModal) Files() []string { return m.files }
+
+// FocusPanel retorna o painel com foco (0=árvore,1=arquivos,2=campo) — usado em testes.
+func (m *FilePickerModal) FocusPanel() int { return m.focusPanel }
+
+// Render retorna a representação visual do modal.
+func (m *FilePickerModal) Render(maxHeight, maxWidth int, theme *design.Theme) string {
+	if m.fallbackWarning != "" && m.messages != nil {
+		m.messages.SetWarning(m.fallbackWarning)
+		m.fallbackWarning = ""
+	}
+
+	m.lastMaxHeight = maxHeight
+	m.lastMaxWidth = maxWidth
+
+	modalW, innerW, treeW, filesW, visibleH := modalDimensions(maxHeight, maxWidth, m.mode)
+
+	var sb strings.Builder
+	sb.WriteString(m.renderTopBorder(modalW, theme))
+	sb.WriteRune('\n')
+	sb.WriteString(m.renderPathLine(innerW, theme))
+	sb.WriteRune('\n')
+	sb.WriteString(m.renderPanelSeparator(innerW, treeW, theme))
+	sb.WriteRune('\n')
+
+	for _, l := range m.renderContentLines(visibleH, treeW, filesW, theme) {
+		sb.WriteString(l)
+		sb.WriteRune('\n')
+	}
+
+	if m.mode == FilePickerSave {
+		sb.WriteString(m.renderFieldSeparator(innerW, treeW, theme))
+		sb.WriteRune('\n')
+		sb.WriteString(m.renderNameField(innerW, theme))
+		sb.WriteRune('\n')
+	}
+
+	sb.WriteString(m.renderBottomBorder(modalW, theme))
+	return sb.String()
+}
+
+// emitHint emite o hint correto para o foco atual via MessageController.
+func (m *FilePickerModal) emitHint() tea.Cmd {
+	if m.messages == nil {
+		return nil
+	}
+	var hint string
+	switch m.focusPanel {
+	case 0: // árvore
+		if m.mode == FilePickerOpen {
+			hint = design.SymBullet + " Navegue pelas pastas e selecione um cofre"
+		} else {
+			hint = design.SymBullet + " Navegue pelas pastas e escolha onde salvar"
+		}
+	case 1: // arquivos
+		if m.mode == FilePickerOpen {
+			if m.fileCursor >= 0 {
+				hint = design.SymBullet + " Selecione o cofre para abrir"
+			} else {
+				hint = design.SymBullet + " Nenhum cofre neste diretório — navegue para outra pasta"
+			}
+		} else {
+			hint = design.SymBullet + " Arquivos existentes neste diretório"
+		}
+	case 2: // campo nome
+		if m.nameField.Value() == "" {
+			hint = design.SymBullet + " Digite o nome do arquivo — " + m.ext + " será adicionado automaticamente"
+		} else {
+			hint = design.SymBullet + " Confirme para salvar o cofre"
+		}
+	}
+	m.messages.SetHintField(hint)
+	return nil
+}
+
+// adjustTreeScroll mantém treeCursor dentro do viewport.
+func (m *FilePickerModal) adjustTreeScroll() {
+	if m.lastMaxHeight == 0 {
+		return
+	}
+	_, _, _, _, visibleH := modalDimensions(m.lastMaxHeight, m.lastMaxWidth, m.mode)
+	if m.treeCursor < m.treeScroll {
+		m.treeScroll = m.treeCursor
+	}
+	if m.treeCursor >= m.treeScroll+visibleH {
+		m.treeScroll = m.treeCursor - visibleH + 1
+	}
+}
+
+// tryExpand tenta expandir node; emite SetError se permissão negada.
+func (m *FilePickerModal) tryExpand(node *treeNode) {
+	entries, err := m.dirRead(node.path)
+	node.loaded = true
+	if err != nil {
+		if m.messages != nil {
+			m.messages.SetError(design.SymError + " Sem permissão para acessar " + node.name)
+		}
+		return
+	}
+	for _, e := range entries {
+		if !e.IsDir() || strings.HasPrefix(e.Name(), ".") {
+			continue
+		}
+		child := &treeNode{
+			path:  filepath.Join(node.path, e.Name()),
+			name:  e.Name(),
+			depth: node.depth + 1,
+		}
+		node.children = append(node.children, child)
+	}
+	node.hasSubdirs = len(node.children) > 0
+	if node.hasSubdirs {
+		node.expanded = true
+		m.buildVisibleNodes()
+	}
+}
+
+// handleTreeKey processa teclas quando foco está na árvore (focusPanel==0).
+func (m *FilePickerModal) handleTreeKey(msg tea.KeyMsg) tea.Cmd {
+	switch msg.Key().Code {
+	case tea.KeyUp:
+		if m.treeCursor > 0 {
+			m.treeCursor--
+			m.adjustTreeScroll()
+			node := m.visibleNodes[m.treeCursor].node
+			m.loadFiles(node.path)
+		}
+	case tea.KeyDown:
+		if m.treeCursor < len(m.visibleNodes)-1 {
+			m.treeCursor++
+			m.adjustTreeScroll()
+			node := m.visibleNodes[m.treeCursor].node
+			m.loadFiles(node.path)
+		}
+	case tea.KeyRight:
+		node := m.visibleNodes[m.treeCursor].node
+		if !node.loaded {
+			m.tryExpand(node)
+		} else if node.hasSubdirs && !node.expanded {
+			node.expanded = true
+			m.buildVisibleNodes()
+		}
+		// Se ▷ (sem subdiretórios): sem efeito
+	case tea.KeyLeft:
+		node := m.visibleNodes[m.treeCursor].node
+		if node.depth == 0 {
+			// raiz: sem efeito
+		} else if node.expanded {
+			node.expanded = false
+			m.buildVisibleNodes()
+		} else {
+			// Navegar para o pai
+			for i := m.treeCursor - 1; i >= 0; i-- {
+				if m.visibleNodes[i].node.depth < node.depth {
+					m.treeCursor = i
+					m.adjustTreeScroll()
+					n := m.visibleNodes[i].node
+					m.loadFiles(n.path)
+					break
+				}
+			}
+		}
+	case tea.KeyHome:
+		m.treeCursor = 0
+		m.treeScroll = 0
+		m.loadFiles(m.visibleNodes[0].node.path)
+	case tea.KeyEnd:
+		m.treeCursor = len(m.visibleNodes) - 1
+		m.adjustTreeScroll()
+		m.loadFiles(m.visibleNodes[m.treeCursor].node.path)
+	case tea.KeyPgUp:
+		_, _, _, _, visibleH := modalDimensions(m.lastMaxHeight, m.lastMaxWidth, m.mode)
+		m.treeCursor -= visibleH
+		if m.treeCursor < 0 {
+			m.treeCursor = 0
+		}
+		m.adjustTreeScroll()
+		m.loadFiles(m.visibleNodes[m.treeCursor].node.path)
+	case tea.KeyPgDown:
+		_, _, _, _, visibleH := modalDimensions(m.lastMaxHeight, m.lastMaxWidth, m.mode)
+		m.treeCursor += visibleH
+		if m.treeCursor >= len(m.visibleNodes) {
+			m.treeCursor = len(m.visibleNodes) - 1
+		}
+		m.adjustTreeScroll()
+		m.loadFiles(m.visibleNodes[m.treeCursor].node.path)
+	case tea.KeyEnter:
+		if m.fileCursor >= 0 {
+			m.focusPanel = 1
+		}
+		// Sem efeito se pasta vazia
+	case tea.KeyTab:
+		m.focusPanel = 1
+	}
+	return m.emitHint()
+}
+
+// adjustFileScroll mantém fileCursor dentro do viewport.
+func (m *FilePickerModal) adjustFileScroll() {
+	if m.lastMaxHeight == 0 {
+		return
+	}
+	_, _, _, _, visibleH := modalDimensions(m.lastMaxHeight, m.lastMaxWidth, m.mode)
+	if m.fileCursor < m.fileScroll {
+		m.fileScroll = m.fileCursor
+	}
+	if m.fileCursor >= m.fileScroll+visibleH {
+		m.fileScroll = m.fileCursor - visibleH + 1
+	}
+}
+
+// handleFilesKey processa teclas quando foco está no painel de arquivos (focusPanel==1).
+func (m *FilePickerModal) handleFilesKey(msg tea.KeyMsg) tea.Cmd {
+	switch msg.Key().Code {
+	case tea.KeyUp:
+		if m.fileCursor > 0 {
+			m.fileCursor--
+			m.adjustFileScroll()
+		}
+	case tea.KeyDown:
+		if m.fileCursor < len(m.files)-1 {
+			m.fileCursor++
+			m.adjustFileScroll()
+		}
+	case tea.KeyHome:
+		m.fileCursor = 0
+		m.fileScroll = 0
+	case tea.KeyEnd:
+		if len(m.files) > 0 {
+			m.fileCursor = len(m.files) - 1
+			m.adjustFileScroll()
+		}
+	case tea.KeyPgUp:
+		_, _, _, _, visibleH := modalDimensions(m.lastMaxHeight, m.lastMaxWidth, m.mode)
+		m.fileCursor -= visibleH
+		if m.fileCursor < 0 {
+			m.fileCursor = 0
+		}
+		m.adjustFileScroll()
+	case tea.KeyPgDown:
+		_, _, _, _, visibleH := modalDimensions(m.lastMaxHeight, m.lastMaxWidth, m.mode)
+		m.fileCursor += visibleH
+		if m.fileCursor >= len(m.files) {
+			m.fileCursor = len(m.files) - 1
+		}
+		m.adjustFileScroll()
+	case tea.KeyEnter:
+		if m.fileCursor < 0 {
+			return nil
+		}
+		if m.mode == FilePickerOpen {
+			// Confirmar seleção
+			path := filepath.Join(m.currentPath, m.files[m.fileCursor]+m.ext)
+			return tea.Batch(m.onResult(path), tui.CloseModal())
+		}
+		// Save: copiar nome para campo e mover foco
+		m.nameField.SetValue(m.files[m.fileCursor])
+		m.focusPanel = 2
+		m.nameField.Focus()
+	case tea.KeyTab:
+		if m.mode == FilePickerSave {
+			m.focusPanel = 2
+			m.nameField.Focus()
+		} else {
+			// Open: voltar para árvore
+			m.focusPanel = 0
+			m.nameField.Blur()
+		}
+	}
+	return m.emitHint()
+}
+
+// invalidChars são os caracteres proibidos em nomes de arquivo.
+const invalidChars = `/\:*?"<>|`
+
+// handleNameKey processa teclas no campo Arquivo: (focusPanel==2, Save apenas).
+func (m *FilePickerModal) handleNameKey(msg tea.KeyMsg) tea.Cmd {
+	switch msg.Key().Code {
+	case tea.KeyEnter:
+		val := m.nameField.Value()
+		if val == "" {
+			return nil
+		}
+		name := val
+		if !strings.HasSuffix(name, m.ext) {
+			name += m.ext
+		}
+		path := filepath.Join(m.currentPath, name)
+		return tea.Batch(m.onResult(path), tui.CloseModal())
+	case tea.KeyTab:
+		m.focusPanel = 0
+		m.nameField.Blur()
+		return m.emitHint()
+	default:
+		// Bloquear caracteres inválidos silenciosamente
+		if msg.Key().Text != "" && strings.ContainsAny(msg.Key().Text, invalidChars) {
+			return nil
+		}
+		// Delegar para textinput
+		var cmd tea.Cmd
+		m.nameField, cmd = m.nameField.Update(msg)
+		return tea.Batch(cmd, m.emitHint())
+	}
+}
+
+// HandleKey processa eventos de teclado.
+func (m *FilePickerModal) HandleKey(msg tea.KeyMsg) tea.Cmd {
+	// Emitir hint inicial na primeira oportunidade
+	var hintCmd tea.Cmd
+	if !m.hintEmitted {
+		m.hintEmitted = true
+		hintCmd = m.emitHint()
+	}
+
+	// Esc: cancelar em qualquer foco
+	if msg.Key().Code == tea.KeyEscape {
+		var cmd tea.Cmd
+		if m.onResult != nil {
+			cmd = tea.Batch(m.onResult(""), tui.CloseModal())
+		} else {
+			cmd = tui.CloseModal()
+		}
+		return tea.Batch(hintCmd, cmd)
+	}
+
+	var cmd tea.Cmd
+	switch m.focusPanel {
+	case 0:
+		cmd = m.handleTreeKey(msg)
+	case 1:
+		cmd = m.handleFilesKey(msg)
+	case 2:
+		cmd = m.handleNameKey(msg)
+	}
+	return tea.Batch(hintCmd, cmd)
+}
+
+// Update processa mensagens do Bubble Tea.
+func (m *FilePickerModal) Update(msg tea.Msg) tea.Cmd {
+	if !m.hintEmitted {
+		m.hintEmitted = true
+		return m.emitHint()
+	}
+	if key, ok := msg.(tea.KeyMsg); ok {
+		return m.HandleKey(key)
+	}
+	return nil
+}
+
+// VisibleNodePaths retorna os paths de todos os nós visíveis — usado em testes.
+func (m *FilePickerModal) VisibleNodePaths() []string {
+	paths := make([]string, len(m.visibleNodes))
+	for i, vn := range m.visibleNodes {
+		paths[i] = filepath.ToSlash(vn.node.path)
+	}
+	return paths
+}
+
+// NameFieldValue retorna o valor atual do campo nome — usado em testes.
+func (m *FilePickerModal) NameFieldValue() string { return m.nameField.Value() }
+
+// Cursor retorna a posição do cursor real para o modal.
+func (m *FilePickerModal) Cursor(topY, leftX int) *tea.Cursor {
+	if m.mode != FilePickerSave || m.focusPanel != 2 {
+		return nil
+	}
+	if m.lastMaxHeight == 0 {
+		return nil // Render() ainda não foi chamado
+	}
+	_, _, _, _, visibleH := modalDimensions(m.lastMaxHeight, m.lastMaxWidth, m.mode)
+	// linha do campo: 0(borda) + 1(caminho) + 1(sep) + visibleH(conteúdo) + 1(sep campo) + 1(campo)
+	// índice = 4 + visibleH (0-based a partir do topo do modal)
+	y := topY + 4 + visibleH
+	// X: borda + espaço + "Arquivo: " (9 chars) + posição do cursor no campo
+	x := leftX + 1 + 1 + 9 + m.nameField.Position()
+	return tea.NewCursor(x, y)
+}
+
+// formatFileSize formata bytes em KB/MB/GB (base 1024, 1 casa decimal).
+func formatFileSize(bytes int64) string {
+	const (
+		KB = 1024
+		MB = KB * 1024
+		GB = MB * 1024
+	)
+	switch {
+	case bytes >= GB:
+		return formatF(float64(bytes)/GB) + " GB"
+	case bytes >= MB:
+		return formatF(float64(bytes)/MB) + " MB"
+	default:
+		return formatF(float64(bytes)/KB) + " KB"
+	}
+}
+
+func formatF(f float64) string {
+	// %.1f sempre produz exatamente 1 casa decimal em Go (locale-independente)
+	return fmt.Sprintf("%.1f", f)
+}
+
+// FormatFileSizeForTest expõe formatFileSize para testes externos.
+func FormatFileSizeForTest(bytes int64) string { return formatFileSize(bytes) }
+
+// padRight pads s até width colunas visuais (ANSI-aware via lipgloss.Width).
+func padRight(s string, width int) string {
+	w := lipgloss.Width(s)
+	if w >= width {
+		return s
+	}
+	return s + strings.Repeat(" ", width-w)
+}
+
+// modalDimensions calcula as dimensões do modal a partir do terminal.
+func modalDimensions(maxHeight, maxWidth int, mode FilePickerMode) (modalW, innerW, treeW, filesW, visibleH int) {
+	modalW = maxWidth * 80 / 100
+	if modalW > 70 {
+		modalW = 70
+	}
+	innerW = modalW - 2
+	treeW = innerW * 40 / 100
+	if treeW < 8 {
+		treeW = 8
+	}
+	filesW = innerW - treeW - 1
+	if filesW < 8 {
+		filesW = 8
+		// Terminais muito estreitos: recuar treeW para que a soma caiba.
+		if treeW+filesW+1 > innerW {
+			treeW = innerW - filesW - 1
+			if treeW < 1 {
+				treeW = 1
+			}
+		}
+	}
+
+	overhead := 3 // Open: borda sup + caminho + sep painéis
+	if mode == FilePickerSave {
+		overhead = 5 // + sep campo + campo Arquivo:
+	}
+	modalH := maxHeight * 8 / 10
+	visibleH = modalH - overhead
+	if visibleH < 3 {
+		visibleH = 3
+	}
+	return
+}
+
+// renderTreeSepChar retorna o caractere do separador da árvore na linha lineIdx (0-based dentro do conteúdo).
+// Substitui │ por ↑/■/↓ conforme scroll. total = len(visibleNodes), vp = visibleH.
+func renderTreeSepChar(lineIdx, treeScroll, total, vp int, theme *design.Theme) string {
+	ss := ScrollState{Offset: treeScroll, Total: total, Viewport: vp}
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Default))
+	lineNum := lineIdx + 1 // 1-based
+	switch {
+	case lineNum == 1 && ss.CanScrollUp():
+		s, _ := design.RenderScrollArrow(true, theme)
+		return s
+	case lineNum == vp && ss.CanScrollDown():
+		s, _ := design.RenderScrollArrow(false, theme)
+		return s
+	case ss.ThumbLine() == lineNum:
+		s, _ := design.RenderScrollThumb(theme)
+		return s
+	default:
+		return borderStyle.Render(design.SymBorderV)
+	}
+}
+
+// renderFileSepChar retorna o caractere da borda direita do modal na linha lineIdx.
+// Usa theme.Border.Focused porque esta borda pertence ao contorno externo do modal,
+// que é sempre renderizado como focused independentemente do painel ativo.
+func renderFileSepChar(lineIdx, fileScroll, total, vp int, theme *design.Theme) string {
+	ss := ScrollState{Offset: fileScroll, Total: total, Viewport: vp}
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Focused))
+	lineNum := lineIdx + 1
+	switch {
+	case lineNum == 1 && ss.CanScrollUp():
+		s, _ := design.RenderScrollArrow(true, theme)
+		return s
+	case lineNum == vp && ss.CanScrollDown():
+		s, _ := design.RenderScrollArrow(false, theme)
+		return s
+	case ss.ThumbLine() == lineNum:
+		s, _ := design.RenderScrollThumb(theme)
+		return s
+	default:
+		return borderStyle.Render(design.SymBorderV)
+	}
+}
+
+// renderTopBorder renderiza ╭── título ──╮
+func (m *FilePickerModal) renderTopBorder(modalW int, theme *design.Theme) string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Focused))
+
+	title := "Abrir cofre"
+	if m.mode == FilePickerSave {
+		title = "Salvar cofre"
+	}
+	titleText, titleWidth := design.RenderDialogTitle(title, "", "", theme)
+	fillRight := modalW - 2 - 1 - 1 - titleWidth - 1 // canto + dash + space + title + space
+	if fillRight < 1 {
+		fillRight = 1
+	}
+
+	tl := borderStyle.Render(design.SymCornerTL)
+	tr := borderStyle.Render(design.SymCornerTR)
+	dashL := borderStyle.Render(design.SymBorderH)
+	dashR := borderStyle.Render(strings.Repeat(design.SymBorderH, fillRight))
+	return tl + dashL + " " + titleText + " " + dashR + tr
+}
+
+// renderPathLine renderiza │ /path/to/dir │
+// Trunca com … no início se o caminho for mais longo que innerW - 2.
+func (m *FilePickerModal) renderPathLine(innerW int, theme *design.Theme) string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Focused))
+	pathStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
+
+	path := m.currentPath
+	maxPathW := innerW - 2 // 1 espaço cada lado
+	if lipgloss.Width(path) > maxPathW {
+		// Truncar início com … removendo runes (não bytes) para não corromper UTF-8
+		for lipgloss.Width(design.SymEllipsis+path) > maxPathW && len(path) > 0 {
+			_, size := utf8.DecodeRuneInString(path)
+			path = path[size:]
+		}
+		path = design.SymEllipsis + path
+	}
+	content := pathStyle.Render(padRight(" "+path, innerW-1) + " ")
+	bgStyle := lipgloss.NewStyle().Background(lipgloss.Color(theme.Surface.Raised))
+	return borderStyle.Render(design.SymBorderV) +
+		bgStyle.Render(content) +
+		borderStyle.Render(design.SymBorderV)
+}
+
+// renderPanelSeparator renderiza ├─ Estrutura ──┬─ Arquivos ──┤
+func (m *FilePickerModal) renderPanelSeparator(innerW, treeW int, theme *design.Theme) string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Default))
+	headerStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(theme.Text.Secondary)).
+		Bold(true)
+
+	treeLabel := " " + headerStyle.Render("Estrutura") + " "
+	treeLabelW := lipgloss.Width(treeLabel)
+	treeDash := treeW - treeLabelW
+	if treeDash < 1 {
+		treeDash = 1
+	}
+
+	filesLabel := " " + headerStyle.Render("Arquivos") + " "
+	filesLabelW := lipgloss.Width(filesLabel)
+	filesW := innerW - treeW - 1 // -1 para o ┬
+	filesDash := filesW - filesLabelW
+	if filesDash < 1 {
+		filesDash = 1
+	}
+
+	jL := borderStyle.Render(design.SymJunctionL)
+	jT := borderStyle.Render(design.SymJunctionT)
+	jR := borderStyle.Render(design.SymJunctionR)
+	dash := func(n int) string {
+		return borderStyle.Render(strings.Repeat(design.SymBorderH, n))
+	}
+	return jL + treeLabel + dash(treeDash) + jT + filesLabel + dash(filesDash) + jR
+}
+
+// renderTreeLine renderiza uma linha do painel de árvore.
+// absIdx é o índice em visibleNodes; treeW é a largura do painel.
+func (m *FilePickerModal) renderTreeLine(absIdx, treeW int, theme *design.Theme) string {
+	if absIdx < 0 || absIdx >= len(m.visibleNodes) {
+		return strings.Repeat(" ", treeW)
+	}
+	node := m.visibleNodes[absIdx].node
+
+	// Ícone de pasta
+	var icon string
+	if node.depth == 0 {
+		icon = "" // raiz: sem indicador
+	} else if !node.loaded || !node.hasSubdirs {
+		if node.loaded {
+			icon = design.SymFolderEmpty
+		} else {
+			icon = design.SymFolderCollapsed // ainda não carregado: assume recolhido
+		}
+	} else if node.expanded {
+		icon = design.SymFolderExpanded
+	} else {
+		icon = design.SymFolderCollapsed
+	}
+
+	iconStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Accent.Secondary))
+	indent := strings.Repeat("  ", node.depth)
+
+	var nameStr string
+	isCursor := absIdx == m.treeCursor
+	isActive := m.focusPanel == 0
+
+	nameStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary))
+	if isCursor {
+		cursorStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color(theme.Accent.Primary)).
+			Bold(true)
+		if isActive {
+			cursorStyle = cursorStyle.Background(lipgloss.Color(theme.Special.Highlight))
+		}
+		nameStr = cursorStyle.Render(node.name)
+	} else {
+		nameStr = nameStyle.Render(node.name)
+	}
+
+	var line string
+	if icon == "" {
+		line = indent + nameStr
+	} else {
+		line = indent + iconStyle.Render(icon) + " " + nameStr
+	}
+	return padRight(line, treeW)
+}
+
+// renderFileLine renderiza uma linha do painel de arquivos.
+// absIdx é o índice em m.files; filesW é a largura do painel.
+func (m *FilePickerModal) renderFileLine(absIdx, filesW int, theme *design.Theme) string {
+	if absIdx < 0 || absIdx >= len(m.files) {
+		return strings.Repeat(" ", filesW)
+	}
+
+	name := m.files[absIdx]
+	info := m.fileInfos[absIdx]
+	sizeStr := formatFileSize(info.Size())
+	dateStr := m.formatTime(info.ModTime())
+
+	// Larguras fixas
+	sizeW := 7  // ex: "25.8 MB"
+	dateW := 14 // "dd/mm/aa HH:MM"
+	bulletW := 1
+	sepW := 1
+
+	// nameW disponível
+	nameW := filesW - bulletW - sepW - sizeW - sepW - dateW
+	if nameW < 4 {
+		// Truncar date
+		dateW = 0
+		nameW = filesW - bulletW - sepW - sizeW
+		if nameW < 4 {
+			// Truncar size também
+			sizeW = 0
+			nameW = filesW - bulletW
+		}
+	}
+
+	// Truncar nome se necessário
+	if lipgloss.Width(name) > nameW && nameW > 1 {
+		for lipgloss.Width(name+design.SymEllipsis) > nameW && len(name) > 0 {
+			runes := []rune(name)
+			name = string(runes[:len(runes)-1])
+		}
+		name = name + design.SymEllipsis
+	}
+
+	isSel := absIdx == m.fileCursor
+	bulletStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
+	metaStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
+
+	var nameRendered string
+	if isSel && m.focusPanel == 1 {
+		nameRendered = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(theme.Text.Primary)).
+			Background(lipgloss.Color(theme.Special.Highlight)).
+			Bold(true).
+			Render(padRight(name, nameW))
+	} else {
+		nameRendered = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(theme.Text.Primary)).
+			Render(padRight(name, nameW))
+	}
+
+	bullet := bulletStyle.Render(design.SymLeaf)
+	line := bullet + " " + nameRendered
+	if sizeW > 0 {
+		line += " " + metaStyle.Render(padRight(sizeStr, sizeW))
+	}
+	if dateW > 0 {
+		line += " " + metaStyle.Render(dateStr)
+	}
+	return padRight(line, filesW)
+}
+
+// renderEmptyFilesMessage renderiza a mensagem quando o painel de arquivos está vazio.
+func (m *FilePickerModal) renderEmptyFilesMessage(filesW int, theme *design.Theme) string {
+	var msg string
+	if m.mode == FilePickerOpen {
+		msg = "Nenhum cofre neste diretório"
+	} else {
+		msg = ""
+	}
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
+	return padRight(style.Render(msg), filesW)
+}
+
+// renderContentLines monta as visibleH linhas de conteúdo dos dois painéis lado a lado.
+func (m *FilePickerModal) renderContentLines(visibleH, treeW, filesW int, theme *design.Theme) []string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Focused))
+	bgStyle := lipgloss.NewStyle().Background(lipgloss.Color(theme.Surface.Raised))
+	lBorder := borderStyle.Render(design.SymBorderV)
+
+	lines := make([]string, visibleH)
+	for i := 0; i < visibleH; i++ {
+		treeIdx := m.treeScroll + i
+		fileIdx := m.fileScroll + i
+
+		treePart := bgStyle.Render(m.renderTreeLine(treeIdx, treeW, theme))
+		sepChar := renderTreeSepChar(i, m.treeScroll, len(m.visibleNodes), visibleH, theme)
+
+		var filePart string
+		if len(m.files) == 0 {
+			if i == 1 {
+				filePart = bgStyle.Render(m.renderEmptyFilesMessage(filesW, theme))
+			} else {
+				filePart = bgStyle.Render(strings.Repeat(" ", filesW))
+			}
+		} else {
+			filePart = bgStyle.Render(m.renderFileLine(fileIdx, filesW, theme))
+		}
+		rBorder := renderFileSepChar(i, m.fileScroll, len(m.files), visibleH, theme)
+
+		lines[i] = lBorder + treePart + sepChar + filePart + rBorder
+	}
+	return lines
+}
+
+// renderFieldSeparator renderiza ├──────────┴──────────┤
+func (m *FilePickerModal) renderFieldSeparator(innerW, treeW int, theme *design.Theme) string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Default))
+	jL := borderStyle.Render(design.SymJunctionL)
+	jB := borderStyle.Render(design.SymJunctionB)
+	jR := borderStyle.Render(design.SymJunctionR)
+	// treeW traços + ┴ + filesW traços
+	filesW := innerW - treeW - 1
+	leftDash := borderStyle.Render(strings.Repeat(design.SymBorderH, treeW))
+	rightDash := borderStyle.Render(strings.Repeat(design.SymBorderH, filesW))
+	return jL + leftDash + jB + rightDash + jR
+}
+
+// renderNameField renderiza │ Arquivo: ░valor▌░░░ │
+func (m *FilePickerModal) renderNameField(innerW int, theme *design.Theme) string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Focused))
+	bgStyle := lipgloss.NewStyle().Background(lipgloss.Color(theme.Surface.Raised))
+	inputBg := lipgloss.NewStyle().Background(lipgloss.Color(theme.Surface.Input))
+
+	isFocused := m.focusPanel == 2
+	var labelStyle lipgloss.Style
+	if isFocused {
+		labelStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(theme.Accent.Primary)).
+			Bold(true)
+	} else {
+		labelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
+	}
+
+	label := labelStyle.Render("Arquivo: ")
+	labelW := lipgloss.Width(label)
+	fieldW := innerW - 2 - labelW // innerW - 2 bordas - label
+	if fieldW < 4 {
+		fieldW = 4
+	}
+
+	// Renderizar conteúdo do campo manualmente (sem textinput.View() para controle de largura)
+	val := m.nameField.Value()
+	pos := m.nameField.Position()
+	// Janela de exibição: mostrar [pos-fieldW+1 .. pos] se val > fieldW
+	viewStart := 0
+	if pos >= fieldW {
+		viewStart = pos - fieldW + 1
+	}
+	viewVal := []rune(val)
+	if viewStart >= len(viewVal) {
+		viewStart = 0
+	}
+	visible := string(viewVal[viewStart:])
+	if lipgloss.Width(visible) > fieldW {
+		visible = string([]rune(visible)[:fieldW-1])
+	}
+
+	cursorStr := ""
+	if isFocused {
+		cursorStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary))
+		cursorStr = cursorStyle.Render(design.SymCursor)
+	}
+
+	fieldContent := inputBg.Render(padRight(visible+cursorStr, fieldW))
+	content := bgStyle.Render(" " + label + fieldContent + " ")
+	return borderStyle.Render(design.SymBorderV) + content + borderStyle.Render(design.SymBorderV)
+}
+
+// renderBottomBorder renderiza ╰── Enter Ação ──── Esc Cancelar ──╯
+func (m *FilePickerModal) renderBottomBorder(modalW int, theme *design.Theme) string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Focused))
+
+	// Cor da ação default: accent.primary se habilitada, text.disabled se não
+	defaultActive := m.isDefaultActionActive()
+	var defaultKeyColor string
+	if defaultActive {
+		defaultKeyColor = theme.Accent.Primary
+	} else {
+		defaultKeyColor = theme.Text.Disabled
+	}
+
+	var actionLabel string
+	if m.mode == FilePickerOpen {
+		actionLabel = "Abrir"
+	} else {
+		actionLabel = "Salvar"
+	}
+
+	enterText, enterW := design.RenderDialogAction("Enter", actionLabel, defaultKeyColor, theme)
+	escText, escW := design.RenderDialogAction("Esc", "Cancelar", theme.Border.Focused, theme)
+
+	// ╰─ Enter Abrir ──── Esc Cancelar ─╯
+	// totalFixed inclui os 2 cantos + espaços em volta de cada ação
+	totalFixed := 2 + enterW + 2 + escW + 2
+	totalFill := modalW - totalFixed
+	if totalFill < 3 {
+		totalFill = 3
+	}
+	fillLeft := 1
+	fillMid := totalFill - 2
+	fillRight := 1
+
+	dash := func(n int) string {
+		return borderStyle.Render(strings.Repeat(design.SymBorderH, n))
+	}
+
+	cornerBL := borderStyle.Render(design.SymCornerBL)
+	cornerBR := borderStyle.Render(design.SymCornerBR)
+
+	return cornerBL +
+		dash(fillLeft) + " " + enterText + " " +
+		dash(fillMid) + " " + escText + " " +
+		dash(fillRight) + cornerBR
+}
+
+// isDefaultActionActive retorna true se a ação Enter está habilitada.
+func (m *FilePickerModal) isDefaultActionActive() bool {
+	if m.mode == FilePickerOpen {
+		return m.fileCursor >= 0
+	}
+	// Save: campo não vazio
+	return m.nameField.Value() != ""
+}

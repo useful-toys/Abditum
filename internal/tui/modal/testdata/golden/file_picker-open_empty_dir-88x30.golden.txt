@@ -1,0 +1,25 @@
+╭─ Abrir cofre ──────────────────────────────────────────────────────╮
+│ \home\usuario\downloads\temporarios                                │
+├ Estrutura ────────────────┬ Arquivos ──────────────────────────────┤
+│\                          │                                        │
+│  ▼ home                   │Nenhum cofre neste diretório            │
+│    ▼ usuario              │                                        │
+│      ▶ documentos         │                                        │
+│      ▼ downloads          │                                        │
+│        ▶ instaladores     │                                        │
+│        ▶ temporarios      │                                        │
+│      ▶ projetos           │                                        │
+│      ▶ fotos              │                                        │
+│                           │                                        │
+│                           │                                        │
+│                           │                                        │
+│                           │                                        │
+│                           │                                        │
+│                           │                                        │
+│                           │                                        │
+│                           │                                        │
+│                           │                                        │
+│                           │                                        │
+│                           │                                        │
+│                           │                                        │
+╰─ Enter Abrir ─────────────────────────────────────── Esc Cancelar ─╯
