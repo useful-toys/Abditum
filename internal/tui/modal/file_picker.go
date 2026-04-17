@@ -464,3 +464,79 @@ func renderFileSepChar(lineIdx, fileScroll, total, vp int, theme *design.Theme) 
 		return borderStyle.Render(design.SymBorderV)
 	}
 }
+
+// renderTopBorder renderiza ╭── título ──╮
+func (m *FilePickerModal) renderTopBorder(modalW int, theme *design.Theme) string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Focused))
+
+	title := "Abrir cofre"
+	if m.mode == FilePickerSave {
+		title = "Salvar cofre"
+	}
+	titleText, titleWidth := design.RenderDialogTitle(title, "", "", theme)
+	fillRight := modalW - 2 - 1 - 1 - titleWidth - 1 // canto + dash + space + title + space
+	if fillRight < 1 {
+		fillRight = 1
+	}
+
+	tl := borderStyle.Render(design.SymCornerTL)
+	tr := borderStyle.Render(design.SymCornerTR)
+	dashL := borderStyle.Render(design.SymBorderH)
+	dashR := borderStyle.Render(strings.Repeat(design.SymBorderH, fillRight))
+	return tl + dashL + " " + titleText + " " + dashR + tr
+}
+
+// renderPathLine renderiza │ /path/to/dir │
+// Trunca com … no início se o caminho for mais longo que innerW - 2.
+func (m *FilePickerModal) renderPathLine(innerW int, theme *design.Theme) string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Focused))
+	pathStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
+
+	path := m.currentPath
+	maxPathW := innerW - 2 // 1 espaço cada lado
+	if lipgloss.Width(path) > maxPathW {
+		// Truncar início com …
+		for lipgloss.Width(design.SymEllipsis+path) > maxPathW && len(path) > 0 {
+			// Remover pelo prefixo por rune
+			_, size := []rune(path)[0], 1
+			path = path[size:]
+		}
+		path = design.SymEllipsis + path
+	}
+	content := pathStyle.Render(padRight(" "+path, innerW-1) + " ")
+	bgStyle := lipgloss.NewStyle().Background(lipgloss.Color(theme.Surface.Raised))
+	return borderStyle.Render(design.SymBorderV) +
+		bgStyle.Render(content) +
+		borderStyle.Render(design.SymBorderV)
+}
+
+// renderPanelSeparator renderiza ├─ Estrutura ──┬─ Arquivos ──┤
+func (m *FilePickerModal) renderPanelSeparator(innerW, treeW int, theme *design.Theme) string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Default))
+	headerStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(theme.Text.Secondary)).
+		Bold(true)
+
+	treeLabel := " " + headerStyle.Render("Estrutura") + " "
+	treeLabelW := lipgloss.Width(treeLabel)
+	treeDash := treeW - treeLabelW
+	if treeDash < 1 {
+		treeDash = 1
+	}
+
+	filesLabel := " " + headerStyle.Render("Arquivos") + " "
+	filesLabelW := lipgloss.Width(filesLabel)
+	filesW := innerW - treeW - 1 // -1 para o ┬
+	filesDash := filesW - filesLabelW
+	if filesDash < 1 {
+		filesDash = 1
+	}
+
+	jL := borderStyle.Render(design.SymJunctionL)
+	jT := borderStyle.Render(design.SymJunctionT)
+	jR := borderStyle.Render(design.SymJunctionR)
+	dash := func(n int) string {
+		return borderStyle.Render(strings.Repeat(design.SymBorderH, n))
+	}
+	return jL + treeLabel + dash(treeDash) + jT + filesLabel + dash(filesDash) + jR
+}
