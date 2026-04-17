@@ -332,10 +332,6 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return r, r.activeView.Update(msg)
 
-	case TickMsg:
-		// Animate the message bar spinner and decrement TTL.
-		return r, r.messageLineView.Update(msg)
-
 	case tea.KeyMsg:
 		// 1. System actions — evaluated always, including with active modal.
 		if cmd, ok := r.evalActions(msg, r.systemActions); ok {
@@ -379,6 +375,12 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if cmd := r.activeOperation.Update(msg); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	}
+
+	// TickMsg sempre vai para messageLineView para animar o spinner.
+	// Isso garante que o spinner continua animando mesmo com operação ativa.
+	if _, isTickMsg := msg.(TickMsg); isTickMsg {
+		cmds = append(cmds, r.messageLineView.Update(msg))
 	}
 
 	if len(r.modals) > 0 {

@@ -94,6 +94,12 @@ func (v *MessageLineView) Update(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
+// CurrentSpinnerFrame retorna o frame atual do spinner.
+// Exportado para permitir testes do RootModel.
+func (v *MessageLineView) CurrentSpinnerFrame() int {
+	return v.current.SpinnerFrame
+}
+
 // Render produz a string ANSI da barra de mensagens com exatamente `width` colunas.
 //
 // Estrutura:

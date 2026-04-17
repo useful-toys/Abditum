@@ -127,3 +127,33 @@ func TestRootModel_VaultOpenedMsg_SetsManagerAndWorkArea(t *testing.T) {
 		t.Errorf("VaultOpenedMsg: workArea = %v, esperado WorkAreaVault", r.workArea)
 	}
 }
+
+func TestRootModel_TickMsg_ReachesMessageLineView(t *testing.T) {
+	r := NewRootModel()
+	r.messageLineView.SetBusy("test")
+	initialFrame := r.messageLineView.CurrentSpinnerFrame()
+
+	_, _ = r.Update(TickMsg{})
+
+	if r.messageLineView.CurrentSpinnerFrame() == initialFrame {
+		t.Error("TickMsg: SpinnerFrame não avançou — TickMsg não chegou ao messageLineView")
+	}
+}
+
+func TestRootModel_TickMsg_WithActiveOperation_SpinnerStillAnimates(t *testing.T) {
+	r := NewRootModel()
+	r.messageLineView.SetBusy("test")
+	initialFrame := r.messageLineView.CurrentSpinnerFrame()
+
+	// Criar uma operação stub
+	op := &stubOperation{}
+	r.activeOperation = op
+
+	_, _ = r.Update(TickMsg{})
+
+	// TickMsg deve chegar à operação (se ela processar TickMsg)
+	// MAS TAMBÉM deve continuar atualizando o spinner!
+	if r.messageLineView.CurrentSpinnerFrame() == initialFrame {
+		t.Error("TickMsg com operação ativa: SpinnerFrame não avançou — spinner deveria continuar animando")
+	}
+}
