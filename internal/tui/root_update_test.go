@@ -103,6 +103,16 @@ func (s *stubModal) Render(_ int, _ int, _ *design.Theme) string { return "" }
 func (s *stubModal) HandleKey(_ tea.KeyMsg) tea.Cmd              { return nil }
 func (s *stubModal) Update(_ tea.Msg) tea.Cmd                    { return nil }
 
+func TestRootModel_VaultOpenedMsg_NilManager_IsIgnored(t *testing.T) {
+	r := NewRootModel()
+
+	_, _ = r.Update(VaultOpenedMsg{Manager: nil})
+
+	if r.workArea != design.WorkAreaWelcome {
+		t.Errorf("VaultOpenedMsg(nil): workArea não deveria mudar, obteve %v", r.workArea)
+	}
+}
+
 func TestRootModel_VaultOpenedMsg_SetsManagerAndWorkArea(t *testing.T) {
 	r := NewRootModel()
 	mgr := &vault.Manager{}

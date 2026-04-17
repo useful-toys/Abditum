@@ -294,6 +294,8 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, nil
 
 	case StartOperationMsg:
+		// TODO: quando Operation ganhar Cancel(), chamar r.activeOperation.Cancel() aqui
+		// antes de substituir — operações com goroutines de IO/criptografia podem vazar.
 		r.activeOperation = msg.Op
 		return r, msg.Op.Init()
 
@@ -302,6 +304,9 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, nil
 
 	case VaultOpenedMsg:
+		if msg.Manager == nil {
+			return r, nil
+		}
 		r.setVaultManager(msg.Manager)
 		r.setWorkArea(design.WorkAreaVault)
 		return r, nil
