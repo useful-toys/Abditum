@@ -155,3 +155,19 @@ func newSavePicker(suggested string) *modal.FilePickerModal {
 func keyPress(code tea.Key) tea.KeyMsg {
 	return tea.KeyPressMsg(code)
 }
+
+// trackingMsgCtrl implementa tui.MessageController registrando o último método
+// e texto chamados — usado em testes de comportamento do FilePicker.
+type trackingMsgCtrl struct {
+	lastMethod string
+	lastText   string
+}
+
+func (s *trackingMsgCtrl) SetHintField(text string)  { s.lastMethod = "HintField"; s.lastText = text }
+func (s *trackingMsgCtrl) SetError(text string)      { s.lastMethod = "Error"; s.lastText = text }
+func (s *trackingMsgCtrl) SetWarning(text string)    { s.lastMethod = "Warning"; s.lastText = text }
+func (s *trackingMsgCtrl) SetBusy(text string)       {}
+func (s *trackingMsgCtrl) SetSuccess(text string)    {}
+func (s *trackingMsgCtrl) SetInfo(text string)       {}
+func (s *trackingMsgCtrl) SetHintUsage(text string)  {}
+func (s *trackingMsgCtrl) Clear()                    {}
