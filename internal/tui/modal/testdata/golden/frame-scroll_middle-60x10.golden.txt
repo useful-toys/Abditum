@@ -1,10 +1,10 @@
-╭─ Diálogo com Scroll ─────────────────────────────────────╮
-│  Linha 12 de 30                                          ↑
-│  Linha 13 de 30                                          │
-│  Linha 14 de 30                                          │
-│  Linha 15 de 30                                          ■
-│  Linha 16 de 30                                          │
-│  Linha 17 de 30                                          │
-│  Linha 18 de 30                                          │
-│  Linha 19 de 30                                          ↓
-╰─ Enter Confirmar ───────────────────────── Esc Cancelar ─╯
+╭─ Diálogo com Scroll ───────────────────────╮
+│  Linha 12 de 30                            ↑
+│  Linha 13 de 30                            │
+│  Linha 14 de 30                            │
+│  Linha 15 de 30                            ■
+│  Linha 16 de 30                            │
+│  Linha 17 de 30                            │
+│  Linha 18 de 30                            │
+│  Linha 19 de 30                            ↓
+╰─ Enter Confirmar ─────────── Esc Cancelar ─╯

@@ -1,6 +1,6 @@
-╭─ Ajuda — Atalhos e Ações ────────────────────────────────╮
-│  Aplicação                                               ■
-│  F1            Abre o diálogo de ajuda.                  │
-│  ⌃Q            Encerra a aplicação.                      │
-│                                                          ↓
-╰───────────────────────────────────────────── Esc Fechar ─╯
+╭─ Ajuda — Atalhos e Ações ────────────────╮
+│  Aplicação                               ■
+│  F1            Abre o diálogo de ajuda.  │
+│  ⌃Q            Encerra a aplicação.      │
+│                                          ↓
+╰───────────────────────────── Esc Fechar ─╯

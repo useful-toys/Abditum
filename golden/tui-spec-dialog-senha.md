@@ -1,4 +1,4 @@
-﻿# Especificação Visual — Diálogos de Senha
+# Especificação Visual — Diálogos de Senha
 
 > PasswordEntry e PasswordCreate.
 > Parte da [Especificação Visual](tui-specification.md).
@@ -43,15 +43,13 @@
 
 **Estado com contador de tentativas (a partir da 2ª):**
 
+O modal mantém altura fixa — o contador **não aparece no body**. A partir da 2ª tentativa, o orquestrador emite uma mensagem do tipo Info na barra de status:
+
 ```
-╭── Senha mestra ────────────────────────────╮
-│                                            │
-│  Senha                                     │
-│  ░••••••••▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │
-│                                            │
-│  Tentativa 2 de 5                          │
-╰── Enter Confirmar ───────── Esc Cancelar ──╯
+ℹ Tentativa 2 de 5
 ```
+
+O modal continua com 7 linhas totais (1 borda superior + 5 corpo + 1 borda inferior). O campo é limpo e a ação default volta para `text.disabled`.
 
 ### Identidade Visual
 
@@ -60,10 +58,8 @@
 | Título `Senha mestra` | `text.primary` | **bold** |
 | Label `Senha` | `accent.primary` | **bold** (campo ativo, sempre — diálogo de campo único) |
 | Área do campo `░` | `surface.input` | — |
-| Placeholder (antes de digitar) | `text.secondary` | *italic* |
-| Máscara `••••••••` | `text.secondary` | — |
-| Cursor `▌` | `text.primary` | — |
-| Contador `Tentativa 2 de 5` | `text.secondary` | — |
+| Máscara `•` (um por caractere digitado) | `text.secondary` | — |
+| Cursor real (posicionado ao final) | — | via `tea.Cursor` |
 | Ação default (bloqueada) | `text.disabled` | — |
 | Ação default (desbloqueada) | `accent.primary` | **bold** |
 
@@ -72,8 +68,6 @@
 | Componente | Estado | Condição |
 |---|---|---|
 | Campo `Senha` | sempre visível, sempre com foco | Diálogo de campo único |
-| Contador de tentativas | visível | Tentativa atual ≥ 2 |
-| Contador de tentativas | oculto | Primeira tentativa |
 | Ação `Enter Confirmar` | bloqueada (`text.disabled`) | Campo `Senha` vazio |
 | Ação `Enter Confirmar` | ativa (`accent.primary` **bold**) | Campo `Senha` não vazio |
 | Ação `Esc Cancelar` | sempre ativa | — |
@@ -82,21 +76,25 @@
 
 | Contexto | Tipo | Texto |
 |---|---|---|
-| Diálogo abre / foco no campo (vazio ou válido) | Dica de campo | `• Digite a senha para desbloquear o cofre` |
-| `Enter` → senha incorreta | Erro (5s) | `✕ Senha incorreta` |
+| Diálogo abre / foco no campo | Dica de campo | `• Digite a senha para desbloquear o cofre` |
+| Tentativa ≥ 2 (emitida pelo orquestrador) | Info | `ℹ Tentativa N de M` |
 | Diálogo fecha (confirmação ou cancelamento) | — | Barra limpa *(orquestrador assume)* |
+
+> **Nota:** o modal não emite a mensagem de tentativa — apenas limpa o campo via `NotifyWrongPassword()`. A contagem e exibição são responsabilidade do orquestrador.
 
 ### Eventos
 
 | Evento | Efeito |
 |---|---|
-| `Enter` com senha incorreta | Campo limpo; ação default volta para `text.disabled`; contador incrementado |
-| Tentativas esgotadas | Diálogo fecha automaticamente |
+| `Enter` com senha incorreta | Campo limpo (`NotifyWrongPassword`); ação default volta para `text.disabled` |
+| Tentativas esgotadas | Diálogo fecha automaticamente (orquestrador fecha) |
 
 ### Comportamento
 
-- Máscara de comprimento fixo (8 `•`) — não revela o tamanho real da senha
+- Máscara de um `•` por caractere digitado — sem comprimento fixo
 - Campo único — `Tab` não faz nada dentro deste diálogo
+- Cursor real (`tea.Cursor`) posicionado ao final do conteúdo
+- Sem placeholder — dica de campo vem pela barra de mensagens
 
 ## PasswordCreate
 
@@ -180,9 +178,8 @@
 | Label do campo ativo | `accent.primary` | **bold** |
 | Label do campo inativo | `text.secondary` | — |
 | Área do campo `░` | `surface.input` | — |
-| Placeholder (antes de digitar) | `text.secondary` | *italic* |
-| Máscara | `text.secondary` | — |
-| Cursor `▌` | `text.primary` | — |
+| Máscara `•` (um por caractere digitado) | `text.secondary` | — |
+| Cursor real (posicionado ao final) | — | via `tea.Cursor` |
 | Medidor — preenchido | `semantic.success` ou `semantic.warning` | — |
 | Medidor — vazio | `text.disabled` | — |
 | Label de força `Boa` / `Forte` | `semantic.success` | — |
@@ -237,6 +234,8 @@
 
 - `Tab` alterna entre os campos `Nova senha` e `Confirmação`
 - Medidor de força atualizado a cada tecla no campo `Nova senha`
-- Máscara de comprimento fixo (8 `•`) — não revela o tamanho real da senha
+- Máscara de um `•` por caractere digitado — sem comprimento fixo
+- Cursor real (`tea.Cursor`) posicionado ao final do campo focado
+- Sem placeholder — dicas de campo vêm pela barra de mensagens
 - Validação de igualdade em tempo real: a cada tecla no campo `Confirmação` e ao abandonar o campo (Tab)
 - Senhas divergentes: ação default bloqueada (`text.disabled`); barra de mensagens exibe erro (`✕`) no lugar da dica de campo; erro permanece até que as senhas confiram ou o campo seja limpo

@@ -49,13 +49,15 @@ func (f DialogFrame) Render(body string, maxWidth int, theme *design.Theme) stri
 
 	// Calcular largura baseada no corpo + padding
 	bodyWidth := f.calculateBodyWidth(body, theme)
-	// Usar a maior largura entre: maxWidth, bodyWidth, e mínimo de 20
-	innerWidth := maxWidth - 2 // começar com maxWidth (subtrair bordas)
-	if bodyWidth > innerWidth {
-		innerWidth = bodyWidth
-	}
+	// innerWidth = min(maxWidth - 2, max(bodyWidth, 20))
+	// Ou seja: usar a largura calculada, mas nunca menor que 20 nem maior que maxWidth - 2
+	innerWidth := bodyWidth
 	if innerWidth < 20 {
 		innerWidth = 20
+	}
+	maxAvailable := maxWidth - 2
+	if innerWidth > maxAvailable {
+		innerWidth = maxAvailable
 	}
 
 	// --- Borda superior ---
