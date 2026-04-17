@@ -318,23 +318,34 @@ func RenderSeparatorLine(
 	}
 
 	// Busca ativa
-	// Prefixo: " ─ Busca: " (10 colunas)
+	// O connector deve estar alinhado com a aba ativa na linha 1.
+	// Prefixo: " ─ Busca: " (10 colunas = 1 espaço + 1 char borda + 1 espaço + "Busca:" + 1 espaço)
 	searchPrefix := " " + design.SymBorderH + " Busca: "
 	searchPrefixRendered := borderStyle.Render(searchPrefix)
 	const searchPrefixCols = 10
 
-	disponivel := width - searchPrefixCols - connectorWidth
-	query := truncateLeft(*searchQuery, disponivel)
+	// Espaço entre prefixo da busca e início do connector
+	prefixToConnector := connectorStartCol - searchPrefixCols
+
+	//	query pode ocupar até prefixToConnector - 1 colunas (precisamos de pelo menos 1 borda antes do connector)
+	querySpaceAvailable := prefixToConnector - 1
+	if querySpaceAvailable < 1 {
+		querySpaceAvailable = 1
+	}
+	query := truncateLeft(*searchQuery, querySpaceAvailable)
 	queryStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Accent.Primary)).Bold(true)
 	queryRendered := queryStyle.Render(query)
 	queryWidth := lipgloss.Width(queryRendered)
 
-	fillCount := disponivel - queryWidth
-	if fillCount < 0 {
-		fillCount = 0
+	// Prefixo da busca + query + preenchimento até connector
+	prefixQueryFill := searchPrefixRendered + queryRendered
+	searchToConnectorWidth := searchPrefixCols + queryWidth
+	fillBetween := connectorStartCol - searchToConnectorWidth
+	if fillBetween < 1 {
+		fillBetween = 1
 	}
 
-	line := searchPrefixRendered + queryRendered + hBorder(fillCount) + connector
+	line := prefixQueryFill + hBorder(fillBetween) + connector
 	lineWidth := lipgloss.Width(line)
 	if lineWidth < width {
 		line += hBorder(width - lineWidth)
