@@ -160,7 +160,7 @@ Onde `H = visibleH` calculado a partir de `maxHeight * 8/10 - overheadLines`.
 innerW = modalW - 2
 treeW  = innerW * 40 / 100  (mínimo 8)
 filesW = innerW - treeW - 1  (mínimo 8)
-modalW = min(maxWidth, 70)  — seguindo DS: máximo 70 ou 80% terminal, o menor
+modalW = min(70, maxWidth * 80 / 100)  — DS: 70 colunas ou 80% terminal, o menor
 ```
 
 ### Scroll duplo independente
@@ -183,9 +183,9 @@ Funções `renderTreeSepChar()` e `renderFileSepChar()` calculam qual caractere 
 `Cursor(topY, leftX int) *tea.Cursor`:
 
 - Retorna `nil` quando `focusPanel != 2`
-- Quando `focusPanel == 2`:
+- Quando `focusPanel == 2`, delega para `nameField.Cursor()` mas com posição absoluta no terminal:
   - `Y = topY + 4 + visibleH` (linha do campo Arquivo:)
-  - `X = leftX + 1 + len("Arquivo: ") + len([]rune(nameField.Value()))` (após o valor digitado)
+  - `X = leftX + 1 + len("Arquivo: ") + nameField.Position()` — `textinput.Position()` retorna a coluna do cursor dentro do valor; `nameField.Cursor()` não é usado diretamente pois retorna posição relativa ao campo, não ao terminal
 
 O `visibleH` é calculado deterministicamente a partir de `maxHeight` e `mode` — mesmo algoritmo de `Render()`.
 
