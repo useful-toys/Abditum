@@ -53,6 +53,16 @@ type FilePickerOptions struct {
 func NewFilePicker(opts FilePickerOptions) *FilePickerModal
 ```
 
+**Comportamento do construtor:**
+
+1. Resolve `InitialDir`: se vazio, usa `os.Getwd()`. Se `os.Getwd()` falha ou o diretório não existe, usa `os.UserHomeDir()` e emite `SetWarning` ao primeiro `Render()` (não dentro do construtor, pois `messages` pode estar disponível apenas depois).
+2. Constrói a árvore da raiz até `InitialDir` via `buildTreeChain()` — todos os ancestors ficam `expanded=true`, o nó `InitialDir` fica selecionado (`treeCursor` aponta para ele).
+3. Carrega os arquivos do `InitialDir` via `loadFiles()`.
+4. Pré-seleciona o primeiro arquivo se houver: `fileCursor = 0`, caso contrário `fileCursor = -1`.
+5. Se `opts.Suggested != ""`, preenche `nameField.SetValue(opts.Suggested)`.
+6. `focusPanel = 0` (árvore).
+7. `readDir = nil` (usa `os.ReadDir` real); pode ser sobrescrito em testes após construção via campo exportado de teste — **alternativa**: adicionar `WithReadDir(fn)` option func. Como os outros campos de teste (`timeFmt`) são configurados diretamente, `readDir` segue o mesmo padrão: campo privado acessível via função setter de teste ou via struct literal em `_test.go` dentro do mesmo pacote. Como o arquivo de teste é `package modal_test` (externo), os campos de injeção precisam ser **exportados** ou expostos via método setter. Decisão: **métodos setter com sufixo `ForTest`** — `SetReadDirForTest(fn)` e `SetTimeFmtForTest(fn)` — que existem apenas para facilitar testes sem poluir a API pública.
+
 ### Interface ModalView
 
 ```go
@@ -120,9 +130,29 @@ type FilePickerModal struct {
     lastMaxHeight int
     lastMaxWidth  int
 
-    // Injeção de teste
-    timeFmt func(time.Time) string  // nil → Local "02/01/06 15:04"
+    // Injeção de teste — nil usa os.ReadDir real.
+    // Testes injetam uma função que retorna uma árvore hipotética fixa, sem disco.
+    readDir func(path string) ([]os.DirEntry, error)
+
+    // hintEmitted controla se o hint inicial já foi emitido.
+    // O hint é enviado na primeira oportunidade em Update() ou HandleKey().
+    hintEmitted bool
+
+    // Injeção de teste — nil → Local "02/01/06 15:04"
+    timeFmt func(time.Time) string
 }
+```
+
+**Toda leitura de diretório no código de produção passa por `m.readDir(path)`.** Quando `readDir == nil`, usa `os.ReadDir`. Isso inclui `expandNode()` e a listagem de arquivos ao mudar de pasta.
+
+**Acesso nos testes:** como o arquivo de teste é `package modal_test` (externo), os campos de injeção são expostos via métodos setter:
+
+```go
+// SetReadDirForTest injeta um filesystem fictício — usado exclusivamente em testes.
+func (m *FilePickerModal) SetReadDirForTest(fn func(string) ([]os.DirEntry, error)) { m.readDir = fn }
+
+// SetTimeFmtForTest injeta formatação de tempo fixa — usado exclusivamente em testes.
+func (m *FilePickerModal) SetTimeFmtForTest(fn func(time.Time) string) { m.timeFmt = fn }
 ```
 
 > **Nota sobre `lastMaxHeight`/`lastMaxWidth`:** `Cursor(topY, leftX)` precisa saber `visibleH` para calcular a linha Y do campo `Arquivo:`. Como `Cursor()` não recebe `maxHeight`, esses campos são atualizados no início de cada `Render()` para que `Cursor()` possa reutilizá-los. O mesmo padrão se aplica ao `lastMaxWidth` para consistência (não é usado em `Cursor()` mas é necessário para `visibleH` no modo Save).
@@ -160,6 +190,18 @@ linha 3+H ou 5+H:  borda inferior ╰── Enter ──── Esc ──╯
 ```
 
 Onde `H = visibleH` calculado a partir de `maxHeight * 8/10 - overheadLines`.
+
+`overheadLines` = número de linhas fixas fora do conteúdo dos painéis:
+- Modo Open: 3 linhas fixas (borda superior + linha de caminho + separador de painéis + borda inferior = 4, mas a borda inferior não consome `visibleH` → `overheadLines = 3`)
+- Modo Save: 5 linhas fixas (borda superior + caminho + separador painéis + separador campo + campo Arquivo: + borda inferior = 6, menos a borda inferior → `overheadLines = 5`)
+
+Fórmula completa:
+```
+modalH     = maxHeight * 8 / 10
+overhead   = 3          // Open; 5 para Save
+visibleH   = modalH - overhead
+if visibleH < 3 { visibleH = 3 }  // mínimo operacional
+```
 
 ### Largura dos painéis
 
@@ -232,7 +274,7 @@ Hints e erros são emitidos via `tui.MessageController`:
 
 `messages` é verificado contra `nil` antes de cada chamada — tolerância a testes sem message bar.
 
-O `emitHint()` retorna `tea.Cmd` e é chamado ao final de cada handler de teclado e em `Init()`.
+`emitHint()` retorna `tea.Cmd` e é chamado ao final de cada handler de teclado. O hint inicial (foco na árvore ao abrir) é emitido no primeiro `HandleKey` ou pode ser disparado pelo orquestrador via `Update(tui.ModalReadyMsg{})` — a interface `ModalView` não tem `Init()`. Alternativa adotada: `Update()` verifica se é o primeiro update e emite o hint inicial; ou o hint é emitido imediatamente no construtor como `tea.Cmd` retornado por uma função de setup. **Decisão:** `NewFilePicker` não retorna `tea.Cmd`. O hint inicial é emitido no primeiro `HandleKey` ou `Update` que processar qualquer mensagem. Para garantir que o hint apareça sem interação do usuário, o orquestrador deve chamar `Update(nil)` logo após abrir o modal — ou o `RootModel` passa um `tea.WindowSizeMsg` inicial que dispara `Update()`. Como outros modais não têm esse problema (não emitem hints), a solução mais simples é: emitir o hint inicial dentro de `HandleKey` apenas quando for o primeiro evento de teclado recebido, e também em `Update` quando recebe `tea.WindowSizeMsg`. **Decisão final:** `emitHint()` é chamado em `HandleKey` e em `Update` para qualquer msg não-nula. O campo `hintEmitted bool` controla se o hint inicial já foi enviado — na primeira oportunidade é emitido.
 
 ---
 
@@ -251,7 +293,7 @@ Todos os comportamentos da spec são portados integralmente. Os mais críticos (
 | `Tab` em painel de arquivos vazio | Open: volta para árvore; Save: pula para campo |
 | Caracteres inválidos no campo | `/\:*?"<>|` bloqueados silenciosamente |
 | Extensão automática no Save | Adicionada silenciosamente ao caminho de retorno se não presente |
-| `←` em pasta expandida | Recolhe; em pasta já recolhida, navega para o pai (`parentCursor`) |
+| `←` em pasta expandida | Recolhe; em pasta já recolhida, navega para o pai: percorre `visibleNodes` para trás buscando o primeiro nó com `depth < nóAtual.depth` |
 | `←` na raiz (`depth == 0`) | Sem efeito — a seleção permanece na raiz |
 | `→` em `▷` (sem subdiretórios) | Sem efeito |
 | Indicador de pasta raiz | Raiz não exibe indicador (`▶`/`▼`/`▷`) — apenas nome |
@@ -285,3 +327,127 @@ Verificar antes da implementação se `padRight` já existe em outro arquivo do 
 
 - **Suporte a mouse** (clique simples, duplo-clique): não implementado nesta iteração. O DS especifica esses eventos, mas o canal primário é teclado.
 - **Atalhos de teclado adicionais**: apenas os definidos na spec visual são implementados.
+
+---
+
+## Testes
+
+### Estratégia
+
+Os testes seguem o mesmo padrão do restante do pacote `modal`:
+
+- **Golden files** via `testdata.TestRenderManaged` (produz `.golden.txt` + `.golden.json`)
+- **Injeção de filesystem** via campo `readDir` na struct — nil usa `os.ReadDir`; testes injetam uma função que retorna uma árvore hipotética fixa sem tocar disco
+- **Injeção de tempo** via campo `timeFmt` — testes passam uma função que retorna datas fixas para output determinístico
+- Arquivo de teste: `internal/tui/modal/file_picker_test.go` (pacote `modal_test`)
+
+### Árvore hipotética para testes
+
+Todos os testes de render e comportamento usam a mesma árvore fictícia. Ela deve ter profundidade e largura suficientes para forçar scroll na árvore com janelas de altura pequena (`visibleH ≈ 8`). Mínimo: 14 nós visíveis quando totalmente expandida.
+
+```
+/
+└── home/
+    └── usuario/
+        ├── documentos/
+        │   ├── contratos/
+        │   │   ├── 2024/
+        │   │   └── 2025/
+        │   └── relatorios/
+        ├── downloads/
+        │   ├── instaladores/
+        │   └── temporarios/
+        ├── projetos/
+        │   ├── abditum/
+        │   │   ├── docs/
+        │   │   └── src/
+        │   └── site/
+        └── fotos/
+```
+
+Arquivos `.abditum` presentes em:
+- `/home/usuario/projetos/abditum/` → `database.abditum` (25_800_000 bytes, 2025-03-15 14:32), `config.abditum` (1_229 bytes, 2025-01-02 09:15), `backup.abditum` (18_400_000 bytes, 2025-04-04 18:47)
+- `/home/usuario/documentos/contratos/2025/` → `cofre.abditum` (512_000 bytes, 2025-04-01 10:00)
+
+Todos os outros diretórios: sem arquivos `.abditum`.
+
+**Implementação nos testes:** `makeTestReadDir()` retorna um `func(path string) ([]os.DirEntry, error)` que mapeia cada caminho acima para entradas fixas. Retorna `fs.ErrPermission` para o caminho especial `/home/usuario/documentos/contratos/2024/` — usado nos testes de permissão negada.
+
+Configuração padrão de um modal de teste:
+```go
+func newOpenPicker(t *testing.T) *modal.FilePickerModal {
+    m := modal.NewFilePicker(modal.FilePickerOptions{
+        Mode:       modal.FilePickerOpen,
+        Extension:  ".abditum",
+        InitialDir: "/home/usuario/projetos/abditum",
+        OnResult:   func(string) tea.Cmd { return nil },
+    })
+    m.SetReadDirForTest(makeTestReadDir())
+    m.SetTimeFmtForTest(func(tm time.Time) string { return tm.Format("02/01/06 15:04") })
+    return m
+}
+```
+
+`makeTestTimeFmt()` retorna `func(time.Time) string` que usa `t.Format("02/01/06 15:04")` — deterministico porque `fileInfos` terá `ModTime()` fixos via `fakeFileInfo`.
+
+`fakeFileInfo` implementa `os.FileInfo` com campos fixos (nome, tamanho, `ModTime`, `IsDir`).
+`fakeDirEntry` implementa `os.DirEntry` wrappando `fakeFileInfo`.
+
+### Golden files de render
+
+Localização: `internal/tui/modal/testdata/golden/file_picker-<variant>-<size>.golden.{txt,json}`
+
+**Tamanho padrão para golden files de render: `88x30`** (terminal amplo, `modalW=70`, `visibleH≈18`).
+
+| Arquivo golden | Variante | Estado do modal | Foco | Scroll árvore | Scroll arquivos |
+|---|---|---|---|---|---|
+| `file_picker-open_tree_initial-88x30` | Open, árvore inicial | Árvore aberta com `initialDir=/home/usuario/projetos/abditum`, ancestors expandidos (`/`, `home`, `usuario`, `projetos`, `abditum`), cursor em `abditum`. Painel de arquivos mostra os 3 arquivos `.abditum`, primeiro pré-selecionado. Sem scroll (tudo cabe). | árvore (0) | sem scroll | sem scroll |
+| `file_picker-open_files_noscroll-88x30` | Open, arquivos sem scroll | Mesmo estado acima, foco movido para painel de arquivos. 3 arquivos visíveis, `database.abditum` selecionado (highlight). | arquivos (1) | sem scroll | sem scroll |
+| `file_picker-open_files_scroll_top-88x30` | Open, scroll arquivos topo | Pasta com 12 arquivos fictícios (lista longa o suficiente para scroll, adicionar ao `makeTestReadDir` para `/home/usuario/projetos/abditum/` quando solicitado em testes de scroll). `fileScroll=0`, cursor no item 0. Indicador `↓` visível. | arquivos (1) | qualquer | scroll início |
+| `file_picker-open_files_scroll_mid-88x30` | Open, scroll arquivos meio | Mesma lista longa. `fileScroll` posicionado para que cursor esteja no meio da lista. Indicadores `↑` e `↓` visíveis. | arquivos (1) | qualquer | scroll meio |
+| `file_picker-open_files_scroll_end-88x30` | Open, scroll arquivos fim | Mesma lista longa. `fileScroll` no máximo. Indicador `↑` visível. | arquivos (1) | qualquer | scroll fim |
+| `file_picker-open_tree_scroll_top-88x30` | Open, scroll árvore topo | Árvore totalmente expandida (≥14 nós), janela pequena `88x14` para forçar scroll. `treeScroll=0`. Indicador `↓` no separador. | árvore (0) | scroll início | qualquer |
+| `file_picker-open_tree_scroll_mid-88x30` | Open, scroll árvore meio | Idem. `treeScroll` no meio. Indicadores `↑` e `↓`. | árvore (0) | scroll meio | qualquer |
+| `file_picker-open_tree_scroll_end-88x30` | Open, scroll árvore fim | Idem. `treeScroll` no máximo. Indicador `↑`. | árvore (0) | scroll fim | qualquer |
+| `file_picker-save_name_empty-88x30` | Save, campo vazio | `initialDir=/home/usuario/projetos/abditum`, `Suggested=""`. Campo Arquivo: vazio. Ação Enter em `text.disabled`. | campo (2) | sem scroll | sem scroll |
+| `file_picker-save_name_filled-88x30` | Save, campo preenchido | Mesmo acima, `nameField` com valor `"meu-cofre"`. Ação Enter em `accent.primary`. Cursor `▌` visível no campo. | campo (2) | sem scroll | sem scroll |
+| `file_picker-open_empty_dir-88x30` | Open, pasta vazia | Cursor em `/home/usuario/downloads/temporarios/` (sem `.abditum`). Painel de arquivos exibe `Nenhum cofre neste diretório`. Ação Enter bloqueada. | árvore (0) | sem scroll | N/A |
+
+> **Nota sobre listas longas:** o `makeTestReadDir` deve ter uma segunda configuração (ou um helper `withManyFiles`) que retorna 12 arquivos `.abditum` numerados em `/home/usuario/projetos/abditum/` para os 3 golden files de scroll de arquivos. Os 3 arquivos normais (`database`, `config`, `backup`) são usados nos demais testes.
+
+### Testes de comportamento (sem golden)
+
+| Teste | Cenário | Verificação |
+|---|---|---|
+| `TestFilePicker_Open_Enter_OnFile` | foco em arquivos, pressionar Enter | `OnResult` chamado com path completo |
+| `TestFilePicker_Open_Esc_Cancels` | pressionar Esc em qualquer foco | `OnResult` chamado com `""` |
+| `TestFilePicker_Save_Enter_WithName` | campo preenchido com `"meu-cofre"`, pressionar Enter | `OnResult` recebe `"/home/.../meu-cofre.abditum"` (extensão adicionada) |
+| `TestFilePicker_Save_Enter_WithExtension` | campo preenchido com `"meu-cofre.abditum"`, pressionar Enter | `OnResult` recebe path sem extensão duplicada |
+| `TestFilePicker_Save_Enter_EmptyField` | campo vazio, pressionar Enter | `OnResult` não chamado; cmd == nil |
+| `TestFilePicker_Tree_Left_CollapsesNode` | pasta expandida, pressionar `←` | `expanded=false`; `buildVisibleNodes` reflete o colapso |
+| `TestFilePicker_Tree_Left_AtRoot` | cursor na raiz, pressionar `←` | sem efeito; cursor permanece 0 |
+| `TestFilePicker_Tree_Right_EmptyFolder` | cursor em pasta `▷`, pressionar `→` | sem efeito |
+| `TestFilePicker_InvalidChars_Blocked` | foco no campo, pressionar `/` | caractere não inserido |
+| `TestFilePicker_Tab_Cycles_Open` | Tab 2x no modo Open | cicla árvore → arquivos → árvore |
+| `TestFilePicker_Tab_Cycles_Save` | Tab 3x no modo Save | cicla árvore → arquivos → campo → árvore |
+| `TestFilePicker_PermissionDenied` | expandir `/home/usuario/documentos/contratos/2024/` | pasta permanece recolhida; `SetError` chamado no stub |
+| `TestFilePicker_Cursor_NilWhenNotSave` | modo Open | `Cursor()` retorna nil |
+| `TestFilePicker_Cursor_NilWhenNotFocused` | modo Save, foco=0 | `Cursor()` retorna nil |
+| `TestFilePicker_Cursor_Position` | modo Save, foco=2, `nameField` com valor `"abc"` | `Cursor()` retorna posição correta (X e Y) |
+| `TestFormatFileSize` | unitário puro | `25800000` → `"25.8 MB"`, `1229` → `"1.2 KB"`, `2000000000` → `"1.9 GB"` |
+
+### Stub de MessageController
+
+```go
+// stubMessageController implementa tui.MessageController para testes.
+// Grava a última chamada para asserção sem efeitos colaterais.
+type stubMessageController struct {
+    lastMethod string
+    lastText   string
+}
+
+func (s *stubMessageController) SetHintField(text string) { s.lastMethod = "HintField"; s.lastText = text }
+func (s *stubMessageController) SetError(text string)     { s.lastMethod = "Error"; s.lastText = text }
+func (s *stubMessageController) SetWarning(text string)   { s.lastMethod = "Warning"; s.lastText = text }
+// ... demais métodos com corpo vazio
+```
