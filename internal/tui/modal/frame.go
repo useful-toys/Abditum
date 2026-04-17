@@ -149,14 +149,16 @@ func (f DialogFrame) calculateMinWidth(body string, theme *design.Theme) int {
 	// " título " = +2, " ╭──" = 4, " ╮" = 2
 	titleWidth += 8
 
-	// Largura das ações
-	actionWidth := 4 // cantos + preenchimento mínimo: "╰─ " + " ─╯"
+	// Largura das ações (renderizadas com espaços: " key label ")
+	// Cada ação ocupa: 1 espaço + key + 1 espaço + label + 1 espaço = keyWidth + 3
+	actionWidth := 3 // cantos: " " + "─" + " " + "─" + " " = 5, mas 3 é o mínimo entre ações
 	for _, opt := range f.Options {
 		if len(opt.Keys) == 0 {
 			continue
 		}
 		_, keyWidth := design.RenderDialogAction(opt.Keys[0].Label, opt.Label, f.BorderColor, theme)
-		actionWidth += keyWidth + 4 // ação + 2 espaços + 1 dash mínimo
+		actionWidth += keyWidth + 4 // ação + 1 espaço + dash + 1 espaço = keyWidth + 3 por ação + 1 dash
+		actionWidth += 3            // +3 por causa dos espaços em redor da ação
 	}
 
 	// Largura do corpo (cada linha)
@@ -233,7 +235,7 @@ func (f DialogFrame) renderBottomBorder(innerWidth int, borderStyle lipgloss.Sty
 		totalActionsWidth += r.width
 	}
 
-	// Separador entre ações: " ─ "
+	// Separador entre ações: " ─ " (renderizado com cor)
 	separator := " " + borderStyle.Render(design.SymBorderH) + " "
 	sepWidth := lipgloss.Width(separator)
 
@@ -245,7 +247,7 @@ func (f DialogFrame) renderBottomBorder(innerWidth int, borderStyle lipgloss.Sty
 		if fillCount < 1 {
 			fillCount = 1
 		}
-		sb.WriteString(strings.Repeat(design.SymBorderH, fillCount))
+		sb.WriteString(borderStyle.Render(strings.Repeat(design.SymBorderH, fillCount)))
 		sb.WriteString(" ")
 		sb.WriteString(rendered[0].text)
 	} else {
@@ -267,7 +269,7 @@ func (f DialogFrame) renderBottomBorder(innerWidth int, borderStyle lipgloss.Sty
 					gap++
 					spaceRemainder--
 				}
-				sb.WriteString(strings.Repeat(design.SymBorderH, gap))
+				sb.WriteString(borderStyle.Render(strings.Repeat(design.SymBorderH, gap)))
 				sb.WriteString(separator)
 			}
 			sb.WriteString(r.text)

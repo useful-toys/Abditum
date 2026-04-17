@@ -1,4 +1,4 @@
-╭─ Diálogo com Scroll ────────────────────╮
+╭─ Diálogo com Scroll ─────────────────────────╮
 │  Linha 1 de 30  ■
 │  Linha 2 de 30  │
 │  Linha 3 de 30  │
@@ -7,4 +7,4 @@
 │  Linha 6 de 30  │
 │  Linha 7 de 30  │
 │  Linha 8 de 30  ↓
-╰─ Enter Confirmar───────── ─ Esc Cancelar ─╯
+╰─ Enter Confirmar────────────── ─ Esc Cancelar ─╯
