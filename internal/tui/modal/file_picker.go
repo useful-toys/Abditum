@@ -246,7 +246,9 @@ func (m *FilePickerModal) expandNodeWith(node *treeNode) {
 // Chamado após qualquer mudança de estado da árvore.
 func (m *FilePickerModal) buildVisibleNodes() {
 	m.visibleNodes = m.visibleNodes[:0]
-	m.collectVisible(m.root)
+	if m.root != nil {
+		m.collectVisible(m.root)
+	}
 }
 
 func (m *FilePickerModal) collectVisible(node *treeNode) {
@@ -295,6 +297,7 @@ func (m *FilePickerModal) loadFiles(dir string) {
 // RebuildForTest reinicializa a árvore e arquivos para o diretório especificado.
 // Usado exclusivamente em testes após SetReadDirForTest.
 func (m *FilePickerModal) RebuildForTest(dir string) {
+	m.fallbackWarning = "" // limpa aviso emitido durante construção com disco real
 	dir = filepath.Clean(dir)
 	m.currentPath = dir
 	m.root = m.buildTreeChain(dir)
