@@ -1,6 +1,7 @@
 package screen
 
 import (
+	"os"
 	"testing"
 
 	"github.com/useful-toys/abditum/internal/tui/design"
@@ -289,6 +290,56 @@ func TestHeader_SearchConfigLong(t *testing.T) {
 			v.SetVault(manager)
 			v.SetActiveMode(design.WorkAreaSettings)
 			v.SetSearchQuery(ptr("um_termo_de_busca_muito_muito_muito_longo_para_o_espaco_disponivel"))
+		}),
+	)
+}
+
+func testUserHomeDir() string {
+	home := os.Getenv("USERPROFILE")
+	if home != "" {
+		return home
+	}
+	home = os.Getenv("HOME")
+	if home != "" {
+		return home
+	}
+	home, _ = os.UserHomeDir()
+	return home
+}
+
+// TestHeader_VaultInHomeDir testa a renderização com cofre dentro do homedir.
+func TestHeader_VaultInHomeDir(t *testing.T) {
+	home := testUserHomeDir()
+	caminho := home + string(os.PathSeparator) + "dir1" + string(os.PathSeparator) + "dir2" + string(os.PathSeparator) + "cofre.abditum"
+	testdata.TestRenderManaged(t, "header", "vault-in-home", goldenSizesComponent,
+		headerRenderFn(func(v *HeaderView) {
+			manager := newTestVault(caminho)
+			v.SetVault(manager)
+			v.SetActiveMode(design.WorkAreaVault)
+		}),
+	)
+}
+
+// TestHeader_VaultInHomeDirLong testa com caminho bem longo dentro do homedir.
+func TestHeader_VaultInHomeDirLong(t *testing.T) {
+	home := testUserHomeDir()
+	caminho := home + string(os.PathSeparator) + "muito" + string(os.PathSeparator) + "muito" + string(os.PathSeparator) + "muito" + string(os.PathSeparator) + "muito" + string(os.PathSeparator) + "muito" + string(os.PathSeparator) + "muito" + string(os.PathSeparator) + "muito" + string(os.PathSeparator) + "longo" + string(os.PathSeparator) + "cofre.abditum"
+	testdata.TestRenderManaged(t, "header", "vault-in-home-long", goldenSizesComponent,
+		headerRenderFn(func(v *HeaderView) {
+			manager := newTestVault(caminho)
+			v.SetVault(manager)
+			v.SetActiveMode(design.WorkAreaVault)
+		}),
+	)
+}
+
+// TestHeader_VaultOutsideHome testa com cofre fora do homedir.
+func TestHeader_VaultOutsideHome(t *testing.T) {
+	testdata.TestRenderManaged(t, "header", "vault-outside-home", goldenSizesComponent,
+		headerRenderFn(func(v *HeaderView) {
+			manager := newTestVault("D:/outros/cofres/meu_cofre.abditum")
+			v.SetVault(manager)
+			v.SetActiveMode(design.WorkAreaVault)
 		}),
 	)
 }

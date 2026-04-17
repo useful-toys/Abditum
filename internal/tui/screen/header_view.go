@@ -1,6 +1,7 @@
 package screen
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -356,13 +357,47 @@ func RenderSeparatorLine(
 
 // --- Helpers internos ---
 
+// userHomeDir returns the user's home directory path.
+// On Windows: uses USERPROFILE or HOMEDRIVE+HOMEPATH.
+// On Unix: uses HOME or os.UserHomeDir().
+func userHomeDir() string {
+	home := os.Getenv("USERPROFILE")
+	if home != "" {
+		return home
+	}
+	home = os.Getenv("HOME")
+	if home != "" {
+		return home
+	}
+	home, _ = os.UserHomeDir()
+	return home
+}
+
 // vaultDisplayName extrai o nome de exibição do cofre a partir do caminho do arquivo.
-// Retorna "" se m for nil.
+// Se o caminho estiver no homedir do usuário, retorna o caminho relativo com prefixo ~.
+// O nome é truncado sem a extensão .abditum.
 func vaultDisplayName(m *vault.Manager) string {
 	if m == nil {
 		return ""
 	}
-	base := filepath.Base(m.FilePath())
+	caminho := m.FilePath()
+	home := userHomeDir()
+
+	// Verificar se o caminho está no homedir
+	if home != "" && strings.HasPrefix(caminho, home) {
+		// Obter caminho relativo ao home
+		relPath := strings.TrimPrefix(caminho, home)
+		// Remover separador inicial se houver e normalizar para /
+		relPath = strings.TrimPrefix(relPath, string(filepath.Separator))
+		// Trocar separador de caminho para /
+		relPath = strings.ReplaceAll(relPath, string(filepath.Separator), "/")
+		// Formato ~/<caminho> sem extensão
+		relPath = "~/" + relPath
+		return strings.TrimSuffix(relPath, ".abditum")
+	}
+
+	// Fora do homedir: usar apenas o nome base sem extensão
+	base := filepath.Base(caminho)
 	return strings.TrimSuffix(base, ".abditum")
 }
 
