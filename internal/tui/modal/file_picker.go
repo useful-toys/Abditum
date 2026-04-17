@@ -367,18 +367,325 @@ func (m *FilePickerModal) Render(maxHeight, maxWidth int, theme *design.Theme) s
 	return sb.String()
 }
 
+// emitHint emite o hint correto para o foco atual via MessageController.
+func (m *FilePickerModal) emitHint() tea.Cmd {
+	if m.messages == nil {
+		return nil
+	}
+	var hint string
+	switch m.focusPanel {
+	case 0: // árvore
+		if m.mode == FilePickerOpen {
+			hint = design.SymBullet + " Navegue pelas pastas e selecione um cofre"
+		} else {
+			hint = design.SymBullet + " Navegue pelas pastas e escolha onde salvar"
+		}
+	case 1: // arquivos
+		if m.mode == FilePickerOpen {
+			if m.fileCursor >= 0 {
+				hint = design.SymBullet + " Selecione o cofre para abrir"
+			} else {
+				hint = design.SymBullet + " Nenhum cofre neste diretório — navegue para outra pasta"
+			}
+		} else {
+			hint = design.SymBullet + " Arquivos existentes neste diretório"
+		}
+	case 2: // campo nome
+		if m.nameField.Value() == "" {
+			hint = design.SymBullet + " Digite o nome do arquivo — " + m.ext + " será adicionado automaticamente"
+		} else {
+			hint = design.SymBullet + " Confirme para salvar o cofre"
+		}
+	}
+	m.messages.SetHintField(hint)
+	return nil
+}
+
+// adjustTreeScroll mantém treeCursor dentro do viewport.
+func (m *FilePickerModal) adjustTreeScroll() {
+	if m.lastMaxHeight == 0 {
+		return
+	}
+	_, _, _, _, visibleH := modalDimensions(m.lastMaxHeight, m.lastMaxWidth, m.mode)
+	if m.treeCursor < m.treeScroll {
+		m.treeScroll = m.treeCursor
+	}
+	if m.treeCursor >= m.treeScroll+visibleH {
+		m.treeScroll = m.treeCursor - visibleH + 1
+	}
+}
+
+// tryExpand tenta expandir node; emite SetError se permissão negada.
+func (m *FilePickerModal) tryExpand(node *treeNode) {
+	entries, err := m.dirRead(node.path)
+	node.loaded = true
+	if err != nil {
+		if m.messages != nil {
+			m.messages.SetError(design.SymError + " Sem permissão para acessar " + node.name)
+		}
+		return
+	}
+	for _, e := range entries {
+		if !e.IsDir() || strings.HasPrefix(e.Name(), ".") {
+			continue
+		}
+		child := &treeNode{
+			path:  filepath.Join(node.path, e.Name()),
+			name:  e.Name(),
+			depth: node.depth + 1,
+		}
+		node.children = append(node.children, child)
+	}
+	node.hasSubdirs = len(node.children) > 0
+	if node.hasSubdirs {
+		node.expanded = true
+		m.buildVisibleNodes()
+	}
+}
+
+// handleTreeKey processa teclas quando foco está na árvore (focusPanel==0).
+func (m *FilePickerModal) handleTreeKey(msg tea.KeyMsg) tea.Cmd {
+	switch msg.Key().Code {
+	case tea.KeyUp:
+		if m.treeCursor > 0 {
+			m.treeCursor--
+			m.adjustTreeScroll()
+			node := m.visibleNodes[m.treeCursor].node
+			m.loadFiles(node.path)
+		}
+	case tea.KeyDown:
+		if m.treeCursor < len(m.visibleNodes)-1 {
+			m.treeCursor++
+			m.adjustTreeScroll()
+			node := m.visibleNodes[m.treeCursor].node
+			m.loadFiles(node.path)
+		}
+	case tea.KeyRight:
+		node := m.visibleNodes[m.treeCursor].node
+		if !node.loaded {
+			m.tryExpand(node)
+		} else if node.hasSubdirs && !node.expanded {
+			node.expanded = true
+			m.buildVisibleNodes()
+		}
+		// Se ▷ (sem subdiretórios): sem efeito
+	case tea.KeyLeft:
+		node := m.visibleNodes[m.treeCursor].node
+		if node.depth == 0 {
+			// raiz: sem efeito
+		} else if node.expanded {
+			node.expanded = false
+			m.buildVisibleNodes()
+		} else {
+			// Navegar para o pai
+			for i := m.treeCursor - 1; i >= 0; i-- {
+				if m.visibleNodes[i].node.depth < node.depth {
+					m.treeCursor = i
+					m.adjustTreeScroll()
+					n := m.visibleNodes[i].node
+					m.loadFiles(n.path)
+					break
+				}
+			}
+		}
+	case tea.KeyHome:
+		m.treeCursor = 0
+		m.treeScroll = 0
+		m.loadFiles(m.visibleNodes[0].node.path)
+	case tea.KeyEnd:
+		m.treeCursor = len(m.visibleNodes) - 1
+		m.adjustTreeScroll()
+		m.loadFiles(m.visibleNodes[m.treeCursor].node.path)
+	case tea.KeyPgUp:
+		_, _, _, _, visibleH := modalDimensions(m.lastMaxHeight, m.lastMaxWidth, m.mode)
+		m.treeCursor -= visibleH
+		if m.treeCursor < 0 {
+			m.treeCursor = 0
+		}
+		m.adjustTreeScroll()
+		m.loadFiles(m.visibleNodes[m.treeCursor].node.path)
+	case tea.KeyPgDown:
+		_, _, _, _, visibleH := modalDimensions(m.lastMaxHeight, m.lastMaxWidth, m.mode)
+		m.treeCursor += visibleH
+		if m.treeCursor >= len(m.visibleNodes) {
+			m.treeCursor = len(m.visibleNodes) - 1
+		}
+		m.adjustTreeScroll()
+		m.loadFiles(m.visibleNodes[m.treeCursor].node.path)
+	case tea.KeyEnter:
+		if m.fileCursor >= 0 {
+			m.focusPanel = 1
+		}
+		// Sem efeito se pasta vazia
+	case tea.KeyTab:
+		m.focusPanel = 1
+	}
+	return m.emitHint()
+}
+
+// adjustFileScroll mantém fileCursor dentro do viewport.
+func (m *FilePickerModal) adjustFileScroll() {
+	if m.lastMaxHeight == 0 {
+		return
+	}
+	_, _, _, _, visibleH := modalDimensions(m.lastMaxHeight, m.lastMaxWidth, m.mode)
+	if m.fileCursor < m.fileScroll {
+		m.fileScroll = m.fileCursor
+	}
+	if m.fileCursor >= m.fileScroll+visibleH {
+		m.fileScroll = m.fileCursor - visibleH + 1
+	}
+}
+
+// handleFilesKey processa teclas quando foco está no painel de arquivos (focusPanel==1).
+func (m *FilePickerModal) handleFilesKey(msg tea.KeyMsg) tea.Cmd {
+	switch msg.Key().Code {
+	case tea.KeyUp:
+		if m.fileCursor > 0 {
+			m.fileCursor--
+			m.adjustFileScroll()
+		}
+	case tea.KeyDown:
+		if m.fileCursor < len(m.files)-1 {
+			m.fileCursor++
+			m.adjustFileScroll()
+		}
+	case tea.KeyHome:
+		m.fileCursor = 0
+		m.fileScroll = 0
+	case tea.KeyEnd:
+		if len(m.files) > 0 {
+			m.fileCursor = len(m.files) - 1
+			m.adjustFileScroll()
+		}
+	case tea.KeyPgUp:
+		_, _, _, _, visibleH := modalDimensions(m.lastMaxHeight, m.lastMaxWidth, m.mode)
+		m.fileCursor -= visibleH
+		if m.fileCursor < 0 {
+			m.fileCursor = 0
+		}
+		m.adjustFileScroll()
+	case tea.KeyPgDown:
+		_, _, _, _, visibleH := modalDimensions(m.lastMaxHeight, m.lastMaxWidth, m.mode)
+		m.fileCursor += visibleH
+		if m.fileCursor >= len(m.files) {
+			m.fileCursor = len(m.files) - 1
+		}
+		m.adjustFileScroll()
+	case tea.KeyEnter:
+		if m.fileCursor < 0 {
+			return nil
+		}
+		if m.mode == FilePickerOpen {
+			// Confirmar seleção
+			path := filepath.Join(m.currentPath, m.files[m.fileCursor]+m.ext)
+			return tea.Batch(m.onResult(path), tui.CloseModal())
+		}
+		// Save: copiar nome para campo e mover foco
+		m.nameField.SetValue(m.files[m.fileCursor])
+		m.focusPanel = 2
+		m.nameField.Focus()
+	case tea.KeyTab:
+		if m.mode == FilePickerSave {
+			m.focusPanel = 2
+			m.nameField.Focus()
+		} else {
+			// Open: voltar para árvore
+			m.focusPanel = 0
+			m.nameField.Blur()
+		}
+	}
+	return m.emitHint()
+}
+
+// invalidChars são os caracteres proibidos em nomes de arquivo.
+const invalidChars = `/\:*?"<>|`
+
+// handleNameKey processa teclas no campo Arquivo: (focusPanel==2, Save apenas).
+func (m *FilePickerModal) handleNameKey(msg tea.KeyMsg) tea.Cmd {
+	switch msg.Key().Code {
+	case tea.KeyEnter:
+		val := m.nameField.Value()
+		if val == "" {
+			return nil
+		}
+		name := val
+		if !strings.HasSuffix(name, m.ext) {
+			name += m.ext
+		}
+		path := filepath.Join(m.currentPath, name)
+		return tea.Batch(m.onResult(path), tui.CloseModal())
+	case tea.KeyTab:
+		m.focusPanel = 0
+		m.nameField.Blur()
+		return m.emitHint()
+	default:
+		// Bloquear caracteres inválidos silenciosamente
+		if msg.Key().Text != "" && strings.ContainsAny(msg.Key().Text, invalidChars) {
+			return nil
+		}
+		// Delegar para textinput
+		var cmd tea.Cmd
+		m.nameField, cmd = m.nameField.Update(msg)
+		return tea.Batch(cmd, m.emitHint())
+	}
+}
+
 // HandleKey processa eventos de teclado.
 func (m *FilePickerModal) HandleKey(msg tea.KeyMsg) tea.Cmd {
-	return nil
+	// Emitir hint inicial na primeira oportunidade
+	var hintCmd tea.Cmd
+	if !m.hintEmitted {
+		m.hintEmitted = true
+		hintCmd = m.emitHint()
+	}
+
+	// Esc: cancelar em qualquer foco
+	if msg.Key().Code == tea.KeyEscape {
+		var cmd tea.Cmd
+		if m.onResult != nil {
+			cmd = tea.Batch(m.onResult(""), tui.CloseModal())
+		} else {
+			cmd = tui.CloseModal()
+		}
+		return tea.Batch(hintCmd, cmd)
+	}
+
+	var cmd tea.Cmd
+	switch m.focusPanel {
+	case 0:
+		cmd = m.handleTreeKey(msg)
+	case 1:
+		cmd = m.handleFilesKey(msg)
+	case 2:
+		cmd = m.handleNameKey(msg)
+	}
+	return tea.Batch(hintCmd, cmd)
 }
 
 // Update processa mensagens do Bubble Tea.
 func (m *FilePickerModal) Update(msg tea.Msg) tea.Cmd {
+	if !m.hintEmitted {
+		m.hintEmitted = true
+		return m.emitHint()
+	}
 	if key, ok := msg.(tea.KeyMsg); ok {
 		return m.HandleKey(key)
 	}
 	return nil
 }
+
+// VisibleNodePaths retorna os paths de todos os nós visíveis — usado em testes.
+func (m *FilePickerModal) VisibleNodePaths() []string {
+	paths := make([]string, len(m.visibleNodes))
+	for i, vn := range m.visibleNodes {
+		paths[i] = filepath.ToSlash(vn.node.path)
+	}
+	return paths
+}
+
+// NameFieldValue retorna o valor atual do campo nome — usado em testes.
+func (m *FilePickerModal) NameFieldValue() string { return m.nameField.Value() }
 
 // Cursor retorna a posição do cursor real para o modal.
 func (m *FilePickerModal) Cursor(topY, leftX int) *tea.Cursor {
