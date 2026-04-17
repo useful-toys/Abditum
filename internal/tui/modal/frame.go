@@ -110,8 +110,14 @@ func (f DialogFrame) renderBodyLine(lineNum, totalLines int, content string, inn
 	lBorder := borderStyle.Render(design.SymBorderV)
 	paddingH := strings.Repeat(" ", design.DialogPaddingH)
 
-	// Conteúdo com background
-	lineContent := bgStyle.Render(paddingH + content + paddingH)
+	// Conteúdo com background — preencher até innerWidth para alinhar a borda direita
+	contentVisualWidth := lipgloss.Width(content)
+	availableContent := innerWidth - design.DialogPaddingH*2
+	fill := availableContent - contentVisualWidth
+	if fill < 0 {
+		fill = 0
+	}
+	lineContent := bgStyle.Render(paddingH + content + strings.Repeat(" ", fill) + paddingH)
 
 	// Borda direita: seta ou thumb ou │ normal
 	var rBorder string
@@ -165,7 +171,7 @@ func (f DialogFrame) calculateBodyWidth(body string, theme *design.Theme) int {
 	bodyLines := strings.Split(body, "\n")
 	maxBodyWidth := 0
 	for _, line := range bodyLines {
-		w := lipgloss.Width(line) + paddingH + 2
+		w := lipgloss.Width(line) + paddingH
 		if w > maxBodyWidth {
 			maxBodyWidth = w
 		}
@@ -180,23 +186,36 @@ func (f DialogFrame) calculateBodyWidth(body string, theme *design.Theme) int {
 		width = maxBodyWidth
 	}
 
-	return width + 2 // +2 para bordas verticais
+	return width // innerWidth (sem bordas)
 }
 
-// renderBottomBorder gera a linha de rodapé:
-// Formato: "╰─ " + Ação1 + " ─ " + Ação2 + " ─ " + Ação3 + " ─╯"
+// renderBottomBorder gera a linha de rodapé conforme a spec:
+//
+// Cada ação é envolvida por espaços: " ação ".
+// O preenchimento ─ fica entre os espaços externos de cada bloco de ação.
+//
+// Estrutura da linha completa (incluindo cantos):
+//
+//	╰─[─…─] ação1 [─…─] ação2 [─…─]─╯
 //
 // Posicionamento:
 //
-//	1 ação  → "╰─ " + Ação + " ─╯" (alinhada à direita)
-//	2 ações → "╰─ " + Ação1 + " ─ " + Ação2 + " ─╯"
-//	3 ações → "╰─ " + Ação1 + " ─ " + Ação2 + " ─ " + Ação3 + " ─╯"
+//	1 ação  → ╰──────────────────── ação ─╯  (alinhada à direita)
+//	2 ações → ╰─ ação1 ──────────── ação2 ─╯
+//	3 ações → ╰─ ação1 ─── ação2 ── ação3 ─╯
 func (f DialogFrame) renderBottomBorder(innerWidth int, borderStyle lipgloss.Style, theme *design.Theme) string {
-	// Cantos inferiores conforme especificação: ╰─  e  ─╯
-	bl := borderStyle.Render(design.SymCornerBL) + borderStyle.Render(design.SymBorderH) + " "
-	br := " " + borderStyle.Render(design.SymBorderH) + borderStyle.Render(design.SymCornerBR)
+	// Cantos: ╰ e ╯ (1 coluna cada). O traço inicial e final estão no fill.
+	cornerBL := borderStyle.Render(design.SymCornerBL)
+	cornerBR := borderStyle.Render(design.SymCornerBR)
 
-	// Renderizar as ações (cada ação já inclui espaços internos via design.RenderDialogAction)
+	dash := func(n int) string {
+		if n <= 0 {
+			return ""
+		}
+		return borderStyle.Render(strings.Repeat(design.SymBorderH, n))
+	}
+
+	// Renderizar as ações (RenderDialogAction retorna "key label" sem espaços externos)
 	type renderedOpt struct {
 		text  string
 		width int
@@ -216,62 +235,68 @@ func (f DialogFrame) renderBottomBorder(innerWidth int, borderStyle lipgloss.Sty
 
 	if len(rendered) == 0 {
 		// Sem ações: linha ─ completa
-		innerLine := borderStyle.Render(strings.Repeat(design.SymBorderH, innerWidth))
-		return bl + innerLine + br
+		return cornerBL + dash(innerWidth) + cornerBR
 	}
 
-	// Montar a linha de rodapé
-	// Formato: ╰─  Ação1  ─  Ação2  ─╯
-	var sb strings.Builder
-	sb.WriteString(bl)
+	// Anatomia de cada ação no rodapé: " ação " (1 espaço antes + 1 espaço depois)
+	// O preenchimento ─ vai entre os blocos de ação (já incluindo os espaços internos de cada ação).
+	//
+	// Para N ações, innerWidth é ocupado assim:
+	//   fill[0] + " " + ação[0] + " " + fill[1] + " " + ação[1] + " " + … + fill[N] = innerWidth
+	//
+	// fill[0] >= 1 (pelo menos "─" após o canto esquerdo)
+	// fill[N] >= 1 (pelo menos "─" antes do canto direito)
+	// fill[i > 0 e < N] >= 1 (pelo menos "─" entre ações)
+	//
+	// Total de espaços fixos: 2 * len(rendered) (1 antes e 1 depois de cada ação)
+	// Total mínimo de fill: len(rendered) + 1 (um fill entre cada par + esquerda + direita)
+	// Espaço disponível para fill: innerWidth - 2*len(ações) - soma(widths)
 
-	// Calcular largura total das ações
-	totalActionsWidth := 0
+	n := len(rendered)
+	totalActionWidth := 0
 	for _, r := range rendered {
-		totalActionsWidth += r.width
+		totalActionWidth += r.width
+	}
+	// Espaços: 2 por ação (antes e depois)
+	fixedSpaces := 2 * n
+	// Fills: n+1 slots (antes da 1ª ação, entre ações, depois da última)
+	totalFill := innerWidth - totalActionWidth - fixedSpaces
+	if totalFill < n+1 {
+		totalFill = n + 1 // mínimo 1 traço por slot
 	}
 
-	// Separador entre ações: " ─ " (renderizado com cor)
-	separator := " " + borderStyle.Render(design.SymBorderH) + " "
-	sepWidth := lipgloss.Width(separator)
+	// Distribuir o fill: slot 0 recebe o restante para alinhar à direita quando n==1,
+	// ou para 2+ ações: slot 0 e slots intermediários recebem 1 traço mínimo,
+	// o excedente vai para o último slot antes do canto direito.
+	//
+	// Spec para 2 ações: ação1 à esquerda, ação2 à direita → fill grande no meio.
+	// Spec para 1 ação: ação à direita → fill grande à esquerda.
 
-	// Calcular espaços entre ações
-	actionCount := len(rendered)
-	if actionCount == 1 {
-		// Ação única à direita: preencher até a ação
-		fillCount := innerWidth - rendered[0].width - 2 // -2 por causa do "╰─ " e " ─╯"
-		if fillCount < 1 {
-			fillCount = 1
-		}
-		sb.WriteString(borderStyle.Render(strings.Repeat(design.SymBorderH, fillCount)))
-		sb.WriteString(" ")
-		sb.WriteString(rendered[0].text)
+	fills := make([]int, n+1)
+	// Mínimo 1 traço em cada slot
+	for i := range fills {
+		fills[i] = 1
+	}
+	remaining := totalFill - (n + 1)
+
+	if n == 1 {
+		// 1 ação à direita: excedente todo no slot 0 (esquerda)
+		fills[0] += remaining
 	} else {
-		// Múltiplas ações
-		totalSepWidth := (actionCount - 1) * sepWidth
-		fillBetween := innerWidth - totalActionsWidth - totalSepWidth - 2 // -2 por causa do "╰─ " e " ─╯"
-		if fillBetween < 1 {
-			fillBetween = 1
-		}
-
-		// Distribuir espaços entre ações
-		spacePerGap := fillBetween / (actionCount - 1)
-		spaceRemainder := fillBetween % (actionCount - 1)
-
-		for i, r := range rendered {
-			if i > 0 {
-				gap := spacePerGap
-				if spaceRemainder > 0 {
-					gap++
-					spaceRemainder--
-				}
-				sb.WriteString(borderStyle.Render(strings.Repeat(design.SymBorderH, gap)))
-				sb.WriteString(separator)
-			}
-			sb.WriteString(r.text)
-		}
+		// 2+ ações: excedente no slot n-1 (entre última e penúltima — empurra a última à direita)
+		// Isso coloca ação1 à esquerda e ação2 à direita.
+		fills[n-1] += remaining
 	}
 
-	sb.WriteString(br)
+	var sb strings.Builder
+	sb.WriteString(cornerBL)
+	for i, r := range rendered {
+		sb.WriteString(dash(fills[i]))
+		sb.WriteString(" ")
+		sb.WriteString(r.text)
+		sb.WriteString(" ")
+	}
+	sb.WriteString(dash(fills[n]))
+	sb.WriteString(cornerBR)
 	return sb.String()
 }

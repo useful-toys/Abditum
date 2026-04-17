@@ -1,5 +1,5 @@
 ╭─ Título do Diálogo ──────────────────────────────────────╮
-│  Linha 1  │
-│  Linha 2  │
-│  Linha 3  │
-╰─ Enter Confirmar────────────────────────── ─ Esc Cancelar ─╯
+│  Linha 1                                                 │
+│  Linha 2                                                 │
+│  Linha 3                                                 │
+╰─ Enter Confirmar ───────────────────────── Esc Cancelar ─╯
