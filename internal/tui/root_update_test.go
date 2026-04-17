@@ -102,6 +102,7 @@ type stubModal struct{}
 func (s *stubModal) Render(_ int, _ int, _ *design.Theme) string { return "" }
 func (s *stubModal) HandleKey(_ tea.KeyMsg) tea.Cmd              { return nil }
 func (s *stubModal) Update(_ tea.Msg) tea.Cmd                    { return nil }
+func (s *stubModal) Cursor(_, _ int) *tea.Cursor                 { return nil }
 
 func TestRootModel_VaultOpenedMsg_NilManager_IsIgnored(t *testing.T) {
 	r := NewRootModel()
