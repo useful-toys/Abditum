@@ -190,3 +190,21 @@ func TestFilePicker_BuildTreeChain_ExpandsAncestors(t *testing.T) {
 		t.Errorf("treeCursor path = %q, want /home/usuario/projetos/abditum", m.TreeCursorPath())
 	}
 }
+
+func TestFormatFileSize(t *testing.T) {
+	cases := []struct {
+		bytes int64
+		want  string
+	}{
+		{25_800_000, "24.6 MB"},
+		{1_229, "1.2 KB"},
+		{2_000_000_000, "1.9 GB"},
+		{1_024, "1.0 KB"},
+	}
+	for _, c := range cases {
+		got := modal.FormatFileSizeForTest(c.bytes)
+		if got != c.want {
+			t.Errorf("formatFileSize(%d) = %q, want %q", c.bytes, got, c.want)
+		}
+	}
+}

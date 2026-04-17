@@ -1,6 +1,7 @@
 package modal
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,6 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/bubbles/v2/textinput"
+	"charm.land/lipgloss/v2"
 	"github.com/useful-toys/abditum/internal/tui"
 	"github.com/useful-toys/abditum/internal/tui/design"
 )
@@ -349,4 +351,114 @@ func (m *FilePickerModal) Update(msg tea.Msg) tea.Cmd {
 // Cursor retorna a posição do cursor real para o modal.
 func (m *FilePickerModal) Cursor(topY, leftX int) *tea.Cursor {
 	return nil
+}
+
+// formatFileSize formata bytes em KB/MB/GB (base 1024, 1 casa decimal).
+func formatFileSize(bytes int64) string {
+	const (
+		KB = 1024
+		MB = KB * 1024
+		GB = MB * 1024
+	)
+	switch {
+	case bytes >= GB:
+		return formatF(float64(bytes)/GB) + " GB"
+	case bytes >= MB:
+		return formatF(float64(bytes)/MB) + " MB"
+	default:
+		return formatF(float64(bytes)/KB) + " KB"
+	}
+}
+
+func formatF(f float64) string {
+	// 1 casa decimal, sem trailing zero extra
+	s := strings.TrimRight(strings.TrimRight(
+		strings.Replace(fmt.Sprintf("%.1f", f), ",", ".", 1),
+		"0"), ".")
+	// Garantir ao menos 1 casa decimal para consistência visual
+	if !strings.Contains(s, ".") {
+		s += ".0"
+	}
+	return s
+}
+
+// FormatFileSizeForTest expõe formatFileSize para testes externos.
+func FormatFileSizeForTest(bytes int64) string { return formatFileSize(bytes) }
+
+// padRight pads s até width colunas visuais (ANSI-aware via lipgloss.Width).
+func padRight(s string, width int) string {
+	w := lipgloss.Width(s)
+	if w >= width {
+		return s
+	}
+	return s + strings.Repeat(" ", width-w)
+}
+
+// modalDimensions calcula as dimensões do modal a partir do terminal.
+func modalDimensions(maxHeight, maxWidth int, mode FilePickerMode) (modalW, innerW, treeW, filesW, visibleH int) {
+	modalW = maxWidth * 80 / 100
+	if modalW > 70 {
+		modalW = 70
+	}
+	innerW = modalW - 2
+	treeW = innerW * 40 / 100
+	if treeW < 8 {
+		treeW = 8
+	}
+	filesW = innerW - treeW - 1
+	if filesW < 8 {
+		filesW = 8
+	}
+
+	overhead := 3 // Open: borda sup + caminho + sep painéis
+	if mode == FilePickerSave {
+		overhead = 5 // + sep campo + campo Arquivo:
+	}
+	modalH := maxHeight * 8 / 10
+	visibleH = modalH - overhead
+	if visibleH < 3 {
+		visibleH = 3
+	}
+	return
+}
+
+// renderTreeSepChar retorna o caractere do separador da árvore na linha lineIdx (0-based dentro do conteúdo).
+// Substitui │ por ↑/■/↓ conforme scroll. total = len(visibleNodes), vp = visibleH.
+func renderTreeSepChar(lineIdx, treeScroll, total, vp int, theme *design.Theme) string {
+	ss := ScrollState{Offset: treeScroll, Total: total, Viewport: vp}
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Default))
+	lineNum := lineIdx + 1 // 1-based
+	switch {
+	case lineNum == 1 && ss.CanScrollUp():
+		s, _ := design.RenderScrollArrow(true, theme)
+		return s
+	case lineNum == vp && ss.CanScrollDown():
+		s, _ := design.RenderScrollArrow(false, theme)
+		return s
+	case ss.ThumbLine() == lineNum:
+		s, _ := design.RenderScrollThumb(theme)
+		return s
+	default:
+		return borderStyle.Render(design.SymBorderV)
+	}
+}
+
+// renderFileSepChar retorna o caractere da borda direita do modal na linha lineIdx.
+func renderFileSepChar(lineIdx, fileScroll, total, vp int, theme *design.Theme) string {
+	ss := ScrollState{Offset: fileScroll, Total: total, Viewport: vp}
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Focused))
+	lineNum := lineIdx + 1
+	switch {
+	case lineNum == 1 && ss.CanScrollUp():
+		s, _ := design.RenderScrollArrow(true, theme)
+		return s
+	case lineNum == vp && ss.CanScrollDown():
+		s, _ := design.RenderScrollArrow(false, theme)
+		return s
+	case ss.ThumbLine() == lineNum:
+		s, _ := design.RenderScrollThumb(theme)
+		return s
+	default:
+		return borderStyle.Render(design.SymBorderV)
+	}
 }
