@@ -257,6 +257,13 @@ func (r *RootModel) View() tea.View {
 		modalContent := top.Render(modalH, r.width, r.theme)
 		// Center modal content horizontally within available space.
 		centeredModal := lipgloss.Place(r.width, modalH, lipgloss.Center, lipgloss.Center, modalContent)
+
+		// Calcular posição absoluta do modal para repassar ao método Cursor do modal.
+		// modalContent tem dimensões reais; o compositor aplica Y(1) — offset de 1 linha.
+		modalW, modalActualH := lipgloss.Size(modalContent)
+		topY := 1 + (modalH-modalActualH)/2 // 1 = offset Y do layer compositor
+		leftX := (r.width - modalW) / 2
+
 		// Compose modal (z=1) over base layout (z=0) using lipgloss v2 compositor.
 		result := lipgloss.NewCompositor(
 			lipgloss.NewLayer(base),
@@ -265,6 +272,9 @@ func (r *RootModel) View() tea.View {
 		v := tea.NewView(result)
 		v.AltScreen = true
 		v.BackgroundColor = lipgloss.Color(r.theme.Surface.Base)
+		if c := top.Cursor(topY, leftX); c != nil {
+			v.Cursor = c
+		}
 		return v
 	}
 
