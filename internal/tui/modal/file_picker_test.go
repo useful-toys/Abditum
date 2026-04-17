@@ -3,6 +3,8 @@ package modal_test
 import (
 	"io/fs"
 	"os"
+	"path/filepath"
+	"testing"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -84,6 +86,8 @@ func makeTestReadDir() func(string) ([]os.DirEntry, error) {
 		"/home/usuario/fotos":                 {},
 	}
 	return func(path string) ([]os.DirEntry, error) {
+		// Normalizar separadores para compatibilidade Unix/Windows nos testes.
+		path = filepath.ToSlash(filepath.Clean(path))
 		if path == "/home/usuario/documentos/contratos/2024" {
 			return nil, fs.ErrPermission
 		}
@@ -115,6 +119,8 @@ func makeTestReadDirManyFiles() func(string) ([]os.DirEntry, error) {
 		file("arquivo12.abditum", 12_000, date20250315),
 	}
 	return func(path string) ([]os.DirEntry, error) {
+		// Normalizar separadores para compatibilidade Unix/Windows nos testes.
+		path = filepath.ToSlash(filepath.Clean(path))
 		if path == "/home/usuario/projetos/abditum" {
 			return manyFiles, nil
 		}
@@ -135,6 +141,7 @@ func newOpenPicker() *modal.FilePickerModal {
 	})
 	m.SetReadDirForTest(makeTestReadDir())
 	m.SetTimeFmtForTest(fixedTimeFmt)
+	m.RebuildForTest("/home/usuario/projetos/abditum")
 	return m
 }
 
@@ -149,6 +156,7 @@ func newSavePicker(suggested string) *modal.FilePickerModal {
 	})
 	m.SetReadDirForTest(makeTestReadDir())
 	m.SetTimeFmtForTest(fixedTimeFmt)
+	m.RebuildForTest("/home/usuario/projetos/abditum")
 	return m
 }
 
@@ -174,3 +182,11 @@ func (s *trackingMsgCtrl) SetHintUsage(text string)  {}
 func (s *trackingMsgCtrl) Clear()                    {}
 
 var _ tui.MessageController = (*trackingMsgCtrl)(nil)
+
+func TestFilePicker_BuildTreeChain_ExpandsAncestors(t *testing.T) {
+	m := newOpenPicker()
+	// treeCursor deve apontar para /home/usuario/projetos/abditum
+	if m.TreeCursorPath() != "/home/usuario/projetos/abditum" {
+		t.Errorf("treeCursor path = %q, want /home/usuario/projetos/abditum", m.TreeCursorPath())
+	}
+}
