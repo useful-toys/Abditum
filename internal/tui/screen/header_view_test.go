@@ -1,7 +1,6 @@
 package screen
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/useful-toys/abditum/internal/tui/design"
@@ -16,22 +15,12 @@ func ptr(s string) *string {
 
 // newTestVault cria um novo vault.Manager para testes com um caminho explícito.
 // O vault é inicializado com conteúdo padrão e está limpo (não modificado).
-// Usa reflection para configurar o campo privado 'caminho' no Manager.
 func newTestVault(caminho string) *vault.Manager {
 	cofre := vault.NovoCofre()
 	if err := cofre.InicializarConteudoPadrao(); err != nil {
 		panic("failed to initialize test vault: " + err.Error())
 	}
-	manager := vault.NewManager(cofre, nil)
-
-	// Use reflection to set the private 'caminho' field
-	mValue := reflect.ValueOf(manager).Elem()
-	caminhoField := mValue.FieldByName("caminho")
-	if caminhoField.IsValid() && caminhoField.CanSet() {
-		caminhoField.SetString(caminho)
-	}
-
-	return manager
+	return vault.NewManagerForTest(cofre, caminho)
 }
 
 // newTestVaultDirty cria um novo vault.Manager marcado como modificado.

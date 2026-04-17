@@ -1,2 +1,2 @@
-  Abditum · .                                 ╭ Cofre ╮  ╭ Modelos ╮  ╭────────╮
+  Abditum · meu_cofre                         ╭ Cofre ╮  ╭ Modelos ╮  ╭────────╮
 ──────────────────────────────────────────────────────────────────────╯ Config ╰
