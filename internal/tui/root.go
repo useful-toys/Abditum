@@ -378,9 +378,11 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	// TickMsg sempre vai para messageLineView para animar o spinner.
-	// Isso garante que o spinner continua animando mesmo com operação ativa.
+	// Também re-agenda o timer — tea.Every dispara uma única vez e para.
+	// Sem re-agendar, o spinner animaria apenas uma vez e pararia.
 	if _, isTickMsg := msg.(TickMsg); isTickMsg {
-		cmds = append(cmds, r.messageLineView.Update(msg))
+		r.messageLineView.Update(msg)
+		cmds = append(cmds, tickCmd())
 	}
 
 	if len(r.modals) > 0 {
@@ -403,6 +405,12 @@ func (r *RootModel) setWorkArea(area design.WorkArea) {
 // Init is called once at application startup.
 // Returns a command that emits TickMsg every second for spinner animation and TTL decrement.
 func (r *RootModel) Init() tea.Cmd {
+	return tickCmd()
+}
+
+// tickCmd agenda um único TickMsg para daqui a 1 segundo.
+// Deve ser re-agendado a cada TickMsg recebido — tea.Every dispara apenas uma vez.
+func tickCmd() tea.Cmd {
 	return tea.Every(1*time.Second, func(time.Time) tea.Msg {
 		return TickMsg{}
 	})
