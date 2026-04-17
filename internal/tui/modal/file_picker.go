@@ -540,3 +540,167 @@ func (m *FilePickerModal) renderPanelSeparator(innerW, treeW int, theme *design.
 	}
 	return jL + treeLabel + dash(treeDash) + jT + filesLabel + dash(filesDash) + jR
 }
+
+// renderTreeLine renderiza uma linha do painel de árvore.
+// absIdx é o índice em visibleNodes; treeW é a largura do painel.
+func (m *FilePickerModal) renderTreeLine(absIdx, treeW int, theme *design.Theme) string {
+	if absIdx < 0 || absIdx >= len(m.visibleNodes) {
+		return strings.Repeat(" ", treeW)
+	}
+	node := m.visibleNodes[absIdx].node
+
+	// Ícone de pasta
+	var icon string
+	if node.depth == 0 {
+		icon = "" // raiz: sem indicador
+	} else if !node.loaded || !node.hasSubdirs {
+		if node.loaded {
+			icon = design.SymFolderEmpty
+		} else {
+			icon = design.SymFolderCollapsed // ainda não carregado: assume recolhido
+		}
+	} else if node.expanded {
+		icon = design.SymFolderExpanded
+	} else {
+		icon = design.SymFolderCollapsed
+	}
+
+	iconStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Accent.Secondary))
+	indent := strings.Repeat("  ", node.depth)
+
+	var nameStr string
+	isCursor := absIdx == m.treeCursor
+	isActive := m.focusPanel == 0
+
+	nameStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary))
+	if isCursor {
+		cursorStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color(theme.Accent.Primary)).
+			Bold(true)
+		if isActive {
+			cursorStyle = cursorStyle.Background(lipgloss.Color(theme.Special.Highlight))
+		}
+		nameStr = cursorStyle.Render(node.name)
+	} else {
+		nameStr = nameStyle.Render(node.name)
+	}
+
+	var line string
+	if icon == "" {
+		line = indent + nameStr
+	} else {
+		line = indent + iconStyle.Render(icon) + " " + nameStr
+	}
+	return padRight(line, treeW)
+}
+
+// renderFileLine renderiza uma linha do painel de arquivos.
+// absIdx é o índice em m.files; filesW é a largura do painel.
+func (m *FilePickerModal) renderFileLine(absIdx, filesW int, theme *design.Theme) string {
+	if absIdx < 0 || absIdx >= len(m.files) {
+		return strings.Repeat(" ", filesW)
+	}
+
+	name := m.files[absIdx]
+	info := m.fileInfos[absIdx]
+	sizeStr := formatFileSize(info.Size())
+	dateStr := m.formatTime(info.ModTime())
+
+	// Larguras fixas
+	sizeW := 7  // ex: "25.8 MB"
+	dateW := 14 // "dd/mm/aa HH:MM"
+	bulletW := 1
+	sepW := 1
+
+	// nameW disponível
+	nameW := filesW - bulletW - sepW - sizeW - sepW - dateW
+	if nameW < 4 {
+		// Truncar date
+		dateW = 0
+		nameW = filesW - bulletW - sepW - sizeW
+		if nameW < 4 {
+			// Truncar size também
+			sizeW = 0
+			nameW = filesW - bulletW
+		}
+	}
+
+	// Truncar nome se necessário
+	if lipgloss.Width(name) > nameW && nameW > 1 {
+		for lipgloss.Width(name+design.SymEllipsis) > nameW && len(name) > 0 {
+			runes := []rune(name)
+			name = string(runes[:len(runes)-1])
+		}
+		name = name + design.SymEllipsis
+	}
+
+	isSel := absIdx == m.fileCursor
+	bulletStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
+	metaStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
+
+	var nameRendered string
+	if isSel && m.focusPanel == 1 {
+		nameRendered = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(theme.Text.Primary)).
+			Background(lipgloss.Color(theme.Special.Highlight)).
+			Bold(true).
+			Render(padRight(name, nameW))
+	} else {
+		nameRendered = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(theme.Text.Primary)).
+			Render(padRight(name, nameW))
+	}
+
+	bullet := bulletStyle.Render(design.SymLeaf)
+	line := bullet + " " + nameRendered
+	if sizeW > 0 {
+		line += " " + metaStyle.Render(padRight(sizeStr, sizeW))
+	}
+	if dateW > 0 {
+		line += " " + metaStyle.Render(dateStr)
+	}
+	return padRight(line, filesW)
+}
+
+// renderEmptyFilesMessage renderiza a mensagem quando o painel de arquivos está vazio.
+func (m *FilePickerModal) renderEmptyFilesMessage(filesW int, theme *design.Theme) string {
+	var msg string
+	if m.mode == FilePickerOpen {
+		msg = "Nenhum cofre neste diretório"
+	} else {
+		msg = ""
+	}
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
+	return padRight(style.Render(msg), filesW)
+}
+
+// renderContentLines monta as visibleH linhas de conteúdo dos dois painéis lado a lado.
+func (m *FilePickerModal) renderContentLines(visibleH, treeW, filesW int, theme *design.Theme) []string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Focused))
+	bgStyle := lipgloss.NewStyle().Background(lipgloss.Color(theme.Surface.Raised))
+	lBorder := borderStyle.Render(design.SymBorderV)
+
+	lines := make([]string, visibleH)
+	for i := 0; i < visibleH; i++ {
+		treeIdx := m.treeScroll + i
+		fileIdx := m.fileScroll + i
+
+		treePart := bgStyle.Render(m.renderTreeLine(treeIdx, treeW, theme))
+		sepChar := renderTreeSepChar(i, m.treeScroll, len(m.visibleNodes), visibleH, theme)
+
+		var filePart string
+		if len(m.files) == 0 {
+			if i == 1 {
+				filePart = bgStyle.Render(m.renderEmptyFilesMessage(filesW, theme))
+			} else {
+				filePart = bgStyle.Render(strings.Repeat(" ", filesW))
+			}
+		} else {
+			filePart = bgStyle.Render(m.renderFileLine(fileIdx, filesW, theme))
+		}
+		rBorder := renderFileSepChar(i, m.fileScroll, len(m.files), visibleH, theme)
+
+		lines[i] = lBorder + treePart + sepChar + filePart + rBorder
+	}
+	return lines
+}
