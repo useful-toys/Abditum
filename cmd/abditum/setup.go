@@ -6,6 +6,7 @@ import (
 	"github.com/useful-toys/abditum/internal/tui/actions"
 	"github.com/useful-toys/abditum/internal/tui/design"
 	"github.com/useful-toys/abditum/internal/tui/modal"
+	"github.com/useful-toys/abditum/internal/tui/operation"
 )
 
 // setupActions registers all action groups and actions in the application (system and application).
@@ -62,6 +63,17 @@ func setupApplication(r *tui.RootModel) {
 			Priority:    20,
 			Visible:     true,
 			OnExecute:   func() tea.Cmd { return tea.Quit },
+		},
+		{
+			Keys:        []design.Key{design.Keys.F2},
+			Label:       "Operação Fake",
+			Description: "Demonstração do padrão Operation — confirmação + trabalho assíncrono.",
+			GroupID:     "app",
+			Priority:    99,
+			Visible:     true,
+			OnExecute: func() tea.Cmd {
+				return tui.StartOperation(operation.NewFakeOperation(r.MessageController()))
+			},
 		},
 	})
 }
