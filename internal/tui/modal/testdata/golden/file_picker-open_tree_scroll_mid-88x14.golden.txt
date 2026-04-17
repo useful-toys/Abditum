@@ -9,4 +9,4 @@
 │      ▼ projetos           │                                        │
 │        ▶ abditum          │                                        │
 │        ▷ site             ↓                                        │
-╰─ Enter Abrir ───────────────────────────────────── Esc Cancelar ─╯
+╰─ Enter Abrir ─────────────────────────────────────── Esc Cancelar ─╯

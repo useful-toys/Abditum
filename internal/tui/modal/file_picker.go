@@ -363,7 +363,7 @@ func (m *FilePickerModal) Render(maxHeight, maxWidth int, theme *design.Theme) s
 		sb.WriteRune('\n')
 	}
 
-	sb.WriteString(m.renderBottomBorder(innerW, theme))
+	sb.WriteString(m.renderBottomBorder(modalW, theme))
 	return sb.String()
 }
 
@@ -1120,7 +1120,7 @@ func (m *FilePickerModal) renderNameField(innerW int, theme *design.Theme) strin
 }
 
 // renderBottomBorder renderiza ╰── Enter Ação ──── Esc Cancelar ──╯
-func (m *FilePickerModal) renderBottomBorder(innerW int, theme *design.Theme) string {
+func (m *FilePickerModal) renderBottomBorder(modalW int, theme *design.Theme) string {
 	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Focused))
 
 	// Cor da ação default: accent.primary se habilitada, text.disabled se não
@@ -1143,8 +1143,9 @@ func (m *FilePickerModal) renderBottomBorder(innerW int, theme *design.Theme) st
 	escText, escW := design.RenderDialogAction("Esc", "Cancelar", theme.Border.Focused, theme)
 
 	// ╰─ Enter Abrir ──── Esc Cancelar ─╯
-	totalFixed := 2 + enterW + 2 + escW + 2 // espaços em volta de cada ação
-	totalFill := innerW - totalFixed
+	// totalFixed inclui os 2 cantos + espaços em volta de cada ação
+	totalFixed := 2 + enterW + 2 + escW + 2
+	totalFill := modalW - totalFixed
 	if totalFill < 3 {
 		totalFill = 3
 	}
