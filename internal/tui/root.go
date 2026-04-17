@@ -53,6 +53,10 @@ type RootModel struct {
 	// modals is the stack of open modals; the top of stack is the active modal.
 	modals []ModalView
 
+	// activeOperation é a operação em andamento, ou nil quando ocioso.
+	// Recebe todas as mensagens não tratadas pelo switch do root.
+	activeOperation Operation
+
 	// systemActions stores global/system-level actions evaluated in any context.
 	systemActions []actions.Action
 	// appActions stores application-wide actions evaluated only without active modal.
@@ -289,6 +293,22 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.setWorkArea(msg.Area)
 		return r, nil
 
+	case StartOperationMsg:
+		r.activeOperation = msg.Op
+		return r, msg.Op.Init()
+
+	case OperationCompletedMsg:
+		r.activeOperation = nil
+		return r, nil
+
+	case VaultOpenedMsg:
+		r.setVaultManager(msg.Manager)
+		r.setWorkArea(design.WorkAreaVault)
+		return r, nil
+
+	case SecretExportedMsg:
+		return r, nil
+
 	case ModalReadyMsg:
 		if len(r.modals) > 1 {
 			parent := r.modals[len(r.modals)-2]
@@ -332,14 +352,25 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, nil
 	}
 
-	if len(r.modals) > 0 {
-		top := len(r.modals) - 1
-		return r, r.modals[top].Update(msg)
+	var cmds []tea.Cmd
+
+	// Roteia para activeOperation ANTES da bifurcação modal/view.
+	// tea.Batch não garante ordem: mensagens privadas da operação (ex: fakeConfirmedMsg)
+	// podem chegar antes de CloseModalMsg no mesmo Batch. Se aguardarmos o modal sair
+	// da pilha para rotear, a operação nunca receberia essas mensagens.
+	if r.activeOperation != nil {
+		if cmd := r.activeOperation.Update(msg); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	}
 
-	var cmds []tea.Cmd
-	cmds = append(cmds, r.activeView.Update(msg))
-	cmds = append(cmds, r.headerView.Update(msg))
+	if len(r.modals) > 0 {
+		top := len(r.modals) - 1
+		cmds = append(cmds, r.modals[top].Update(msg))
+	} else {
+		cmds = append(cmds, r.activeView.Update(msg))
+		cmds = append(cmds, r.headerView.Update(msg))
+	}
 	return r, tea.Batch(cmds...)
 }
 
