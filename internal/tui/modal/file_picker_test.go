@@ -22,12 +22,12 @@ type fakeFileInfo struct {
 	isDir   bool
 }
 
-func (f fakeFileInfo) Name() string      { return f.name }
-func (f fakeFileInfo) Size() int64       { return f.size }
-func (f fakeFileInfo) Mode() os.FileMode { return 0o644 }
+func (f fakeFileInfo) Name() string       { return f.name }
+func (f fakeFileInfo) Size() int64        { return f.size }
+func (f fakeFileInfo) Mode() os.FileMode  { return 0o644 }
 func (f fakeFileInfo) ModTime() time.Time { return f.modTime }
-func (f fakeFileInfo) IsDir() bool       { return f.isDir }
-func (f fakeFileInfo) Sys() any          { return nil }
+func (f fakeFileInfo) IsDir() bool        { return f.isDir }
+func (f fakeFileInfo) Sys() any           { return nil }
 
 // fakeDirEntry implementa os.DirEntry wrappando fakeFileInfo.
 type fakeDirEntry struct{ info fakeFileInfo }
@@ -61,20 +61,20 @@ var (
 // Retorna fs.ErrPermission para /home/usuario/documentos/contratos/2024/
 func makeTestReadDir() func(string) ([]os.DirEntry, error) {
 	table := map[string][]os.DirEntry{
-		"/": {dir("home")},
-		"/home": {dir("usuario")},
-		"/home/usuario": {dir("documentos"), dir("downloads"), dir("projetos"), dir("fotos")},
-		"/home/usuario/documentos": {dir("contratos"), dir("relatorios")},
+		"/":                                  {dir("home")},
+		"/home":                              {dir("usuario")},
+		"/home/usuario":                      {dir("documentos"), dir("downloads"), dir("projetos"), dir("fotos")},
+		"/home/usuario/documentos":           {dir("contratos"), dir("relatorios")},
 		"/home/usuario/documentos/contratos": {dir("2024"), dir("2025")},
 		// 2024 retorna permissão negada — ver abaixo
 		"/home/usuario/documentos/contratos/2025": {
 			file("cofre.abditum", 512_000, date20250401),
 		},
-		"/home/usuario/documentos/relatorios": {},
-		"/home/usuario/downloads": {dir("instaladores"), dir("temporarios")},
+		"/home/usuario/documentos/relatorios":  {},
+		"/home/usuario/downloads":              {dir("instaladores"), dir("temporarios")},
 		"/home/usuario/downloads/instaladores": {},
 		"/home/usuario/downloads/temporarios":  {},
-		"/home/usuario/projetos": {dir("abditum"), dir("site")},
+		"/home/usuario/projetos":               {dir("abditum"), dir("site")},
 		"/home/usuario/projetos/abditum": {
 			dir("docs"),
 			dir("src"),
@@ -174,14 +174,14 @@ type trackingMsgCtrl struct {
 	lastText   string
 }
 
-func (s *trackingMsgCtrl) SetHintField(text string)  { s.lastMethod = "HintField"; s.lastText = text }
-func (s *trackingMsgCtrl) SetError(text string)      { s.lastMethod = "Error"; s.lastText = text }
-func (s *trackingMsgCtrl) SetWarning(text string)    { s.lastMethod = "Warning"; s.lastText = text }
-func (s *trackingMsgCtrl) SetBusy(text string)       {}
-func (s *trackingMsgCtrl) SetSuccess(text string)    {}
-func (s *trackingMsgCtrl) SetInfo(text string)       {}
-func (s *trackingMsgCtrl) SetHintUsage(text string)  {}
-func (s *trackingMsgCtrl) Clear()                    {}
+func (s *trackingMsgCtrl) SetHintField(text string) { s.lastMethod = "HintField"; s.lastText = text }
+func (s *trackingMsgCtrl) SetError(text string)     { s.lastMethod = "Error"; s.lastText = text }
+func (s *trackingMsgCtrl) SetWarning(text string)   { s.lastMethod = "Warning"; s.lastText = text }
+func (s *trackingMsgCtrl) SetBusy(text string)      {}
+func (s *trackingMsgCtrl) SetSuccess(text string)   {}
+func (s *trackingMsgCtrl) SetInfo(text string)      {}
+func (s *trackingMsgCtrl) SetHintUsage(text string) {}
+func (s *trackingMsgCtrl) Clear()                   {}
 
 var _ tui.MessageController = (*trackingMsgCtrl)(nil)
 
@@ -315,3 +315,47 @@ func TestFilePicker_Render_OpenFilesScrollEnd(t *testing.T) {
 		})
 }
 
+func TestFilePicker_Render_OpenTreeScrollTop(t *testing.T) {
+	m := newOpenPicker()
+	// Expandir toda a árvore (varios Rights) — no-op with HandleKey stub
+	for i := 0; i < 20; i++ {
+		m.Update(tea.KeyPressMsg{Code: tea.KeyRight})
+		m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	// Voltar ao topo — no-op with HandleKey stub
+	m.Update(tea.KeyPressMsg{Code: tea.KeyHome})
+	testdata.TestRenderManaged(t, "file_picker", "open_tree_scroll_top", []string{"88x14"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+func TestFilePicker_Render_OpenTreeScrollMid(t *testing.T) {
+	m := newOpenPicker()
+	for i := 0; i < 20; i++ {
+		m.Update(tea.KeyPressMsg{Code: tea.KeyRight})
+		m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	// Ir para o meio — no-op with HandleKey stub
+	m.Update(tea.KeyPressMsg{Code: tea.KeyHome})
+	for i := 0; i < 7; i++ {
+		m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	testdata.TestRenderManaged(t, "file_picker", "open_tree_scroll_mid", []string{"88x14"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+func TestFilePicker_Render_OpenTreeScrollEnd(t *testing.T) {
+	m := newOpenPicker()
+	for i := 0; i < 20; i++ {
+		m.Update(tea.KeyPressMsg{Code: tea.KeyRight})
+		m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	m.Update(tea.KeyPressMsg{Code: tea.KeyEnd})
+	testdata.TestRenderManaged(t, "file_picker", "open_tree_scroll_end", []string{"88x14"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}

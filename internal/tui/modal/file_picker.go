@@ -8,8 +8,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	tea "charm.land/bubbletea/v2"
 	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/useful-toys/abditum/internal/tui"
 	"github.com/useful-toys/abditum/internal/tui/design"
@@ -26,11 +26,11 @@ const (
 // FilePickerOptions são os parâmetros de construção do FilePicker.
 type FilePickerOptions struct {
 	Mode       FilePickerMode
-	Extension  string                   // ex: ".abditum" — inclui o ponto
-	InitialDir string                   // "" → CWD → fallback ~
-	Suggested  string                   // Save: valor inicial do campo Arquivo:
+	Extension  string                    // ex: ".abditum" — inclui o ponto
+	InitialDir string                    // "" → CWD → fallback ~
+	Suggested  string                    // Save: valor inicial do campo Arquivo:
 	OnResult   func(path string) tea.Cmd // path="" se cancelado
-	Messages   tui.MessageController    // nil tolerado
+	Messages   tui.MessageController     // nil tolerado
 }
 
 // treeNode representa uma entrada de diretório na árvore lazy.
