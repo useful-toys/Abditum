@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/bubbles/v2/textinput"
@@ -332,7 +333,38 @@ func (m *FilePickerModal) FocusPanel() int { return m.focusPanel }
 
 // Render retorna a representação visual do modal.
 func (m *FilePickerModal) Render(maxHeight, maxWidth int, theme *design.Theme) string {
-	return "TODO"
+	if m.fallbackWarning != "" && m.messages != nil {
+		m.messages.SetWarning(m.fallbackWarning)
+		m.fallbackWarning = ""
+	}
+
+	m.lastMaxHeight = maxHeight
+	m.lastMaxWidth = maxWidth
+
+	modalW, innerW, treeW, filesW, visibleH := modalDimensions(maxHeight, maxWidth, m.mode)
+
+	var sb strings.Builder
+	sb.WriteString(m.renderTopBorder(modalW, theme))
+	sb.WriteRune('\n')
+	sb.WriteString(m.renderPathLine(innerW, theme))
+	sb.WriteRune('\n')
+	sb.WriteString(m.renderPanelSeparator(innerW, treeW, theme))
+	sb.WriteRune('\n')
+
+	for _, l := range m.renderContentLines(visibleH, treeW, filesW, theme) {
+		sb.WriteString(l)
+		sb.WriteRune('\n')
+	}
+
+	if m.mode == FilePickerSave {
+		sb.WriteString(m.renderFieldSeparator(innerW, treeW, theme))
+		sb.WriteRune('\n')
+		sb.WriteString(m.renderNameField(innerW, theme))
+		sb.WriteRune('\n')
+	}
+
+	sb.WriteString(m.renderBottomBorder(innerW, theme))
+	return sb.String()
 }
 
 // HandleKey processa eventos de teclado.
@@ -350,7 +382,19 @@ func (m *FilePickerModal) Update(msg tea.Msg) tea.Cmd {
 
 // Cursor retorna a posição do cursor real para o modal.
 func (m *FilePickerModal) Cursor(topY, leftX int) *tea.Cursor {
-	return nil
+	if m.mode != FilePickerSave || m.focusPanel != 2 {
+		return nil
+	}
+	if m.lastMaxHeight == 0 {
+		return nil // Render() ainda não foi chamado
+	}
+	_, _, _, _, visibleH := modalDimensions(m.lastMaxHeight, m.lastMaxWidth, m.mode)
+	// linha do campo: 0(borda) + 1(caminho) + 1(sep) + visibleH(conteúdo) + 1(sep campo) + 1(campo)
+	// índice = 4 + visibleH (0-based a partir do topo do modal)
+	y := topY + 4 + visibleH
+	// X: borda + espaço + "Arquivo: " (9 chars) + posição do cursor no campo
+	x := leftX + 1 + 1 + 9 + m.nameField.Position()
+	return tea.NewCursor(x, y)
 }
 
 // formatFileSize formata bytes em KB/MB/GB (base 1024, 1 casa decimal).
@@ -495,10 +539,9 @@ func (m *FilePickerModal) renderPathLine(innerW int, theme *design.Theme) string
 	path := m.currentPath
 	maxPathW := innerW - 2 // 1 espaço cada lado
 	if lipgloss.Width(path) > maxPathW {
-		// Truncar início com …
+		// Truncar início com … removendo runes (não bytes) para não corromper UTF-8
 		for lipgloss.Width(design.SymEllipsis+path) > maxPathW && len(path) > 0 {
-			// Remover pelo prefixo por rune
-			_, size := []rune(path)[0], 1
+			_, size := utf8.DecodeRuneInString(path)
 			path = path[size:]
 		}
 		path = design.SymEllipsis + path
@@ -703,4 +746,123 @@ func (m *FilePickerModal) renderContentLines(visibleH, treeW, filesW int, theme 
 		lines[i] = lBorder + treePart + sepChar + filePart + rBorder
 	}
 	return lines
+}
+
+// renderFieldSeparator renderiza ├──────────┴──────────┤
+func (m *FilePickerModal) renderFieldSeparator(innerW, treeW int, theme *design.Theme) string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Default))
+	jL := borderStyle.Render(design.SymJunctionL)
+	jB := borderStyle.Render(design.SymJunctionB)
+	jR := borderStyle.Render(design.SymJunctionR)
+	// treeW traços + ┴ + filesW traços
+	filesW := innerW - treeW - 1
+	leftDash := borderStyle.Render(strings.Repeat(design.SymBorderH, treeW))
+	rightDash := borderStyle.Render(strings.Repeat(design.SymBorderH, filesW))
+	return jL + leftDash + jB + rightDash + jR
+}
+
+// renderNameField renderiza │ Arquivo: ░valor▌░░░ │
+func (m *FilePickerModal) renderNameField(innerW int, theme *design.Theme) string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Focused))
+	bgStyle := lipgloss.NewStyle().Background(lipgloss.Color(theme.Surface.Raised))
+	inputBg := lipgloss.NewStyle().Background(lipgloss.Color(theme.Surface.Input))
+
+	isFocused := m.focusPanel == 2
+	var labelStyle lipgloss.Style
+	if isFocused {
+		labelStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(theme.Accent.Primary)).
+			Bold(true)
+	} else {
+		labelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Secondary))
+	}
+
+	label := labelStyle.Render("Arquivo: ")
+	labelW := lipgloss.Width(label)
+	fieldW := innerW - 2 - labelW // innerW - 2 bordas - label
+	if fieldW < 4 {
+		fieldW = 4
+	}
+
+	// Renderizar conteúdo do campo manualmente (sem textinput.View() para controle de largura)
+	val := m.nameField.Value()
+	pos := m.nameField.Position()
+	// Janela de exibição: mostrar [pos-fieldW+1 .. pos] se val > fieldW
+	viewStart := 0
+	if pos >= fieldW {
+		viewStart = pos - fieldW + 1
+	}
+	viewVal := []rune(val)
+	if viewStart >= len(viewVal) {
+		viewStart = 0
+	}
+	visible := string(viewVal[viewStart:])
+	if lipgloss.Width(visible) > fieldW {
+		visible = string([]rune(visible)[:fieldW-1])
+	}
+
+	cursorStr := ""
+	if isFocused {
+		cursorStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary))
+		cursorStr = cursorStyle.Render(design.SymCursor)
+	}
+
+	fieldContent := inputBg.Render(padRight(visible+cursorStr, fieldW))
+	content := bgStyle.Render(" " + label + fieldContent + " ")
+	return borderStyle.Render(design.SymBorderV) + content + borderStyle.Render(design.SymBorderV)
+}
+
+// renderBottomBorder renderiza ╰── Enter Ação ──── Esc Cancelar ──╯
+func (m *FilePickerModal) renderBottomBorder(innerW int, theme *design.Theme) string {
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Focused))
+
+	// Cor da ação default: accent.primary se habilitada, text.disabled se não
+	defaultActive := m.isDefaultActionActive()
+	var defaultKeyColor string
+	if defaultActive {
+		defaultKeyColor = theme.Accent.Primary
+	} else {
+		defaultKeyColor = theme.Text.Disabled
+	}
+
+	var actionLabel string
+	if m.mode == FilePickerOpen {
+		actionLabel = "Abrir"
+	} else {
+		actionLabel = "Salvar"
+	}
+
+	enterText, enterW := design.RenderDialogAction("Enter", actionLabel, defaultKeyColor, theme)
+	escText, escW := design.RenderDialogAction("Esc", "Cancelar", theme.Border.Focused, theme)
+
+	// ╰─ Enter Abrir ──── Esc Cancelar ─╯
+	totalFixed := 2 + enterW + 2 + escW + 2 // espaços em volta de cada ação
+	totalFill := innerW - totalFixed
+	if totalFill < 3 {
+		totalFill = 3
+	}
+	fillLeft := 1
+	fillMid := totalFill - 2
+	fillRight := 1
+
+	dash := func(n int) string {
+		return borderStyle.Render(strings.Repeat(design.SymBorderH, n))
+	}
+
+	cornerBL := borderStyle.Render(design.SymCornerBL)
+	cornerBR := borderStyle.Render(design.SymCornerBR)
+
+	return cornerBL +
+		dash(fillLeft) + " " + enterText + " " +
+		dash(fillMid) + " " + escText + " " +
+		dash(fillRight) + cornerBR
+}
+
+// isDefaultActionActive retorna true se a ação Enter está habilitada.
+func (m *FilePickerModal) isDefaultActionActive() bool {
+	if m.mode == FilePickerOpen {
+		return m.fileCursor >= 0
+	}
+	// Save: campo não vazio
+	return m.nameField.Value() != ""
 }
