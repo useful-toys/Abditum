@@ -371,15 +371,8 @@ func formatFileSize(bytes int64) string {
 }
 
 func formatF(f float64) string {
-	// 1 casa decimal, sem trailing zero extra
-	s := strings.TrimRight(strings.TrimRight(
-		strings.Replace(fmt.Sprintf("%.1f", f), ",", ".", 1),
-		"0"), ".")
-	// Garantir ao menos 1 casa decimal para consistência visual
-	if !strings.Contains(s, ".") {
-		s += ".0"
-	}
-	return s
+	// %.1f sempre produz exatamente 1 casa decimal em Go (locale-independente)
+	return fmt.Sprintf("%.1f", f)
 }
 
 // FormatFileSizeForTest expõe formatFileSize para testes externos.
@@ -408,6 +401,13 @@ func modalDimensions(maxHeight, maxWidth int, mode FilePickerMode) (modalW, inne
 	filesW = innerW - treeW - 1
 	if filesW < 8 {
 		filesW = 8
+		// Terminais muito estreitos: recuar treeW para que a soma caiba.
+		if treeW+filesW+1 > innerW {
+			treeW = innerW - filesW - 1
+			if treeW < 1 {
+				treeW = 1
+			}
+		}
 	}
 
 	overhead := 3 // Open: borda sup + caminho + sep painéis
@@ -444,6 +444,8 @@ func renderTreeSepChar(lineIdx, treeScroll, total, vp int, theme *design.Theme) 
 }
 
 // renderFileSepChar retorna o caractere da borda direita do modal na linha lineIdx.
+// Usa theme.Border.Focused porque esta borda pertence ao contorno externo do modal,
+// que é sempre renderizado como focused independentemente do painel ativo.
 func renderFileSepChar(lineIdx, fileScroll, total, vp int, theme *design.Theme) string {
 	ss := ScrollState{Offset: fileScroll, Total: total, Viewport: vp}
 	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Border.Focused))
