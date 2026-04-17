@@ -307,6 +307,7 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, nil
 
 	case SecretExportedMsg:
+		// TODO: mostrar confirmação ao usuário após exportação de segredo.
 		return r, nil
 
 	case ModalReadyMsg:
@@ -355,8 +356,9 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	// Roteia para activeOperation ANTES da bifurcação modal/view.
-	// tea.Batch não garante ordem: mensagens privadas da operação (ex: fakeConfirmedMsg)
-	// podem chegar antes de CloseModalMsg no mesmo Batch. Se aguardarmos o modal sair
+	// tea.Batch não garante ordem: mensagens privadas da operação (ex: mensagens de
+	// confirmação emitidas internamente pela operação) podem chegar antes de CloseModalMsg
+	// no mesmo Batch. Se aguardarmos o modal sair
 	// da pilha para rotear, a operação nunca receberia essas mensagens.
 	if r.activeOperation != nil {
 		if cmd := r.activeOperation.Update(msg); cmd != nil {

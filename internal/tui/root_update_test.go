@@ -5,6 +5,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/useful-toys/abditum/internal/tui/design"
+	"github.com/useful-toys/abditum/internal/vault"
 )
 
 // stubOperation é uma Operation mínima para uso nos testes do RootModel.
@@ -101,3 +102,17 @@ type stubModal struct{}
 func (s *stubModal) Render(_ int, _ int, _ *design.Theme) string { return "" }
 func (s *stubModal) HandleKey(_ tea.KeyMsg) tea.Cmd              { return nil }
 func (s *stubModal) Update(_ tea.Msg) tea.Cmd                    { return nil }
+
+func TestRootModel_VaultOpenedMsg_SetsManagerAndWorkArea(t *testing.T) {
+	r := NewRootModel()
+	mgr := &vault.Manager{}
+
+	_, _ = r.Update(VaultOpenedMsg{Manager: mgr})
+
+	if r.vaultManager != mgr {
+		t.Error("VaultOpenedMsg: vaultManager não foi setado")
+	}
+	if r.workArea != design.WorkAreaVault {
+		t.Errorf("VaultOpenedMsg: workArea = %v, esperado WorkAreaVault", r.workArea)
+	}
+}
