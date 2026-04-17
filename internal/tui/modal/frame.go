@@ -47,7 +47,12 @@ func (f DialogFrame) Render(body string, maxWidth int, theme *design.Theme) stri
 	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(f.BorderColor))
 	bgStyle := lipgloss.NewStyle().Background(lipgloss.Color(theme.Surface.Raised))
 
+	// Calcular largura mínima necessária
+	minWidth := f.calculateMinWidth(body, theme)
 	innerWidth := maxWidth - 2 // subtrair as duas bordas verticais
+	if innerWidth > minWidth {
+		innerWidth = minWidth
+	}
 
 	// --- Borda superior ---
 	topLine := f.renderTopBorder(innerWidth, borderStyle, theme)
@@ -131,18 +136,69 @@ func (f DialogFrame) renderBodyLine(lineNum, totalLines int, content string, inn
 	return lBorder + lineContent + rBorder
 }
 
-// renderBottomBorder gera a linha de rodapé: ╰─ [ação1] ── [ação2] ── [ação3] ─╯
+// calculateMinWidth calcula a largura mínima necessária para o diálogo.
+// Largura mínima = mínimo entre 20 colunas e o necessário para título + ações.
+func (f DialogFrame) calculateMinWidth(body string, theme *design.Theme) int {
+	minWidth := 20 // mínimo absoluto
+
+	// Largura do título na borda superior
+	titleWidth := lipgloss.Width(f.Title)
+	if f.Symbol != "" {
+		titleWidth += lipgloss.Width(f.Symbol) + 2 // símbolo + 2 espaços
+	}
+	// " título " = +2, " ╭──" = 4, " ╮" = 2
+	titleWidth += 8
+
+	// Largura das ações
+	actionWidth := 4 // cantos + preenchimento mínimo: "╰─ " + " ─╯"
+	for _, opt := range f.Options {
+		if len(opt.Keys) == 0 {
+			continue
+		}
+		_, keyWidth := design.RenderDialogAction(opt.Keys[0].Label, opt.Label, f.BorderColor, theme)
+		actionWidth += keyWidth + 4 // ação + 2 espaços + 1 dash mínimo
+	}
+
+	// Largura do corpo (cada linha)
+	bodyLines := strings.Split(body, "\n")
+	bodyWidth := 0
+	paddingH := 2 * design.DialogPaddingH
+	for _, line := range bodyLines {
+		w := lipgloss.Width(line) + paddingH + 2 // +2 para bordas │
+		if w > bodyWidth {
+			bodyWidth = w
+		}
+	}
+
+	// Largura mínima = máximo entre título, ações e corpo (com mínimo de 20)
+	width := titleWidth
+	if actionWidth > width {
+		width = actionWidth
+	}
+	if bodyWidth > width {
+		width = bodyWidth
+	}
+	if width < minWidth {
+		width = minWidth
+	}
+
+	return width + 2 // +2 para bordas verticais
+}
+
+// renderBottomBorder gera a linha de rodapé:
+// Formato: "╰─ " + Ação1 + " ─ " + Ação2 + " ─ " + Ação3 + " ─╯"
+//
 // Posicionamento:
 //
-//	1 ação  → alinhada à direita
-//	2 ações → 1ª à esquerda, 2ª à direita
-//	3 ações → 1ª à esquerda, 2ª ao centro, 3ª à direita
+//	1 ação  → "╰─ " + Ação + " ─╯" (alinhada à direita)
+//	2 ações → "╰─ " + Ação1 + " ─ " + Ação2 + " ─╯"
+//	3 ações → "╰─ " + Ação1 + " ─ " + Ação2 + " ─ " + Ação3 + " ─╯"
 func (f DialogFrame) renderBottomBorder(innerWidth int, borderStyle lipgloss.Style, theme *design.Theme) string {
-	bl := borderStyle.Render(design.SymCornerBL)
-	br := borderStyle.Render(design.SymCornerBR)
-	dash := borderStyle.Render(design.SymBorderH)
+	// Cantos inferiores conforme especificação: ╰─  e  ─╯
+	bl := borderStyle.Render(design.SymCornerBL) + borderStyle.Render(design.SymBorderH) + " "
+	br := " " + borderStyle.Render(design.SymBorderH) + borderStyle.Render(design.SymCornerBR)
 
-	// Renderizar as ações
+	// Renderizar as ações (cada ação já inclui espaços internos via design.RenderDialogAction)
 	type renderedOpt struct {
 		text  string
 		width int
@@ -157,72 +213,67 @@ func (f DialogFrame) renderBottomBorder(innerWidth int, borderStyle lipgloss.Sty
 			keyColor = f.DefaultKeyColor
 		}
 		text, w := design.RenderDialogAction(opt.Keys[0].Label, opt.Label, keyColor, theme)
-		// Adicionar espaços " " em torno da ação (1 espaço antes e depois)
-		rendered = append(rendered, renderedOpt{text: " " + text + " ", width: w + 2})
+		rendered = append(rendered, renderedOpt{text: text, width: w})
 	}
 
 	if len(rendered) == 0 {
 		// Sem ações: linha ─ completa
-		return bl + borderStyle.Render(strings.Repeat(design.SymBorderH, innerWidth)) + br
+		innerLine := borderStyle.Render(strings.Repeat(design.SymBorderH, innerWidth))
+		return bl + innerLine + br
 	}
 
-	// Montar a linha de rodapé conforme o número de ações
-	line := make([]byte, 0, innerWidth*4)
-	writeDashes := func(count int) {
-		for i := 0; i < count; i++ {
-			line = append(line, []byte(dash)...)
-		}
-	}
-	writeAction := func(r renderedOpt) {
-		line = append(line, []byte(r.text)...)
+	// Montar a linha de rodapé
+	// Formato: ╰─  Ação1  ─  Ação2  ─╯
+	var sb strings.Builder
+	sb.WriteString(bl)
+
+	// Calcular largura total das ações
+	totalActionsWidth := 0
+	for _, r := range rendered {
+		totalActionsWidth += r.width
 	}
 
-	switch len(rendered) {
-	case 1:
-		// Ação única à direita
-		totalActionWidth := rendered[0].width
-		fill := innerWidth - totalActionWidth
-		if fill < 0 {
-			fill = 0
+	// Separador entre ações: " ─ "
+	separator := " " + borderStyle.Render(design.SymBorderH) + " "
+	sepWidth := lipgloss.Width(separator)
+
+	// Calcular espaços entre ações
+	actionCount := len(rendered)
+	if actionCount == 1 {
+		// Ação única à direita: preencher até a ação
+		fillCount := innerWidth - rendered[0].width - 2 // -2 por causa do "╰─ " e " ─╯"
+		if fillCount < 1 {
+			fillCount = 1
 		}
-		writeDashes(fill)
-		writeAction(rendered[0])
-	case 2:
-		// 1ª à esquerda, 2ª à direita
-		gap := innerWidth - rendered[0].width - rendered[1].width
-		if gap < 1 {
-			gap = 1
+		sb.WriteString(strings.Repeat(design.SymBorderH, fillCount))
+		sb.WriteString(" ")
+		sb.WriteString(rendered[0].text)
+	} else {
+		// Múltiplas ações
+		totalSepWidth := (actionCount - 1) * sepWidth
+		fillBetween := innerWidth - totalActionsWidth - totalSepWidth - 2 // -2 por causa do "╰─ " e " ─╯"
+		if fillBetween < 1 {
+			fillBetween = 1
 		}
-		writeAction(rendered[0])
-		writeDashes(gap)
-		writeAction(rendered[1])
-	case 3:
-		// 1ª à esquerda, 2ª ao centro, 3ª à direita
-		remaining := innerWidth - rendered[0].width - rendered[1].width - rendered[2].width
-		if remaining < 2 {
-			remaining = 2
+
+		// Distribuir espaços entre ações
+		spacePerGap := fillBetween / (actionCount - 1)
+		spaceRemainder := fillBetween % (actionCount - 1)
+
+		for i, r := range rendered {
+			if i > 0 {
+				gap := spacePerGap
+				if spaceRemainder > 0 {
+					gap++
+					spaceRemainder--
+				}
+				sb.WriteString(strings.Repeat(design.SymBorderH, gap))
+				sb.WriteString(separator)
+			}
+			sb.WriteString(r.text)
 		}
-		gapLeft := remaining / 2
-		gapRight := remaining - gapLeft
-		writeAction(rendered[0])
-		writeDashes(gapLeft)
-		writeAction(rendered[1])
-		writeDashes(gapRight)
-		writeAction(rendered[2])
-	default:
-		// Mais de 3: renderizar apenas as 3 primeiras (DS: máximo 3)
-		remaining := innerWidth - rendered[0].width - rendered[1].width - rendered[2].width
-		if remaining < 2 {
-			remaining = 2
-		}
-		gapLeft := remaining / 2
-		gapRight := remaining - gapLeft
-		writeAction(rendered[0])
-		writeDashes(gapLeft)
-		writeAction(rendered[1])
-		writeDashes(gapRight)
-		writeAction(rendered[2])
 	}
 
-	return bl + string(line) + br
+	sb.WriteString(br)
+	return sb.String()
 }
