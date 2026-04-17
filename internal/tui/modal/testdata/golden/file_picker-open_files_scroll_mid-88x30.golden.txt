@@ -1,18 +1,18 @@
 ╭─ Abrir cofre ──────────────────────────────────────────────────────╮
-│ \home\usuario\projetos\abditum                                     │
+│ \home\usuario\fotos                                                │
 ├ Estrutura ────────────────┬ Arquivos ──────────────────────────────┤
-│\                          │● arquivo01        1.0 KB  15/03/25 14:32│
-│  ▼ home                   │● arquivo02        2.0 KB  15/03/25 14:32│
-│    ▼ usuario              │● arquivo03        2.9 KB  15/03/25 14:32│
-│      ▶ documentos         │● arquivo04        3.9 KB  15/03/25 14:32│
-│      ▶ downloads          │● arquivo05        4.9 KB  15/03/25 14:32│
-│      ▼ projetos           │● arquivo06        5.9 KB  15/03/25 14:32│
-│        ▶ abditum          │● arquivo07        6.8 KB  15/03/25 14:32│
-│        ▶ site             │● arquivo08        7.8 KB  15/03/25 14:32│
-│      ▶ fotos              │● arquivo09        8.8 KB  15/03/25 14:32│
-│                           │● arquivo10        9.8 KB  15/03/25 14:32│
-│                           │● arquivo11        10.7 KB 15/03/25 14:32│
-│                           │● arquivo12        11.7 KB 15/03/25 14:32│
+│\                          │                                        │
+│  ▼ home                   │Nenhum cofre neste diretório            │
+│    ▼ usuario              │                                        │
+│      ▶ documentos         │                                        │
+│      ▶ downloads          │                                        │
+│      ▼ projetos           │                                        │
+│        ▶ abditum          │                                        │
+│        ▶ site             │                                        │
+│      ▶ fotos              │                                        │
+│                           │                                        │
+│                           │                                        │
+│                           │                                        │
 │                           │                                        │
 │                           │                                        │
 │                           │                                        │

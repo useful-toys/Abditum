@@ -1,12 +1,12 @@
 ╭─ Abrir cofre ──────────────────────────────────────────────────────╮
-│ \home\usuario\projetos\abditum                                     │
+│ \                                                                  │
 ├ Estrutura ────────────────┬ Arquivos ──────────────────────────────┤
-│\                          ■● database         24.6 MB 15/03/25 14:32│
-│  ▼ home                   │● config           1.2 KB  02/01/25 09:15│
-│    ▼ usuario              │● backup           17.5 MB 04/04/25 18:47│
+│\                          ■                                        │
+│  ▼ home                   │Nenhum cofre neste diretório            │
+│    ▼ usuario              │                                        │
 │      ▶ documentos         │                                        │
 │      ▶ downloads          │                                        │
 │      ▼ projetos           │                                        │
 │        ▶ abditum          │                                        │
-│        ▶ site             ↓                                        │
+│        ▷ site             ↓                                        │
 ╰─ Enter Abrir ───────────────────────────────────── Esc Cancelar ─╯
