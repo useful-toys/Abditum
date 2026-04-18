@@ -148,6 +148,25 @@ func (f DialogFrame) renderBodyLine(lineNum, totalLines int, content string, inn
 	return lBorder + lineContent + rBorder
 }
 
+// implicitKey retorna a tecla implícita de uma option dado seu índice e o total de options.
+//   - Índice 0 (primeira): Enter
+//   - Índice total-1 (última): Esc
+//   - Outros índices: zero value (ok=false)
+//
+// A option única é tanto primeira quanto última — Enter é retornado (label "Enter" no footer).
+// Mesmas regras do KeyHandler.
+func implicitKey(index, total int) (design.Key, bool) {
+	isFirst := index == 0
+	isLast := index == total-1
+	switch {
+	case isFirst:
+		return design.Keys.Enter, true
+	case isLast:
+		return design.Keys.Esc, true
+	}
+	return design.Key{}, false
+}
+
 // calculateBodyWidth calcula a largura baseada no conteúdo do corpo.
 func (f DialogFrame) calculateBodyWidth(body string, theme *design.Theme) int {
 	paddingH := 2 * design.DialogPaddingH
@@ -161,11 +180,16 @@ func (f DialogFrame) calculateBodyWidth(body string, theme *design.Theme) int {
 
 	// Largura das ações
 	actionWidth := 3
-	for _, opt := range f.Options {
-		if len(opt.Keys) == 0 {
+	for i, opt := range f.Options {
+		keyLabel := ""
+		if len(opt.Keys) > 0 {
+			keyLabel = opt.Keys[0].Label
+		} else if k, ok := implicitKey(i, len(f.Options)); ok {
+			keyLabel = k.Label
+		} else {
 			continue
 		}
-		_, keyWidth := design.RenderDialogAction(opt.Keys[0].Label, opt.Label, f.BorderColor, theme)
+		_, keyWidth := design.RenderDialogAction(keyLabel, opt.Label, f.BorderColor, theme)
 		actionWidth += keyWidth + 4 + 3
 	}
 
@@ -224,14 +248,19 @@ func (f DialogFrame) renderBottomBorder(innerWidth int, borderStyle lipgloss.Sty
 	}
 	var rendered []renderedOpt
 	for i, opt := range f.Options {
-		if len(opt.Keys) == 0 {
+		keyLabel := ""
+		if len(opt.Keys) > 0 {
+			keyLabel = opt.Keys[0].Label
+		} else if k, ok := implicitKey(i, len(f.Options)); ok {
+			keyLabel = k.Label
+		} else {
 			continue
 		}
 		keyColor := f.BorderColor
 		if i == 0 {
 			keyColor = f.DefaultKeyColor
 		}
-		text, w := design.RenderDialogAction(opt.Keys[0].Label, opt.Label, keyColor, theme)
+		text, w := design.RenderDialogAction(keyLabel, opt.Label, keyColor, theme)
 		rendered = append(rendered, renderedOpt{text: text, width: w})
 	}
 

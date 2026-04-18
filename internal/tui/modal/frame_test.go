@@ -110,3 +110,15 @@ func TestDialogFrame_SeverityError(t *testing.T) {
 	testdata.TestRenderManaged(t, "frame", "severity_error", []string{"60x6"},
 		renderFrame("Erro", sev.Symbol(), sev.BorderColor(theme), sev.BorderColor(theme), sev.DefaultKeyColor(theme), opts, nil, body))
 }
+
+func TestDialogFrame_ImplicitKeys_NoKeysInOptions(t *testing.T) {
+	// Options sem Keys declarados: footer deve exibir Enter/Esc automaticamente.
+	theme := design.TokyoNight
+	opts := []modal.ModalOption{
+		{Label: "Confirmar", Action: func() tea.Cmd { return nil }},
+		{Label: "Cancelar", Action: func() tea.Cmd { return nil }},
+	}
+	body := "Mensagem de confirmação"
+	testdata.TestRenderManaged(t, "frame", "implicit_keys", []string{"60x8"},
+		renderFrame("Diálogo", "", "", theme.Border.Focused, theme.Accent.Primary, opts, nil, body))
+}

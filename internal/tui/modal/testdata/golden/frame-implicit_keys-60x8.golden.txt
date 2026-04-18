@@ -1,0 +1,3 @@
+╭─ Diálogo ──────────────────────────────────╮
+│  Mensagem de confirmação                   │
+╰─ Enter Confirmar ─────────── Esc Cancelar ─╯
