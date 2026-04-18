@@ -76,13 +76,13 @@ func NewQuitOperation(notifier tui.MessageController, manager *vault.Manager) *Q
 
 **`Update(msg)`** — processa mensagens internas (`quitMsg`):
 
-- `quitStateSaving` → chama `manager.Salvar(false)`:
-  - `ErrModifiedExternally` → abre modal de conflito externo.
+- `quitStateSaving` → `notifier.SetBusy("Salvando...")` + chama `manager.Salvar(false)` em goroutine:
+  - `ErrModifiedExternally` → `notifier.Clear()` + abre modal de conflito externo.
   - Outro erro → `notifier.SetError(...)` + `OperationCompleted()`.
-  - Sucesso → `tea.Quit`.
-- `quitStateSavingForced` → chama `manager.Salvar(true)`:
+  - Sucesso → `notifier.SetSuccess("Cofre salvo.")` + `tea.Quit`.
+- `quitStateSavingForced` → `notifier.SetBusy("Salvando...")` + chama `manager.Salvar(true)` em goroutine:
   - Erro → `notifier.SetError(...)` + `OperationCompleted()`.
-  - Sucesso → `tea.Quit`.
+  - Sucesso → `notifier.SetSuccess("Cofre salvo.")` + `tea.Quit`.
 
 **Modais:**
 
@@ -132,9 +132,22 @@ ctrl Q
       → [voltar]                 → OperationCompleted
 ```
 
+## Sinalização de progresso
+
+Durante qualquer operação de salvamento, o sistema sinaliza o estado via `MessageController`:
+
+| Momento | Chamada |
+|---|---|
+| Início do salvamento | `notifier.SetBusy("Salvando...")` |
+| Salvamento bem-sucedido | `notifier.SetSuccess("Cofre salvo.")` |
+| Falha no salvamento | `notifier.SetError(mensagem do erro)` |
+| Conflito externo detectado | `notifier.Clear()` — o modal de conflito substitui a sinalização |
+
+O `SetBusy` é emitido antes de disparar a goroutine de salvamento, garantindo que o indicador apareça imediatamente. O `tea.Quit` é emitido apenas após o `SetSuccess`, permitindo que a mensagem seja renderizada antes do encerramento.
+
 ---
 
-## Tratamento de erros
+
 
 | Situação | Comportamento |
 |---|---|
