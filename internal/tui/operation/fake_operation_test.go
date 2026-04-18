@@ -7,8 +7,6 @@ import (
 	"github.com/useful-toys/abditum/internal/tui"
 )
 
-// stubNotifier implementa tui.MessageController para os testes da FakeOperation.
-// Registra qual método foi chamado por último e com qual texto.
 type stubNotifier struct {
 	lastMethod string
 	lastText   string
@@ -23,8 +21,6 @@ func (s *stubNotifier) SetHintField(text string) { s.lastMethod = "SetHintField"
 func (s *stubNotifier) SetHintUsage(text string) { s.lastMethod = "SetHintUsage"; s.lastText = text }
 func (s *stubNotifier) Clear()                   { s.lastMethod = "Clear"; s.lastText = "" }
 
-// execCmd executa um tea.Cmd e retorna a mensagem produzida.
-// Retorna nil se cmd for nil.
 func execCmd(cmd tea.Cmd) tea.Msg {
 	if cmd == nil {
 		return nil
@@ -54,46 +50,31 @@ func TestFakeOperation_Update_IgnoresUnknownMsg(t *testing.T) {
 	}
 }
 
-func TestFakeOperation_Update_Confirmed_SetsBusyAndStartsWork(t *testing.T) {
+func TestFakeOperation_Update_Executing_SetsBusyAndStartsWork(t *testing.T) {
 	n := &stubNotifier{}
 	op := NewFakeOperation(n)
 
-	cmd := op.Update(fakeConfirmedMsg{})
+	cmd := op.Update(FakeOperationMsg{state: stateExecuting})
 
-	if op.state != stateExecuting {
-		t.Errorf("Update(fakeConfirmedMsg): state esperado stateExecuting, obteve %v", op.state)
-	}
 	if n.lastMethod != "SetBusy" {
-		t.Errorf("Update(fakeConfirmedMsg): esperado SetBusy, notifier recebeu %q", n.lastMethod)
+		t.Errorf("Update(stateExecuting): esperado SetBusy, notifier recebeu %q", n.lastMethod)
 	}
 	if cmd == nil {
-		t.Error("Update(fakeConfirmedMsg): esperado cmd não-nil (fakeWorkCmd)")
+		t.Error("Update(stateExecuting): esperado cmd não-nil (fakeWorkCmd)")
 	}
 }
 
-func TestFakeOperation_Update_WorkDone_ClearsNotifierAndOpensResultModal(t *testing.T) {
+func TestFakeOperation_Update_Done_ClearsNotifierAndOpensResultModal(t *testing.T) {
 	n := &stubNotifier{}
 	op := NewFakeOperation(n)
-	op.state = stateExecuting // avança estado manualmente para o correto
 
-	cmd := op.Update(fakeWorkDoneMsg{})
+	cmd := op.Update(FakeOperationMsg{state: stateDone})
 
 	if n.lastMethod != "Clear" {
-		t.Errorf("Update(fakeWorkDoneMsg): esperado Clear no notifier, obteve %q", n.lastMethod)
+		t.Errorf("Update(stateDone): esperado Clear no notifier, obteve %q", n.lastMethod)
 	}
 	msg := execCmd(cmd)
 	if _, ok := msg.(tui.OpenModalMsg); !ok {
-		t.Errorf("Update(fakeWorkDoneMsg): esperado OpenModalMsg, obteve %T", msg)
-	}
-}
-
-func TestFakeOperation_Update_ConfirmedInWrongState_Ignored(t *testing.T) {
-	op := NewFakeOperation(&stubNotifier{})
-	op.state = stateExecuting // já está executando
-
-	cmd := op.Update(fakeConfirmedMsg{})
-
-	if cmd != nil {
-		t.Error("Update(fakeConfirmedMsg) em stateExecuting: deveria ser ignorado (retornar nil)")
+		t.Errorf("Update(stateDone): esperado OpenModalMsg, obteve %T", msg)
 	}
 }
