@@ -35,8 +35,8 @@ func renderFrame(
 
 func twoOptions(theme *design.Theme) []modal.ModalOption {
 	return []modal.ModalOption{
-		{Keys: []design.Key{design.Keys.Enter}, Label: "Confirmar", Intent: modal.IntentConfirm, Action: func() tea.Cmd { return nil }},
-		{Keys: []design.Key{design.Keys.Esc}, Label: "Cancelar", Intent: modal.IntentCancel, Action: func() tea.Cmd { return nil }},
+		{Keys: []design.Key{design.Keys.Enter}, Label: "Confirmar", Action: func() tea.Cmd { return nil }},
+		{Keys: []design.Key{design.Keys.Esc}, Label: "Cancelar", Action: func() tea.Cmd { return nil }},
 	}
 }
 
@@ -92,8 +92,8 @@ func TestDialogFrame_SeverityDestructive(t *testing.T) {
 	theme := design.TokyoNight
 	sev := design.SeverityDestructive
 	opts := []modal.ModalOption{
-		{Keys: []design.Key{design.Keys.Enter}, Label: "Excluir", Intent: modal.IntentConfirm, Action: func() tea.Cmd { return nil }},
-		{Keys: []design.Key{design.Keys.Esc}, Label: "Cancelar", Intent: modal.IntentCancel, Action: func() tea.Cmd { return nil }},
+		{Keys: []design.Key{design.Keys.Enter}, Label: "Excluir", Action: func() tea.Cmd { return nil }},
+		{Keys: []design.Key{design.Keys.Esc}, Label: "Cancelar", Action: func() tea.Cmd { return nil }},
 	}
 	body := "Esta ação não pode ser desfeita."
 	testdata.TestRenderManaged(t, "frame", "severity_destructive", []string{"60x8"},
@@ -104,7 +104,7 @@ func TestDialogFrame_SeverityError(t *testing.T) {
 	theme := design.TokyoNight
 	sev := design.SeverityError
 	opts := []modal.ModalOption{
-		{Keys: []design.Key{design.Keys.Enter}, Label: "OK", Intent: modal.IntentConfirm, Action: func() tea.Cmd { return nil }},
+		{Keys: []design.Key{design.Keys.Enter}, Label: "OK", Action: func() tea.Cmd { return nil }},
 	}
 	body := "Ocorreu um erro inesperado."
 	testdata.TestRenderManaged(t, "frame", "severity_error", []string{"60x6"},

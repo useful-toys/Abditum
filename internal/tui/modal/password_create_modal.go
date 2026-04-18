@@ -149,7 +149,6 @@ func (m *PasswordCreateModal) Render(maxHeight, maxWidth int, theme *design.Them
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "Confirmar",
-			Intent: IntentConfirm,
 			Action: func() tea.Cmd {
 				if !m.canConfirm() {
 					if m.fieldConf.Len() > 0 {
@@ -165,7 +164,6 @@ func (m *PasswordCreateModal) Render(maxHeight, maxWidth int, theme *design.Them
 		{
 			Keys:   []design.Key{design.Keys.Esc},
 			Label:  "Cancelar",
-			Intent: IntentCancel,
 			Action: func() tea.Cmd {
 				m.fieldNew.Wipe()
 				m.fieldConf.Wipe()

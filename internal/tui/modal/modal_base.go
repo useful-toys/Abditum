@@ -5,25 +5,14 @@ import (
 	"github.com/useful-toys/abditum/internal/tui/design"
 )
 
-// Intent classifies the semantic intention of a modal option.
-type Intent int
-
-const (
-	IntentConfirm Intent = iota
-	IntentCancel
-	IntentOther
-)
-
-// ModalOption represents an action available to the user within a modal.
+// ModalOption representa uma ação disponível ao usuário dentro de um modal.
 type ModalOption struct {
-	// Keys lists the keys that activate this option.
-	// Keys[0].Label is displayed in the dialog footer.
-	// Other Keys are functional aliases (ex: Enter as alias for "S Overwrite").
+	// Keys lista as teclas que ativam esta opção.
+	// Keys[0].Label é exibido no rodapé do diálogo.
+	// Outras Keys são aliases funcionais (ex: Enter como alias para "S Sobrescrever").
 	Keys []design.Key
-	// Label is the text displayed to the user describing the action.
+	// Label é o texto exibido ao usuário descrevendo a ação.
 	Label string
-	// Intent classifies the semantic intention of this action.
-	Intent Intent
-	// Action is the function executed when the option is chosen.
+	// Action é a função executada quando a opção é escolhida.
 	Action func() tea.Cmd
 }

@@ -16,13 +16,13 @@ func TestConfirmModal_Destructive(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "Excluir",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 		{
 			Keys:   []design.Key{design.Keys.Esc},
 			Label:  "Cancelar",
-			Intent: modal.IntentCancel,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 	}
@@ -44,7 +44,7 @@ func TestConfirmModal_SingleOption(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "OK",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 	}
@@ -60,19 +60,19 @@ func TestConfirmModal_ThreeOptions(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "Salvar",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 		{
 			Keys:   []design.Key{design.Keys.Tab},
 			Label:  "Descartar",
-			Intent: modal.IntentOther,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 		{
 			Keys:   []design.Key{design.Keys.Esc},
 			Label:  "Cancelar",
-			Intent: modal.IntentCancel,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 	}
@@ -90,13 +90,13 @@ func TestConfirmModal_CustomKeysSimNao(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Letter('s')},
 			Label:  "Sim",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 		{
 			Keys:   []design.Key{design.Letter('n')},
 			Label:  "Não",
-			Intent: modal.IntentCancel,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 	}
@@ -118,13 +118,13 @@ func TestConfirmModal_ShortText(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "OK",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 		{
 			Keys:   []design.Key{design.Keys.Esc},
 			Label:  "Cancelar",
-			Intent: modal.IntentCancel,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 	}
@@ -140,13 +140,13 @@ func TestConfirmModal_LongText(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "Confirmar",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 		{
 			Keys:   []design.Key{design.Keys.Esc},
 			Label:  "Cancelar",
-			Intent: modal.IntentCancel,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 	}
@@ -168,13 +168,13 @@ func TestConfirmModal_TwoLineText(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "Continuar",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 		{
 			Keys:   []design.Key{design.Keys.Esc},
 			Label:  "Voltar",
-			Intent: modal.IntentCancel,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 	}
@@ -194,13 +194,13 @@ func TestConfirmModal_ThreeLineText(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "Prosseguir",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 		{
 			Keys:   []design.Key{design.Keys.Esc},
 			Label:  "Sair",
-			Intent: modal.IntentCancel,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 	}
@@ -222,13 +222,13 @@ func TestConfirmModal_ShortTitle(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "OK",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 		{
 			Keys:   []design.Key{design.Keys.Esc},
 			Label:  "Cancelar",
-			Intent: modal.IntentCancel,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 	}
@@ -244,13 +244,13 @@ func TestConfirmModal_LongTitle(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "Confirmar",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 		{
 			Keys:   []design.Key{design.Keys.Esc},
 			Label:  "Cancelar",
-			Intent: modal.IntentCancel,
+
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 	}
@@ -271,7 +271,7 @@ func TestConfirmModal_HandleKey_Enter_ExecutesAction(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "OK",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd {
 				called = true
 				return nil
@@ -291,7 +291,7 @@ func TestConfirmModal_Update_DelegatesKeys(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Esc},
 			Label:  "Cancelar",
-			Intent: modal.IntentCancel,
+
 			Action: func() tea.Cmd {
 				called = true
 				return nil
@@ -313,7 +313,7 @@ func TestConfirmModal_SingleOption_EscDispatchesAction(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "OK",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd {
 				called = true
 				return nil
@@ -336,7 +336,7 @@ func TestConfirmModal_SingleOption_EnterStillWorks(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "OK",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd {
 				called = true
 				return nil
@@ -358,13 +358,13 @@ func TestConfirmModal_MultipleOptions_EscNotAutoAdded(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "Confirmar",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return nil },
 		},
 		{
 			Keys:   []design.Key{design.Keys.Tab},
 			Label:  "Outra",
-			Intent: modal.IntentOther,
+
 			Action: func() tea.Cmd { return nil },
 		},
 	}
@@ -384,7 +384,7 @@ func TestConfirmModal_SingleOption_EscAlreadyRegistered(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter, design.Keys.Esc},
 			Label:  "OK",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd {
 				callCount++
 				return nil
@@ -409,7 +409,7 @@ func TestConfirmModal_Update_WithKeyMsg_DelegatesCorrectly(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "OK",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd {
 				called = true
 				return nil // Action pode retornar nil ou um comando
@@ -433,7 +433,7 @@ func TestConfirmModal_Update_WithNonKeyMsg_ReturnsNil(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "OK",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return nil },
 		},
 	}
@@ -453,7 +453,7 @@ func TestConfirmModal_SequentialKeyPresses_AllProcessed(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "OK",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd {
 				callCount++
 				return nil
@@ -488,7 +488,7 @@ func TestConfirmModal_DifferentSeverities_AllWorkCorrectly(t *testing.T) {
 			{
 				Keys:   []design.Key{design.Keys.Enter},
 				Label:  "Ação",
-				Intent: modal.IntentConfirm,
+	
 				Action: func() tea.Cmd {
 					called = true
 					return nil
@@ -514,7 +514,7 @@ func TestConfirmModal_MultipleOptions_BothEscAndEnter_DifferentActions(t *testin
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "Confirmar",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd {
 				confirmCalled = true
 				return nil
@@ -523,7 +523,7 @@ func TestConfirmModal_MultipleOptions_BothEscAndEnter_DifferentActions(t *testin
 		{
 			Keys:   []design.Key{design.Keys.Esc},
 			Label:  "Cancelar",
-			Intent: modal.IntentCancel,
+
 			Action: func() tea.Cmd {
 				cancelCalled = true
 				return nil
@@ -551,7 +551,7 @@ func TestConfirmModal_UnhandledKey_ReturnsNil(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "OK",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return nil },
 		},
 	}
@@ -570,7 +570,7 @@ func TestConfirmModal_Cursor_AlwaysNil(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "OK",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return nil },
 		},
 	}
@@ -588,7 +588,7 @@ func TestConfirmModal_RenderWithDifferentDimensions(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "OK",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd { return nil },
 		},
 	}
@@ -625,7 +625,7 @@ func TestConfirmModal_SingleOption_WithCustomKeys(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Tab},
 			Label:  "Ação",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd {
 				called = true
 				return nil
@@ -648,37 +648,6 @@ func TestConfirmModal_SingleOption_WithCustomKeys(t *testing.T) {
 	}
 }
 
-func TestConfirmModal_IntentTypes_Preserved(t *testing.T) {
-	// Verificar se os tipos de Intent são preservados corretamente
-	// Não podemos acessar campos privados de ConfirmModal diretamente,
-	// então testamos através do comportamento observável
-	opts := []modal.ModalOption{
-		{
-			Keys:   []design.Key{design.Keys.Enter},
-			Label:  "Confirmar",
-			Intent: modal.IntentConfirm,
-			Action: func() tea.Cmd { return nil },
-		},
-		{
-			Keys:   []design.Key{design.Keys.Esc},
-			Label:  "Cancelar",
-			Intent: modal.IntentCancel,
-			Action: func() tea.Cmd { return nil },
-		},
-	}
-	m := modal.NewConfirmModal("Título", "Mensagem", opts)
-
-	// Verificar que o modal foi criado com sucesso
-	if m == nil {
-		t.Fatal("modal is nil")
-	}
-
-	// Render deve funcionar, indicando que as opções estão presentes
-	rendered := m.Render(10, 60, design.TokyoNight)
-	if rendered == "" {
-		t.Error("Modal with IntentTypes should render successfully")
-	}
-}
 
 func TestConfirmModal_Update_ChainedMessages(t *testing.T) {
 	// Teste simulando uma sequência de mensagens de diferentes tipos
@@ -687,7 +656,7 @@ func TestConfirmModal_Update_ChainedMessages(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "OK",
-			Intent: modal.IntentConfirm,
+
 			Action: func() tea.Cmd {
 				callCount++
 				return nil

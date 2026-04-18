@@ -57,7 +57,6 @@ func (f *FakeOperation) buildConfirmModal() *modal.ConfirmModal {
 			{
 				Keys:   []design.Key{design.Keys.Enter},
 				Label:  "Executar",
-				Intent: modal.IntentConfirm,
 				Action: func() tea.Cmd {
 					return tea.Batch(tui.CloseModal(), func() tea.Msg {
 						return fakeOperationMsg{state: stateExecuting}
@@ -67,7 +66,6 @@ func (f *FakeOperation) buildConfirmModal() *modal.ConfirmModal {
 			{
 				Keys:   []design.Key{design.Keys.Esc},
 				Label:  "Cancelar",
-				Intent: modal.IntentCancel,
 				Action: func() tea.Cmd {
 					return tea.Batch(tui.CloseModal(), tui.OperationCompleted())
 				},
@@ -84,7 +82,6 @@ func (f *FakeOperation) buildResultModal() *modal.ConfirmModal {
 			{
 				Keys:   []design.Key{design.Keys.Enter},
 				Label:  "OK",
-				Intent: modal.IntentConfirm,
 				Action: func() tea.Cmd {
 					return tea.Batch(tui.CloseModal(), tui.OperationCompleted())
 				},

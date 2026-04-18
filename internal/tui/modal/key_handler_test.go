@@ -17,7 +17,6 @@ func TestKeyHandler_OptionMatch_ExecutesAction(t *testing.T) {
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "OK",
-			Intent: IntentConfirm,
 			Action: func() tea.Cmd {
 				called = true
 				return nil

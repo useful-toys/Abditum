@@ -71,7 +71,6 @@ func (m *PasswordEntryModal) Render(maxHeight, maxWidth int, theme *design.Theme
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "Confirmar",
-			Intent: IntentConfirm,
 			Action: func() tea.Cmd {
 				if m.field.Len() == 0 {
 					return nil
@@ -82,7 +81,6 @@ func (m *PasswordEntryModal) Render(maxHeight, maxWidth int, theme *design.Theme
 		{
 			Keys:   []design.Key{design.Keys.Esc},
 			Label:  "Cancelar",
-			Intent: IntentCancel,
 			Action: func() tea.Cmd {
 				m.field.Wipe()
 				return m.onCancel()

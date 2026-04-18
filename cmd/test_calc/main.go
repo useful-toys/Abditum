@@ -11,20 +11,20 @@ import (
 func main() {
 	theme := design.TokyoNight
 	opts := []modal.ModalOption{
-		{Keys: []design.Key{design.Keys.Enter}, Label: "Executar", Intent: modal.IntentConfirm, Action: func() { return }},
-		{Keys: []design.Key{design.Keys.Esc}, Label: "Cancelar", Intent: modal.IntentCancel, Action: func() { return }},
+		{Keys: []design.Key{design.Keys.Enter}, Label: "Executar", Action: func() { return }},
+		{Keys: []design.Key{design.Keys.Esc}, Label: "Cancelar", Action: func() { return }},
 	}
 	
-	body := "\nDeseja executar a operação fake?\nIsso simulará 5 segundos de trabalho.\n"
+	body := "\nDeseja executar a operaï¿½ï¿½o fake?\nIsso simularï¿½ 5 segundos de trabalho.\n"
 	
 	// Simulate calculateBodyWidth
 	paddingH := 2 * design.DialogPaddingH
 	
-	// Título
-	titleWidth := lipgloss.Width("Operação Fake")
+	// Tï¿½tulo
+	titleWidth := lipgloss.Width("Operaï¿½ï¿½o Fake")
 	titleWidth += 8
 	
-	// Ações
+	// Aï¿½ï¿½es
 	actionWidth := 3
 	for _, opt := range opts {
 		_, keyWidth := design.RenderDialogAction(opt.Keys[0].Label, opt.Label, theme.Border.Focused, theme)

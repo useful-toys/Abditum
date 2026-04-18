@@ -38,7 +38,6 @@ func NewHelpModal(acts []actions.Action, groups []actions.ActionGroup) *HelpModa
 		{
 			Keys:   []design.Key{design.Keys.Esc},
 			Label:  "Fechar",
-			Intent: IntentCancel,
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 	}
@@ -78,7 +77,6 @@ func (m *HelpModal) Render(maxHeight, maxWidth int, theme *design.Theme) string 
 		{
 			Keys:   []design.Key{design.Keys.Esc},
 			Label:  "Fechar",
-			Intent: IntentCancel,
 			Action: func() tea.Cmd { return tui.CloseModal() },
 		},
 	}
