@@ -12,4 +12,9 @@ type RepositorioCofre interface {
 	// Phase 4 implementation handles decryption and validation.
 	// Returns error if file doesn't exist, wrong password, or corrupted.
 	Carregar() (*Cofre, error)
+
+	// DetectarAlteracaoExterna verifica se o arquivo de cofre foi modificado
+	// por processo externo desde o último Salvar ou Carregar.
+	// Retorna false sem erro se não houver baseline (cofre recém-criado).
+	DetectarAlteracaoExterna() (bool, error)
 }

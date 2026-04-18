@@ -7,8 +7,10 @@ import (
 
 // Mock repository for testing
 type mockRepository struct {
-	salvarCalled bool
-	salvarError  error
+	salvarCalled                 bool
+	salvarError                  error
+	detectarAlteracaoExternaResp bool
+	detectarAlteracaoExternaErr  error
 }
 
 func (m *mockRepository) Salvar(cofre *Cofre) error {
@@ -18,6 +20,10 @@ func (m *mockRepository) Salvar(cofre *Cofre) error {
 
 func (m *mockRepository) Carregar() (*Cofre, error) {
 	return nil, errors.New("not implemented")
+}
+
+func (m *mockRepository) DetectarAlteracaoExterna() (bool, error) {
+	return m.detectarAlteracaoExternaResp, m.detectarAlteracaoExternaErr
 }
 
 func TestNewManager(t *testing.T) {
