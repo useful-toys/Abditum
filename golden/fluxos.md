@@ -1,4 +1,4 @@
-# Fluxos de Tarefas — Abditum
+﻿# Fluxos de Tarefas — Abditum
 
 Este documento descreve como o usuário realiza as principais tarefas na aplicação, do ponto de vista da experiência — o que o usuário faz e o que acontece como resultado.
 
@@ -217,16 +217,11 @@ Em ambos os casos de entrada automática, o passo 1 (verificação de modificaç
 *Este fluxo segue o [Princípio da Desistência e Retorno](#princípio-da-desistência-e-retorno), o [Princípio da Atomicidade de Fluxos Interativos](#princípio-da-atomicidade-de-fluxos-interativos), o [Princípio da Sinalização de Operação em Andamento](#princípio-da-sinalização-de-operação-em-andamento) e o [Princípio do Salvamento Atômico](#princípio-do-salvamento-atômico).*
 
 1. O sistema verifica se há um cofre carregado com modificações não salvas.
-   - Se não houver modificações ou não houver cofre carregado → continua para o passo 2.
    - Se houver → o sistema comunica as alterações não salvas e solicita uma decisão: salvar e prosseguir, descartar e prosseguir, ou voltar.
+     - Se o usuário escolhe salvar e prosseguir → o cofre é gravado no arquivo atual usando o [salvamento atômico](#princípio-do-salvamento-atômico) ([sinalização](#princípio-da-sinalização-de-operação-em-andamento)). Se o salvamento falhar, o fluxo é interrompido e o cofre permanece carregado e `alterado`. Se bem-sucedido, continua para o passo 2.
      - Se o usuário escolhe descartar e prosseguir → continua para o passo 2.
      - Se o usuário escolhe voltar → o fluxo é interrompido e nada muda.
-     - Se o usuário escolhe salvar e prosseguir → o cofre é gravado no arquivo atual usando o [salvamento atômico](#princípio-do-salvamento-atômico) ([sinalização](#princípio-da-sinalização-de-operação-em-andamento)).
-       - Se o arquivo tiver sido modificado externamente → o sistema comunica o conflito e solicita uma decisão: sobrescrever e prosseguir, ou voltar.
-         - Se o usuário escolhe voltar → o fluxo é interrompido e nada muda.
-         - Se o usuário escolhe sobrescrever → grava forçando sobrescrita. Se falhar, o fluxo é interrompido e o cofre permanece carregado e `alterado`.
-       - Se o salvamento falhar (sem conflito externo) → o fluxo é interrompido e o cofre permanece carregado e `alterado`.
-       - Se bem-sucedido → continua para o passo 2.
+   - Se não houver modificações ou não houver cofre carregado → continua para o passo 2.
 2. O sistema solicita o caminho do arquivo do cofre. O usuário o informa.
    - Se o `magic` for inválido ou o `versão_formato` for superior ao suportado → o sistema comunica o erro. O usuário pode corrigir o caminho e tentar novamente. Volta ao passo 2.
 3. O sistema solicita a senha mestra. O usuário a informa.
@@ -245,15 +240,10 @@ flowchart TD
     A([Contexto: qualquer]) --> B(Cofre carregado\ne alterado?)
     B -- Sim --> C[Alterações não salvas\nSalvar / Descartar / Voltar?]
     C -- Voltar --> Z([Contexto inalterado])
-    C -- Descartar --> P2
     C -- Salvar --> W0[Protocolo de salvamento atômico]
-    W0 -- Falha genérica --> Z
-    W0 -- Modificado externamente --> CE[Conflito externo\nSobrescrever / Voltar?]
-    CE -- Voltar --> Z
-    CE -- Sobrescrever --> W0F[Grava forçando sobrescrita]
-    W0F -- Falha --> Z
-    W0F -- Sucesso --> P2
+    W0 -- Falha --> Z
     W0 -- Sucesso --> P2
+    C -- Descartar --> P2
     B -- Não --> P2
     P2[Usuário informa caminho do arquivo] -- Desiste --> Z
     P2 --> D(Magic e versão\nválidos?)
@@ -281,16 +271,11 @@ flowchart TD
 *Este fluxo segue o [Princípio da Desistência e Retorno](#princípio-da-desistência-e-retorno), o [Princípio da Atomicidade de Fluxos Interativos](#princípio-da-atomicidade-de-fluxos-interativos), o [Princípio da Sinalização de Operação em Andamento](#princípio-da-sinalização-de-operação-em-andamento) e o [Princípio do Salvamento Atômico](#princípio-do-salvamento-atômico).*
 
 1. O sistema verifica se há um cofre carregado com modificações não salvas.
-   - Se não houver modificações ou não houver cofre carregado → continua para o passo 2.
    - Se houver → o sistema comunica as alterações não salvas e solicita uma decisão: salvar e prosseguir, descartar e prosseguir, ou voltar.
+     - Se o usuário escolhe salvar e prosseguir → o cofre é gravado no arquivo atual usando o [salvamento atômico](#princípio-do-salvamento-atômico) ([sinalização](#princípio-da-sinalização-de-operação-em-andamento)). Se o salvamento falhar, o fluxo é interrompido e o cofre permanece carregado e `alterado`. Se bem-sucedido, continua para o passo 2.
      - Se o usuário escolhe descartar e prosseguir → continua para o passo 2.
      - Se o usuário escolhe voltar → o fluxo é interrompido e nada muda.
-     - Se o usuário escolhe salvar e prosseguir → o cofre é gravado no arquivo atual usando o [salvamento atômico](#princípio-do-salvamento-atômico) ([sinalização](#princípio-da-sinalização-de-operação-em-andamento)).
-       - Se o arquivo tiver sido modificado externamente → o sistema comunica o conflito e solicita uma decisão: sobrescrever e prosseguir, ou voltar.
-         - Se o usuário escolhe voltar → o fluxo é interrompido e nada muda.
-         - Se o usuário escolhe sobrescrever → grava forçando sobrescrita. Se falhar, o fluxo é interrompido e o cofre permanece carregado e `alterado`.
-       - Se o salvamento falhar (sem conflito externo) → o fluxo é interrompido e o cofre permanece carregado e `alterado`.
-       - Se bem-sucedido → continua para o passo 2.
+   - Se não houver modificações ou não houver cofre carregado → continua para o passo 2.
 2. O sistema solicita onde salvar o arquivo do cofre (caminho e nome). O usuário o informa. A extensão `.abditum` é adicionada automaticamente se omitida.
    - Se o arquivo de destino já existir → o sistema alerta que o arquivo já existe e solicita uma decisão: sobrescrever ou informar outro caminho.
      - Se o usuário escolhe informar outro caminho → volta ao passo 2.

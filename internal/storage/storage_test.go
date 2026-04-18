@@ -749,6 +749,72 @@ func TestFileRepository_DetectarAlteracaoExterna_CofreNovo(t *testing.T) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// ValidateHeader tests
+// ---------------------------------------------------------------------------
+
+func TestValidateHeader_ArquivoValido(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.abditum")
+	cofre := vault.NovoCofre()
+	if err := cofre.InicializarConteudoPadrao(); err != nil {
+		t.Fatal(err)
+	}
+	if err := storage.SaveNew(path, cofre, []byte("SenhaForte123!")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := storage.ValidateHeader(path); err != nil {
+		t.Errorf("ValidateHeader de cofre válido: erro inesperado %v", err)
+	}
+}
+
+func TestValidateHeader_ArquivoPequenoDemais(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "small.bin")
+	os.WriteFile(path, []byte("ABC"), 0600)
+
+	err := storage.ValidateHeader(path)
+	if !errors.Is(err, storage.ErrInvalidMagic) {
+		t.Errorf("arquivo pequeno: esperado ErrInvalidMagic, obteve %v", err)
+	}
+}
+
+func TestValidateHeader_MagicInvalida(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bad_magic.bin")
+	data := make([]byte, storage.HeaderSize)
+	copy(data[0:4], []byte("XXXX"))
+	data[4] = storage.CurrentFormatVersion
+	os.WriteFile(path, data, 0600)
+
+	err := storage.ValidateHeader(path)
+	if !errors.Is(err, storage.ErrInvalidMagic) {
+		t.Errorf("magic inválida: esperado ErrInvalidMagic, obteve %v", err)
+	}
+}
+
+func TestValidateHeader_VersaoIncompativel(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "future.bin")
+	data := make([]byte, storage.HeaderSize)
+	copy(data[0:4], storage.Magic[:])
+	data[4] = 255
+	os.WriteFile(path, data, 0600)
+
+	err := storage.ValidateHeader(path)
+	if !errors.Is(err, storage.ErrVersionTooNew) {
+		t.Errorf("versão futura: esperado ErrVersionTooNew, obteve %v", err)
+	}
+}
+
+func TestValidateHeader_ArquivoInexistente(t *testing.T) {
+	err := storage.ValidateHeader("/caminho/que/nao/existe.abditum")
+	if err == nil {
+		t.Error("arquivo inexistente: esperado erro, obteve nil")
+	}
+}
+
 // TestIntegration_ManagerWithFileRepository verifies that Manager.Salvar works via FileRepository.
 func TestIntegration_ManagerWithFileRepository(t *testing.T) {
 	dir := t.TempDir()

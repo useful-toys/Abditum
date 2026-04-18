@@ -228,3 +228,34 @@ func Load(vaultPath string, password []byte) (*vault.Cofre, FileMetadata, error)
 
 	return cofre, meta, nil
 }
+
+// ValidateHeader lê o header do arquivo de cofre e valida magic bytes e versão
+// do formato. Não faz derivação de chave nem descriptografia — executa em
+// microssegundos.
+//
+// Retorna nil se o header é válido, ErrInvalidMagic se o arquivo não tem os
+// magic bytes "ABDT", ErrVersionTooNew se a versão do formato não é suportada,
+// ou erro de IO se o arquivo não pode ser lido.
+func ValidateHeader(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("storage.ValidateHeader: %w", err)
+	}
+	defer f.Close()
+
+	header := make([]byte, HeaderSize)
+	if _, err := io.ReadFull(f, header); err != nil {
+		return ErrInvalidMagic
+	}
+
+	if header[0] != Magic[0] || header[1] != Magic[1] || header[2] != Magic[2] || header[3] != Magic[3] {
+		return ErrInvalidMagic
+	}
+
+	version := header[MagicSize]
+	if _, err := ProfileForVersion(version); err != nil {
+		return err
+	}
+
+	return nil
+}

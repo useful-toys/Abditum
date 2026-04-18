@@ -69,6 +69,25 @@ func NewFileRepositoryForCreate(path string, password []byte) *FileRepository {
 	}
 }
 
+// NewFileRepositoryForOpen cria um FileRepository para abrir um cofre existente.
+//
+// Diferente de NewFileRepositoryForCreate, define isNew=false para que Salvar
+// use o protocolo atômico (com rotação .tmp/.bak) desde a primeira chamada.
+// Salt e metadata são preenchidos pela chamada subsequente a Carregar().
+//
+// Parâmetros:
+//   - path: Caminho absoluto para o arquivo de cofre existente.
+//   - password: Senha master do usuário (bytes UTF-8). Armazenada por referência —
+//     o chamador não deve apagar o slice enquanto o repositório estiver em uso.
+func NewFileRepositoryForOpen(path string, password []byte) *FileRepository {
+	return &FileRepository{
+		path:     path,
+		password: password,
+		salt:     nil,
+		isNew:    false,
+	}
+}
+
 // Salvar implements vault.RepositorioCofre.
 //
 // First save (isNew == true): uses SaveNew — creates the vault file directly at the
