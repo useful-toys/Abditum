@@ -815,6 +815,41 @@ func TestValidateHeader_ArquivoInexistente(t *testing.T) {
 	}
 }
 
+// TestSave_FailRenameVaultToBak tests that Save returns error when .bak is a directory.
+func TestSave_FailRenameVaultToBak(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	salt := data[storage.SaltOffset:storage.SaltOffset+storage.SaltSize]
+
+	bakPath := path + ".bak"
+	if err := os.Mkdir(bakPath, 0755); err != nil {
+		t.Fatalf("Mkdir() error: %v", err)
+	}
+	defer os.Remove(bakPath)
+
+	bak2Path := path + ".bak2"
+	defer os.RemoveAll(bak2Path)
+
+	err = storage.Save(path, cofre, testPassword, salt)
+	if err != nil {
+		t.Fatalf("Save() error: %v", err)
+	}
+
+	if _, err := os.Stat(bak2Path); os.IsNotExist(err) {
+		t.Error(".bak2 não foi criado - rotação falhou")
+	}
+}
+
 // TestIntegration_ManagerWithFileRepository verifies that Manager.Salvar works via FileRepository.
 func TestIntegration_ManagerWithFileRepository(t *testing.T) {
 	dir := t.TempDir()
