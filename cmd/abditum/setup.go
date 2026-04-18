@@ -58,11 +58,13 @@ func setupApplication(r *tui.RootModel) {
 		{
 			Keys:        []design.Key{design.Shortcuts.Quit},
 			Label:       "Sair",
-			Description: "Encerra a aplicação.",
+			Description: "Encerra a aplicação, com opção de salvar se houver alterações.",
 			GroupID:     "app",
 			Priority:    20,
 			Visible:     true,
-			OnExecute:   func() tea.Cmd { return tea.Quit },
+			OnExecute: func() tea.Cmd {
+				return tui.StartOperation(operation.NewQuitOperation(r.MessageController(), r.Manager()))
+			},
 		},
 		{
 			Keys:        []design.Key{design.Keys.F2},
