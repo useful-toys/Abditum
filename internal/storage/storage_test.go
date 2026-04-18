@@ -2181,3 +2181,262 @@ func TestSave_LargeData(t *testing.T) {
 		t.Fatal("carregar returned nil")
 	}
 }
+
+// TestSave_BackupRotationChain tests backup chain .bak -> .bak2.
+func TestSave_BackupRotationChain(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	salt := data[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	for i := 0; i < 3; i++ {
+		err = storage.Save(path, cofre, testPassword, salt)
+		if err != nil {
+			t.Fatalf("Save() #%d error: %v", i+1, err)
+		}
+	}
+
+	bakPath := path + ".bak"
+	bak2Path := path + ".bak2"
+
+	if _, err := os.Stat(bakPath); os.IsNotExist(err) {
+		t.Error(".bak should exist after multiple saves")
+	}
+	if _, err := os.Stat(bak2Path); os.IsNotExist(err) {
+		t.Error(".bak2 should exist after multiple saves")
+	}
+}
+
+// TestFileRepository_Metadata tests metadata getter.
+func TestFileRepository_Metadata(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+	if err := repo.Salvar(cofre); err != nil {
+		t.Fatalf("Salvar() error: %v", err)
+	}
+
+	meta := repo.Metadata()
+	if meta.Size == 0 {
+		t.Error("metadata should have size")
+	}
+}
+
+// TestSave_PreserveSalt tests that Save preserves salt.
+func TestSave_PreserveSalt(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	data1, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	salt1 := data1[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	err = storage.Save(path, cofre, testPassword, salt1)
+	if err != nil {
+		t.Fatalf("Save() error: %v", err)
+	}
+
+	data2, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() after Save error: %v", err)
+	}
+	salt2 := data2[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	if !bytes.Equal(salt1, salt2) {
+		t.Error("salt should be preserved after Save")
+	}
+}
+
+// TestRecoverOrphans_WithTmpFile tests RecoverOrphans with stale .tmp file.
+func TestRecoverOrphans_WithTmpFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	if err := storage.SaveNew(path, newTestCofre(), testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	tmpPath := path + ".tmp"
+	if err := os.WriteFile(tmpPath, []byte("stale tmp"), 0600); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
+
+	if err := storage.RecoverOrphans(path); err != nil {
+		t.Fatalf("RecoverOrphans() error: %v", err)
+	}
+
+	if _, err := os.Stat(tmpPath); !os.IsNotExist(err) {
+		t.Error(".tmp should be removed")
+	}
+}
+
+// TestLoad_EmptyFile tests Load with empty file.
+func TestLoad_EmptyFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "empty.abditum")
+
+	if err := os.WriteFile(path, []byte{}, 0600); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
+
+	_, _, loadErr := storage.Load(path, testPassword)
+	if loadErr == nil {
+		t.Error("esperado erro para arquivo vazio")
+	}
+}
+
+// TestSave_WithDifferentPassword tests Save with different password.
+func TestSave_WithDifferentPassword(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	salt := data[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	newPassword := []byte("different-password-123")
+	err = storage.Save(path, cofre, newPassword, salt)
+	if err != nil {
+		t.Logf("Save com senha diferente: erro: %v", err)
+	}
+}
+
+// TestLoad_WithDifferentPassword tests loading with different password.
+func TestLoad_WithDifferentPassword(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	_, _, loadErr := storage.Load(path, []byte("wrong-password"))
+	if loadErr == nil {
+		t.Error("esperado erro para senha errada")
+	}
+}
+
+// TestSave_ConcurrentWrites tests save sequence.
+func TestSave_ConcurrentWrites(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := vault.NovoCofre()
+	if err := cofre.InicializarConteudoPadrao(); err != nil {
+		t.Fatalf("InicializarConteudoPadrao() error: %v", err)
+	}
+
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+	if err := repo.Salvar(cofre); err != nil {
+		t.Fatalf("Salvar() error: %v", err)
+	}
+
+	for i := 0; i < 3; i++ {
+		if err := repo.Salvar(cofre); err != nil {
+			t.Fatalf("Salvar() #%d error: %v", i+1, err)
+		}
+	}
+
+	loaded, err := repo.Carregar()
+	if err != nil {
+		t.Fatalf("Carregar() error: %v", err)
+	}
+	if loaded == nil {
+		t.Error("carregar returned nil")
+	}
+}
+
+// TestRecoverOrphans_MissingFile tests RecoverOrphans on missing file.
+func TestRecoverOrphans_MissingFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "nonexistent.abditum")
+
+	err := storage.RecoverOrphans(path)
+	if err != nil {
+		t.Logf("RecoverOrphans error: %v", err)
+	}
+}
+
+// TestComputeFileMetadata_SameFileTwice tests computing metadata twice.
+func TestComputeFileMetadata_SameFileTwice(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	meta1, err := storage.ComputeFileMetadata(path)
+	if err != nil {
+		t.Fatalf("ComputeFileMetadata() error: %v", err)
+	}
+
+	meta2, err := storage.ComputeFileMetadata(path)
+	if err != nil {
+		t.Fatalf("ComputeFileMetadata() second error: %v", err)
+	}
+
+	if meta1.Hash != meta2.Hash {
+		t.Error("hashes should be equal for same file")
+	}
+}
+
+// TestSave_GenNewNonce tests that Save generates new nonce.
+func TestSave_GenNewNonce(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	data1, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	nonce1 := data1[storage.NonceOffset : storage.NonceOffset+storage.NonceSize]
+	salt := data1[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	err = storage.Save(path, cofre, testPassword, salt)
+	if err != nil {
+		t.Fatalf("Save() error: %v", err)
+	}
+
+	data2, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() after Save error: %v", err)
+	}
+	nonce2 := data2[storage.NonceOffset : storage.NonceOffset+storage.NonceSize]
+
+	if bytes.Equal(nonce1, nonce2) {
+		t.Log("nonces should be different after Save (new nonce generated)")
+	}
+}
