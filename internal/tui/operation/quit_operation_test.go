@@ -9,7 +9,7 @@ import (
 	"github.com/useful-toys/abditum/internal/vault"
 )
 
-// stubManager simula vault.Manager para os testes da QuitOperation.
+// stubManager simula vault.Manager para os testes da QuitOperation e do guard.
 type stubManager struct {
 	isModified                    bool
 	salvarErr                     error
@@ -50,7 +50,7 @@ func TestQuitOperation_Init_CofreAlterado_AbreModalDecisao(t *testing.T) {
 	}
 }
 
-// --- Update ---
+// --- Update (delegado ao guard no Fluxo 5) ---
 
 func TestQuitOperation_Update_IgnoraMensagemDesconhecida(t *testing.T) {
 	op := newQuitOperationFromSaver(&stubNotifier{}, nil)
@@ -62,20 +62,19 @@ func TestQuitOperation_Update_IgnoraMensagemDesconhecida(t *testing.T) {
 
 func TestQuitOperation_Update_Saving_Sucesso_EmiteQuit(t *testing.T) {
 	n := &stubNotifier{}
-	m := &stubManager{}
+	m := &stubManager{isModified: true}
 	op := newQuitOperationFromSaver(n, m)
+	op.Init() // ativa o guard
 
-	cmd := op.Update(quitMsg{state: quitStateSaving})
+	cmd := op.Update(guardSaveMsg{forced: false})
 	if n.lastMethod != "SetBusy" {
 		t.Errorf("Update(saving): esperado SetBusy, obteve %q", n.lastMethod)
 	}
-	// cmd é a goroutine de salvamento — executar para obter o resultado
 	resultMsg := execCmd(cmd)
-	// o resultado é quitSaveResultMsg, que Update deve processar
 	resultCmd := op.Update(resultMsg)
 	msg := execCmd(resultCmd)
-	if n.lastMethod != "SetSuccess" {
-		t.Errorf("após salvar OK: esperado SetSuccess, obteve %q", n.lastMethod)
+	if n.lastMethod != "Clear" {
+		t.Errorf("após salvar OK: esperado Clear, obteve %q", n.lastMethod)
 	}
 	if _, ok := msg.(tea.QuitMsg); !ok {
 		t.Errorf("após salvar OK: esperado tea.QuitMsg, obteve %T", msg)
@@ -84,10 +83,11 @@ func TestQuitOperation_Update_Saving_Sucesso_EmiteQuit(t *testing.T) {
 
 func TestQuitOperation_Update_Saving_ErroExterno_AbreModalConflito(t *testing.T) {
 	n := &stubNotifier{}
-	m := &stubManager{salvarErr: vault.ErrModifiedExternally}
+	m := &stubManager{isModified: true, salvarErr: vault.ErrModifiedExternally}
 	op := newQuitOperationFromSaver(n, m)
+	op.Init()
 
-	cmd := op.Update(quitMsg{state: quitStateSaving})
+	cmd := op.Update(guardSaveMsg{forced: false})
 	resultMsg := execCmd(cmd)
 	resultCmd := op.Update(resultMsg)
 	msg := execCmd(resultCmd)
@@ -95,16 +95,17 @@ func TestQuitOperation_Update_Saving_ErroExterno_AbreModalConflito(t *testing.T)
 		t.Errorf("após ErrModifiedExternally: esperado OpenModalMsg, obteve %T", msg)
 	}
 	if n.lastMethod != "Clear" {
-		t.Errorf("após ErrModifiedExternally: esperado Clear no notifier, obteve %q", n.lastMethod)
+		t.Errorf("após ErrModifiedExternally: esperado Clear, obteve %q", n.lastMethod)
 	}
 }
 
 func TestQuitOperation_Update_Saving_ErroGenerico_NaoSai(t *testing.T) {
 	n := &stubNotifier{}
-	m := &stubManager{salvarErr: errors.New("disco cheio")}
+	m := &stubManager{isModified: true, salvarErr: errors.New("disco cheio")}
 	op := newQuitOperationFromSaver(n, m)
+	op.Init()
 
-	cmd := op.Update(quitMsg{state: quitStateSaving})
+	cmd := op.Update(guardSaveMsg{forced: false})
 	resultMsg := execCmd(cmd)
 	resultCmd := op.Update(resultMsg)
 	msg := execCmd(resultCmd)
@@ -118,10 +119,11 @@ func TestQuitOperation_Update_Saving_ErroGenerico_NaoSai(t *testing.T) {
 
 func TestQuitOperation_Update_SavingForced_Sucesso_EmiteQuit(t *testing.T) {
 	n := &stubNotifier{}
-	m := &stubManager{}
+	m := &stubManager{isModified: true}
 	op := newQuitOperationFromSaver(n, m)
+	op.Init()
 
-	cmd := op.Update(quitMsg{state: quitStateSavingForced})
+	cmd := op.Update(guardSaveMsg{forced: true})
 	resultMsg := execCmd(cmd)
 	resultCmd := op.Update(resultMsg)
 	msg := execCmd(resultCmd)
@@ -135,10 +137,11 @@ func TestQuitOperation_Update_SavingForced_Sucesso_EmiteQuit(t *testing.T) {
 
 func TestQuitOperation_Update_SavingForced_Erro_NaoSai(t *testing.T) {
 	n := &stubNotifier{}
-	m := &stubManager{salvarErr: errors.New("falha")}
+	m := &stubManager{isModified: true, salvarErr: errors.New("falha")}
 	op := newQuitOperationFromSaver(n, m)
+	op.Init()
 
-	cmd := op.Update(quitMsg{state: quitStateSavingForced})
+	cmd := op.Update(guardSaveMsg{forced: true})
 	resultMsg := execCmd(cmd)
 	resultCmd := op.Update(resultMsg)
 	msg := execCmd(resultCmd)
@@ -147,5 +150,18 @@ func TestQuitOperation_Update_SavingForced_Erro_NaoSai(t *testing.T) {
 	}
 	if _, ok := msg.(tui.OperationCompletedMsg); !ok {
 		t.Errorf("SavingForced erro: esperado OperationCompletedMsg, obteve %T", msg)
+	}
+}
+
+func TestQuitOperation_Update_Descartar_EmiteQuit(t *testing.T) {
+	n := &stubNotifier{}
+	m := &stubManager{isModified: true}
+	op := newQuitOperationFromSaver(n, m)
+	op.Init()
+
+	cmd := op.Update(guardDiscardMsg{})
+	msg := execCmd(cmd)
+	if _, ok := msg.(tea.QuitMsg); !ok {
+		t.Errorf("Descartar: esperado tea.QuitMsg, obteve %T", msg)
 	}
 }

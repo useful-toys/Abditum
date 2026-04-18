@@ -43,6 +43,7 @@ type guardCofreAlterado struct {
 
 // novoGuardCofreAlterado cria um guardCofreAlterado.
 // saver pode ser nil quando nenhum cofre está carregado.
+// onAbortado é chamado quando o usuário cancela ou quando salvar falha com erro irrecuperável.
 func novoGuardCofreAlterado(
 	notifier tui.MessageController,
 	saver vaultSaver,
@@ -66,7 +67,7 @@ func (g *guardCofreAlterado) Init() tea.Cmd {
 	return tui.OpenModal(g.buildModifiedModal())
 }
 
-// Update trata as mensagens internas do guard.
+// Update trata as mensagens internas do guard (save, result, discard, cancel).
 func (g *guardCofreAlterado) Update(msg tea.Msg) tea.Cmd {
 	switch m := msg.(type) {
 	case guardSaveMsg:
