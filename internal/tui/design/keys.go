@@ -90,7 +90,7 @@ func WithAlt(base Key) Key {
 	return Key{Label: ModLabelAlt + base.Label, Code: base.Code, Mod: base.Mod | tea.ModAlt}
 }
 
-// Shortcuts contém os 4 atalhos globais do design system, ativos em qualquer contexto da aplicação.
+// Shortcuts contém os atalhos globais do design system, ativos em qualquer contexto da aplicação.
 var Shortcuts = struct {
 	// Help abre e fecha o diálogo de ajuda.
 	Help Key
@@ -102,9 +102,15 @@ var Shortcuts = struct {
 	// LockVault bloqueia o cofre imediatamente, descartando alterações sem confirmação.
 	// O atalho complexo (⌃!⇧Q) é intencional para evitar acionamento acidental.
 	LockVault Key
+	// NewVault inicia o fluxo de criação de novo cofre (Fluxo 2).
+	NewVault Key
+	// OpenVault inicia o fluxo de abertura de cofre existente (Fluxo 1).
+	OpenVault Key
 }{
 	Help:        Keys.F1,
 	ThemeToggle: Keys.F12,
 	Quit:        WithCtrl(Letter('q')),
 	LockVault:   WithCtrl(WithAlt(WithShift(Letter('q')))),
+	NewVault:    WithCtrl(Letter('n')),
+	OpenVault:   WithCtrl(Letter('o')),
 }
