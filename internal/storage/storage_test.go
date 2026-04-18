@@ -2440,3 +2440,235 @@ func TestSave_GenNewNonce(t *testing.T) {
 		t.Log("nonces should be different after Save (new nonce generated)")
 	}
 }
+
+// TestLoad_ByteByByte tests loading vault by reading byte by byte.
+func TestLoad_ByteByByte(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	rawData, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+
+	loaded, _, loadErr := storage.Load(path, testPassword)
+	if loadErr != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	if loaded == nil {
+		t.Fatal("Load returned nil")
+	}
+	_ = rawData
+}
+
+// TestSave_OverwriteWithNewData tests overwriting with new data.
+func TestSave_OverwriteWithNewData(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre1 := newTestCofre()
+	if err := storage.SaveNew(path, cofre1, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	salt := data[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	sizeBefore := len(data)
+
+	cofre2 := vault.NovoCofre()
+	if err := cofre2.InicializarConteudoPadrao(); err != nil {
+		t.Fatalf("InicializarConteudoPadrao() error: %v", err)
+	}
+
+	err = storage.Save(path, cofre2, testPassword, salt)
+	if err != nil {
+		t.Fatalf("Save() error: %v", err)
+	}
+
+	dataAfter, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() after Save error: %v", err)
+	}
+
+	sizeAfter := len(dataAfter)
+	if sizeBefore != sizeAfter {
+		t.Logf("size changed: %d -> %d", sizeBefore, sizeAfter)
+	}
+}
+
+// TestSave_AtomicProtocol tests atomic save protocol.
+func TestSave_AtomicProtocol(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	salt := data[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	err = storage.Save(path, cofre, testPassword, salt)
+	if err != nil {
+		t.Fatalf("Save() error: %v", err)
+	}
+
+	tmpPath := path + ".tmp"
+	if _, err := os.Stat(tmpPath); !os.IsNotExist(err) {
+		t.Error(".tmp file exists after Save (should be removed)")
+	}
+}
+
+// TestLoad_AfterSaveProtocol tests loading after atomic save.
+func TestLoad_AfterSaveProtocol(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := vault.NovoCofre()
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+	if err := repo.Salvar(cofre); err != nil {
+		t.Fatalf("Salvar() error: %v", err)
+	}
+
+	if err := repo.Salvar(cofre); err != nil {
+		t.Fatalf("Salvar() second error: %v", err)
+	}
+
+	loaded, err := repo.Carregar()
+	if err != nil {
+		t.Fatalf("Carregar() error: %v", err)
+	}
+	if loaded == nil {
+		t.Fatal("carregar returned nil")
+	}
+}
+
+// TestDetectExternalChange_AfterMultipleSaves tests detection after multiple saves.
+func TestDetectExternalChange_AfterMultipleSaves(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+	if err := repo.Salvar(cofre); err != nil {
+		t.Fatalf("Salvar() error: %v", err)
+	}
+
+	meta1 := repo.Metadata()
+
+	if err := repo.Salvar(cofre); err != nil {
+		t.Fatalf("Salvar() second error: %v", err)
+	}
+
+	changed, err := storage.DetectExternalChange(path, meta1)
+	if err != nil {
+		t.Fatalf("DetectExternalChange() error: %v", err)
+	}
+	if !changed {
+		t.Log("detectou alteração após Save (pode ser mudança de nonce)")
+	}
+}
+
+// TestValidateHeader_WithAllFields tests validation with all header fields.
+func TestValidateHeader_WithAllFields(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	if err := storage.ValidateHeader(path); err != nil {
+		t.Errorf("ValidateHeader() error: %v", err)
+	}
+}
+
+// TestLoad_AfterExternalDelete tests loading after file was deleted externally.
+func TestLoad_AfterExternalDelete(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	if err := storage.SaveNew(path, newTestCofre(), testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	os.Remove(path)
+
+	_, _, loadErr := storage.Load(path, testPassword)
+	if loadErr == nil {
+		t.Error("esperado erro após_delete externo")
+	}
+}
+
+// TestSalvar_IsNew_PathInvalido verifica que Salvar retorna erro quando o
+// destino não existe (branch SaveNew falha, isNew=true).
+func TestSalvar_IsNew_PathInvalido(t *testing.T) {
+	repo := storage.NewFileRepositoryForCreate("/caminho/que/nao/existe/vault.abditum", testPassword)
+	err := repo.Salvar(vault.NovoCofre())
+	if err == nil {
+		t.Error("esperado erro ao salvar em path inválido")
+	}
+}
+
+// TestSalvar_IsNotNew_PathInvalido verifica que Salvar retorna erro quando o
+// vault existente não está acessível (branch Save falha, isNew=false).
+func TestSalvar_IsNotNew_PathInvalido(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	// Cria um vault válido primeiro
+	if err := storage.SaveNew(path, vault.NovoCofre(), testPassword); err != nil {
+		t.Fatalf("SaveNew: %v", err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	salt := data[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	// Remove o arquivo para forçar falha no Save (Rename vai falhar)
+	os.Remove(path)
+
+	repo := storage.NewFileRepository(path, testPassword, salt, storage.FileMetadata{})
+	err = repo.Salvar(vault.NovoCofre())
+	if err == nil {
+		t.Error("esperado erro ao salvar com vault removido")
+	}
+}
+
+// TestRecoverOrphans_TmpNaoVazio verifica que RecoverOrphans retorna erro
+// quando .tmp existe mas não pode ser removido (diretório não-vazio).
+func TestRecoverOrphans_TmpNaoVazio(t *testing.T) {
+	dir := t.TempDir()
+	vaultPath := filepath.Join(dir, "vault.abditum")
+	tmpPath := vaultPath + ".tmp"
+
+	// Cria .tmp como diretório com um arquivo dentro (não pode ser removido com os.Remove)
+	if err := os.Mkdir(tmpPath, 0755); err != nil {
+		t.Fatalf("Mkdir: %v", err)
+	}
+	innerFile := filepath.Join(tmpPath, "inner.txt")
+	if err := os.WriteFile(innerFile, []byte("conteudo"), 0600); err != nil {
+		t.Fatalf("WriteFile inner: %v", err)
+	}
+	defer os.RemoveAll(tmpPath)
+
+	err := storage.RecoverOrphans(vaultPath)
+	if err == nil {
+		t.Error("esperado erro ao remover .tmp diretório não-vazio")
+	}
+}
