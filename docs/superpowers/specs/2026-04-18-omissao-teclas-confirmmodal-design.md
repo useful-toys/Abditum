@@ -9,23 +9,34 @@ Atualmente, toda `ModalOption` requer a declaração explícita do slice `Keys` 
 
 ## Decisão
 
-Modificar o comportamento do `ConfirmModal` para tratar implicitamente:
-- A **primeira opção** no slice `Options` como ativada por **Enter** (independentemente da declaração de `Keys`)
-- A **última opção** no slice `Options` como ativada por **Esc** (independentemente da declaração de `Keys`)
+Modificar o comportamento do `KeyHandler` (usado por todos os modais que possuem ações de rodapé) e do `frame.go` para tratar implicitamente:
+- A **primeira opção** no slice `Options` como ativada por **Enter** (quando `Keys` estiver vazio ou nil)
+- A **última opção** no slice `Options` como ativada por **Esc** (quando `Keys` estiver vazio ou nil)
 
-Para opções do meio (nem primeira nem última), a declaração explícita de `Keys` permanece necessária.
+Isso permite que desenvolvedores omita a declaração de `Keys` nos casos comuns, enquanto ainda suporta declarações explícitas quando necessário.
 
 ### Comportamento de Teclas (Key Handling)
-- **Primeira opção**: responde a `Enter` **e** a quaisquer teclas declaradas em `Keys` (se presente)
-- **Última opção**: responde a `Esc` **e** a quaisquer teclas declaradas em `Keys` (se presente)
-- **Opções do meio**: respondem **apenas** às teclas declaradas em `Keys`
+Para cada opção em `Modal.Options` (onde Modal é qualquer modal que use KeyHandler, incluindo ConfirmModal):
+- **Se a opção for a primeira (índice 0)**:
+  - Se `Keys` for **não vazio**: usa as teclas declaradas em `Keys` **além de** `design.Keys.Enter` (para matching)
+  - Se `Keys` for **vazio ou nil**: trata como tendo apenas `design.Keys.Enter` (para matching)
+- **Se a opção for a última (índice len-1)**:
+  - Se `Keys` for **não vazio**: usa as teclas declaradas em `Keys` **além de** `design.Keys.Esc` (para matching)
+  - Se `Keys` for **vazio ou nil**: trata como tendo apenas `design.Keys.Esc` (para matching)
+- **Se a opção for do meio (nem primeira nem última)**:
+  - **Deve ter `Keys` não vazio** (caso contrário, não terá nenhuma tecla ativadora)
+  - Usa apenas as teclas declaradas em `Keys` (para matching)
+- **Se houver apenas uma opção (que é tanto primeira quanto última)**:
+  - Se `Keys` for **não vazio**: usa as teclas declaradas em `Keys` **além de** `design.Keys.Enter` e `design.Keys.Esc` (para matching)
+  - Se `Keys` for **vazio ou nil**: trata como tendo **ambas** `design.Keys.Enter` e `design.Keys.Esc` (para matching)
 
 ### Comportamento de UI (Renderização)
-- Se `Keys` for **não vazio**: exibe a **primeira tecla declarada** (ex: `[AltC] Confirmar`)
-- Se `Keys` for **vazio ou nil**: 
-  - Para primeira opção: exibe `[Enter]` 
+O `frame.go` renderiza a primeira tecla declarada em `opt.Keys[0]`. Com nossas modificações:
+- Quando `Keys` é **não vazio**: exibe `opt.Keys[0]` (primeira tecla declarada)
+- Quando `Keys` for **vazio ou nil**: 
+  - Para primeira opção: exibe `[Enter]`
   - Para última opção: exibe `[Esc]`
-  - Para opção única (primeira e última): exibe `[Enter]`
+  - Para opção única (primeira e última): exibe `[Enter]` (usa Enter como padrão para display quando ambas as teclas estão disponíveis implicitamente)
 
 ### Exemplos
 
@@ -45,7 +56,7 @@ opts := []ModalOption{
 }
 ```
 
-#### Teclas personalizadas (mantém compatibilidade)
+#### Teclas personalizadas (mantém compatibilidade com comportamento aprimorado)
 ```go
 opts := []ModalOption{
     {Keys: []design.Key{design.Keys.AltC}, Label: "Confirmar", Action: onConfirm},
@@ -59,23 +70,31 @@ opts := []ModalOption{
 ```go
 opts := []ModalOption{
     {Label: "Confirmar", Action: onConfirm},           // Enter implícito
-    {Keys: []design.Key{design.Keys.F2}, Label: "Ajuda", Action: onHelp}, // F2 obrigatório
+    {Keys: []design.Key{design.Keys.F2}, Label: "Ajuda", Action: onHelp}, // F2 obrigatório (nem primeira nem última)
     {Label: "Cancelar", Action: onCancel},             // Esc implícito
+}
+```
+
+#### Única opção (Enter e Esc)
+```go
+opts := []ModalOption{
+    {Label: "OK", Action: onOK}, // Enter e Esc implícitos, mostra [Enter] OK
 }
 ```
 
 ## Arquivos Afetados
 
 ### Modificações de Comportamento
-- `internal/tui/modal/key_handler.go` — modificar lógica de despacho para tratar primeiro/último opção de ConfirmModal specially
+- `internal/tui/modal/key_handler.go` — modificar lógica de despacho para tratar primeiro/último opção com teclas implícitas
 - `internal/tui/modal/frame.go` — modificar `renderBottomBorder` para exibir teclas apropriadamente quando `Keys` vazio
 
 ### Observação de Escopo
-Esta mudança afeta especificamente o `ConfirmModal`. Outros modais (como `PasswordEntryModal`, `HelpModal`, etc.) continuarão funcionando como antes, já que eles não dependem dessa lógica implícita — a menos que sejam refatorados para usar `ConfirmModal` no futuro.
+Esta mudança afeta **todos** os modais que utilizam `KeyHandler`, pois modifica o comportamento fundamental do despacho de teclas. No entanto, o benefício é mais evidente em `ConfirmModal` devido ao seu padrão comum de uso.
 
 ## Critério de Sucesso
 
 - O projeto compila sem erros
-- Todos os testes existentes passam (exceto aqueles que dependem explicitamente da declaração de `Keys` em primeiro/último opção — estes serão atualizados)
+- Todos os testes existentes passam (exceto aqueles que dependem exatamente do comportamento anterior de teclas em primeiro/último opção quando `Keys` vazio - estes serão atualizados)
 - Novos padrões de uso (omissão de `Keys`) funcionam conforme especificado
-- Compatibilidade total com código existente: nenhuma quebra introdutiva
+- Comportamento aprimorado: mesmo quando `Keys` é declarado com teclas personalizadas, primeira opção responde a Enter e última opção responde a Esc
+- Compatibilidade total com código existente: nenhuma quebra introdutiva na funcionalidade existente
