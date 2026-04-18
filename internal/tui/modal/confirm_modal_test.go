@@ -684,3 +684,62 @@ func TestConfirmModal_EmptyOptions_HandleKey_ReturnsNil(t *testing.T) {
 		t.Error("Empty options: HandleKey should return nil")
 	}
 }
+
+// --- Testes de renderização com Keys implícitas (nil/vazio) ---
+
+func TestConfirmModal_ImplicitKeys_TwoOptions(t *testing.T) {
+	// Sem declarar Keys: footer deve exibir Enter/Esc automaticamente.
+	opts := []modal.ModalOption{
+		{
+			Label:  "Confirmar",
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+		{
+			Label:  "Cancelar",
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+	}
+	m := modal.NewConfirmModal("Confirmação", "Deseja prosseguir?", opts)
+	testdata.TestRenderManaged(t, "confirm_modal", "implicit_keys_two_options", []string{"60x8"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+func TestConfirmModal_ImplicitKeys_SingleOption(t *testing.T) {
+	// Opção única sem Keys: footer deve exibir Enter (Esc também funciona mas não aparece).
+	opts := []modal.ModalOption{
+		{
+			Label:  "Entendido",
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+	}
+	m := modal.NewConfirmModal("Informação", "Operação concluída com sucesso.", opts)
+	testdata.TestRenderManaged(t, "confirm_modal", "implicit_keys_single_option", []string{"55x8"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}
+
+func TestConfirmModal_ImplicitKeys_Destructive(t *testing.T) {
+	// Severity destrutiva com Keys implícitas.
+	opts := []modal.ModalOption{
+		{
+			Label:  "Excluir",
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+		{
+			Label:  "Cancelar",
+			Action: func() tea.Cmd { return tui.CloseModal() },
+		},
+	}
+	m := modal.NewConfirmModalSeverity(design.SeverityDestructive,
+		"Excluir item",
+		"Esta ação não pode ser desfeita.",
+		opts,
+	)
+	testdata.TestRenderManaged(t, "confirm_modal", "implicit_keys_destructive", []string{"60x10"},
+		func(w, h int, theme *design.Theme) string {
+			return m.Render(h, w, theme)
+		})
+}

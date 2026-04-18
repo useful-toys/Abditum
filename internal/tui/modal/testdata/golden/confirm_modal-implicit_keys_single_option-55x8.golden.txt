@@ -1,0 +1,5 @@
+╭─ Informação ──────────────────────╮
+│                                   │
+│  Operação concluída com sucesso.  │
+│                                   │
+╰───────────────── Enter Entendido ─╯

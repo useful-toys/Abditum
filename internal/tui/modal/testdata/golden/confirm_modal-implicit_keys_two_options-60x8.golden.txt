@@ -1,0 +1,5 @@
+╭─ Confirmação ──────────────────────────────╮
+│                                            │
+│  Deseja prosseguir?                        │
+│                                            │
+╰─ Enter Confirmar ─────────── Esc Cancelar ─╯
