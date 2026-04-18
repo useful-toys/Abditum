@@ -181,6 +181,30 @@ func TestLoad_TamperedHeader(t *testing.T) {
 	}
 }
 
+// TestLoad_CorruptedPayload tests that loading corrupted payload returns error.
+func TestLoad_CorruptedPayload(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "corrupt.abditum")
+
+	if err := storage.SaveNew(path, newTestCofre(), testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	data[storage.HeaderSize] ^= 0xFF
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
+
+	_, _, err = storage.Load(path, testPassword)
+	if err == nil {
+		t.Error("esperado erro ao carregar payload corrupto")
+	}
+}
+
 // TestLoad_TamperedPayload tests that tampering the payload returns ErrAuthFailed.
 func TestLoad_TamperedPayload(t *testing.T) {
 	dir := t.TempDir()
