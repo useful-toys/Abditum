@@ -11,3 +11,7 @@ Resumindo:
 - **Métodos/Variáveis**: nomes claros, evitar abreviaturas obscuras
 - **Comentários**: explicar o "porquê", não apenas o "quê"
 - **Acessibilidade**: código acessível a leitores com menos experiência em Go
+
+Commits devem ser em português e seguir conventional commit.
+
+Codigo e aplicação devem estar em UTF-8.
