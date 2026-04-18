@@ -68,6 +68,10 @@ type RootModel struct {
 	lastActionAt time.Time
 	// version is the application version, normally injected via ldflags in build.
 	version string
+
+	// initialCmd é um comando opcional a ser emitido junto com Init().
+	// Configurado via SetInitialCommand antes de iniciar o loop Tea.
+	initialCmd tea.Cmd
 }
 
 // Manager returns the active vault manager, or nil if no vault is loaded.
@@ -408,8 +412,20 @@ func (r *RootModel) setWorkArea(area design.WorkArea) {
 
 // Init is called once at application startup.
 // Returns a command that emits TickMsg every second for spinner animation and TTL decrement.
+// Se initialCmd foi configurado, é emitido junto para disparar a operação inicial.
 func (r *RootModel) Init() tea.Cmd {
-	return tickCmd()
+	cmds := []tea.Cmd{tickCmd()}
+	if r.initialCmd != nil {
+		cmds = append(cmds, r.initialCmd)
+	}
+	return tea.Batch(cmds...)
+}
+
+// SetInitialCommand define um comando a ser emitido junto com Init().
+// Deve ser chamado antes de iniciar o loop Tea.
+// Usado por main.go para disparar automaticamente uma operação via --vault.
+func (r *RootModel) SetInitialCommand(cmd tea.Cmd) {
+	r.initialCmd = cmd
 }
 
 // tickCmd agenda um único TickMsg para daqui a 1 segundo.

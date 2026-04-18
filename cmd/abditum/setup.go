@@ -67,6 +67,36 @@ func setupApplication(r *tui.RootModel) {
 			},
 		},
 		{
+			Keys:        []design.Key{design.Shortcuts.NewVault},
+			Label:       "Criar cofre",
+			Description: "Cria um novo cofre protegido por senha.",
+			GroupID:     "app",
+			Priority:    30,
+			Visible:     true,
+			AvailableWhen: func(app actions.AppState, _ actions.ChildView) bool {
+				// Criar cofre só faz sentido quando nenhum cofre está aberto.
+				return app.Manager() == nil
+			},
+			OnExecute: func() tea.Cmd {
+				return tui.StartOperation(operation.NewCriarCofreOperation(r.MessageController(), r.Manager(), ""))
+			},
+		},
+		{
+			Keys:        []design.Key{design.Shortcuts.OpenVault},
+			Label:       "Abrir cofre",
+			Description: "Abre um cofre existente a partir de um arquivo.",
+			GroupID:     "app",
+			Priority:    31,
+			Visible:     true,
+			AvailableWhen: func(app actions.AppState, _ actions.ChildView) bool {
+				// Abrir cofre só faz sentido quando nenhum cofre está aberto.
+				return app.Manager() == nil
+			},
+			OnExecute: func() tea.Cmd {
+				return tui.StartOperation(operation.NewAbrirCofreOperation(r.MessageController(), r.Manager(), ""))
+			},
+		},
+		{
 			Keys:        []design.Key{design.Keys.F2},
 			Label:       "Operação Fake",
 			Description: "Demonstração do padrão Operation — confirmação + trabalho assíncrono.",
