@@ -18,7 +18,7 @@ Os Fluxos 1 (Abrir Cofre Existente) e 2 (Criar Novo Cofre) compartilham um passo
 
 O passo 1 dos Fluxos 1 e 2 ("verificar cofre alterado antes de prosseguir") é extraído como um helper interno ao pacote `operation/`. Não é uma `Operation` pública — é um tipo auxiliar com ciclo `Init/Update` próprio.
 
-**Diferença em relação ao Fluxo 5 (QuitOperation):** o guard do passo 1 **não** inclui verificação de modificação externa — ela não é exigida pelos Fluxos 1 e 2. A `QuitOperation` mantém sua lógica própria para esse check.
+**Diferença em relação ao Fluxo 5 (QuitOperation):** ambos chamam `Salvar(false)` que detecta modificação externa. A diferença é a **resposta ao conflito**: o passo 1 dos Fluxos 1/2 trata `ErrModifiedExternally` como qualquer outra falha (interrompe o fluxo, sem oferecer sobrescrever). O Fluxo 5 abre um modal de conflito com opção de sobrescrever. Por isso a `QuitOperation` mantém sua lógica própria para o sub-fluxo pós-conflito.
 
 ### 2. Interface `vaultSaver` movida para arquivo compartilhado
 
@@ -101,7 +101,7 @@ Update(guardSaveMsg):
 - `D` → Descartar e prosseguir → onProceder() direto
 - `Esc` → Voltar → onAbortado()
 
-**Nota:** sem verificação de modificação externa — o passo 1 dos Fluxos 1 e 2 não exige esse check.
+**Nota sobre modificação externa:** o guard chama `Salvar(false)`, que já detecta modificação externa via `ErrModifiedExternally`. Diferente do Fluxo 5 (QuitOperation), o passo 1 dos Fluxos 1 e 2 **não** oferece opção de sobrescrever — qualquer falha de save (incluindo conflito externo) resulta em `SetError` + `onAbortado`. O fluxo é interrompido e o cofre permanece carregado e `alterado`, conforme o mermaid do Fluxo 1/2.
 
 ---
 
