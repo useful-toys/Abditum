@@ -689,6 +689,66 @@ func TestIntegration_ErrorClassification(t *testing.T) {
 	})
 }
 
+// ---------------------------------------------------------------------------
+// FileRepository.DetectarAlteracaoExterna tests
+// ---------------------------------------------------------------------------
+
+func TestFileRepository_DetectarAlteracaoExterna_SemAlteracao(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "cofre.abditum")
+	cofre := vault.NovoCofre()
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+	if err := repo.Salvar(cofre); err != nil {
+		t.Fatalf("Salvar: %v", err)
+	}
+
+	changed, err := repo.DetectarAlteracaoExterna()
+	if err != nil {
+		t.Fatalf("DetectarAlteracaoExterna: %v", err)
+	}
+	if changed {
+		t.Error("esperado false (sem alteração externa), obteve true")
+	}
+}
+
+func TestFileRepository_DetectarAlteracaoExterna_ComAlteracao(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "cofre.abditum")
+	cofre := vault.NovoCofre()
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+	if err := repo.Salvar(cofre); err != nil {
+		t.Fatalf("Salvar: %v", err)
+	}
+
+	// Modificar o arquivo externamente
+	if err := os.WriteFile(path, []byte("conteudo diferente"), 0600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	changed, err := repo.DetectarAlteracaoExterna()
+	if err != nil {
+		t.Fatalf("DetectarAlteracaoExterna: %v", err)
+	}
+	if !changed {
+		t.Error("esperado true (arquivo alterado externamente), obteve false")
+	}
+}
+
+func TestFileRepository_DetectarAlteracaoExterna_CofreNovo(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "novo.abditum")
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+
+	// Antes do primeiro Salvar, metadata é zero — deve retornar false sem erro
+	changed, err := repo.DetectarAlteracaoExterna()
+	if err != nil {
+		t.Fatalf("DetectarAlteracaoExterna em cofre novo: %v", err)
+	}
+	if changed {
+		t.Error("cofre novo: esperado false, obteve true")
+	}
+}
+
 // TestIntegration_ManagerWithFileRepository verifies that Manager.Salvar works via FileRepository.
 func TestIntegration_ManagerWithFileRepository(t *testing.T) {
 	dir := t.TempDir()

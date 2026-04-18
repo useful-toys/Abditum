@@ -151,6 +151,18 @@ func (r *FileRepository) Path() string {
 	return r.path
 }
 
+// DetectarAlteracaoExterna verifica se o arquivo de cofre foi modificado por processo
+// externo desde o último Salvar ou Carregar.
+// Retorna false sem erro se o metadata ainda não foi capturado (cofre recém-criado).
+func (r *FileRepository) DetectarAlteracaoExterna() (bool, error) {
+	// Metadata zero significa que nenhum Salvar ou Carregar ocorreu ainda.
+	// Não há baseline para comparar — considerar sem alteração externa.
+	if r.metadata == (FileMetadata{}) {
+		return false, nil
+	}
+	return DetectExternalChange(r.path, r.metadata)
+}
+
 // UpdatePassword replaces the stored password.
 //
 // Call when the user changes their master password. The next Salvar call
