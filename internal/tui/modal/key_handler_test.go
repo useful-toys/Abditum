@@ -56,16 +56,18 @@ func TestKeyHandler_MultipleKeys_AnyActivatesAction(t *testing.T) {
 }
 
 func TestKeyHandler_UnrecognizedKey_ReturnsNotHandled(t *testing.T) {
+	// Tecla completamente fora do mapeamento (nem Enter/Esc nem explícitas).
 	h := KeyHandler{Options: []ModalOption{
 		{
-			Keys:   []design.Key{design.Keys.Enter},
+			Keys:   []design.Key{design.Keys.Tab},
 			Label:  "OK",
 			Action: func() tea.Cmd { return nil },
 		},
 	}}
-	_, handled := h.Handle(makeSpecialKeyMsg(tea.KeyEscape))
+	// 'a' não é Enter, Esc nem Tab — não deve ser tratada.
+	_, handled := h.Handle(tea.KeyPressMsg{Code: 'a'})
 	if handled {
-		t.Error("Handle(Esc when only Enter registered): handled = true, want false")
+		t.Error("Handle('a' quando apenas Tab registrado): handled = true, want false")
 	}
 }
 
@@ -144,5 +146,114 @@ func TestKeyHandler_EmptyOptions_ScrollStillWorks(t *testing.T) {
 	}
 	if scroll.Offset != 2 {
 		t.Errorf("Offset = %d, want 2", scroll.Offset)
+	}
+}
+
+func TestKeyHandler_ImplicitEnter_FirstOption_NoKeys(t *testing.T) {
+	// Primeira option sem Keys: Enter deve disparar sua ação.
+	called := false
+	opts := []ModalOption{
+		{
+			Label:  "Confirmar",
+			Action: func() tea.Cmd { called = true; return nil },
+		},
+		{
+			Keys:   []design.Key{design.Keys.Esc},
+			Label:  "Cancelar",
+			Action: func() tea.Cmd { return nil },
+		},
+	}
+	h := KeyHandler{Options: opts}
+	_, handled := h.Handle(makeSpecialKeyMsg(tea.KeyEnter))
+	if !handled {
+		t.Error("Handle(Enter): handled = false, want true")
+	}
+	if !called {
+		t.Error("Handle(Enter): action da primeira option não foi chamada")
+	}
+}
+
+func TestKeyHandler_ImplicitEsc_LastOption_NoKeys(t *testing.T) {
+	// Última option sem Keys: Esc deve disparar sua ação.
+	called := false
+	opts := []ModalOption{
+		{
+			Keys:   []design.Key{design.Keys.Enter},
+			Label:  "Confirmar",
+			Action: func() tea.Cmd { return nil },
+		},
+		{
+			Label:  "Cancelar",
+			Action: func() tea.Cmd { called = true; return nil },
+		},
+	}
+	h := KeyHandler{Options: opts}
+	_, handled := h.Handle(makeSpecialKeyMsg(tea.KeyEscape))
+	if !handled {
+		t.Error("Handle(Esc): handled = false, want true")
+	}
+	if !called {
+		t.Error("Handle(Esc): action da última option não foi chamada")
+	}
+}
+
+func TestKeyHandler_ImplicitBoth_SingleOption_NoKeys(t *testing.T) {
+	// Option única sem Keys: Enter e Esc devem disparar a mesma ação.
+	callCount := 0
+	opts := []ModalOption{
+		{
+			Label:  "OK",
+			Action: func() tea.Cmd { callCount++; return nil },
+		},
+	}
+	h := KeyHandler{Options: opts}
+
+	h.Handle(makeSpecialKeyMsg(tea.KeyEnter))
+	h.Handle(makeSpecialKeyMsg(tea.KeyEscape))
+	if callCount != 2 {
+		t.Errorf("Single option sem Keys: callCount = %d, want 2 (Enter e Esc ambos devem disparar)", callCount)
+	}
+}
+
+func TestKeyHandler_ImplicitEnter_AddsToExplicitKeys(t *testing.T) {
+	// Primeira option com Keys: [letter('s')].
+	// Enter deve ser adicionado como alias — action chamada por 's' e por Enter.
+	callCount := 0
+	opts := []ModalOption{
+		{
+			Keys:   []design.Key{design.Letter('s')},
+			Label:  "Sim",
+			Action: func() tea.Cmd { callCount++; return nil },
+		},
+		{
+			Keys:   []design.Key{design.Letter('n')},
+			Label:  "Não",
+			Action: func() tea.Cmd { return nil },
+		},
+	}
+	h := KeyHandler{Options: opts}
+
+	h.Handle(tea.KeyPressMsg{Code: 's'})      // tecla explícita
+	h.Handle(makeSpecialKeyMsg(tea.KeyEnter)) // alias implícito
+	if callCount != 2 {
+		t.Errorf("First option with explicit key + implicit Enter: callCount = %d, want 2", callCount)
+	}
+}
+
+func TestKeyHandler_ImplicitKeys_DoNotOverrideExplicit(t *testing.T) {
+	// Se Enter já está declarado explicitamente, não deve ser disparado duas vezes.
+	callCount := 0
+	opts := []ModalOption{
+		{
+			Keys:   []design.Key{design.Keys.Enter},
+			Label:  "OK",
+			Action: func() tea.Cmd { callCount++; return nil },
+		},
+	}
+	h := KeyHandler{Options: opts}
+
+	h.Handle(makeSpecialKeyMsg(tea.KeyEnter))
+	if callCount != 1 {
+		t.Errorf("Enter explícito + implícito: callCount = %d, want 1 (não deve duplicar)", callCount)
 	}
 }

@@ -26,13 +26,15 @@ type KeyHandler struct {
 // Ordem de despacho:
 //  1. Opções: itera Options, compara com cada Key em opt.Keys usando key.Matches(msg).
 //     No primeiro match, executa opt.Action() e retorna (cmd, true).
-//  2. Scroll (apenas se Scroll != nil):
+//  2. Teclas implícitas: Enter → primeira option; Esc → última option.
+//     Aplicadas apenas se não consumidas no passo 1.
+//  3. Scroll (apenas se Scroll != nil):
 //     ↑ → Scroll.Up(), ↓ → Scroll.Down()
 //     PgUp → Scroll.PageUp(), PgDn → Scroll.PageDown()
 //     Home → Scroll.Home(), End → Scroll.End()
 //     Após atualizar o estado, retorna (nil, true).
 func (h *KeyHandler) Handle(msg tea.KeyMsg) (tea.Cmd, bool) {
-	// 1. Despachar ações registradas.
+	// 1. Despachar ações registradas explicitamente.
 	for _, opt := range h.Options {
 		for _, k := range opt.Keys {
 			if k.Matches(msg) {
@@ -41,7 +43,17 @@ func (h *KeyHandler) Handle(msg tea.KeyMsg) (tea.Cmd, bool) {
 		}
 	}
 
-	// 2. Navegar scroll (se configurado).
+	// 2. Teclas implícitas: Enter → primeira option; Esc → última option.
+	if len(h.Options) > 0 {
+		if design.Keys.Enter.Matches(msg) {
+			return h.Options[0].Action(), true
+		}
+		if design.Keys.Esc.Matches(msg) {
+			return h.Options[len(h.Options)-1].Action(), true
+		}
+	}
+
+	// 3. Navegar scroll (se configurado).
 	if h.Scroll == nil {
 		return nil, false
 	}
