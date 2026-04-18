@@ -1,6 +1,8 @@
 package vault
 
 import (
+	"fmt"
+
 	"github.com/useful-toys/abditum/internal/crypto"
 )
 
@@ -253,25 +255,40 @@ func (m *Manager) limparCamposSensiveis(pasta *Pasta) {
 	}
 }
 
-// Salvar persists the vault to storage using two-phase atomic commit.
-// Phase 1: Create deep copy with StateExcluido filtered (live vault untouched)
-// Phase 2: Persist via repository (if fails, live vault unchanged)
-// Phase 3: Finalize deletions in memory only after successful save
-// Per D-17: Guarantees atomicity — save failure doesn't cause data loss.
-func (m *Manager) Salvar() error {
+// Salvar persiste o cofre no arquivo usando commit atômico em duas fases.
+//
+// Se forcarSobrescrita for false e o arquivo tiver sido modificado externamente
+// desde o último Load ou Save, retorna ErrModifiedExternally sem salvar.
+// Se forcarSobrescrita for true, pula essa verificação e salva diretamente.
+//
+// Fase 1: Cria cópia profunda com EstadoExcluido filtrado (vault ao vivo intacto)
+// Fase 2: Persiste via repositório (se falhar, vault ao vivo inalterado)
+// Fase 3: Finaliza exclusões em memória apenas após save bem-sucedido
+// Per D-17: Garante atomicidade — falha no save não causa perda de dados.
+func (m *Manager) Salvar(forcarSobrescrita bool) error {
 	if m.bloqueado {
 		return ErrCofreBloqueado
 	}
 
-	// Phase 1: Prepare immutable snapshot (filters excluido)
-	snapshot := m.prepararSnapshot()
-
-	// Phase 2: Persist snapshot
-	if err := m.repositorio.Salvar(snapshot); err != nil {
-		return err // Live vault unchanged on failure
+	if !forcarSobrescrita {
+		changed, err := m.repositorio.DetectarAlteracaoExterna()
+		if err != nil {
+			return fmt.Errorf("vault.Salvar: verificação de alteração externa: %w", err)
+		}
+		if changed {
+			return ErrModifiedExternally
+		}
 	}
 
-	// Phase 3: Finalize deletions only after successful save
+	// Fase 1: Prepara snapshot imutável (filtra excluídos)
+	snapshot := m.prepararSnapshot()
+
+	// Fase 2: Persiste snapshot
+	if err := m.repositorio.Salvar(snapshot); err != nil {
+		return err // Vault ao vivo inalterado em caso de falha
+	}
+
+	// Fase 3: Finaliza exclusões apenas após save bem-sucedido
 	m.finalizarExclusoes()
 	m.cofre.modificado = false
 

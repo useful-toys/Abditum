@@ -157,7 +157,7 @@ func TestSalvarWhenLocked(t *testing.T) {
 
 	manager.Lock()
 
-	err := manager.Salvar()
+	err := manager.Salvar(false)
 	if !errors.Is(err, ErrCofreBloqueado) {
 		t.Errorf("Expected ErrCofreBloqueado when saving locked vault, got %v", err)
 	}
@@ -171,7 +171,7 @@ func TestSalvarSuccess(t *testing.T) {
 	// Mark as modified
 	cofre.modificado = true
 
-	err := manager.Salvar()
+	err := manager.Salvar(false)
 	if err != nil {
 		t.Fatalf("Salvar failed: %v", err)
 	}
@@ -192,7 +192,7 @@ func TestSalvarFailureKeepsModifiedFlag(t *testing.T) {
 
 	cofre.modificado = true
 
-	err := manager.Salvar()
+	err := manager.Salvar(false)
 	if err == nil {
 		t.Fatal("Expected Salvar to return error")
 	}
@@ -340,7 +340,7 @@ func TestAtomicSave(t *testing.T) {
 	}
 
 	// Attempt save (will fail)
-	err = manager.Salvar()
+	err = manager.Salvar(false)
 	if err == nil {
 		t.Fatal("Expected save to fail")
 	}
@@ -360,7 +360,7 @@ func TestAtomicSave(t *testing.T) {
 
 	// Now succeed the save
 	repo.salvarError = nil
-	err = manager.Salvar()
+	err = manager.Salvar(false)
 	if err != nil {
 		t.Fatalf("Second save failed: %v", err)
 	}
@@ -654,5 +654,60 @@ func TestDuplicarSegredo_EstadoIncluido(t *testing.T) {
 	if dup.EstadoSessao() != EstadoIncluido {
 		t.Errorf("DuplicarSegredo estadoSessao = %v, want EstadoIncluido (%v)",
 			dup.EstadoSessao(), EstadoIncluido)
+	}
+}
+
+func TestManager_Salvar_SemAlteracaoExterna_Sucesso(t *testing.T) {
+	cofre := NovoCofre()
+	repo := &mockRepository{}
+	m := NewManager(cofre, repo)
+	cofre.modificado = true
+
+	if err := m.Salvar(false); err != nil {
+		t.Errorf("Salvar(false) sem alteração externa: esperado nil, obteve %v", err)
+	}
+	if !repo.salvarCalled {
+		t.Error("Salvar(false): repositório não foi chamado")
+	}
+}
+
+func TestManager_Salvar_ComAlteracaoExterna_RetornaErro(t *testing.T) {
+	cofre := NovoCofre()
+	repo := &mockRepository{detectarAlteracaoExternaResp: true}
+	m := NewManager(cofre, repo)
+	cofre.modificado = true
+
+	err := m.Salvar(false)
+	if !errors.Is(err, ErrModifiedExternally) {
+		t.Errorf("Salvar(false) com alteração externa: esperado ErrModifiedExternally, obteve %v", err)
+	}
+	if repo.salvarCalled {
+		t.Error("Salvar(false) com alteração externa: repositório não deveria ter sido chamado")
+	}
+}
+
+func TestManager_Salvar_ComAlteracaoExterna_ForcarSobrescrita(t *testing.T) {
+	cofre := NovoCofre()
+	repo := &mockRepository{detectarAlteracaoExternaResp: true}
+	m := NewManager(cofre, repo)
+	cofre.modificado = true
+
+	if err := m.Salvar(true); err != nil {
+		t.Errorf("Salvar(true) com alteração externa: esperado nil, obteve %v", err)
+	}
+	if !repo.salvarCalled {
+		t.Error("Salvar(true): repositório deveria ter sido chamado")
+	}
+}
+
+func TestManager_Salvar_ErroNoRepositorio(t *testing.T) {
+	cofre := NovoCofre()
+	repo := &mockRepository{salvarError: errors.New("disco cheio")}
+	m := NewManager(cofre, repo)
+	cofre.modificado = true
+
+	err := m.Salvar(false)
+	if err == nil {
+		t.Error("Salvar: esperado erro do repositório, obteve nil")
 	}
 }
