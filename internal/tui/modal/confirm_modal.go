@@ -25,60 +25,16 @@ func NewConfirmModal(title, message string, opts []ModalOption) *ConfirmModal {
 }
 
 // NewConfirmModalSeverity cria um ConfirmModal com severidade visual explícita.
-// Se há apenas 1 opção, ESC é adicionado automaticamente como alias para disparar a mesma ação.
+// As teclas Enter (primeira option) e Esc (última option) são gerenciadas automaticamente
+// pelo KeyHandler — não é necessário declará-las em ModalOption.Keys.
 func NewConfirmModalSeverity(severity design.Severity, title, message string, opts []ModalOption) *ConfirmModal {
-	// Fazer uma cópia para não modificar o slice original do caller
-	optsCopy := make([]ModalOption, len(opts))
-	copy(optsCopy, opts)
-	
-	// Aplicar teclas implícitas quando Keys estiver vazio ou nil
-	for i := range optsCopy {
-		if optsCopy[i].Keys == nil || len(optsCopy[i].Keys) == 0 {
-			// Determinar se é primeira, última ou ambas
-			isFirst := i == 0
-			isLast := i == len(optsCopy)-1
-			
-			switch {
-			case isFirst && isLast:
-				// Única opção: Enter e Esc (ambas ativam a mesma ação)
-				optsCopy[i].Keys = []design.Key{design.Keys.Enter, design.Keys.Esc}
-			case isFirst:
-				// Primeira opção: Enter
-				optsCopy[i].Keys = []design.Key{design.Keys.Enter}
-			case isLast:
-				// Última opção: Esc
-				optsCopy[i].Keys = []design.Key{design.Keys.Esc}
-			}
-		}
-	}
-	
-	m := &ConfirmModal{
+	return &ConfirmModal{
 		severity: severity,
 		title:    title,
 		message:  message,
-		options:  optsCopy,
+		options:  opts,
+		keys:     KeyHandler{Options: opts},
 	}
-	
-	// Quando há apenas 1 ação, adiciona ESC como alias para disparar a mesma ação.
-	// (Mantemos essa lógica existente para compatibilidade, embora agora seja redundante
-	// para o caso de uma única opção com Keys vazio, pois já definimos Keys = [Enter, Esc] acima)
-	if len(optsCopy) == 1 && optsCopy[0].Keys != nil {
-		// Verifica se ESC já não está na lista de teclas
-		hasEsc := false
-		for _, k := range optsCopy[0].Keys {
-			if k.Code == design.Keys.Esc.Code && k.Mod == design.Keys.Esc.Mod {
-				hasEsc = true
-				break
-			}
-		}
-		// Se ESC ainda não está registrada, adiciona como alias
-		if !hasEsc {
-			optsCopy[0].Keys = append(optsCopy[0].Keys, design.Keys.Esc)
-		}
-	}
-	
-	m.keys = KeyHandler{Options: optsCopy}
-	return m
 }
 
 // Render constrói um DialogFrame com cores e símbolo derivados da severidade,

@@ -351,29 +351,28 @@ func TestConfirmModal_SingleOption_EnterStillWorks(t *testing.T) {
 	}
 }
 
-func TestConfirmModal_MultipleOptions_EscNotAutoAdded(t *testing.T) {
-	// Com múltiplas opções, ESC NÃO deve ser automaticamente adicionado se não estiver registrada.
-	// ESC só funciona se explicitamente mapeada a uma opção.
+func TestConfirmModal_MultipleOptions_EscDispatachesLastOption(t *testing.T) {
+	// Com múltiplas opções, Esc dispara a última option (implicitamente),
+	// mesmo que ela não declare Esc como tecla principal.
+	outraCalled := false
 	opts := []modal.ModalOption{
 		{
 			Keys:   []design.Key{design.Keys.Enter},
 			Label:  "Confirmar",
-
 			Action: func() tea.Cmd { return nil },
 		},
 		{
 			Keys:   []design.Key{design.Keys.Tab},
 			Label:  "Outra",
-
-			Action: func() tea.Cmd { return nil },
+			Action: func() tea.Cmd { outraCalled = true; return nil },
 		},
 	}
 	m := modal.NewConfirmModal("Título", "Mensagem", opts)
 
-	// ESC não foi registrada explicitamente, então não deve funcionar.
-	cmd := m.HandleKey(tea.KeyPressMsg{Code: tea.KeyEscape})
-	if cmd != nil {
-		t.Error("HandleKey(Esc) with multiple options: should return nil — Esc not explicitly registered")
+	// Esc dispara a última option (Tab Outra).
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if !outraCalled {
+		t.Error("HandleKey(Esc) com múltiplas options: deve disparar a última option")
 	}
 }
 
