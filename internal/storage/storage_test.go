@@ -850,6 +850,31 @@ func TestSave_FailRenameVaultToBak(t *testing.T) {
 	}
 }
 
+// TestSaveNew_PermissionDenied tests that SaveNew returns error when
+// destination file exists and is read-only.
+// Note: On Windows, permission checks may not work as on Unix.
+// This test may pass or fail depending on OS and user privileges.
+func TestSaveNew_PermissionDenied(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	if err := storage.SaveNew(path, newTestCofre(), testPassword); err != nil {
+		t.Fatalf("SaveNew() initial error: %v", err)
+	}
+
+	var chmodErr error
+	if chmodErr = os.Chmod(path, 0444); chmodErr != nil {
+		t.Fatalf("Chmod() error: %v", chmodErr)
+	}
+	defer os.Chmod(path, 0644)
+
+	var saveErr error
+	saveErr = storage.SaveNew(path, newTestCofre(), testPassword)
+	if saveErr == nil {
+		t.Error("esperado erro ao sobrescrever arquivo somente-leitura")
+	}
+}
+
 // TestIntegration_ManagerWithFileRepository verifies that Manager.Salvar works via FileRepository.
 func TestIntegration_ManagerWithFileRepository(t *testing.T) {
 	dir := t.TempDir()
