@@ -54,7 +54,7 @@ func TestFakeOperation_Update_Executing_SetsBusyAndStartsWork(t *testing.T) {
 	n := &stubNotifier{}
 	op := NewFakeOperation(n)
 
-	cmd := op.Update(FakeOperationMsg{state: stateExecuting})
+	cmd := op.Update(fakeOperationMsg{state: stateExecuting})
 
 	if n.lastMethod != "SetBusy" {
 		t.Errorf("Update(stateExecuting): esperado SetBusy, notifier recebeu %q", n.lastMethod)
@@ -68,7 +68,7 @@ func TestFakeOperation_Update_Done_ClearsNotifierAndOpensResultModal(t *testing.
 	n := &stubNotifier{}
 	op := NewFakeOperation(n)
 
-	cmd := op.Update(FakeOperationMsg{state: stateDone})
+	cmd := op.Update(fakeOperationMsg{state: stateDone})
 
 	if n.lastMethod != "Clear" {
 		t.Errorf("Update(stateDone): esperado Clear no notifier, obteve %q", n.lastMethod)

@@ -16,7 +16,7 @@ const (
 	stateDone
 )
 
-type FakeOperationMsg struct {
+type fakeOperationMsg struct {
 	state fakeState
 }
 
@@ -33,7 +33,7 @@ func (f *FakeOperation) Init() tea.Cmd {
 }
 
 func (f *FakeOperation) Update(msg tea.Msg) tea.Cmd {
-	m, ok := msg.(FakeOperationMsg)
+	m, ok := msg.(fakeOperationMsg)
 	if !ok {
 		return nil
 	}
@@ -60,7 +60,7 @@ func (f *FakeOperation) buildConfirmModal() *modal.ConfirmModal {
 				Intent: modal.IntentConfirm,
 				Action: func() tea.Cmd {
 					return tea.Batch(tui.CloseModal(), func() tea.Msg {
-						return FakeOperationMsg{state: stateExecuting}
+						return fakeOperationMsg{state: stateExecuting}
 					})
 				},
 			},
@@ -96,6 +96,6 @@ func (f *FakeOperation) buildResultModal() *modal.ConfirmModal {
 func fakeWorkCmd() tea.Cmd {
 	return func() tea.Msg {
 		time.Sleep(5 * time.Second)
-		return FakeOperationMsg{state: stateDone}
+		return fakeOperationMsg{state: stateDone}
 	}
 }
