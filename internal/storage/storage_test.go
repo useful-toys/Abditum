@@ -774,7 +774,7 @@ func TestIntegration_ManagerWithFileRepository(t *testing.T) {
 	}
 
 	// Save via Manager
-	if err := manager.Salvar(); err != nil {
+	if err := manager.Salvar(false); err != nil {
 		t.Fatalf("Manager.Salvar() error: %v", err)
 	}
 
