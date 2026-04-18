@@ -26,4 +26,7 @@ var (
 	ErrSegredoJaExcluido      = errors.New("segredo já está marcado como excluído")
 	ErrSegredoNaoExcluido     = errors.New("segredo não está marcado como excluído")
 	ErrObservacaoMuitoLonga   = errors.New("observação excede 1000 caracteres")
+	// ErrModifiedExternally é retornado por Manager.Salvar quando o arquivo de cofre
+	// foi modificado externamente desde o último Load ou Save, e forcarSobrescrita é false.
+	ErrModifiedExternally = errors.New("arquivo modificado externamente")
 )
