@@ -515,6 +515,28 @@ func TestDetectExternalChange_FileNotFound(t *testing.T) {
 	}
 }
 
+// TestComputeFileMetadata_EmptyFile tests that empty file returns Size=0 and non-zero Hash.
+func TestComputeFileMetadata_EmptyFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "empty.abditum")
+
+	if err := os.WriteFile(path, []byte{}, 0600); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
+
+	meta, err := storage.ComputeFileMetadata(path)
+	if err != nil {
+		t.Fatalf("ComputeFileMetadata() error: %v", err)
+	}
+	if meta.Size != 0 {
+		t.Errorf("Size = %d, want 0", meta.Size)
+	}
+	var zeroHash [32]byte
+	if meta.Hash == zeroHash {
+		t.Error("Hash deveria ser computável para arquivo vazio")
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Integration tests (Plan 04-04)
 // ---------------------------------------------------------------------------
