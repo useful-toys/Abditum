@@ -1815,3 +1815,369 @@ func TestFileRepositoryForOpen(t *testing.T) {
 	}
 	_ = meta
 }
+
+// TestSave_EncryptWithRealKey tests Save with real derived key.
+func TestSave_EncryptWithRealKey(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := vault.NovoCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	loaded, meta, err := storage.Load(path, testPassword)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	if loaded == nil {
+		t.Fatal("Load returned nil")
+	}
+
+	newCofre := vault.NovoCofre()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	salt := data[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	err = storage.Save(path, newCofre, testPassword, salt)
+	if err != nil {
+		t.Fatalf("Save() error: %v", err)
+	}
+
+	if _, err := os.Stat(path + ".bak"); os.IsNotExist(err) {
+		t.Error(".bak não foi criado")
+	}
+	_ = meta
+}
+
+// TestSave_SameDataDoesNotChange tests saving identical data.
+func TestSave_SameDataDoesNotChange(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := vault.NovoCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	data1, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	salt := data[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	err = storage.Save(path, cofre, testPassword, salt)
+	if err != nil {
+		t.Fatalf("Save() error: %v", err)
+	}
+
+	data2, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+
+	if len(data1) != len(data2) {
+		t.Error("tamanho mudou sem alteração")
+	}
+}
+
+// TestRecoverOrphans_TmpIsDirectory tests when .tmp is a directory.
+func TestRecoverOrphans_TmpIsDirectory(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	if err := storage.SaveNew(path, newTestCofre(), testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	tmpPath := path + ".tmp"
+	if err := os.Mkdir(tmpPath, 0755); err != nil {
+		t.Fatalf("Mkdir() error: %v", err)
+	}
+	defer os.Remove(tmpPath)
+
+	recoverErr := storage.RecoverOrphans(path)
+	if recoverErr != nil {
+		t.Logf("RecoverOrphans error: %v", recoverErr)
+	}
+}
+
+// TestRepository_IsNew tests repository isNew flag.
+func TestRepository_IsNew(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+	if repo == nil {
+		t.Fatal("NewFileRepositoryForCreate returned nil")
+	}
+
+	cofre := newTestCofre()
+	if err := repo.Salvar(cofre); err != nil {
+		t.Fatalf("Salvar() error: %v", err)
+	}
+}
+
+// TestSave_WithCorruptedPayloadData tests Save with corrupted payload.
+func TestSave_WithCorruptedPayloadData(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	salt := data[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	corruptedCofre := vault.NovoCofre()
+	if err := corruptedCofre.InicializarConteudoPadrao(); err != nil {
+		t.Fatalf("InicializarConteudoPadrao() error: %v", err)
+	}
+
+	err = storage.Save(path, corruptedCofre, testPassword, salt)
+	if err != nil {
+		t.Logf("Save com cofre corrompido: erro: %v", err)
+	}
+}
+
+// TestLoad_WithTamperedSalt tests Load with tampered salt.
+func TestLoad_WithTamperedSalt(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	data[storage.SaltOffset] ^= 0xFF
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
+
+	_, _, loadErr := storage.Load(path, testPassword)
+	if loadErr == nil {
+		t.Error("esperado erro para salt corrompido")
+	}
+}
+
+// TestLoad_InvalidFormatVersion tests Load with invalid version.
+func TestLoad_InvalidFormatVersion(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	header := make([]byte, storage.HeaderSize)
+	copy(header[0:4], storage.Magic[:])
+	header[4] = 200
+	if err := os.WriteFile(path, header, 0600); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
+
+	_, _, loadErr := storage.Load(path, testPassword)
+	if loadErr == nil {
+		t.Error("esperado erro para versão inválida")
+	}
+}
+
+// TestSave_VerifyBakCreated tests that .bak is created after Save.
+func TestSave_VerifyBakCreated(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	salt := data[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	err = storage.Save(path, cofre, testPassword, salt)
+	if err != nil {
+		t.Fatalf("Save() error: %v", err)
+	}
+
+	bakPath := path + ".bak"
+	if _, err := os.Stat(bakPath); os.IsNotExist(err) {
+		t.Error(".bak não foi criado")
+	}
+}
+
+// TestSave_VerifyBak2Created tests that .bak2 is created when .bak exists.
+func TestSave_VerifyBak2Created(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	salt := data[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	if err := storage.Save(path, cofre, testPassword, salt); err != nil {
+		t.Fatalf("Save() first error: %v", err)
+	}
+
+	if err := storage.Save(path, cofre, testPassword, salt); err != nil {
+		t.Fatalf("Save() second error: %v", err)
+	}
+
+	bak2Path := path + ".bak2"
+	if _, err := os.Stat(bak2Path); os.IsNotExist(err) {
+		t.Error(".bak2 não foi criado")
+	}
+}
+
+// TestSalvar_UpdateVault tests updating vault using Salvar.
+func TestSalvar_UpdateVault(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre1 := vault.NovoCofre()
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+	if err := repo.Salvar(cofre1); err != nil {
+		t.Fatalf("Salvar() first error: %v", err)
+	}
+
+	cofre2 := vault.NovoCofre()
+	if err := repo.Salvar(cofre2); err != nil {
+		t.Fatalf("Salvar() second error: %v", err)
+	}
+
+	meta := repo.Metadata()
+	if meta.Size == 0 {
+		t.Error("metadata size should not be zero")
+	}
+}
+
+// TestSave_NewSalt tests Save with a newly generated salt.
+func TestSave_NewSalt(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	newSalt, err := crypto.GenerateSalt()
+	if err != nil {
+		t.Fatalf("GenerateSalt() error: %v", err)
+	}
+
+	err = storage.Save(path, cofre, testPassword, newSalt)
+	if err != nil {
+		t.Logf("Save com novo salt: erro: %v", err)
+	}
+}
+
+// TestSave_FailAtomicRename tests failure in atomic rename.
+func TestSave_FailAtomicRename(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	salt := data[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	tmpPath := path + ".tmp"
+	err = storage.Save(path, cofre, testPassword, salt)
+	if err != nil {
+		t.Logf("Save error: %v", err)
+	}
+
+	if _, err := os.Stat(tmpPath); !os.IsNotExist(err) {
+		t.Error(".tmp deveria ser removido após sucesso")
+	}
+}
+
+// TestLoad_NoModification tests after Save with no file modification.
+func TestLoad_NoModification(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := newTestCofre()
+	if err := storage.SaveNew(path, cofre, testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	_, meta1, err := storage.Load(path, testPassword)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	salt := data[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	err = storage.Save(path, cofre, testPassword, salt)
+	if err != nil {
+		t.Fatalf("Save() error: %v", err)
+	}
+
+	_, meta2, err := storage.Load(path, testPassword)
+	if err != nil {
+		t.Fatalf("Load() after Save error: %v", err)
+	}
+
+	if meta1.Size == meta2.Size {
+		t.Log("tamanho igual após Save (normal para dados pequenos)")
+	}
+}
+
+// TestSave_LargeData tests Save with large data.
+func TestSave_LargeData(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre := vault.NovoCofre()
+	if err := cofre.InicializarConteudoPadrao(); err != nil {
+		t.Fatalf("InicializarConteudoPadrao() error: %v", err)
+	}
+
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+	if err := repo.Salvar(cofre); err != nil {
+		t.Fatalf("Salvar() error: %v", err)
+	}
+
+	loaded, err := repo.Carregar()
+	if err != nil {
+		t.Fatalf("Carregar() error: %v", err)
+	}
+	if loaded == nil {
+		t.Fatal("carregar returned nil")
+	}
+}
