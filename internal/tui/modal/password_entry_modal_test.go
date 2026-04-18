@@ -45,7 +45,7 @@ func TestPasswordEntryModal_WithContent(t *testing.T) {
 	)
 	for _, r := range "12345678" {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
-		m.Update(msg)
+		m.HandleKey(msg)
 	}
 	testdata.TestRenderManaged(t, "password_entry", "with_content", []string{"50x6"},
 		func(w, h int, theme *design.Theme) string {
@@ -61,7 +61,7 @@ func TestPasswordEntryModal_NotifyWrongPassword(t *testing.T) {
 	)
 	for _, r := range "12345678" {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
-		m.Update(msg)
+		m.HandleKey(msg)
 	}
 	m.NotifyWrongPassword()
 	if m.Len() != 0 {
@@ -98,7 +98,7 @@ func TestPasswordEntryModal_Cursor_WithContent(t *testing.T) {
 	)
 	for _, r := range "12345" {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
-		m.Update(msg)
+		m.HandleKey(msg)
 	}
 	c := m.Cursor(1, 0)
 	if c == nil {

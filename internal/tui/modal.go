@@ -13,8 +13,8 @@ type ModalView interface {
 	Render(maxHeight, maxWidth int, theme *design.Theme) string
 	// HandleKey processa eventos de teclado e retorna um comando ou nil.
 	HandleKey(msg tea.KeyMsg) tea.Cmd
-	// Update processa mensagens do Bubble Tea e atualiza o estado interno do modal.
-	Update(msg tea.Msg) tea.Cmd
+	// HandleMouse processa eventos de mouse e retorna um comando ou nil.
+	HandleMouse(msg tea.MouseMsg) tea.Cmd
 	// Cursor retorna a posição do cursor real para o modal ativo, ou nil se não houver cursor.
 	// topY e leftX são as coordenadas absolutas do canto superior esquerdo do modal na tela.
 	Cursor(topY, leftX int) *tea.Cursor

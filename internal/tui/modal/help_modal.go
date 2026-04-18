@@ -164,11 +164,9 @@ func (m *HelpModal) HandleKey(msg tea.KeyMsg) tea.Cmd {
 	return nil
 }
 
-// Update processa mensagens Bubble Tea. Delega para HandleKey em tea.KeyMsg.
-func (m *HelpModal) Update(msg tea.Msg) tea.Cmd {
-	if key, ok := msg.(tea.KeyMsg); ok {
-		return m.HandleKey(key)
-	}
+// HandleMouse processa eventos de mouse. HelpModal não reage a mouse — retorna nil.
+// Scroll é controlado exclusivamente via teclado (↑↓PgUp/PgDn/Home/End).
+func (m *HelpModal) HandleMouse(_ tea.MouseMsg) tea.Cmd {
 	return nil
 }
 

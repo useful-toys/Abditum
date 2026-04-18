@@ -285,7 +285,7 @@ func TestConfirmModal_HandleKey_Enter_ExecutesAction(t *testing.T) {
 	}
 }
 
-func TestConfirmModal_Update_DelegatesKeys(t *testing.T) {
+func TestConfirmModal_HandleKey_DelegatesKeys(t *testing.T) {
 	called := false
 	opts := []modal.ModalOption{
 		{
@@ -299,9 +299,9 @@ func TestConfirmModal_Update_DelegatesKeys(t *testing.T) {
 		},
 	}
 	m := modal.NewConfirmModal("Título", "Mensagem", opts)
-	_ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	_ = m.HandleKey(tea.KeyPressMsg{Code: tea.KeyEscape})
 	if !called {
-		t.Error("Update(KeyEsc): action not called — Update must delegate to HandleKey")
+		t.Error("HandleKey(KeyEsc): action not called")
 	}
 }
 
@@ -401,8 +401,8 @@ func TestConfirmModal_SingleOption_EscAlreadyRegistered(t *testing.T) {
 
 // --- Testes de Integração ---
 
-func TestConfirmModal_Update_WithKeyMsg_DelegatesCorrectly(t *testing.T) {
-	// Update deve processar mensagens de teclado através de HandleKey
+func TestConfirmModal_HandleKey_WithKeyMsg_DelegatesCorrectly(t *testing.T) {
+	// HandleKey deve processar mensagens de teclado corretamente
 	called := false
 	opts := []modal.ModalOption{
 		{
@@ -417,17 +417,17 @@ func TestConfirmModal_Update_WithKeyMsg_DelegatesCorrectly(t *testing.T) {
 	}
 	m := modal.NewConfirmModal("Teste", "Mensagem", opts)
 
-	// Update deve aceitar tea.KeyMsg e repassar para HandleKey
-	cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	// HandleKey deve aceitar tea.KeyMsg e processar a ação
+	cmd := m.HandleKey(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if !called {
-		t.Error("Update(KeyMsg): action not executed")
+		t.Error("HandleKey(KeyMsg): action not executed")
 	}
 	// cmd pode ser nil se a action retornar nil, ou um comando válido
 	_ = cmd
 }
 
-func TestConfirmModal_Update_WithNonKeyMsg_ReturnsNil(t *testing.T) {
-	// Update deve ignorar mensagens que não são KeyMsg
+func TestConfirmModal_HandleKey_WithNonMatchingKey_ReturnsNil(t *testing.T) {
+	// HandleKey deve ignorar teclas que não correspondem a nenhuma ação
 	opts := []modal.ModalOption{
 		{
 			Keys:   []design.Key{design.Keys.Enter},
@@ -438,10 +438,10 @@ func TestConfirmModal_Update_WithNonKeyMsg_ReturnsNil(t *testing.T) {
 	}
 	m := modal.NewConfirmModal("Teste", "Mensagem", opts)
 
-	// Simular uma mensagem de outro tipo (ex: tea.WindowSizeMsg)
-	cmd := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	// Simular uma tecla que não tem ação registrada (ex: Tab)
+	cmd := m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	if cmd != nil {
-		t.Error("Update(non-KeyMsg): should return nil")
+		t.Error("HandleKey(non-matching key): should return nil")
 	}
 }
 
@@ -648,8 +648,8 @@ func TestConfirmModal_SingleOption_WithCustomKeys(t *testing.T) {
 }
 
 
-func TestConfirmModal_Update_ChainedMessages(t *testing.T) {
-	// Teste simulando uma sequência de mensagens de diferentes tipos
+func TestConfirmModal_HandleKey_ChainedKeyPresses(t *testing.T) {
+	// Teste simulando uma sequência de teclas
 	callCount := 0
 	opts := []modal.ModalOption{
 		{
@@ -664,11 +664,9 @@ func TestConfirmModal_Update_ChainedMessages(t *testing.T) {
 	}
 	m := modal.NewConfirmModal("Teste", "Mensagem", opts)
 
-	// Sequência: WindowSize -> Key -> WindowSize -> Key
-	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
-	m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
-	m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	// Sequência de teclas: Enter + Esc (ambas devem disparar a ação)
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyEscape})
 
 	if callCount != 2 {
 		t.Errorf("Chained messages: callCount = %d, want 2", callCount)

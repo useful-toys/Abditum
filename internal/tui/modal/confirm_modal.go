@@ -65,11 +65,8 @@ func (m *ConfirmModal) HandleKey(msg tea.KeyMsg) tea.Cmd {
 	return nil
 }
 
-// Update processa mensagens Bubble Tea. Delega para HandleKey em tea.KeyMsg.
-func (m *ConfirmModal) Update(msg tea.Msg) tea.Cmd {
-	if key, ok := msg.(tea.KeyMsg); ok {
-		return m.HandleKey(key)
-	}
+// HandleMouse processa eventos de mouse. ConfirmModal não reage a mouse — retorna nil.
+func (m *ConfirmModal) HandleMouse(_ tea.MouseMsg) tea.Cmd {
 	return nil
 }
 

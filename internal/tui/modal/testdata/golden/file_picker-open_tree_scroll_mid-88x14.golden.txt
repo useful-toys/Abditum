@@ -1,5 +1,5 @@
 ╭─ Abrir cofre ──────────────────────────────────────────────────────╮
-│ \home\usuario\projetos\site                                        │
+│ \home\usuario\projetos\abditum\docs                                │
 ├ Estrutura ────────────────┬ Arquivos ──────────────────────────────┤
 │\                          ■                                        │
 │  ▼ home                   │Nenhum cofre neste diretório            │
@@ -7,6 +7,6 @@
 │      ▶ documentos         │                                        │
 │      ▶ downloads          │                                        │
 │      ▼ projetos           │                                        │
-│        ▶ abditum          │                                        │
-│        ▷ site             ↓                                        │
+│        ▼ abditum          │                                        │
+│          ▷ docs           ↓                                        │
 ╰─ Enter Abrir ─────────────────────────────────────── Esc Cancelar ─╯

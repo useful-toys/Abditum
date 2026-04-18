@@ -52,12 +52,12 @@ func TestHelpModal_HandleKey_Esc_ClosesModal(t *testing.T) {
 	}
 }
 
-func TestHelpModal_Update_DelegatesKeys(t *testing.T) {
+func TestHelpModal_HandleKey_WithUnmatchedKey_ReturnsNil(t *testing.T) {
 	acts, groups := sampleActionsAndGroups()
 	m := modal.NewHelpModal(acts, groups)
-	// Update with non-key message should return nil
-	cmd := m.Update("not-a-key")
+	// HandleKey com tecla que não fecha o modal deve retornar nil
+	cmd := m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	if cmd != nil {
-		t.Error("Update(non-key): expected nil cmd")
+		t.Error("HandleKey(unmatched key): expected nil cmd")
 	}
 }

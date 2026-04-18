@@ -663,29 +663,10 @@ func (m *FilePickerModal) HandleKey(msg tea.KeyMsg) tea.Cmd {
 	return tea.Batch(hintCmd, cmd)
 }
 
-// Update processa mensagens do Bubble Tea.
-func (m *FilePickerModal) Update(msg tea.Msg) tea.Cmd {
-	if !m.hintEmitted {
-		m.hintEmitted = true
-		return m.emitHint()
-	}
-	if key, ok := msg.(tea.KeyMsg); ok {
-		return m.HandleKey(key)
-	}
+// HandleMouse processa eventos de mouse. FilePickerModal não reage a mouse — retorna nil.
+func (m *FilePickerModal) HandleMouse(_ tea.MouseMsg) tea.Cmd {
 	return nil
 }
-
-// VisibleNodePaths retorna os paths de todos os nós visíveis — usado em testes.
-func (m *FilePickerModal) VisibleNodePaths() []string {
-	paths := make([]string, len(m.visibleNodes))
-	for i, vn := range m.visibleNodes {
-		paths[i] = filepath.ToSlash(vn.node.path)
-	}
-	return paths
-}
-
-// NameFieldValue retorna o valor atual do campo nome — usado em testes.
-func (m *FilePickerModal) NameFieldValue() string { return m.nameField.Value() }
 
 // Cursor retorna a posição do cursor real para o modal.
 func (m *FilePickerModal) Cursor(topY, leftX int) *tea.Cursor {
@@ -703,6 +684,18 @@ func (m *FilePickerModal) Cursor(topY, leftX int) *tea.Cursor {
 	x := leftX + 1 + 1 + 9 + m.nameField.Position()
 	return tea.NewCursor(x, y)
 }
+
+// VisibleNodePaths retorna os paths de todos os nós visíveis — usado em testes.
+func (m *FilePickerModal) VisibleNodePaths() []string {
+	paths := make([]string, len(m.visibleNodes))
+	for i, vn := range m.visibleNodes {
+		paths[i] = filepath.ToSlash(vn.node.path)
+	}
+	return paths
+}
+
+// NameFieldValue retorna o valor atual do campo nome — usado em testes.
+func (m *FilePickerModal) NameFieldValue() string { return m.nameField.Value() }
 
 // formatFileSize formata bytes em KB/MB/GB (base 1024, 1 casa decimal).
 func formatFileSize(bytes int64) string {

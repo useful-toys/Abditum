@@ -34,7 +34,7 @@ func TestPasswordCreateModal_WithMeter(t *testing.T) {
 	m := newCreateModal()
 	for _, r := range "12345678" {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
-		m.Update(msg)
+		m.HandleKey(msg)
 	}
 	testdata.TestRenderManaged(t, "password_create", "with_meter", []string{"50x10"},
 		func(w, h int, theme *design.Theme) string {
@@ -49,14 +49,14 @@ func TestPasswordCreateModal_Confirmed(t *testing.T) {
 	// Type strong password in Nova senha
 	for _, r := range "MyP@ssw0rd123" {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
-		m.Update(msg)
+		m.HandleKey(msg)
 	}
 	// Switch to Confirmação
-	m.Update(makeKeyMsg(tea.Key{Code: tea.KeyTab}))
+	m.HandleKey(makeKeyMsg(tea.Key{Code: tea.KeyTab}))
 	// Type same password
 	for _, r := range "MyP@ssw0rd123" {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
-		m.Update(msg)
+		m.HandleKey(msg)
 	}
 	testdata.TestRenderManaged(t, "password_create", "confirmed", []string{"50x10"},
 		func(w, h int, theme *design.Theme) string {
@@ -71,14 +71,14 @@ func TestPasswordCreateModal_Mismatch(t *testing.T) {
 	// Type password in Nova senha
 	for _, r := range "MyP@ssw0rd123" {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
-		m.Update(msg)
+		m.HandleKey(msg)
 	}
 	// Switch to Confirmação
-	m.Update(makeKeyMsg(tea.Key{Code: tea.KeyTab}))
+	m.HandleKey(makeKeyMsg(tea.Key{Code: tea.KeyTab}))
 	// Type different password
 	for _, r := range "Different1234" {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
-		m.Update(msg)
+		m.HandleKey(msg)
 	}
 	testdata.TestRenderManaged(t, "password_create", "mismatch", []string{"50x10"},
 		func(w, h int, theme *design.Theme) string {
@@ -93,12 +93,12 @@ func TestPasswordCreateModal_TabSwitchesFocus(t *testing.T) {
 		t.Errorf("Initial focus: expected fieldNew, got fieldConfirm")
 	}
 	// Press Tab to switch to fieldConfirm
-	m.Update(makeKeyMsg(tea.Key{Code: tea.KeyTab}))
+	m.HandleKey(makeKeyMsg(tea.Key{Code: tea.KeyTab}))
 	if m.FocusedOnNew() {
 		t.Errorf("After first Tab: expected fieldConfirm, got fieldNew")
 	}
 	// Press Tab again to switch back to fieldNew
-	m.Update(makeKeyMsg(tea.Key{Code: tea.KeyTab}))
+	m.HandleKey(makeKeyMsg(tea.Key{Code: tea.KeyTab}))
 	if !m.FocusedOnNew() {
 		t.Errorf("After second Tab: expected fieldNew, got fieldConfirm")
 	}
@@ -110,7 +110,7 @@ func TestPasswordCreateModal_Cursor_FocusedNew(t *testing.T) {
 	m := newCreateModal()
 	for _, r := range "12345" {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
-		m.Update(msg)
+		m.HandleKey(msg)
 	}
 	c := m.Cursor(1, 0)
 	if c == nil {
@@ -132,14 +132,14 @@ func TestPasswordCreateModal_Cursor_FocusedConfirm(t *testing.T) {
 	// Type in Nova senha
 	for _, r := range "12345" {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
-		m.Update(msg)
+		m.HandleKey(msg)
 	}
 	// Switch to Confirmação
-	m.Update(makeKeyMsg(tea.Key{Code: tea.KeyTab}))
+	m.HandleKey(makeKeyMsg(tea.Key{Code: tea.KeyTab}))
 	// Type in Confirmação
 	for _, r := range "abcde" {
 		msg := makeKeyMsg(tea.Key{Text: string(r), Code: r})
-		m.Update(msg)
+		m.HandleKey(msg)
 	}
 	c := m.Cursor(1, 0)
 	if c == nil {

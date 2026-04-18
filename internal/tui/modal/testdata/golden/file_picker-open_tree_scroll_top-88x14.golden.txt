@@ -7,6 +7,6 @@
 │      ▶ documentos         │                                        │
 │      ▶ downloads          │                                        │
 │      ▼ projetos           │                                        │
-│        ▶ abditum          │                                        │
-│        ▷ site             ↓                                        │
+│        ▼ abditum          │                                        │
+│          ▷ docs           ↓                                        │
 ╰─ Enter Abrir ─────────────────────────────────────── Esc Cancelar ─╯

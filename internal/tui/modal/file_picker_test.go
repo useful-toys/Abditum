@@ -227,7 +227,7 @@ func TestFilePicker_Render_OpenTreeInitial(t *testing.T) {
 func TestFilePicker_Render_OpenFilesNoScroll(t *testing.T) {
 	m := newOpenPicker()
 	// Mover foco para arquivos — Tab é no-op com HandleKey stub, mas o teste fica pronto para quando HandleKey for implementado
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	testdata.TestRenderManaged(t, "file_picker", "open_files_noscroll", []string{"88x30"},
 		func(w, h int, theme *design.Theme) string {
 			return m.Render(h, w, theme)
@@ -253,8 +253,8 @@ func TestFilePicker_Render_OpenEmptyDir(t *testing.T) {
 func TestFilePicker_Render_SaveNameEmpty(t *testing.T) {
 	m := newSavePicker("")
 	// Tab x2: no-op com stub, mas teste pronto para quando HandleKey for implementado
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	testdata.TestRenderManaged(t, "file_picker", "save_name_empty", []string{"88x30"},
 		func(w, h int, theme *design.Theme) string {
 			return m.Render(h, w, theme)
@@ -263,8 +263,8 @@ func TestFilePicker_Render_SaveNameEmpty(t *testing.T) {
 
 func TestFilePicker_Render_SaveNameFilled(t *testing.T) {
 	m := newSavePicker("meu-cofre")
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	testdata.TestRenderManaged(t, "file_picker", "save_name_filled", []string{"88x30"},
 		func(w, h int, theme *design.Theme) string {
 			return m.Render(h, w, theme)
@@ -288,7 +288,7 @@ func newOpenPickerManyFiles() *modal.FilePickerModal {
 
 func TestFilePicker_Render_OpenFilesScrollTop(t *testing.T) {
 	m := newOpenPickerManyFiles()
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab}) // foco para arquivos (no-op with stub)
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab}) // foco para arquivos (no-op with stub)
 	// fileScroll=0, cursor=0 — estado inicial já é scroll top
 	testdata.TestRenderManaged(t, "file_picker", "open_files_scroll_top", []string{"88x30"},
 		func(w, h int, theme *design.Theme) string {
@@ -298,10 +298,10 @@ func TestFilePicker_Render_OpenFilesScrollTop(t *testing.T) {
 
 func TestFilePicker_Render_OpenFilesScrollMid(t *testing.T) {
 	m := newOpenPickerManyFiles()
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	// Navegar para o meio da lista (6 downs — no-op with stub)
 	for i := 0; i < 6; i++ {
-		m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+		m.HandleKey(tea.KeyPressMsg{Code: tea.KeyDown})
 	}
 	testdata.TestRenderManaged(t, "file_picker", "open_files_scroll_mid", []string{"88x30"},
 		func(w, h int, theme *design.Theme) string {
@@ -311,9 +311,9 @@ func TestFilePicker_Render_OpenFilesScrollMid(t *testing.T) {
 
 func TestFilePicker_Render_OpenFilesScrollEnd(t *testing.T) {
 	m := newOpenPickerManyFiles()
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	// End key (no-op with stub)
-	m.Update(tea.KeyPressMsg{Code: tea.KeyEnd})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyEnd})
 	testdata.TestRenderManaged(t, "file_picker", "open_files_scroll_end", []string{"88x30"},
 		func(w, h int, theme *design.Theme) string {
 			return m.Render(h, w, theme)
@@ -324,11 +324,11 @@ func TestFilePicker_Render_OpenTreeScrollTop(t *testing.T) {
 	m := newOpenPicker()
 	// Expandir toda a árvore (varios Rights) — no-op with HandleKey stub
 	for i := 0; i < 20; i++ {
-		m.Update(tea.KeyPressMsg{Code: tea.KeyRight})
-		m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+		m.HandleKey(tea.KeyPressMsg{Code: tea.KeyRight})
+		m.HandleKey(tea.KeyPressMsg{Code: tea.KeyDown})
 	}
 	// Voltar ao topo — no-op with HandleKey stub
-	m.Update(tea.KeyPressMsg{Code: tea.KeyHome})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyHome})
 	testdata.TestRenderManaged(t, "file_picker", "open_tree_scroll_top", []string{"88x14"},
 		func(w, h int, theme *design.Theme) string {
 			return m.Render(h, w, theme)
@@ -338,13 +338,13 @@ func TestFilePicker_Render_OpenTreeScrollTop(t *testing.T) {
 func TestFilePicker_Render_OpenTreeScrollMid(t *testing.T) {
 	m := newOpenPicker()
 	for i := 0; i < 20; i++ {
-		m.Update(tea.KeyPressMsg{Code: tea.KeyRight})
-		m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+		m.HandleKey(tea.KeyPressMsg{Code: tea.KeyRight})
+		m.HandleKey(tea.KeyPressMsg{Code: tea.KeyDown})
 	}
 	// Ir para o meio — no-op with HandleKey stub
-	m.Update(tea.KeyPressMsg{Code: tea.KeyHome})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyHome})
 	for i := 0; i < 7; i++ {
-		m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+		m.HandleKey(tea.KeyPressMsg{Code: tea.KeyDown})
 	}
 	testdata.TestRenderManaged(t, "file_picker", "open_tree_scroll_mid", []string{"88x14"},
 		func(w, h int, theme *design.Theme) string {
@@ -355,10 +355,10 @@ func TestFilePicker_Render_OpenTreeScrollMid(t *testing.T) {
 func TestFilePicker_Render_OpenTreeScrollEnd(t *testing.T) {
 	m := newOpenPicker()
 	for i := 0; i < 20; i++ {
-		m.Update(tea.KeyPressMsg{Code: tea.KeyRight})
-		m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+		m.HandleKey(tea.KeyPressMsg{Code: tea.KeyRight})
+		m.HandleKey(tea.KeyPressMsg{Code: tea.KeyDown})
 	}
-	m.Update(tea.KeyPressMsg{Code: tea.KeyEnd})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyEnd})
 	testdata.TestRenderManaged(t, "file_picker", "open_tree_scroll_end", []string{"88x14"},
 		func(w, h int, theme *design.Theme) string {
 			return m.Render(h, w, theme)
@@ -380,11 +380,11 @@ func TestFilePicker_Open_Enter_OnFile(t *testing.T) {
 	m.RebuildForTest("/home/usuario/projetos/abditum")
 
 	m.Render(30, 88, design.TokyoNight)
-	m.Update(nil) // prime hintEmitted
+	m.HandleKey(tea.KeyPressMsg{}) // prime hintEmitted // prime hintEmitted
 
 	// Mover foco para arquivos e confirmar
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
-	m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyEnter})
 
 	want := "/home/usuario/projetos/abditum/database.abditum"
 	if filepath.ToSlash(resultPath) != want {
@@ -404,8 +404,8 @@ func TestFilePicker_Open_Esc_Cancels(t *testing.T) {
 	m.SetTimeFmtForTest(fixedTimeFmt)
 	m.RebuildForTest("/home/usuario/projetos/abditum")
 	m.Render(30, 88, design.TokyoNight)
-	m.Update(nil) // prime hintEmitted
-	m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m.HandleKey(tea.KeyPressMsg{}) // prime hintEmitted // prime hintEmitted
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyEscape})
 
 	if resultPath != "" {
 		t.Errorf("OnResult path = %q, want empty string (cancelled)", resultPath)
@@ -426,16 +426,16 @@ func TestFilePicker_Save_Enter_WithName(t *testing.T) {
 	m.SetTimeFmtForTest(fixedTimeFmt)
 	m.RebuildForTest("/home/usuario/projetos/abditum")
 	m.Render(30, 88, design.TokyoNight)
-	m.Update(nil) // prime hintEmitted
+	m.HandleKey(tea.KeyPressMsg{}) // prime hintEmitted // prime hintEmitted
 
 	// Tab x2 para campo
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	// Digitar nome
 	for _, r := range "meu-cofre" {
-		m.Update(tea.KeyPressMsg{Code: rune(r), Text: string(r)})
+		m.HandleKey(tea.KeyPressMsg{Code: rune(r), Text: string(r)})
 	}
-	m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyEnter})
 
 	want := "/home/usuario/projetos/abditum/meu-cofre.abditum"
 	if filepath.ToSlash(resultPath) != want {
@@ -455,13 +455,13 @@ func TestFilePicker_Save_Enter_WithExtension(t *testing.T) {
 	m.SetTimeFmtForTest(fixedTimeFmt)
 	m.RebuildForTest("/home/usuario/projetos/abditum")
 	m.Render(30, 88, design.TokyoNight)
-	m.Update(nil) // prime hintEmitted
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{}) // prime hintEmitted // prime hintEmitted
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	for _, r := range "meu-cofre.abditum" {
-		m.Update(tea.KeyPressMsg{Code: rune(r), Text: string(r)})
+		m.HandleKey(tea.KeyPressMsg{Code: rune(r), Text: string(r)})
 	}
-	m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyEnter})
 
 	want := "/home/usuario/projetos/abditum/meu-cofre.abditum"
 	if filepath.ToSlash(resultPath) != want {
@@ -481,11 +481,11 @@ func TestFilePicker_Save_Enter_EmptyField(t *testing.T) {
 	m.SetTimeFmtForTest(fixedTimeFmt)
 	m.RebuildForTest("/home/usuario/projetos/abditum")
 	m.Render(30, 88, design.TokyoNight)
-	m.Update(nil) // prime hintEmitted
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{}) // prime hintEmitted // prime hintEmitted
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	// Enter sem digitar
-	m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if called {
 		t.Error("OnResult should not be called when name field is empty")
 	}
@@ -496,14 +496,14 @@ func TestFilePicker_Save_Enter_EmptyField(t *testing.T) {
 func TestFilePicker_Tree_Left_CollapsesNode(t *testing.T) {
 	m := newOpenPicker()
 	m.Render(30, 88, design.TokyoNight)
-	m.Update(nil) // prime hintEmitted
+	m.HandleKey(tea.KeyPressMsg{}) // prime hintEmitted // prime hintEmitted
 
 	if m.TreeCursorPath() != "/home/usuario/projetos/abditum" {
 		t.Fatalf("expected cursor at abditum, got %q", m.TreeCursorPath())
 	}
 
 	// Expandir abditum para ter filhos visíveis, depois recolher
-	m.Update(tea.KeyPressMsg{Code: tea.KeyRight})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyRight})
 	hasDocs := false
 	for _, p := range m.VisibleNodePaths() {
 		if p == "/home/usuario/projetos/abditum/docs" {
@@ -514,7 +514,7 @@ func TestFilePicker_Tree_Left_CollapsesNode(t *testing.T) {
 		t.Fatal("docs not visible after expanding abditum — precondition failed")
 	}
 
-	m.Update(tea.KeyPressMsg{Code: tea.KeyLeft})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyLeft})
 
 	for _, p := range m.VisibleNodePaths() {
 		if p == "/home/usuario/projetos/abditum/docs" {
@@ -526,10 +526,10 @@ func TestFilePicker_Tree_Left_CollapsesNode(t *testing.T) {
 func TestFilePicker_Tree_Left_AtRoot(t *testing.T) {
 	m := newOpenPicker()
 	m.Render(30, 88, design.TokyoNight)
-	m.Update(nil) // prime hintEmitted
-	m.Update(tea.KeyPressMsg{Code: tea.KeyHome})
+	m.HandleKey(tea.KeyPressMsg{}) // prime hintEmitted // prime hintEmitted
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyHome})
 	before := m.TreeCursorPath()
-	m.Update(tea.KeyPressMsg{Code: tea.KeyLeft})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyLeft})
 	after := m.TreeCursorPath()
 	if before != after {
 		t.Errorf("Left at root changed cursor: %q → %q", before, after)
@@ -539,11 +539,11 @@ func TestFilePicker_Tree_Left_AtRoot(t *testing.T) {
 func TestFilePicker_Tree_Right_EmptyFolder(t *testing.T) {
 	m := newOpenPicker()
 	m.Render(30, 88, design.TokyoNight)
-	m.Update(nil) // prime hintEmitted
+	m.HandleKey(tea.KeyPressMsg{}) // prime hintEmitted // prime hintEmitted
 	// Navegar para /home/usuario/fotos (sem subdiretórios)
-	m.Update(tea.KeyPressMsg{Code: tea.KeyEnd})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyEnd})
 	before := m.VisibleNodePaths()
-	m.Update(tea.KeyPressMsg{Code: tea.KeyRight})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyRight})
 	after := m.VisibleNodePaths()
 	if len(before) != len(after) {
 		t.Error("Right on empty folder changed visible nodes")
@@ -555,15 +555,15 @@ func TestFilePicker_Tree_Right_EmptyFolder(t *testing.T) {
 func TestFilePicker_Tab_Cycles_Open(t *testing.T) {
 	m := newOpenPicker()
 	m.Render(30, 88, design.TokyoNight)
-	m.Update(nil) // prime hintEmitted
+	m.HandleKey(tea.KeyPressMsg{}) // prime hintEmitted // prime hintEmitted
 	if m.FocusPanel() != 0 {
 		t.Fatal("initial focus should be 0 (tree)")
 	}
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	if m.FocusPanel() != 1 {
 		t.Errorf("after 1 Tab: focus = %d, want 1", m.FocusPanel())
 	}
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	if m.FocusPanel() != 0 {
 		t.Errorf("after 2 Tab: focus = %d, want 0", m.FocusPanel())
 	}
@@ -572,16 +572,16 @@ func TestFilePicker_Tab_Cycles_Open(t *testing.T) {
 func TestFilePicker_Tab_Cycles_Save(t *testing.T) {
 	m := newSavePicker("")
 	m.Render(30, 88, design.TokyoNight)
-	m.Update(nil) // prime hintEmitted
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{}) // prime hintEmitted // prime hintEmitted
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	if m.FocusPanel() != 1 {
 		t.Errorf("after 1 Tab: focus = %d, want 1", m.FocusPanel())
 	}
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	if m.FocusPanel() != 2 {
 		t.Errorf("after 2 Tab: focus = %d, want 2", m.FocusPanel())
 	}
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	if m.FocusPanel() != 0 {
 		t.Errorf("after 3 Tab: focus = %d, want 0", m.FocusPanel())
 	}
@@ -590,10 +590,10 @@ func TestFilePicker_Tab_Cycles_Save(t *testing.T) {
 func TestFilePicker_InvalidChars_Blocked(t *testing.T) {
 	m := newSavePicker("")
 	m.Render(30, 88, design.TokyoNight)
-	m.Update(nil) // prime hintEmitted
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab}) // foco no campo
-	m.Update(tea.KeyPressMsg{Code: '/', Text: "/"})
+	m.HandleKey(tea.KeyPressMsg{}) // prime hintEmitted // prime hintEmitted
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab}) // foco no campo
+	m.HandleKey(tea.KeyPressMsg{Code: '/', Text: "/"})
 	if m.NameFieldValue() != "" {
 		t.Errorf("invalid char '/' should be blocked, got %q", m.NameFieldValue())
 	}
@@ -613,19 +613,19 @@ func TestFilePicker_PermissionDenied(t *testing.T) {
 	m.SetTimeFmtForTest(fixedTimeFmt)
 	m.RebuildForTest("/home/usuario/documentos/contratos")
 	m.Render(30, 88, design.TokyoNight)
-	m.Update(nil) // prime hintEmitted
+	m.HandleKey(tea.KeyPressMsg{}) // prime hintEmitted // prime hintEmitted
 
 	// treeCursor começa em contratos; expandir para ver 2024 e 2025
-	m.Update(tea.KeyPressMsg{Code: tea.KeyRight})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyRight})
 
 	// Navegar para 2024 e tentar expandir
 	for i := 0; i < 10; i++ {
-		m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+		m.HandleKey(tea.KeyPressMsg{Code: tea.KeyDown})
 		if m.TreeCursorPath() == "/home/usuario/documentos/contratos/2024" {
 			break
 		}
 	}
-	m.Update(tea.KeyPressMsg{Code: tea.KeyRight})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyRight})
 
 	// SetError deve ter sido chamado (mesmo que SetHintField sobreescreva lastMethod)
 	if !stub.errorCalled {
@@ -655,9 +655,9 @@ func TestFilePicker_Cursor_NilWhenNotFocused(t *testing.T) {
 func TestFilePicker_Cursor_Position(t *testing.T) {
 	m := newSavePicker("abc")
 	m.Render(30, 88, design.TokyoNight)
-	m.Update(nil) // prime hintEmitted
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
-	m.Update(tea.KeyPressMsg{Code: tea.KeyTab}) // foco no campo
+	m.HandleKey(tea.KeyPressMsg{}) // prime hintEmitted // prime hintEmitted
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
+	m.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab}) // foco no campo
 
 	c := m.Cursor(5, 2)
 	if c == nil {

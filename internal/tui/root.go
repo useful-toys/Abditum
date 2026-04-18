@@ -327,8 +327,8 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case ModalReadyMsg:
 		if len(r.modals) > 1 {
-			parent := r.modals[len(r.modals)-2]
-			return r, parent.Update(msg)
+			// Modais pai não recebem ModalReadyMsg — apenas a view ativa recebe.
+			return r, nil
 		}
 		return r, r.activeView.Update(msg)
 
@@ -341,7 +341,7 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// 2. Active modal receives the key.
 		if len(r.modals) > 0 {
 			top := len(r.modals) - 1
-			return r, r.modals[top].Update(msg)
+			return r, r.modals[top].HandleKey(msg)
 		}
 
 		// 3. View actions — evaluated only without active modal.
@@ -387,7 +387,11 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if len(r.modals) > 0 {
 		top := len(r.modals) - 1
-		cmds = append(cmds, r.modals[top].Update(msg))
+		// tea.KeyMsg já foi tratado no case acima — aqui chegam mensagens não-key.
+		// Modais só recebem eventos de mouse além de teclas.
+		if mouseMsg, ok := msg.(tea.MouseMsg); ok {
+			cmds = append(cmds, r.modals[top].HandleMouse(mouseMsg))
+		}
 	} else {
 		cmds = append(cmds, r.activeView.Update(msg))
 		cmds = append(cmds, r.headerView.Update(msg))
