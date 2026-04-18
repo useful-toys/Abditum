@@ -77,6 +77,9 @@ func buildVaultCmd(vaultPath string, root *tui.RootModel) tea.Cmd {
 				operation.NewCriarCofreOperation(root.MessageController(), nil, vaultPath),
 			)
 		}
+	} else if err != nil {
+		// Erro de acesso (ex: permissão negada) — informar ao usuário e iniciar normalmente.
+		fmt.Fprintf(os.Stderr, "aviso: não foi possível verificar --vault %q: %v\n", vaultPath, err)
 	}
 	// Caminho inválido (ex: diretório pai inexistente): iniciar normalmente sem operação.
 	return nil
