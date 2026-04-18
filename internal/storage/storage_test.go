@@ -942,3 +942,47 @@ func TestIntegration_ManagerWithFileRepository(t *testing.T) {
 		t.Errorf("secret name = %q, want %q", segredos[0].Nome(), "Meu GitHub")
 	}
 }
+
+// TestSalvar_UpdateExistingVault tests updating an existing vault.
+func TestSalvar_UpdateExistingVault(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	cofre1 := vault.NovoCofre()
+	repo := storage.NewFileRepositoryForCreate(path, testPassword)
+	if err := repo.Salvar(cofre1); err != nil {
+		t.Fatalf("Salvar() error: %v", err)
+	}
+
+	loaded1, meta1, err := storage.Load(path, testPassword)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	if meta1.Size == 0 {
+		t.Fatal("metadata tamanho não pode ser zero")
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error: %v", err)
+	}
+	salt := data[storage.SaltOffset : storage.SaltOffset+storage.SaltSize]
+
+	repo2 := storage.NewFileRepository(path, testPassword, salt, meta1)
+	cofre2 := vault.NovoCofre()
+	if err := repo2.Salvar(cofre2); err != nil {
+		t.Fatalf("Salvar() update error: %v", err)
+	}
+
+	loaded2, meta2, err := storage.Load(path, testPassword)
+	if err != nil {
+		t.Fatalf("Load() after update error: %v", err)
+	}
+
+	if loaded1.PastaGeral() == nil || loaded2.PastaGeral() == nil {
+		t.Fatal("PastaGeral nil")
+	}
+	if meta2.Size == meta1.Size {
+		t.Log("aviso: tamanhos iguais após update (possível em certains casos)")
+	}
+}
