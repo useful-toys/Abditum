@@ -10,13 +10,6 @@ import (
 	"github.com/useful-toys/abditum/internal/vault"
 )
 
-// vaultSaver é a interface mínima que a QuitOperation precisa do vault.Manager.
-// Usar uma interface aqui (em vez do tipo concreto) facilita os testes.
-type vaultSaver interface {
-	IsModified() bool
-	Salvar(forcarSobrescrita bool) error
-}
-
 // quitState representa em qual etapa do fluxo de saída estamos.
 type quitState int
 
