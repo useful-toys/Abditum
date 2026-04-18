@@ -412,6 +412,37 @@ func TestRecoverOrphans_NoOpWhenClean(t *testing.T) {
 	}
 }
 
+// TestRecoverOrphans_WithBackupFiles verifies .bak and .bak2 are preserved.
+func TestRecoverOrphans_WithBackupFiles(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vault.abditum")
+
+	if err := storage.SaveNew(path, newTestCofre(), testPassword); err != nil {
+		t.Fatalf("SaveNew() error: %v", err)
+	}
+
+	bakPath := path + ".bak"
+	bak2Path := path + ".bak2"
+
+	if err := os.WriteFile(bakPath, []byte("old backup"), 0600); err != nil {
+		t.Fatalf("WriteFile() bak error: %v", err)
+	}
+	if err := os.WriteFile(bak2Path, []byte("older backup"), 0600); err != nil {
+		t.Fatalf("WriteFile() bak2 error: %v", err)
+	}
+
+	if err := storage.RecoverOrphans(path); err != nil {
+		t.Fatalf("RecoverOrphans() error: %v", err)
+	}
+
+	if _, err := os.Stat(bakPath); os.IsNotExist(err) {
+		t.Error(".bak deveria permanecer após RecoverOrphans")
+	}
+	if _, err := os.Stat(bak2Path); os.IsNotExist(err) {
+		t.Error(".bak2 deveria permanecer após RecoverOrphans")
+	}
+}
+
 // ---------------------------------------------------------------------------
 // DetectExternalChange and ComputeFileMetadata tests
 // ---------------------------------------------------------------------------
