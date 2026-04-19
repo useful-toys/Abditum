@@ -11,6 +11,10 @@ The system SHALL replace the `"Settings"` placeholder in `WorkAreaSettings` with
 - **WHEN** the Settings screen is rendered at any terminal size
 - **THEN** it MUST use the available workspace height and width, apply tokens from the active theme, and preserve the outer layout formed by header, work area, message line, and command bar
 
+#### Scenario: Minimum-height fallback remains centralized in root
+- **WHEN** the terminal height is below the minimum supported height
+- **THEN** `SettingsView` MUST NOT introduce its own fallback rendering rule, because the root-level guard remains the single authority for blocking normal screen rendering in that condition
+
 #### Scenario: Content is vertically centered in the work area
 - **WHEN** the Settings screen is rendered
 - **THEN** the settings content (title + groups + items) MUST be vertically centered in the available work area using symmetric blank-line padding above and below
@@ -161,6 +165,10 @@ The system SHALL treat the Settings screen as a self-contained feature screen fo
 #### Scenario: Direct application does not emit application event
 - **WHEN** a synchronous setting change is applied successfully from the Settings screen
 - **THEN** the system MUST NOT require a dedicated application-wide `tea.Msg` or equivalent event solely to propagate that field mutation
+
+#### Scenario: Future consumers re-read canonical configuration
+- **WHEN** another part of the application needs updated settings after a synchronous change
+- **THEN** it SHOULD obtain the canonical values from the cofre domain (`vault.Manager` / `Configuracoes`) instead of depending on a generic broadcast mechanism introduced by the Settings screen
 
 ### Requirement: Visual specification for settings SHALL be documented in golden/tui-spec-telas.md
 The project SHALL define the Settings screen in `golden/tui-spec-telas.md`, following the documentation pattern used for other screens and respecting rules from `golden/tui-design-system.md`.

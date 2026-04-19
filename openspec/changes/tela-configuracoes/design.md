@@ -58,11 +58,20 @@ O design system já define dois temas (`TokyoNight` e `Cyberpunk`), tokens semâ
    Como a mudança introduz uma work area visual nova, a validação precisa proteger o layout renderizado contra regressões acidentais de espaçamento, agrupamento e estados visuais relevantes. Golden tests complementam os testes de interação e ajudam a manter a implementação alinhada ao wireframe documentado.
    **Alternativa considerada:** validar apenas por asserts textuais parciais. Descartada — útil para comportamento, mas fraca para regressões de composição visual da tela.
 
+8. **A tela de settings não implementa fallback próprio para terminais abaixo do mínimo.**
+   O `RootModel` já bloqueia a renderização normal quando a altura é menor que `design.MinHeight` (24 linhas). A `SettingsView` pode assumir que só será renderizada quando a área útil estiver válida e não deve duplicar uma segunda política local para tamanhos mínimos.
+   **Alternativa considerada:** fallback específico da própria tela para alturas pequenas. Descartada — duplicaria responsabilidade já centralizada no root.
+
+9. **Mudanças de settings não inauguram um mecanismo genérico de broadcast.**
+   Para esta feature, não haverá barramento de eventos nem mensagem de aplicação por campo alterado. Quem precisar de configuração no futuro deve reler o estado canônico no domínio (`vault.Manager` / `Configuracoes`) quando fizer sentido. Só vale introduzir notificação explícita se surgir um consumidor real com estado derivado persistente.
+   **Alternativa considerada:** emitir mensagem global a cada alteração bem-sucedida. Descartada — complexidade prematura e acoplamento sem benefício imediato.
+
 ## Risks / Trade-offs
 
 - **[Persistência de tema acoplada à abertura do cofre]** → Quando não há cofre aberto, o tema alterado em settings não é persistido. Documentar isso no comportamento da tela; ao abrir o cofre, o tema salvo no arquivo sobrepõe o estado em memória.
 - **[Ranges divergirem entre UI e domínio]** → Fixar no pacote `settings` e no domínio os mínimos normativos já definidos em `golden/requisitos.md`: bloqueio `> 60 s`, ocultação `> 2 s`, clipboard `> 10 s`, todos com passo de ajuste de `5 s`.
 - **[Contrato de aplicação ficar ambíguo]** → Formalizar na spec que mudanças síncronas da tela de settings são aplicadas localmente pela `SettingsView` via `vault.Manager`, sem mensagens de aplicação para cada campo.
+- **[Responsabilidade de tamanho mínimo duplicada]** → Registrar que a tela depende do guard já existente no `RootModel` para `height < 24`, sem fallback próprio.
 - **[Tela de settings acessível sem cofre aberto]** → A aba `Config` aparece no cabeçalho independentemente do estado do cofre? Verificar o comportamento atual do `RootModel` e manter consistência.
 - **[Regressões visuais passarem despercebidas]** → Exigir golden tests para estados estruturais da tela de settings, além de testes comportamentais.
 

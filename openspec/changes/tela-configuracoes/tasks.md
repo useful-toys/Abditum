@@ -30,6 +30,7 @@
 - [ ] 3.8 Garantir que os campos numéricos exponham apenas a parte numérica como editável, com unidade fixa `s` fora do input.
 - [ ] 3.9 Implementar o item `Arquivo do cofre` no grupo Sobre (nome do arquivo ativo, somente leitura).
 - [ ] 3.10 Atualizar `Render(height, width int, theme *design.Theme)` para compor toda a tela a partir dos elementos acima.
+- [ ] 3.11 Manter a tela sem fallback local para `height < 24`, confiando no guard central já existente no `RootModel`.
 
 ## 4. Navegação e interação
 
@@ -48,6 +49,7 @@
 - [ ] 5.1 Garantir que a alteração de tema via `F12` continue sendo coordenada no `RootModel` e refletida imediatamente na tela de settings.
 - [ ] 5.2 Garantir que mudança de tema via `F12` atualiza o valor exibido no item de tema da tela de settings.
 - [ ] 5.3 Conectar timers e tema ao `vault.Manager` / `Configuracoes`, marcando o cofre como modificado quando houver mudança aplicada, sem criar mensagens globais de propagação por campo.
+- [ ] 5.6 Garantir que a implementação não introduza broadcast genérico ou `tea.Msg` global por alteração de campo; consumidores futuros devem reler a configuração canônica no domínio se necessário.
 - [ ] 5.4 Renomear `tempoBloqueioInatividadeMinutos` para `tempoBloqueioInatividadeSegundos` em `vault/entities.go`, atualizar o valor padrão de `5` para `300` e corrigir a validação em `manager.go` de `<= 0` para `<= 60`.
 - [ ] 5.5 Alinhar a serialização do cofre para incluir o campo `temaVisual` de `Configuracoes` no payload criptografado (adicionado em 2.7).
 
