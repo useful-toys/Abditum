@@ -139,7 +139,7 @@ func TestDeserializarCofre_PastaGeralNomeErrado(t *testing.T) {
 	jsonNomeErrado := `{
 		"data_criacao":"2026-01-01T00:00:00Z",
 		"data_ultima_modificacao":"2026-01-01T00:00:00Z",
-		"configuracoes":{"tempo_bloqueio_inatividade_minutos":5,"tempo_ocultar_segredo_segundos":15,"tempo_limpar_area_transferencia_segundos":30},
+		"configuracoes":{"tempo_bloqueio_inatividade_segundos":300,"tempo_ocultar_segredo_segundos":15,"tempo_limpar_area_transferencia_segundos":30},
 		"modelos":[],
 		"pasta_geral":{"nome":"NaoGeral","subpastas":[],"segredos":[]}
 	}`
@@ -190,7 +190,7 @@ func TestRoundtrip_CofreVazio(t *testing.T) {
 func TestRoundtrip_Configuracoes(t *testing.T) {
 	cofre := NovoCofre()
 	cofre.configuracoes = Configuracoes{
-		tempoBloqueioInatividadeMinutos:      10,
+		tempoBloqueioInatividadeSegundos:     300,
 		tempoOcultarSegredoSegundos:          20,
 		tempoLimparAreaTransferenciaSegundos: 45,
 	}
@@ -206,8 +206,8 @@ func TestRoundtrip_Configuracoes(t *testing.T) {
 	}
 
 	cfg := restored.configuracoes
-	if cfg.tempoBloqueioInatividadeMinutos != 10 {
-		t.Errorf("tempoBloqueio: got %d, want 10", cfg.tempoBloqueioInatividadeMinutos)
+	if cfg.tempoBloqueioInatividadeSegundos != 300 {
+		t.Errorf("tempoBloqueio: got %d, want 300", cfg.tempoBloqueioInatividadeSegundos)
 	}
 	if cfg.tempoOcultarSegredoSegundos != 20 {
 		t.Errorf("tempoOcultar: got %d, want 20", cfg.tempoOcultarSegredoSegundos)

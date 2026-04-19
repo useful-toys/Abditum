@@ -1,0 +1,20 @@
+                                                                                
+                                                                                
+                              Configurações                                     
+                                                                                
+                              Aparência                                         
+                            › Tema visual                     Tokyo Night       
+                                Tema aplicado ao cofre atual.                   
+                                                                                
+                                                                                
+                              Segurança                                         
+                                Bloqueio por inatividade      0 s               
+                                Ocultar campo sensível        0 s               
+                                Limpar área de transferência  0 s               
+                                                                                
+                              Sobre                                             
+                                Versão                        v0.1.0            
+                                Arquivo do cofre              –                 
+                                                                                
+                                                                                
+                                                                                

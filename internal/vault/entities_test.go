@@ -33,14 +33,14 @@ func TestNovoCofre(t *testing.T) {
 
 	// Verify default Configuracoes
 	config := cofre.Configuracoes()
-	if config.tempoBloqueioInatividadeMinutos != 5 {
-		t.Errorf("Expected tempoBloqueio=5, got %d", config.tempoBloqueioInatividadeMinutos)
+	if config.TempoBloqueioSegundos() != 300 {
+		t.Errorf("Expected tempoBloqueio=300, got %d", config.TempoBloqueioSegundos())
 	}
-	if config.tempoOcultarSegredoSegundos != 15 {
-		t.Errorf("Expected tempoOcultar=15, got %d", config.tempoOcultarSegredoSegundos)
+	if config.TempoOcultarSegundos() != 15 {
+		t.Errorf("Expected tempoOcultar=15, got %d", config.TempoOcultarSegundos())
 	}
-	if config.tempoLimparAreaTransferenciaSegundos != 30 {
-		t.Errorf("Expected tempoLimpar=30, got %d", config.tempoLimparAreaTransferenciaSegundos)
+	if config.TempoLimparTransferenciaSegundos() != 30 {
+		t.Errorf("Expected tempoLimpar=30, got %d", config.TempoLimparTransferenciaSegundos())
 	}
 }
 

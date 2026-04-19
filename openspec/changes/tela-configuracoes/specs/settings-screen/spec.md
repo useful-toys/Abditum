@@ -43,7 +43,7 @@ The system SHALL allow the user to move focus between settings items using ↑ a
 
 #### Scenario: Entering edit mode on a numeric item
 - **WHEN** the user presses Enter on a numeric-type item that is NOT in edit mode
-- **THEN** the item MUST enter edit mode, showing an editable inline field pre-filled with the current numeric value and a visible text cursor `▌`
+- **THEN** the item MUST enter edit mode, showing an editable inline field pre-filled with the current numeric value and a real terminal cursor positioned at end of buffer
 
 #### Scenario: Only digits accepted in edit mode
 - **WHEN** a numeric item is in edit mode and the user presses a non-digit key (excluding Backspace, Enter, Esc)

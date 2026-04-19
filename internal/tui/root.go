@@ -174,7 +174,7 @@ func (r *RootModel) evalActions(msg tea.KeyMsg, acts []actions.Action) (tea.Cmd,
 // initVaultViews creates views that depend on vaultManager.
 // Called when vaultManager is available — at initialization or during lifecycle.
 func (r *RootModel) initVaultViews() {
-	r.settingsView = settings.NewSettingsView(r.vaultManager)
+	r.settingsView = settings.NewSettingsView(r.vaultManager, r.MessageController(), r.version)
 	r.secretTree = secret.NewVaultTreeView(r.vaultManager)
 	r.secretDetail = secret.NewSecretDetailView(r.vaultManager)
 	r.templateList = tmpl.NewTemplateListView(r.vaultManager)
@@ -282,7 +282,14 @@ func (r *RootModel) View() tea.View {
 		return v
 	}
 
-	return makeView(base)
+	v := makeView(base)
+	// Expõe o cursor do campo em edição da tela de settings ao framework do bubbletea.
+	if r.workArea == design.WorkAreaSettings && r.settingsView != nil {
+		if c := r.settingsView.Cursor(design.HeaderHeight, 0); c != nil {
+			v.Cursor = c
+		}
+	}
+	return v
 }
 
 // Update processes Bubble Tea messages and updates model state.
