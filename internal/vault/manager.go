@@ -188,22 +188,22 @@ func (m *Manager) FilePath() string {
 }
 
 // AlterarConfiguracoes updates vault timer settings.
-// Per D-20: All timers are mandatory (must be > 0).
-// Returns ErrConfigInvalida if any timer is <= 0.
+// Timers are in seconds. Minimum constraints per golden/requisitos.md:
+// bloqueio > 60 s, ocultar > 2 s, clipboard > 10 s.
+// Returns ErrConfigInvalida if any timer fails its minimum.
 // Marks vault as modified and updates timestamp.
 func (m *Manager) AlterarConfiguracoes(novasConfig Configuracoes) error {
 	if m.bloqueado {
 		return ErrCofreBloqueado
 	}
 
-	// Validate all timers > 0 (VAULT-17: all mandatory)
-	if novasConfig.tempoBloqueioInatividadeMinutos <= 0 {
+	if novasConfig.tempoBloqueioInatividadeSegundos <= 60 {
 		return ErrConfigInvalida
 	}
-	if novasConfig.tempoOcultarSegredoSegundos <= 0 {
+	if novasConfig.tempoOcultarSegredoSegundos <= 2 {
 		return ErrConfigInvalida
 	}
-	if novasConfig.tempoLimparAreaTransferenciaSegundos <= 0 {
+	if novasConfig.tempoLimparAreaTransferenciaSegundos <= 10 {
 		return ErrConfigInvalida
 	}
 

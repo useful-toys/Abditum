@@ -48,9 +48,36 @@ type Renomeacao struct {
 
 // Configuracoes contains operational settings for the vault (timers for auto-lock, reveal, clipboard).
 type Configuracoes struct {
-	tempoBloqueioInatividadeMinutos      int // Default: 5 min
-	tempoOcultarSegredoSegundos          int // Default: 15 sec
-	tempoLimparAreaTransferenciaSegundos int // Default: 30 sec
+	tempoBloqueioInatividadeSegundos     int    // Default: 300 s (5 min)
+	tempoOcultarSegredoSegundos          int    // Default: 15 s
+	tempoLimparAreaTransferenciaSegundos int    // Default: 30 s
+	temaVisual                           string // Default: "" (usa tema padrão da aplicação)
+}
+
+// TempoBloqueioSegundos retorna o tempo de bloqueio por inatividade em segundos.
+func (c Configuracoes) TempoBloqueioSegundos() int { return c.tempoBloqueioInatividadeSegundos }
+
+// TempoOcultarSegundos retorna o tempo de ocultação de campo sensível em segundos.
+func (c Configuracoes) TempoOcultarSegundos() int { return c.tempoOcultarSegredoSegundos }
+
+// TempoLimparTransferenciaSegundos retorna o tempo de limpeza da área de transferência em segundos.
+func (c Configuracoes) TempoLimparTransferenciaSegundos() int {
+	return c.tempoLimparAreaTransferenciaSegundos
+}
+
+// TemaVisual retorna o identificador do tema visual persistido no cofre.
+// Retorna "" quando nenhum tema foi explicitamente salvo (usa o padrão da aplicação).
+func (c Configuracoes) TemaVisual() string { return c.temaVisual }
+
+// NovasConfiguracoes constrói um Configuracoes com os valores fornecidos.
+// Usado por código fora do pacote vault para criar o struct a ser passado ao AlterarConfiguracoes.
+func NovasConfiguracoes(bloqueioSegundos, ocultarSegundos, limparTransferenciaSegundos int, temaVisual string) Configuracoes {
+	return Configuracoes{
+		tempoBloqueioInatividadeSegundos:     bloqueioSegundos,
+		tempoOcultarSegredoSegundos:          ocultarSegundos,
+		tempoLimparAreaTransferenciaSegundos: limparTransferenciaSegundos,
+		temaVisual:                           temaVisual,
+	}
 }
 
 // CampoModelo defines a field structure in a ModeloSegredo (template).
@@ -946,7 +973,7 @@ func NovoCofre() *Cofre {
 		dataCriacao:           agora,
 		dataUltimaModificacao: agora,
 		configuracoes: Configuracoes{
-			tempoBloqueioInatividadeMinutos:      5,
+			tempoBloqueioInatividadeSegundos:     300,
 			tempoOcultarSegredoSegundos:          15,
 			tempoLimparAreaTransferenciaSegundos: 30,
 		},

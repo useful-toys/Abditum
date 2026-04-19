@@ -9,49 +9,49 @@
 
 ## 2. Modelo de dados e estrutura interna
 
-- [ ] 2.1 Definir `settingItem` (chave, label, valor atual, tipo: toggle/numeric/readonly, descrição) em `internal/tui/settings/settings_view.go`.
-- [ ] 2.2 Definir constantes de range e passo dos timers em segundos no mesmo pacote (`minAutoLockSeconds = 61`, `minHideSeconds = 3`, `minClipboardSeconds = 11`, `timerStepSeconds = 5`).
-- [ ] 2.3 Construir a lista inicial de itens no `NewSettingsView`, separados por grupo, usando os valores padrão dos requisitos.
-- [ ] 2.4 Adicionar campo `cursor int` e campo `editMode bool` (com buffer de edição) na `SettingsView`.
-- [ ] 2.5 Adicionar getters públicos em `vault.Configuracoes`: `TempoBloqueioSegundos() int`, `TempoOcultarSegundos() int`, `TempoLimparTransferenciaSegundos() int` — necessários para que `SettingsView` leia os valores atuais fora do pacote `vault`.
-- [ ] 2.6 Adicionar função `vault.NovasConfiguracoes(bloqueio, ocultar, limpar int) Configuracoes` para construir o struct a ser passado ao `AlterarConfiguracoes` fora do pacote.
-- [ ] 2.7 Adicionar campo `temaVisual string` em `vault.Configuracoes` e atualizar serialização do cofre para persistir o identificador de tema no payload criptografado.
-- [ ] 2.8 Atualizar `NewSettingsView` para receber `tui.MessageController` além de `*vault.Manager`, e atualizar a chamada em `RootModel.initVaultViews` para passar `r.MessageController()`.
+- [x] 2.1 Definir `settingItem` (chave, label, valor atual, tipo: toggle/numeric/readonly, descrição) em `internal/tui/settings/settings_view.go`.
+- [x] 2.2 Definir constantes de range e passo dos timers em segundos no mesmo pacote (`minAutoLockSeconds = 61`, `minHideSeconds = 3`, `minClipboardSeconds = 11`, `timerStepSeconds = 5`).
+- [x] 2.3 Construir a lista inicial de itens no `NewSettingsView`, separados por grupo, usando os valores padrão dos requisitos.
+- [x] 2.4 Adicionar campo `cursor int` e campo `editMode bool` (com buffer de edição) na `SettingsView`.
+- [x] 2.5 Adicionar getters públicos em `vault.Configuracoes`: `TempoBloqueioSegundos() int`, `TempoOcultarSegundos() int`, `TempoLimparTransferenciaSegundos() int` — necessários para que `SettingsView` leia os valores atuais fora do pacote `vault`.
+- [x] 2.6 Adicionar função `vault.NovasConfiguracoes(bloqueio, ocultar, limpar int) Configuracoes` para construir o struct a ser passado ao `AlterarConfiguracoes` fora do pacote.
+- [x] 2.7 Adicionar campo `temaVisual string` em `vault.Configuracoes` e atualizar serialização
+- [x] 2.8 Atualizar `NewSettingsView` para receber `tui.MessageController` além de `*vault.Manager`, e atualizar a chamada em `RootModel.initVaultViews` para passar `r.MessageController()`.
 
 ## 3. Renderização
 
-- [ ] 3.1 Implementar a renderização de cabeçalho de grupo (bold, sem separador `─────`) e padding de linha em branco entre grupos, usando tokens do tema ativo.
-- [ ] 3.2 Implementar a renderização de item normal (label + valor com espaçamento alinhado, `text.primary`/`text.secondary`).
-- [ ] 3.3 Implementar o estado de item selecionado (highlight `accent.primary` no label, símbolo `›` ou equivalente do DS).
-- [ ] 3.4 Implementar o estado de item em edição (campo inline editável com cursor visível, fundo `surface.input`).
-- [ ] 3.5 Implementar o estado de item somente leitura (label + valor sem destaque interativo, `text.disabled` no valor se aplicável).
-- [ ] 3.6 Implementar o título `Configurações` e o centramento vertical do conteúdo (padding simétrico de linhas em branco).
-- [ ] 3.7 Implementar a linha de descrição contextual inline, imediatamente abaixo do item com foco (mesmo alinhamento de indentação).
-- [ ] 3.8 Garantir que os campos numéricos exponham apenas a parte numérica como editável, com unidade fixa `s` fora do input.
-- [ ] 3.9 Implementar o item `Arquivo do cofre` no grupo Sobre (nome do arquivo ativo, somente leitura).
-- [ ] 3.10 Atualizar `Render(height, width int, theme *design.Theme)` para compor toda a tela a partir dos elementos acima.
-- [ ] 3.11 Manter a tela sem fallback local para `height < 24`, confiando no guard central já existente no `RootModel`.
+- [x] 3.1 Implementar a renderização de cabeçalho de grupo (bold, sem separador `─────`) e padding de linha em branco entre grupos, usando tokens do tema ativo.
+- [x] 3.2 Implementar a renderização de item normal (label + valor com espaçamento alinhado, `text.primary`/`text.secondary`).
+- [x] 3.3 Implementar o estado de item selecionado (highlight `accent.primary` no label, símbolo `›` ou equivalente do DS).
+- [x] 3.4 Implementar o estado de item em edição (campo inline editável com cursor visível, fundo `surface.input`).
+- [x] 3.5 Implementar o estado de item somente leitura (label + valor sem destaque interativo, `text.disabled` no valor se aplicável).
+- [x] 3.6 Implementar o título `Configurações` e o centramento vertical do conteúdo (padding simétrico de linhas em branco).
+- [x] 3.7 Implementar a linha de descrição contextual inline, imediatamente abaixo do item com foco (mesmo alinhamento de indentação).
+- [x] 3.8 Garantir que os campos numéricos exponham apenas a parte numérica como editável, com unidade fixa `s` fora do input.
+- [x] 3.9 Implementar o item `Arquivo do cofre` no grupo Sobre (nome do arquivo ativo, somente leitura).
+- [x] 3.10 Atualizar `Render(height, width int, theme *design.Theme)` para compor toda a tela a partir dos elementos acima.
+- [x] 3.11 Manter a tela sem fallback local para `height < 24`, confiando no guard central já existente no `RootModel`.
 
 ## 4. Navegação e interação
 
-- [ ] 4.1 Implementar movimento de cursor ↑↓ com wrapping em `HandleKey`.
-- [ ] 4.2 Garantir que o item de tema seja apenas focável, não editável, preservando `F12` como mecanismo de troca global.
-- [ ] 4.3 Implementar entrada em modo de edição numérica (Enter → edit mode) em `HandleKey`.
-- [ ] 4.4 Implementar edição de campo numérico (somente dígitos, Backspace, navegação básica) no modo de edição em `HandleKey`.
-- [ ] 4.5 Implementar confirmação de edição numérica (Enter → validação de range → aplicar ou exibir erro) em `HandleKey`.
-- [ ] 4.6 Implementar cancelamento de edição (Esc → restaurar valor original e sair do edit mode) em `HandleKey`.
-- [ ] 4.7 Implementar ajuste rápido com `+/-` para campos numéricos focados fora do modo de edição, sempre em passos de 5 segundos.
-- [ ] 4.8 Atualizar hints contextuais da barra de mensagens ao focar e editar cada item de settings.
-- [ ] 4.9 Registrar as ações de teclado da tela de settings no `ActionManager` via `Actions()`.
+- [x] 4.1 Implementar movimento de cursor ↑↓ com wrapping em `HandleKey`.
+- [x] 4.2 Garantir que o item de tema seja apenas focável, não editável, preservando `F12` como mecanismo de troca global.
+- [x] 4.3 Implementar entrada em modo de edição numérica (Enter → edit mode) em `HandleKey`.
+- [x] 4.4 Implementar edição de campo numérico (somente dígitos, Backspace, navegação básica) no modo de edição em `HandleKey`.
+- [x] 4.5 Implementar confirmação de edição numérica (Enter → validação de range → aplicar ou exibir erro) em `HandleKey`.
+- [x] 4.6 Implementar cancelamento de edição (Esc → restaurar valor original e sair do edit mode) em `HandleKey`.
+- [x] 4.7 Implementar ajuste rápido com `+/-` para campos numéricos focados fora do modo de edição, sempre em passos de 5 segundos.
+- [x] 4.8 Atualizar hints contextuais da barra de mensagens ao focar e editar cada item de settings.
+- [x] 4.9 Registrar as ações de teclado da tela de settings no `ActionManager` via `Actions()`.
 
 ## 5. Integração com tema e cofre
 
-- [ ] 5.1 Garantir que a alteração de tema via `F12` continue sendo coordenada no `RootModel` e refletida imediatamente na tela de settings.
-- [ ] 5.2 Garantir que mudança de tema via `F12` atualiza o valor exibido no item de tema da tela de settings.
-- [ ] 5.3 Conectar timers e tema ao `vault.Manager` / `Configuracoes`, marcando o cofre como modificado quando houver mudança aplicada, sem criar mensagens globais de propagação por campo.
-- [ ] 5.6 Garantir que a implementação não introduza broadcast genérico ou `tea.Msg` global por alteração de campo; consumidores futuros devem reler a configuração canônica no domínio se necessário.
-- [ ] 5.4 Renomear `tempoBloqueioInatividadeMinutos` para `tempoBloqueioInatividadeSegundos` em `vault/entities.go`, atualizar o valor padrão de `5` para `300` e corrigir a validação em `manager.go` de `<= 0` para `<= 60`.
-- [ ] 5.5 Alinhar a serialização do cofre para incluir o campo `temaVisual` de `Configuracoes` no payload criptografado (adicionado em 2.7).
+- [x] 5.1 Garantir que a alteração de tema via `F12` continue sendo coordenada no `RootModel` e refletida imediatamente na tela de settings.
+- [x] 5.2 Garantir que mudança de tema via `F12` atualiza o valor exibido no item de tema da tela de settings.
+- [x] 5.3 Conectar timers e tema ao `vault.Manager` / `Configuracoes`, marcando o cofre como modificado quando houver mudança aplicada, sem criar mensagens globais de propagação por campo.
+- [x] 5.6 Garantir que a implementação não introduza broadcast genérico ou `tea.Msg` global por alteração de campo; consumidores futuros devem reler a configuração canônica no domínio se necessário.
+- [x] 5.4 Renomear `tempoBloqueioInatividadeMinutos` para `tempoBloqueioInatividadeSegundos`
+- [x] 5.5 Alinhar a serialização do cofre para incluir o campo `temaVisual` de `Configuracoes`
 
 ## 6. Testes
 

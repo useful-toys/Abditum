@@ -20,9 +20,10 @@ var (
 // --------------------------------------------------------------------------
 
 type configuracaoJSON struct {
-	TempoBloqueioInatividadeMinutos      int `json:"tempo_bloqueio_inatividade_minutos"`
-	TempoOcultarSegredoSegundos          int `json:"tempo_ocultar_segredo_segundos"`
-	TempoLimparAreaTransferenciaSegundos int `json:"tempo_limpar_area_transferencia_segundos"`
+	TempoBloqueioInatividadeSegundos     int    `json:"tempo_bloqueio_inatividade_segundos"`
+	TempoOcultarSegredoSegundos          int    `json:"tempo_ocultar_segredo_segundos"`
+	TempoLimparAreaTransferenciaSegundos int    `json:"tempo_limpar_area_transferencia_segundos"`
+	TemaVisual                           string `json:"tema_visual,omitempty"`
 }
 
 type campoModeloJSON struct {
@@ -85,9 +86,10 @@ func SerializarCofre(cofre *Cofre) ([]byte, error) {
 		DataCriacao:           cofre.dataCriacao,
 		DataUltimaModificacao: cofre.dataUltimaModificacao,
 		Configuracoes: configuracaoJSON{
-			TempoBloqueioInatividadeMinutos:      cofre.configuracoes.tempoBloqueioInatividadeMinutos,
+			TempoBloqueioInatividadeSegundos:     cofre.configuracoes.tempoBloqueioInatividadeSegundos,
 			TempoOcultarSegredoSegundos:          cofre.configuracoes.tempoOcultarSegredoSegundos,
 			TempoLimparAreaTransferenciaSegundos: cofre.configuracoes.tempoLimparAreaTransferenciaSegundos,
+			TemaVisual:                           cofre.configuracoes.temaVisual,
 		},
 		Modelos:    serializarModelos(cofre.modelos),
 		PastaGeral: serializarPasta(cofre.pastaGeral, true),
@@ -189,9 +191,10 @@ func DeserializarCofre(data []byte, version uint8) (*Cofre, error) {
 		dataCriacao:           dto.DataCriacao,
 		dataUltimaModificacao: dto.DataUltimaModificacao,
 		configuracoes: Configuracoes{
-			tempoBloqueioInatividadeMinutos:      dto.Configuracoes.TempoBloqueioInatividadeMinutos,
+			tempoBloqueioInatividadeSegundos:     dto.Configuracoes.TempoBloqueioInatividadeSegundos,
 			tempoOcultarSegredoSegundos:          dto.Configuracoes.TempoOcultarSegredoSegundos,
 			tempoLimparAreaTransferenciaSegundos: dto.Configuracoes.TempoLimparAreaTransferenciaSegundos,
+			temaVisual:                           dto.Configuracoes.TemaVisual,
 		},
 		modificado: false,
 	}

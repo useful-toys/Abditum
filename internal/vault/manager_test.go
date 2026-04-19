@@ -100,9 +100,9 @@ func TestAlterarConfiguracoes(t *testing.T) {
 	cofre := NovoCofre()
 	manager := NewManager(cofre, &mockRepository{})
 
-	// Valid configuration
+	// Valid configuration (bloqueio > 60, ocultar > 2, clipboard > 10)
 	novasConfig := Configuracoes{
-		tempoBloqueioInatividadeMinutos:      10,
+		tempoBloqueioInatividadeSegundos:     300,
 		tempoOcultarSegredoSegundos:          20,
 		tempoLimparAreaTransferenciaSegundos: 40,
 	}
@@ -118,8 +118,8 @@ func TestAlterarConfiguracoes(t *testing.T) {
 
 	// Verify configuration updated
 	config := cofre.Configuracoes()
-	if config.tempoBloqueioInatividadeMinutos != 10 {
-		t.Errorf("Expected tempoBloqueio=10, got %d", config.tempoBloqueioInatividadeMinutos)
+	if config.TempoBloqueioSegundos() != 300 {
+		t.Errorf("Expected tempoBloqueio=300, got %d", config.TempoBloqueioSegundos())
 	}
 }
 
@@ -131,10 +131,10 @@ func TestAlterarConfiguracoesInvalid(t *testing.T) {
 		nome   string
 		config Configuracoes
 	}{
-		{"zero tempoBloqueio", Configuracoes{0, 15, 30}},
-		{"negative tempoBloqueio", Configuracoes{-1, 15, 30}},
-		{"zero tempoOcultar", Configuracoes{5, 0, 30}},
-		{"zero tempoLimpar", Configuracoes{5, 15, 0}},
+		{"zero tempoBloqueio", Configuracoes{tempoBloqueioInatividadeSegundos: 0, tempoOcultarSegredoSegundos: 15, tempoLimparAreaTransferenciaSegundos: 30}},
+		{"bloqueio abaixo do minimo", Configuracoes{tempoBloqueioInatividadeSegundos: 60, tempoOcultarSegredoSegundos: 15, tempoLimparAreaTransferenciaSegundos: 30}},
+		{"zero tempoOcultar", Configuracoes{tempoBloqueioInatividadeSegundos: 300, tempoOcultarSegredoSegundos: 2, tempoLimparAreaTransferenciaSegundos: 30}},
+		{"zero tempoLimpar", Configuracoes{tempoBloqueioInatividadeSegundos: 300, tempoOcultarSegredoSegundos: 15, tempoLimparAreaTransferenciaSegundos: 10}},
 	}
 
 	for _, tt := range tests {
