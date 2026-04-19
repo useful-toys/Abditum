@@ -135,7 +135,7 @@ O formato exato do cabeçalho segue `golden/tui-spec-cabecalho.md` — os exempl
                              Tema visual                     Tokyo Night
 
                              Segurança
-                           › Bloqueio por inatividade       [300▌] s
+                           › Bloqueio por inatividade       300  s
                              Tempo de bloqueio automático por inatividade.
 
                              Ocultar campo sensível          15 s
@@ -153,7 +153,7 @@ O formato exato do cabeçalho segue `golden/tui-spec-cabecalho.md` — os exempl
 **Notas sobre os wireframes:**
 - `•` = indicador de cofre modificado (`semantic.warning`); aparece quando há mudanças não salvas.
 - `›` = item com foco (`special.highlight` + bold); itens sem foco têm indentação equivalente sem símbolo.
-- `[300▌] s` = campo em edição: colchetes delimitam a área `surface.input`; `▌` representa a posição do cursor real do terminal (convenção ASCII art — na implementação usa-se o cursor real, não o caractere `▌`); `s` fica fora do campo.
+- `300 ` (com espaço extra à direita) no estado de edição = área `surface.input` — não há colchetes nem borda; o campo é delimitado exclusivamente pelo fundo rebaixado. O cursor real do terminal fica posicionado ao final do valor. Em wireframe monocromático esta área não é distinguível por cor — na implementação o `surface.input` é o único delimitador visual.
 - A linha de descrição aparece apenas sob o item focado; nos demais itens não há linha de descrição.
 - Padding vertical simétrico (linhas em branco acima e abaixo do conteúdo) centraliza o bloco na área útil.
 
