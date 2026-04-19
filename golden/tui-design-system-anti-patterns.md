@@ -75,6 +75,7 @@ Anti-padrões documentam o que **não deve ser feito** na interface do Abditum. 
 | **Artefato de Render Anterior** *(Alto)* | Caracteres/cores do frame antigo permanecem | Bordas flutuam; campos extras visíveis |
 | **Última Linha Causa Scroll** *(Médio)* | Escrever em `(linhas, colunas)` aciona scroll | Barra de comandos "cai"; layout deslocado |
 | **Cursor Desalinhado** *(Alto)* | Cursor em coluna errada durante edição (bytes vs runes) | Backspace apaga caractere errado |
+| **Cursor Imitado com Caractere** *(Alto)* | Usar caractere visual (ex: `▌`) para simular cursor em campos de edição interativa | Cursor real do terminal é superior: não interfere na renderização do campo; respeita configurações de cursor do usuário (bloco, sublinhado, vertical); funciona automaticamente com APIs de terminal; não causa desalinhamento em campos com caracteres de largura variável |
 | **Campo Edição Sem Scroll H** *(Alto)* | Campo longo truncado ou overflow sem scroll | Usuário não vê valor completo |
 | **Scroll Mal Implementado** *(Alto)* | Painel com scroll não responde a `Home`/`End`/`PgUp`/`PgDn`; não responde ao scroll do mouse; ou `PgUp`/`PgDn`/`Home`/`End` funcionam invertidos | Navegação lenta, inacessível ou desorientadora |
 
