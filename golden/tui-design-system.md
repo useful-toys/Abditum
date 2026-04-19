@@ -255,7 +255,7 @@ O contexto de uso detalhado de cada símbolo está na seção onde ele é consum
 | `✕` | Erro | 1 | Dingbats |
 | `F1` | Atalho de ajuda | — | tecla de função |
 | `◐ ◓ ◑ ◒` | Spinner de atividade | 1 | Geometric Shapes |
-| `▌` | Cursor de campo | 1 | Block Elements |
+| `▌` | Cursor de bloco (não usado — cursor real do terminal usado) | 1 | Block Elements |
 | `↑` `↓` | Indicação de scroll (direção) | 1 | Arrows |
 | `■` | Thumb de scroll (posição) | 1 | Geometric Shapes |
 | `─` `│` | Separadores | 1 | Box Drawing |
@@ -358,7 +358,7 @@ A distinção visual do foco é **consistente** — o elemento focado sempre rec
 |---|---|---|
 | Árvore / lista | Nó ou item selecionado | `special.highlight` + **bold** |
 | Árvore → separador | Linha do item selecionado | `│` substituído por `<╡` em `accent.primary` |
-| Campo de entrada (ativo) | Campo com cursor | Fundo `surface.input` + cursor `▌` em `text.primary` + label em `accent.primary` **bold** |
+| Campo de entrada (ativo) | Campo com cursor | Fundo `surface.input` + cursor real do terminal em `text.primary` + label em `accent.primary` **bold** |
 | Campo de entrada (inativo) | Campo sem foco | Fundo `surface.input` + label em `text.secondary` |
 | Área ativa | Área com foco | Identificada pela **barra de comandos** (exibe ações da área focada) |
 
