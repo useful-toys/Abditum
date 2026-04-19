@@ -153,7 +153,7 @@ O formato exato do cabeçalho segue `golden/tui-spec-cabecalho.md` — os exempl
 **Notas sobre os wireframes:**
 - `•` = indicador de cofre modificado (`semantic.warning`); aparece quando há mudanças não salvas.
 - `›` = item com foco (`special.highlight` + bold); itens sem foco têm indentação equivalente sem símbolo.
-- `[300▌] s` = campo em edição: colchetes delimitam a área `surface.input`; `▌` é o cursor de texto; `s` fica fora do campo.
+- `[300▌] s` = campo em edição: colchetes delimitam a área `surface.input`; `▌` representa a posição do cursor real do terminal no wireframe (convenção ASCII art — na implementação, usa-se o cursor real do terminal, não o caractere `▌`); `s` fica fora do campo.
 - A linha de descrição aparece apenas sob o item focado; nos demais itens não há linha de descrição.
 - Padding vertical simétrico (linhas em branco acima e abaixo do conteúdo) centraliza o bloco na área útil.
 

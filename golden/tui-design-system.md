@@ -102,7 +102,7 @@ A paleta é organizada por **papel funcional** — cada papel define *para que* 
 |---|---|---|---|---|
 | **Superfícies** | `surface.base` | Cor de fundo da tela inteira | `#1a1b26` <span style="background:#1a1b26;color:#1a1b26">██</span> | `#0a0a1a` <span style="background:#0a0a1a;color:#0a0a1a">██</span> |
 | | `surface.raised` | Fundo dos painéis laterais e das janelas que abrem sobre a tela, incluindo todos os diálogos modais | `#24283b` <span style="background:#24283b;color:#24283b">██</span> | `#1a1a2e` <span style="background:#1a1a2e;color:#1a1a2e">██</span> |
-| | `surface.input` | Fundo dos campos de texto dentro de diálogos — tom rebaixado que delimita a área digitável | `#1e1f2e` <span style="background:#1e1f2e;color:#1e1f2e">██</span> | `#0e0e22` <span style="background:#0e0e22;color:#0e0e22">██</span> |
+| | `surface.input` | Fundo dos campos de texto — tom rebaixado que delimita a área digitável. Usado em diálogos (sobre `surface.raised`) e em campos inline dentro de telas (sobre `surface.base`); o contraste funciona em ambos os contextos | `#1e1f2e` <span style="background:#1e1f2e;color:#1e1f2e">██</span> | `#0e0e22` <span style="background:#0e0e22;color:#0e0e22">██</span> |
 | **Texto** | `text.primary` | Texto normal — nomes de segredos, títulos de campos, conteúdo legível | `#a9b1d6` <span style="color:#a9b1d6">██</span> | `#e0e0ff` <span style="color:#e0e0ff">██</span> |
 | | `text.secondary` | Texto de apoio — descrições de segredos, texto dentro de campos vazios, atalhos na barra inferior | `#565f89` <span style="color:#565f89">██</span> | `#8888aa` <span style="color:#8888aa">██</span> |
 | | `text.disabled` | Texto de opções que não podem ser usadas no momento | `#3b4261` <span style="color:#3b4261">██</span> | `#444466` <span style="color:#444466">██</span> |
@@ -255,7 +255,8 @@ O contexto de uso detalhado de cada símbolo está na seção onde ele é consum
 | `✕` | Erro | 1 | Dingbats |
 | `F1` | Atalho de ajuda | — | tecla de função |
 | `◐ ◓ ◑ ◒` | Spinner de atividade | 1 | Geometric Shapes |
-| `▌` | Cursor de bloco (não usado — cursor real do terminal usado) | 1 | Block Elements |
+| `▌` | Cursor de bloco — **não usar como cursor artificial** (ver anti-padrão *Cursor Imitado com Caractere*); listado apenas para documentar que o caractere existe e deve ser evitado nessa função | 1 | Block Elements |
+| `›` | Item focado em lista de configurações — segundo indicador de foco (além de `special.highlight`) para preservar legibilidade em NO_COLOR | 1 | General Punctuation |
 | `↑` `↓` | Indicação de scroll (direção) | 1 | Arrows |
 | `■` | Thumb de scroll (posição) | 1 | Geometric Shapes |
 | `─` `│` | Separadores | 1 | Box Drawing |
@@ -358,14 +359,18 @@ A distinção visual do foco é **consistente** — o elemento focado sempre rec
 |---|---|---|
 | Árvore / lista | Nó ou item selecionado | `special.highlight` + **bold** |
 | Árvore → separador | Linha do item selecionado | `│` substituído por `<╡` em `accent.primary` |
-| Campo de entrada (ativo) | Campo com cursor | Fundo `surface.input` + cursor real do terminal em `text.primary` + label em `accent.primary` **bold** |
-| Campo de entrada (inativo) | Campo sem foco | Fundo `surface.input` + label em `text.secondary` |
+| Lista de configurações | Item com foco (não em edição) | `›` em `accent.primary` + `special.highlight` + **bold** |
+| Item transitório em edição | Item de lista que entrou em edição inline | Valor substituído por área com fundo `surface.input` + cursor real do terminal posicionado no ponto de inserção + label em `accent.primary` **bold** |
+| Campo de entrada (ativo) | Campo com cursor (em diálogo) | Fundo `surface.input` + cursor real do terminal em `text.primary` + label em `accent.primary` **bold** |
+| Campo de entrada (inativo) | Campo sem foco (em diálogo) | Fundo `surface.input` + label em `text.secondary` |
 | Área ativa | Área com foco | Identificada pela **barra de comandos** (exibe ações da área focada) |
 
 - A interface principal não usa bordas ao redor de painéis — existe apenas um separador vertical `│` em `border.default` entre árvore e detalhe.
-- Campos não possuem borda — a área digitável é delimitada pelo fundo `surface.input` (tom rebaixado em relação ao `surface.raised` do diálogo).
+- Campos não possuem borda — a área digitável é delimitada pelo fundo `surface.input` (tom rebaixado em relação à superfície de fundo: `surface.raised` em diálogos, `surface.base` em telas).
 - Placeholder em `text.secondary` + *italic* — desaparece ao digitar.
-- Em **NO_COLOR**: o fundo `surface.input` pode ser perdido; cursor + label em **bold** permanecem como indicadores de foco suficientes.
+- Em **NO_COLOR**: o fundo `surface.input` pode ser perdido; o cursor real do terminal e o label em **bold** (e `›` na lista de configurações) permanecem como indicadores de foco suficientes.
+
+> **Item transitório:** padrão para listas onde cada item pode ser editado inline. Antes da edição, o item é tratado como item de lista focado (`›` + `special.highlight` + bold). Ao entrar em edição (Enter), a área do valor é substituída por um campo inline com `surface.input` + cursor real do terminal posicionado no ponto de inserção — o `surface.input` só fica visível durante a edição. Ao confirmar ou cancelar, o item retorna ao estado de lista. Esse padrão difere dos campos de diálogo, que mantêm `surface.input` visível mesmo sem foco.
 
 ### Navegação
 
