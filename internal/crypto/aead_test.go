@@ -23,6 +23,13 @@ func TestEncrypt(t *testing.T) {
 	if len(ciphertext) != expectedLen {
 		t.Errorf("Encrypt() returned ciphertext of length %d, want %d", len(ciphertext), expectedLen)
 	}
+
+	t.Run("invalid key returns ErrInvalidParams", func(t *testing.T) {
+		_, err := crypto.Encrypt([]byte("short"), plaintext)
+		if err != crypto.ErrInvalidParams {
+			t.Errorf("Encrypt(short key) = %v, want ErrInvalidParams", err)
+		}
+	})
 }
 
 // TestNonceUniqueness is CRITICAL for GCM security.
@@ -97,6 +104,13 @@ func TestDecryptShortCiphertext(t *testing.T) {
 	if err != crypto.ErrAuthFailed {
 		t.Errorf("Decrypt(short ciphertext) returned %v, want ErrAuthFailed", err)
 	}
+
+	t.Run("invalid key returns ErrInvalidParams", func(t *testing.T) {
+		_, err := crypto.Decrypt([]byte("short"), shortCiphertext)
+		if err != crypto.ErrInvalidParams {
+			t.Errorf("Decrypt(short key) = %v, want ErrInvalidParams", err)
+		}
+	})
 }
 
 // TestDecryptCorrupted verifies that Decrypt with corrupted ciphertext
@@ -213,6 +227,43 @@ func TestEncryptWithAAD(t *testing.T) {
 	})
 }
 
+func TestSealWithAAD(t *testing.T) {
+	key := make([]byte, 32)
+	plaintext := []byte("payload authenticated by aad")
+	nonce := []byte("123456789012")
+	aad := []byte("file header bytes")
+
+	t.Run("roundtrip succeeds", func(t *testing.T) {
+		ciphertext, err := crypto.SealWithAAD(key, plaintext, nonce, aad)
+		if err != nil {
+			t.Fatalf("SealWithAAD() returned error: %v", err)
+		}
+
+		got, err := crypto.DecryptWithAAD(key, ciphertext, nonce, aad)
+		if err != nil {
+			t.Fatalf("DecryptWithAAD() returned error: %v", err)
+		}
+
+		if !bytes.Equal(got, plaintext) {
+			t.Errorf("roundtrip = %q, want %q", got, plaintext)
+		}
+	})
+
+	t.Run("invalid key returns ErrInvalidParams", func(t *testing.T) {
+		_, err := crypto.SealWithAAD([]byte("short"), plaintext, nonce, aad)
+		if err != crypto.ErrInvalidParams {
+			t.Errorf("SealWithAAD(short key) = %v, want ErrInvalidParams", err)
+		}
+	})
+
+	t.Run("invalid nonce returns ErrInvalidParams", func(t *testing.T) {
+		_, err := crypto.SealWithAAD(key, plaintext, []byte("short"), aad)
+		if err != crypto.ErrInvalidParams {
+			t.Errorf("SealWithAAD(short nonce) = %v, want ErrInvalidParams", err)
+		}
+	})
+}
+
 // TestDecryptWithAAD verifies DecryptWithAAD authenticates AAD and returns original plaintext.
 func TestDecryptWithAAD(t *testing.T) {
 	key := make([]byte, 32)
@@ -266,6 +317,13 @@ func TestDecryptWithAAD(t *testing.T) {
 		_, err := crypto.DecryptWithAAD(nil, ciphertext, nonce, aad)
 		if err != crypto.ErrInvalidParams {
 			t.Errorf("DecryptWithAAD(nil key) = %v, want ErrInvalidParams", err)
+		}
+	})
+
+	t.Run("invalid nonce returns ErrAuthFailed", func(t *testing.T) {
+		_, err := crypto.DecryptWithAAD(key, ciphertext, []byte("short"), aad)
+		if err != crypto.ErrAuthFailed {
+			t.Errorf("DecryptWithAAD(short nonce) = %v, want ErrAuthFailed", err)
 		}
 	})
 

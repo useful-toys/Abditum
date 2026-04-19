@@ -1,7 +1,6 @@
 package crypto
 
 import (
-	"crypto/rand"
 	"io"
 
 	"golang.org/x/crypto/argon2"
@@ -32,7 +31,7 @@ func GenerateSalt() ([]byte, error) {
 
 	// Use io.ReadFull to ensure we get exactly 32 bytes.
 	// rand.Read() can return fewer bytes if the entropy pool is low.
-	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
+	if _, err := io.ReadFull(entropyReader, salt); err != nil {
 		return nil, ErrInsufficientEntropy
 	}
 

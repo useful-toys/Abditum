@@ -3,7 +3,6 @@ package crypto
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/rand"
 	"io"
 )
 
@@ -63,7 +62,7 @@ func Encrypt(key, plaintext []byte) ([]byte, error) {
 	// CRITICAL: nonce must be unique for every encryption with the same key.
 	// Using io.ReadFull ensures we get exactly 12 bytes (GCM standard nonce size).
 	nonce := make([]byte, gcm.NonceSize()) // 12 bytes for GCM
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+	if _, err := io.ReadFull(entropyReader, nonce); err != nil {
 		return nil, ErrInsufficientEntropy
 	}
 
@@ -227,7 +226,7 @@ func EncryptWithAAD(key, plaintext, aad []byte) (nonce []byte, ciphertext []byte
 	}
 
 	nonce = make([]byte, gcm.NonceSize()) // 12 bytes
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+	if _, err := io.ReadFull(entropyReader, nonce); err != nil {
 		return nil, nil, ErrInsufficientEntropy
 	}
 
