@@ -1,12 +1,12 @@
-╭─ Abrir cofre ──────────────────────────────────────────────────────╮
-│ \                                                                  │
-├ Estrutura ────────────────┬ Arquivos ──────────────────────────────┤
-│\                          ■                                        │
-│  ▼ home                   │Nenhum cofre neste diretório            │
-│    ▼ usuario              │                                        │
-│      ▶ documentos         │                                        │
-│      ▶ downloads          │                                        │
-│      ▼ projetos           │                                        │
-│        ▼ abditum          │                                        │
-│          ▷ docs           ↓                                        │
-╰─ Enter Abrir ─────────────────────────────────────── Esc Cancelar ─╯
+╭─ Abrir cofre ───────────────────────────────────────────────────────────────────╮
+│ \                                                                               │
+├ Estrutura ─────────────────────┬ Arquivos ──────────────────────────────────────┤
+│\                               ■                                                │
+│  ▼ home                        │Nenhum cofre neste diretório                    │
+│    ▼ usuario                   │                                                │
+│      ▶ documentos              │                                                │
+│      ▶ downloads               │                                                │
+│      ▼ projetos                │                                                │
+│        ▼ abditum               │                                                │
+│          ▷ docs                ↓                                                │
+╰─ Enter Abrir ──────────────────────────────────────────────────── Esc Cancelar ─╯
