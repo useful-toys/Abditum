@@ -37,7 +37,7 @@ O design system já define dois temas (`TokyoNight` e `Cyberpunk`), tokens semâ
    **Alternativa considerada:** toggle cíclico inline por Enter ou modal de seleção. Descartada — duplicaria um comportamento global já consolidado e adicionaria um modelo de interação extra sem benefício claro.
 
 4. **Dois modos distintos para campos numéricos: navegação e edição. Todos os timers em segundos, passo de 5.**
-   Todos os temporizadores são armazenados e exibidos em **segundos** — inclusive o de bloqueio (que era "minutos" no campo de domínio `tempoBloqueioInatividadeMinutos`, que precisará ser renomeado para `tempoBloqueioInatividadeSegundos`). O passo de `+`/`-` é **5 segundos** por tecla. Quando um campo numérico está **focado mas não em edição**: `+` incrementa 5, `-` decrementa 5, `Enter` entra em modo de edição. Quando está **em edição**: apenas dígitos (`0–9`) e `Backspace` são aceitos; o cursor de texto `▌` fica visível ao final do buffer; `Enter` confirma e aplica a validação de range; `Esc` restaura o valor original e sai sem salvar. A unidade `s` permanece estática à direita do campo. Erros de range são exibidos via barra de mensagens (`✕` erro), não inline.
+   Todos os temporizadores são armazenados e exibidos em **segundos** — inclusive o de bloqueio (que era "minutos" no campo de domínio `tempoBloqueioInatividadeMinutos`, que precisará ser renomeado para `tempoBloqueioInatividadeSegundos`). O passo de `+`/`-` é **5 segundos** por tecla. Quando um campo numérico está **focado mas não em edição**: `+` incrementa 5, `-` decrementa 5, `Enter` entra em modo de edição. Quando está **em edição**: apenas dígitos (`0–9`) e `Backspace` são aceitos; o cursor real do terminal fica posicionado ao final do buffer; `Enter` confirma e aplica a validação de range; `Esc` restaura o valor original e sai sem salvar. A unidade `s` permanece estática à direita do campo. Erros de range são exibidos via barra de mensagens (`✕` erro), não inline.
    **Alternativa considerada:** modo exclusivo de `+/-` sem entrada de texto. Descartada — lento para valores maiores; entrada numérica direta é mais eficiente.
 
 5. **Persistir settings via `vault.Manager`, chamados diretamente pela `SettingsView` quando a operação for síncrona.**
@@ -153,7 +153,7 @@ O formato exato do cabeçalho segue `golden/tui-spec-cabecalho.md` — os exempl
 **Notas sobre os wireframes:**
 - `•` = indicador de cofre modificado (`semantic.warning`); aparece quando há mudanças não salvas.
 - `›` = item com foco (`special.highlight` + bold); itens sem foco têm indentação equivalente sem símbolo.
-- `[300▌] s` = campo em edição: colchetes delimitam a área `surface.input`; `▌` é o cursor de texto; `s` fica fora do campo.
+- `[300▌] s` = campo em edição: colchetes delimitam a área `surface.input`; `▌` representa a posição do cursor real do terminal (convenção ASCII art — na implementação usa-se o cursor real, não o caractere `▌`); `s` fica fora do campo.
 - A linha de descrição aparece apenas sob o item focado; nos demais itens não há linha de descrição.
 - Padding vertical simétrico (linhas em branco acima e abaixo do conteúdo) centraliza o bloco na área útil.
 

@@ -43,7 +43,9 @@ const (
 	// SymMask é o caractere de máscara para conteúdo sensível.
 	// Mesmo glifo que SymBullet (U+2022); papéis semânticos distintos.
 	SymMask = "•" // U+2022
-	// SymCursor é o cursor em campos de entrada de texto.
+	// SymCursor (U+258C) é reservado para representação em wireframes ASCII.
+	// ⚠️ NÃO usar como cursor em campos de edição — viola o anti-padrão documentado
+	// em tui-design-system-anti-patterns.md. Campos interativos devem usar o cursor real do terminal.
 	SymCursor = "▌" // U+258C
 	// SymScrollUp é o indicador de scroll disponível para cima.
 	SymScrollUp = "↑" // U+2191
