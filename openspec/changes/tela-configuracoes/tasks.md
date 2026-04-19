@@ -1,11 +1,11 @@
 ## 1. Especificação visual (golden)
 
-- [ ] 1.1 Adicionar a seção "Modo Configurações" em `golden/tui-spec-telas.md` com wireframe ASCII 80×24 mostrando grupos Aparência, Segurança e Sobre, item selecionado, valor e linha de descrição.
-- [ ] 1.2 Preencher a tabela de Identidade Visual do modo Configurações (tokens por elemento).
-- [ ] 1.3 Preencher a tabela de Estados (item focado, item em edição, item somente leitura, grupo sem cofre aberto).
-- [ ] 1.4 Preencher a tabela de Mensagens (hint de campo focado, hint de edição, erro de valor fora do range, confirmação de mudança aplicada).
-- [ ] 1.5 Preencher a tabela de Eventos (navegação, ativação, edição, ajuste rápido com `+/-`, mudança de tema via F12).
-- [ ] 1.6 Preencher a lista de Comportamento (navegação cíclica, edição inline numérica, aplicação imediata de tema, persistência no cofre, somente leitura no grupo Sobre).
+- [x] 1.1 Adicionar a seção "Modo Configurações" em `golden/tui-spec-telas.md` com wireframe ASCII 80×24 mostrando grupos Aparência, Segurança e Sobre, item selecionado, valor e linha de descrição.
+- [x] 1.2 Preencher a tabela de Identidade Visual do modo Configurações (tokens por elemento).
+- [x] 1.3 Preencher a tabela de Estados (item focado, item em edição, item somente leitura, grupo sem cofre aberto).
+- [x] 1.4 Preencher a tabela de Mensagens (hint de campo focado, hint de edição, erro de valor fora do range, confirmação de mudança aplicada).
+- [x] 1.5 Preencher a tabela de Eventos (navegação, ativação, edição, ajuste rápido com `+/-`, mudança de tema via F12).
+- [x] 1.6 Preencher a lista de Comportamento (navegação cíclica, edição inline numérica, aplicação imediata de tema, persistência no cofre, somente leitura no grupo Sobre).
 
 ## 2. Modelo de dados e estrutura interna
 
@@ -55,11 +55,11 @@
 
 ## 6. Testes
 
-- [ ] 6.1 Adicionar golden tests da tela de settings para o estado estruturado padrão e para pelo menos um estado de edição numérica.
-- [ ] 6.2 Adicionar teste de navegação: cursor desce e sobe com wrapping correto.
-- [ ] 6.3 Adicionar teste do item de tema: recebe foco, mostra hint contextual e reflete mudança disparada por `F12`.
-- [ ] 6.4 Adicionar teste de edição numérica: somente dígitos são aceitos; valor válido é aplicado; valor fora do range é rejeitado.
-- [ ] 6.5 Adicionar teste de hints e feedback na barra de mensagens para foco, edição e rejeição/aceite local.
-- [ ] 6.6 Adicionar teste de aplicação direta: mudança aplicada em settings chega ao domínio do cofre via `vault.Manager`, sem passar por mensagem de orquestração no `RootModel`.
-- [ ] 6.7 Manter testes comportamentais complementares (navegação, aplicação direta, validação) além dos golden tests.
-- [ ] 6.8 Executar todos os testes Go relevantes (`internal/tui`, `internal/vault`) e corrigir regressões introduzidas.
+- [x] 6.1 Adicionar golden tests da tela de settings para o estado estruturado padrão e para pelo menos um estado de edição numérica.
+- [x] 6.2 Adicionar teste de navegação: cursor desce e sobe com wrapping correto.
+- [x] 6.3 Adicionar teste do item de tema: recebe foco, mostra hint contextual e reflete mudança disparada por `F12`.
+- [x] 6.4 Adicionar teste de edição numérica: somente dígitos são aceitos; valor válido é aplicado; valor fora do range é rejeitado.
+- [x] 6.5 Adicionar teste de hints e feedback na barra de mensagens para foco, edição e rejeição/aceite local.
+- [x] 6.6 Adicionar teste de aplicação direta: mudança aplicada em settings chega ao domínio do cofre via `vault.Manager`, sem passar por mensagem de orquestração no `RootModel`.
+- [x] 6.7 Manter testes comportamentais complementares (navegação, aplicação direta, validação) além dos golden tests.
+- [x] 6.8 Executar todos os testes Go relevantes (`internal/tui`, `internal/vault`) e corrigir regressões introduzidas.
