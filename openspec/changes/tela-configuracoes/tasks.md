@@ -13,7 +13,10 @@
 - [ ] 2.2 Definir constantes de range e passo dos timers em segundos no mesmo pacote (`minAutoLockSeconds = 61`, `minHideSeconds = 3`, `minClipboardSeconds = 11`, `timerStepSeconds = 5`).
 - [ ] 2.3 Construir a lista inicial de itens no `NewSettingsView`, separados por grupo, usando os valores padrão dos requisitos.
 - [ ] 2.4 Adicionar campo `cursor int` e campo `editMode bool` (com buffer de edição) na `SettingsView`.
-- [ ] 2.5 Definir o contrato direto entre `SettingsView` e `vault.Manager` para aplicar mudanças persistidas síncronas, sem `tea.Msg` de alteração por campo.
+- [ ] 2.5 Adicionar getters públicos em `vault.Configuracoes`: `TempoBloqueioSegundos() int`, `TempoOcultarSegundos() int`, `TempoLimparTransferenciaSegundos() int` — necessários para que `SettingsView` leia os valores atuais fora do pacote `vault`.
+- [ ] 2.6 Adicionar função `vault.NovasConfiguracoes(bloqueio, ocultar, limpar int) Configuracoes` para construir o struct a ser passado ao `AlterarConfiguracoes` fora do pacote.
+- [ ] 2.7 Adicionar campo `temaVisual string` em `vault.Configuracoes` e atualizar serialização do cofre para persistir o identificador de tema no payload criptografado.
+- [ ] 2.8 Atualizar `NewSettingsView` para receber `tui.MessageController` além de `*vault.Manager`, e atualizar a chamada em `RootModel.initVaultViews` para passar `r.MessageController()`.
 
 ## 3. Renderização
 
@@ -24,9 +27,9 @@
 - [ ] 3.5 Implementar o estado de item somente leitura (label + valor sem destaque interativo, `text.disabled` no valor se aplicável).
 - [ ] 3.6 Implementar o título `Configurações` e o centramento vertical do conteúdo (padding simétrico de linhas em branco).
 - [ ] 3.7 Implementar a linha de descrição contextual inline, imediatamente abaixo do item com foco (mesmo alinhamento de indentação).
-- [ ] 3.7 Garantir que os campos numéricos exponham apenas a parte numérica como editável, com unidade fixa fora do input.
-- [ ] 3.8 Implementar o item `Arquivo do cofre` no grupo Sobre (nome do arquivo ativo, somente leitura).
-- [ ] 3.9 Atualizar `Render(height, width int, theme *design.Theme)` para compor toda a tela a partir dos elementos acima.
+- [ ] 3.8 Garantir que os campos numéricos exponham apenas a parte numérica como editável, com unidade fixa `s` fora do input.
+- [ ] 3.9 Implementar o item `Arquivo do cofre` no grupo Sobre (nome do arquivo ativo, somente leitura).
+- [ ] 3.10 Atualizar `Render(height, width int, theme *design.Theme)` para compor toda a tela a partir dos elementos acima.
 
 ## 4. Navegação e interação
 
@@ -45,7 +48,8 @@
 - [ ] 5.1 Garantir que a alteração de tema via `F12` continue sendo coordenada no `RootModel` e refletida imediatamente na tela de settings.
 - [ ] 5.2 Garantir que mudança de tema via `F12` atualiza o valor exibido no item de tema da tela de settings.
 - [ ] 5.3 Conectar timers e tema ao `vault.Manager` / `Configuracoes`, marcando o cofre como modificado quando houver mudança aplicada, sem criar mensagens globais de propagação por campo.
-- [ ] 5.4 Alinhar o modelo de domínio e a serialização do cofre para incluir o tema persistido nas configurações.
+- [ ] 5.4 Renomear `tempoBloqueioInatividadeMinutos` para `tempoBloqueioInatividadeSegundos` em `vault/entities.go`, atualizar o valor padrão de `5` para `300` e corrigir a validação em `manager.go` de `<= 0` para `<= 60`.
+- [ ] 5.5 Alinhar a serialização do cofre para incluir o campo `temaVisual` de `Configuracoes` no payload criptografado (adicionado em 2.7).
 
 ## 6. Testes
 
