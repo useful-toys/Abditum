@@ -88,3 +88,72 @@ O design system já define dois temas (`TokyoNight` e `Cyberpunk`), tokens semâ
 ## Open Questions
 
 - A aba `Config` deve aparecer no cabeçalho mesmo sem cofre aberto? O comportamento atual precisa ser verificado — se não aparecer, a tela de settings só é acessível com cofre aberto, o que limita onde documentar esse estado.
+
+## Wireframes
+
+Os wireframes abaixo representam o layout acordado em 80 colunas × 24 linhas.
+O formato exato do cabeçalho segue `golden/tui-spec-cabecalho.md` — os exemplos abaixo usam a convenção ilustrativa `[Config]` para simplificar; na implementação real a aba ativa usa `╯ Config ╰`.
+
+### Estado 1 — Item de tema com foco
+
+```
+ Abditum  meu-cofre.abd  •                                   Cofre  Modelos  Config
+ ──────────────────────────────────────────────────────────────────────────────────
+
+
+                             Configurações
+
+                             Aparência
+                           › Tema visual                     Tokyo Night
+                             Tema aplicado ao cofre atual.
+
+                             Segurança
+                             Bloqueio por inatividade        300 s
+                             Ocultar campo sensível          15 s
+                             Limpar área de transferência    30 s
+
+                             Sobre
+                             Versão                          v0.1.0
+                             Arquivo do cofre                meu-cofre.abd
+
+
+
+ ─── • F12 para alternar tema visual ───────────────────────────────────────────
+ F1 Ajuda · F2 Cofre · F3 Modelos · F4 Config · F7 Salvar · Ctrl+Q Sair
+```
+
+### Estado 2 — Campo numérico em modo de edição
+
+```
+ Abditum  meu-cofre.abd  •                                   Cofre  Modelos  Config
+ ──────────────────────────────────────────────────────────────────────────────────
+
+
+                             Configurações
+
+                             Aparência
+                             Tema visual                     Tokyo Night
+
+                             Segurança
+                           › Bloqueio por inatividade       [300▌] s
+                             Tempo de bloqueio automático por inatividade.
+
+                             Ocultar campo sensível          15 s
+                             Limpar área de transferência    30 s
+
+                             Sobre
+                             Versão                          v0.1.0
+                             Arquivo do cofre                meu-cofre.abd
+
+
+ ─── • Enter confirma · Esc cancela ────────────────────────────────────────────
+ F1 Ajuda · F2 Cofre · F3 Modelos · F4 Config · F7 Salvar · Ctrl+Q Sair
+```
+
+**Notas sobre os wireframes:**
+- `•` = indicador de cofre modificado (`semantic.warning`); aparece quando há mudanças não salvas.
+- `›` = item com foco (`special.highlight` + bold); itens sem foco têm indentação equivalente sem símbolo.
+- `[300▌] s` = campo em edição: colchetes delimitam a área `surface.input`; `▌` é o cursor de texto; `s` fica fora do campo.
+- A linha de descrição aparece apenas sob o item focado; nos demais itens não há linha de descrição.
+- Padding vertical simétrico (linhas em branco acima e abaixo do conteúdo) centraliza o bloco na área útil.
+
