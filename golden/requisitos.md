@@ -94,9 +94,11 @@ A proteção dos dados segue princípios claros:
   - *Nota sobre a política de importação*: A política de importação é intencionalmente baseada na **mesclagem** de estruturas de pastas e na **sobrescrita** de segredos e modelos com nomes conflitantes. Este comportamento contrasta com operações que usam renomeação automática para evitar perda de dados não intencional. Na importação, a sobrescrita é a ação esperada.
 - Configurar o cofre
   - Todos os tempos são iniciados com valor padrão ao criar o cofre e podem ser ajustados pelo usuário via configurações do cofre. Nenhum temporizador pode ser desabilitado — todos são obrigatórios
-  - Configurar tempo de bloqueio automático por inatividade (padrão: 5 minutos)
-  - Configurar tempo de ocultação automática de campo sensível (padrão: 15 segundos)
-  - Configurar tempo de limpeza automática da clipboard (padrão: 30 segundos)
+  - Todos os temporizadores são armazenados e exibidos em **segundos**
+  - Os ajustes manuais via interface usam incremento/decremento de **5 segundos** por passo
+  - Configurar tempo de bloqueio automático por inatividade (padrão: 300 s; o valor deve ser estritamente maior que 60 s)
+  - Configurar tempo de ocultação automática de campo sensível (padrão: 15 s; o valor deve ser estritamente maior que 2 s)
+  - Configurar tempo de limpeza automática da clipboard (padrão: 30 s; o valor deve ser estritamente maior que 10 s)
   - Persistir preferência de tema visual
     - Os temas disponíveis devem ser discretos e adequados a ambientes públicos
     - O identificador do tema deve ser gravado no payload criptografado do cofre
