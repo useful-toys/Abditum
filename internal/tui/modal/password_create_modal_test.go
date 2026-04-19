@@ -145,9 +145,9 @@ func TestPasswordCreateModal_Cursor_FocusedConfirm(t *testing.T) {
 	if c == nil {
 		t.Fatal("Cursor: expected non-nil cursor")
 	}
-	// Y = 1 + 1 + 5 = 7, X = 0 + 1 + 2 + 5 = 8
-	if c.Position.Y != 7 {
-		t.Errorf("Cursor.Y: expected 7, got %d", c.Position.Y)
+	// Y = 1 + 1 + 4 = 6, X = 0 + 1 + 2 + 5 = 8
+	if c.Position.Y != 6 {
+		t.Errorf("Cursor.Y: expected 6, got %d", c.Position.Y)
 	}
 	if c.Position.X != 8 {
 		t.Errorf("Cursor.X: expected 8, got %d", c.Position.X)

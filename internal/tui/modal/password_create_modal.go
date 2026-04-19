@@ -240,10 +240,9 @@ func (m *PasswordCreateModal) HandleMouse(_ tea.MouseMsg) tea.Cmd {
 //	Linha 0: vazia (padding)
 //	Linha 1: label "Nova senha"
 //	Linha 2: área digitável do Nova senha  ← cursor aqui se focused == fieldNew
-//	Linha 3: vazia (single blank line separator)
-//	Linha 4: label "Confirmação"
-//	Linha 5: área digitável do Confirmação  ← cursor aqui se focused == fieldConfirm
-//	Linha 6: vazia
+//	Linha 3: label "Confirmação"
+//	Linha 4: área digitável do Confirmação  ← cursor aqui se focused == fieldConfirm
+//	Linha 5: vazia
 //
 // Fórmula (Nova senha):
 //
@@ -252,7 +251,7 @@ func (m *PasswordCreateModal) HandleMouse(_ tea.MouseMsg) tea.Cmd {
 //
 // Fórmula (Confirmação):
 //
-//	cursorY = topY + 1 (borda superior) + 5 (linha do field no body)
+//	cursorY = topY + 1 (borda superior) + 4 (linha do field no body)
 //	cursorX = leftX + 1 (borda esquerda) + DialogPaddingH + field.Len()
 func (m *PasswordCreateModal) Cursor(topY, leftX int) *tea.Cursor {
 	var lineOffset int
@@ -262,7 +261,7 @@ func (m *PasswordCreateModal) Cursor(topY, leftX int) *tea.Cursor {
 		lineOffset = 2
 		field = m.fieldNew
 	} else {
-		lineOffset = 5
+		lineOffset = 4
 		field = m.fieldConf
 	}
 
