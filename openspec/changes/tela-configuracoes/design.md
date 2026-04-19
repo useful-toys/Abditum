@@ -85,6 +85,87 @@ O design system já define dois temas (`TokyoNight` e `Cyberpunk`), tokens semâ
 6. Adicionar testes de renderização, navegação, hints e aplicação direta de mudanças via `vault.Manager`.
 7. Adicionar golden tests para os principais estados visuais da tela de settings.
 
+## Fluxo de Edição de Campo Numérico
+
+Descreve a sequência de estados internos da `SettingsView` durante uma edição inline, do Enter ao retorno à navegação.
+
+### Estrutura de estado relevante
+
+```go
+type SettingsView struct {
+    items    []settingItem
+    cursor   int    // índice do item com foco
+    editMode bool   // true quando um item numérico está em edição
+    editBuf  string // dígitos digitados durante a edição
+    editSnap int    // valor original antes da edição (para Esc restaurar)
+    mc       MessageController
+}
+```
+
+### Passo a passo
+
+**1. Navegação normal (editMode = false)**
+
+- ↑ / ↓ movem `cursor`; ao mudar de item, `mc.SetHintField(hint do novo item)` é chamado.
+- `+` / `-` sobre item numérico: aplica delta de ±5 s, valida range, chama `vault.Manager.AlterarConfiguracoes`, atualiza `item.valor`; em caso de erro exibe `mc.SetError(...)`.
+- Enter sobre item numérico: ir para passo 2.
+- Enter sobre item somente leitura (tema, versão, arquivo): ignorado.
+
+**2. Entrar em edição (Enter sobre numérico)**
+
+```
+editSnap = item.valor
+editBuf  = strconv.Itoa(item.valor)   // pré-preenche com valor atual
+editMode = true
+mc.SetHintField("Enter confirma · Esc cancela")
+```
+
+O render passa a mostrar a área do valor com fundo `surface.input`; o cursor real do terminal é posicionado ao final de `editBuf` (ver passo 5).
+
+**3. Digitação no modo edição**
+
+- Dígito (`0`–`9`): `editBuf += string(rune)`.
+- `Backspace`: `editBuf = editBuf[:len(editBuf)-1]` (protegido contra string vazia).
+- `+`, `-`, ↑, ↓ e qualquer outra tecla: **ignorados silenciosamente**.
+
+**4a. Confirmar (Enter no modo edição)**
+
+```
+v, err := strconv.Atoi(editBuf)
+```
+
+- `err != nil` ou fora do range mínimo → `mc.SetError("Mínimo: X s")` — permanece em `editMode`.
+- Valor válido →
+  ```
+  novaConfig = config atual com campo atualizado para v
+  vault.Manager.AlterarConfiguracoes(novaConfig)  // error tratado localmente
+  item.valor = v
+  editMode   = false
+  editBuf    = ""
+  mc.SetHintField(hint do item focado, modo navegação)
+  ```
+
+**4b. Cancelar (Esc no modo edição)**
+
+```
+item.valor = editSnap   // restaura valor original
+editMode   = false
+editBuf    = ""
+mc.SetHintField(hint do item focado, modo navegação)
+```
+
+Nenhuma chamada ao `vault.Manager` é feita.
+
+**5. Posicionamento do cursor real do terminal**
+
+A `SettingsView` não usa o caractere `▌`. O cursor real é posicionado pela integração com o Bubble Tea:
+
+- O método `View()` retorna a string renderizada com a área `surface.input` aplicada via `lipgloss` sobre o conteúdo de `editBuf`.
+- O `RootModel` (ou a própria view via retorno de `tea.Cmd`) emite `tea.ShowCursor()` quando `editMode = true`, e `tea.HideCursor()` quando `editMode = false`.
+- A posição absoluta do cursor (`linha, coluna`) é calculada a partir das dimensões conhecidas: altura do cabeçalho + linhas de padding + offset do item no grupo + coluna de início do valor. Essa posição é comunicada ao terminal via sequência ANSI de movimentação de cursor, emitida como `tea.Cmd` no `Update`.
+
+> Se a implementação usar `textinput.Model` do pacote `bubbles/textinput`, o componente já gerencia o cursor real internamente — basta posicioná-lo na linha correta do render e deixar o componente renderizar a si mesmo no lugar do valor.
+
 ## Open Questions
 
 - A aba `Config` deve aparecer no cabeçalho mesmo sem cofre aberto? O comportamento atual precisa ser verificado — se não aparecer, a tela de settings só é acessível com cofre aberto, o que limita onde documentar esse estado.
