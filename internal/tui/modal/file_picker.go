@@ -733,8 +733,8 @@ func padRight(s string, width int) string {
 
 // modalDimensions calcula as dimensões do modal a partir do terminal.
 func modalDimensions(maxHeight, maxWidth int, mode FilePickerMode) (modalW, innerW, treeW, filesW, visibleH int) {
-	modalW = maxWidth * 80 / 100
-	if modalW > 70 {
+	modalW = maxWidth * 95 / 100
+	if modalW < 70 {
 		modalW = 70
 	}
 	innerW = modalW - 2
@@ -916,6 +916,17 @@ func (m *FilePickerModal) renderTreeLine(absIdx, treeW int, theme *design.Theme)
 	isActive := m.focusPanel == 0
 
 	nameStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Text.Primary))
+	name := node.name
+
+	// Truncar nome se necessário
+	if lipgloss.Width(name) > treeW-2 && treeW > 2 {
+		for lipgloss.Width(name+design.SymEllipsis) > treeW-2 && len(name) > 0 {
+			runes := []rune(name)
+			name = string(runes[:len(runes)-1])
+		}
+		name = name + design.SymEllipsis
+	}
+
 	if isCursor {
 		cursorStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color(theme.Accent.Primary)).
@@ -923,9 +934,9 @@ func (m *FilePickerModal) renderTreeLine(absIdx, treeW int, theme *design.Theme)
 		if isActive {
 			cursorStyle = cursorStyle.Background(lipgloss.Color(theme.Special.Highlight))
 		}
-		nameStr = cursorStyle.Render(node.name)
+		nameStr = cursorStyle.Render(name)
 	} else {
-		nameStr = nameStyle.Render(node.name)
+		nameStr = nameStyle.Render(name)
 	}
 
 	var line string

@@ -1,4 +1,4 @@
-﻿# Especificação Visual — FilePicker
+# Especificação Visual — FilePicker
 
 > Diálogo funcional de seleção de arquivo (modos Open e Save).
 > Parte da [Especificação Visual](tui-specification.md).
@@ -118,7 +118,7 @@ O FilePicker opera em dois modos — **Open** e **Save** — com wireframes e co
 
 | Parâmetro | Valor |
 |---|---|
-| Largura | Máxima do DS (70 colunas ou 80% do terminal, o menor) |
+| Largura | Mínimo 70 colunas, máximo 95% do terminal |
 | Altura | 80% do terminal |
 | Proporção Árvore/Arquivos | ~40/60 |
 | Padding horizontal | 2 colunas |
