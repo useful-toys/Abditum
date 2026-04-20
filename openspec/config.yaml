@@ -1,20 +1,52 @@
+# openspec/config.yaml
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Tech stack: Go, TUI (bubbletea)
+  Conventions: conventional commits em português
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  UI e Golden Files:
+  - Qualquer criação ou atualização de interface TUI deve criar ou atualizar os golden files correspondentes em testdata/
+  - Golden files são a baseline visual das telas do terminal, separando aparência de estrutura:
+    - testdata/*.golden.txt: print visual da tela (aparência formatada)
+    - testdata/*.golden.json: estrutura da tela (coordenadas, formatação, posições)
+  - Antes de gerar golden files, perguntar ao usuário as dimensões do terminal. Padrão: 80x24 (colunas x linhas)
+
+  Cobertura de estados nos golden files:
+  - Golden files devem cobrir múltiplos estados da tela, não apenas o estado padrão
+  - Para telas com scroll, criar golden files para:
+    - Posição inicial (topo)
+    - Posição intermediária (meio)
+    - Posição final (fim)
+  - Para campos ou elementos com espaço limitado para texto, criar golden files para:
+    - String curta (sem necessidade de truncar ou quebrar)
+    - String média (próxima ao limite)
+    - String longa (que exige truncamento ou quebra de linha)
+  - Nomear os arquivos golden de forma descritiva, refletindo o estado que representam
+    - Exemplo: list_scroll_top.golden.txt, list_scroll_middle.golden.txt
+    - Exemplo: detail_name_short.golden.txt, detail_name_long.golden.txt
+
+  Validação dos golden files:
+  - A validação dos golden files .txt deve inspecionar:
+    - Se os elementos estão na posição correta na tela
+    - Se elementos e bordas estão alinhados
+    - Se os elementos contêm o conteúdo correto
+    - Se truncamentos e quebras de linha ocorrem nos lugares esperados
+
+rules:
+  proposal:
+    - Se envolver UI, listar quais telas serão criadas ou alteradas
+    - Listar os estados que serão cobertos pelos golden files (scroll, variações de string, etc.)
+  specs:
+    - Usar formato Given/When/Then para cenários
+    - Para specs de UI, descrever o layout esperado referenciando os golden files
+    - Especificar as dimensões de terminal utilizadas (padrão 80x24)
+    - Especificar quais estados da tela precisam de cobertura (scroll, strings longas/curtas, etc.)
+  design:
+    - Para mudanças de UI, descrever o layout visual esperado antes de implementar
+    - Listar os estados e variações que os golden files deverão cobrir
+    - Definir convenção de nomenclatura dos golden files para a feature
+  tasks:
+    - Criar ou atualizar golden files (.txt e .json) para cada estado relevante da tela
+    - Incluir tarefas separadas para cada variação: scroll (top/middle/bottom), strings (curta/média/longa)
+    - Incluir tarefa de validação: inspecionar .golden.txt para confirmar posições, alinhamento, conteúdo e truncamentos
